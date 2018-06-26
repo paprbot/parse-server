@@ -1,0 +1,25 @@
+{
+  "name": "parse-server-azure-managed",
+  "version": "1.0.0",
+  "description": "Parse Server on Azure Managed Services",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mamaso/parse-server-example"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "buffer-shims": "^1.0.0",
+    "express": "^4.13.4",
+    "parse-server": "2.3.x",
+    "parse-dashboard": "^1.0.11",
+    "parse-server-azure-config": "^1.0.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "postinstall": "git update-index --skip-worktree local.js & exit 0"
+  },
+  "engines": {
+    "node": "6.9.4"
+  }
+}
