@@ -1,6 +1,8 @@
 
 var algoliasearch = require('algoliasearch');
 var client = algoliasearch('K3ET7YKLTI', '67085f00b6dbdd989eddc47fd1975c9c');
+var async = require('async');
+var _ = require("underscore");
 
 // Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
 var indexPosts = client.initIndex('dev_posts');
@@ -8,6 +10,67 @@ var indexUsers = client.initIndex('dev_users');
 var indexHashtags = client.initIndex('dev_hashtags');
 var indexMeetings = client.initIndex('dev_meeetings');
 
+
+// Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
+Parse.Cloud.beforeSave('Post', function(request, response) {
+ 
+  var post = request.object;
+  var toLowerCase = function(w) { return w.toLowerCase(); };
+  console.log("post: " + JSON.stringify(post));
+  
+  // Function to capture hashtags from text posts
+  function getHashtags (callback) {
+   
+      var hashtags = post.get("text").match(/(^|\s)(#[a-z\d-]+)/gi);
+      hashtags = _.map(hashtags, toLowerCase);
+      request.object.set("hashtags", hashtags);
+      console.log("getHashtags: " + JSON.stringify(hashtags));
+    
+      return callback(null, post);
+  }
+  
+  // Function to capture mentions from text posts
+  function getMentions (callback) {
+    
+    var mentions = post.get("text").match(/(^|\s)(@[a-z\d-]+)/gi);
+    mentions = _.map(mentions, toLowerCase);
+    request.object.set("mentions", mentions);
+    console.log("getMentions: " + JSON.stringify(mentions));
+    
+    return callback(null, post);
+  }
+  
+  // Function to identify if a text post hasURL
+  function getURL (callback) {
+    //console.log("getURL: " + JSON.stringify(post));
+    
+    return callback(null, post);
+  }
+  
+  // Function to get luis.ai topIntent from text post
+  function getIntents (callback) {
+    //console.log("getIntents: " + JSON.stringify(post));
+    
+    return callback(null, post);
+  }
+  
+  async.parallel([ 
+    async.apply(getHashtags),
+    async.apply(getMentions),
+    async.apply(getURL),
+    async.apply(getIntents)
+    
+  ], function (err, post) {
+        if (err) {
+            response.error(err);
+        }
+
+        console.log("final post: " + JSON.stringify(post));
+        response.success();
+    });
+  
+  
+});
 
 // Add and Update AlgoliaSearch post object if it's deleted from Parse
 Parse.Cloud.afterSave('Post', function(request, response) {
