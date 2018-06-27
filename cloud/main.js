@@ -23,6 +23,9 @@ Parse.Cloud.beforeSave('Post', function(request, response) {
    
       var hashtags = post.get("text").match(/(^|\s)(#[a-z\d-]+)/gi);
       hashtags = _.map(hashtags, toLowerCase);
+      hashtags = hashtags.map(function (hashtag) {
+        return hashtag.trim();
+      });
       request.object.set("hashtags", hashtags);
       console.log("getHashtags: " + JSON.stringify(hashtags));
     
@@ -34,6 +37,9 @@ Parse.Cloud.beforeSave('Post', function(request, response) {
     
     var mentions = post.get("text").match(/(^|\s)(@[a-z\d-]+)/gi);
     mentions = _.map(mentions, toLowerCase);
+    mentions = mentions.map(function (mention) {
+      return mention.trim();
+    });
     request.object.set("mentions", mentions);
     console.log("getMentions: " + JSON.stringify(mentions));
     
