@@ -12,6 +12,7 @@ var indexPosts = client.initIndex('dev_posts');
 var indexUsers = client.initIndex('dev_users');
 var indexHashtags = client.initIndex('dev_hashtags');
 var indexMeetings = client.initIndex('dev_meeetings');
+var indexProject = client.initIndex('dev_channels');
 
 
 // Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
@@ -197,6 +198,73 @@ Parse.Cloud.afterSave('_User', function(request) {
 });
 
 
+// Add and Update AlgoliaSearch project=channel object if it's deleted from Parse
+Parse.Cloud.afterSave('Project', function(request, response) {
+ 
+  // Convert Parse.Object to JSON
+  var objectToSave = request.object.toJSON();
+  
+  var queryProject = new Parse.Query("Project");
+  queryProject.equalTo("objectId", objectToSave.objectId);
+  queryProject.include( ["user", "workspace", "category"] );
+  //queryProject.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
+  
+  
+  console.log("Request: " + JSON.stringify(request));
+  console.log("objectID: " + objectToSave.objectId);
+  console.log("objectID: " + objectToSave.user.objectId);
+  
+  queryProject.first({
+    success: function(project) {
+      // Successfully retrieved the object.
+      console.log("ObjectToSave: " + JSON.stringify(project));
+      
+      // Convert Parse.Object to JSON
+      project = project.toJSON();
+      
+      // Specify Algolia's objectID with the Parse.Object unique ID
+      project.objectID = project.objectId;
+      
+      // Add or update object
+      indexProject.saveObject(project, function(err, content) {
+        if (err) {
+          throw err;
+        }
+        console.log('Parse<>Algolia object saved');
+        response.success(); 
+        
+      });
+      
+    },
+    error: function(error) {
+      alert("Error: " + error.code + " " + error.message);
+    }
+  });
+  
+  
+});
+
+
+// Add and Update AlgoliaSearch user object if it's deleted from Parse
+Parse.Cloud.afterSave('_User', function(request) {
+  
+  // Convert Parse.Object to JSON
+  var objectToSave = request.object.toJSON();
+  
+  // Specify Algolia's objectID with the Parse.Object unique ID
+  objectToSave.objectID = objectToSave.objectId;
+  
+  // Add or update object
+  indexUsers.saveObject(objectToSave, function(err, content) {
+    if (err) {
+      throw err;
+    }
+    console.log('Parse<>Algolia object saved');
+  });
+});
+
+
+
 // Delete AlgoliaSearch post object if it's deleted from Parse
 Parse.Cloud.afterDelete('Post', function(request) {
   
@@ -211,6 +279,22 @@ Parse.Cloud.afterDelete('Post', function(request) {
     console.log('Parse<>Algolia object deleted');
   });
 });
+
+// Delete AlgoliaSearch channel=project object if it's deleted from Parse
+Parse.Cloud.afterDelete('Project', function(request) {
+  
+  // Get Algolia objectID
+  var objectID = request.object.id;
+  
+  // Remove the object from Algolia
+  indexProject.deleteObject(objectID, function(err, content) {
+    if (err) {
+      throw err;
+    }
+    console.log('Parse<>Algolia object deleted');
+  });
+});
+
 
 // Delete AlgoliaSearch user object if it's deleted from Parse
 Parse.Cloud.afterDelete('_User', function(request) {
