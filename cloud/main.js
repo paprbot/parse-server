@@ -3,6 +3,7 @@ var algoliasearch = require('algoliasearch');
 var client = algoliasearch('K3ET7YKLTI', '67085f00b6dbdd989eddc47fd1975c9c');
 var async = require('async');
 var _ = require("underscore");
+var urlRegex = require('url-regex');
 
 // Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
 var indexPosts = client.initIndex('dev_posts');
@@ -15,13 +16,14 @@ var indexMeetings = client.initIndex('dev_meeetings');
 Parse.Cloud.beforeSave('Post', function(request, response) {
  
   var post = request.object;
+  var text = post.get("text");
   var toLowerCase = function(w) { return w.toLowerCase(); };
   console.log("post: " + JSON.stringify(post));
   
   // Function to capture hashtags from text posts
   function getHashtags (callback) {
    
-      var hashtags = post.get("text").match(/(^|\s)(#[a-z\d-]+)/gi);
+      var hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
       hashtags = _.map(hashtags, toLowerCase);
       hashtags = hashtags.map(function (hashtag) {
         return hashtag.trim();
@@ -35,7 +37,7 @@ Parse.Cloud.beforeSave('Post', function(request, response) {
   // Function to capture mentions from text posts
   function getMentions (callback) {
     
-    var mentions = post.get("text").match(/(^|\s)(@[a-z\d-]+)/gi);
+    var mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
     mentions = _.map(mentions, toLowerCase);
     mentions = mentions.map(function (mention) {
       return mention.trim();
@@ -48,7 +50,11 @@ Parse.Cloud.beforeSave('Post', function(request, response) {
   
   // Function to identify if a text post hasURL
   function getURL (callback) {
-    //console.log("getURL: " + JSON.stringify(post));
+
+    var hasurl = urlRegex().test(text);
+    console.log("hasURL: " + JSON.stringify(hasurl));
+    
+    request.object.set("hasURL", hasurl);
     
     return callback(null, post);
   }
