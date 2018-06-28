@@ -11,9 +11,10 @@
   "dependencies": {
     "buffer-shims": "^1.0.0",
     "express": "^4.13.4",
-    "parse-server": "2.3.x",
     "parse-dashboard": "^1.0.11",
-    "parse-server-azure-config": "^1.0.0"
+    "parse-server": "2.3.x",
+    "parse-server-azure-config": "^1.0.0",
+    "url-regex": "^4.1.1"
   },
   "scripts": {
     "start": "node index.js",
@@ -23,4 +24,3 @@
     "node": "6.9.4"
   }
 }
-
