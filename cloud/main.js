@@ -4,6 +4,8 @@ var client = algoliasearch('K3ET7YKLTI', '67085f00b6dbdd989eddc47fd1975c9c');
 var async = require('async');
 var _ = require("underscore");
 var urlRegex = require('url-regex');
+var request = require('request');
+var querystring = require('querystring');
 
 // Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
 var indexPosts = client.initIndex('dev_posts');
@@ -13,9 +15,9 @@ var indexMeetings = client.initIndex('dev_meeetings');
 
 
 // Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
-Parse.Cloud.beforeSave('Post', function(request, response) {
+Parse.Cloud.beforeSave('Post', function(req, response) {
  
-  var post = request.object;
+  var post = req.object;
   var text = post.get("text");
   var toLowerCase = function(w) { return w.toLowerCase(); };
   console.log("post: " + JSON.stringify(post));
@@ -28,7 +30,7 @@ Parse.Cloud.beforeSave('Post', function(request, response) {
       hashtags = hashtags.map(function (hashtag) {
         return hashtag.trim();
       });
-      request.object.set("hashtags", hashtags);
+      req.object.set("hashtags", hashtags);
       console.log("getHashtags: " + JSON.stringify(hashtags));
     
       return callback(null, post);
@@ -42,7 +44,7 @@ Parse.Cloud.beforeSave('Post', function(request, response) {
     mentions = mentions.map(function (mention) {
       return mention.trim();
     });
-    request.object.set("mentions", mentions);
+    req.object.set("mentions", mentions);
     console.log("getMentions: " + JSON.stringify(mentions));
     
     return callback(null, post);
@@ -54,7 +56,7 @@ Parse.Cloud.beforeSave('Post', function(request, response) {
     var hasurl = urlRegex().test(text);
     console.log("hasURL: " + JSON.stringify(hasurl));
     
-    request.object.set("hasURL", hasurl);
+    req.object.set("hasURL", hasurl);
     
     return callback(null, post);
   }
@@ -63,7 +65,52 @@ Parse.Cloud.beforeSave('Post', function(request, response) {
   function getIntents (callback) {
     //console.log("getIntents: " + JSON.stringify(post));
     
-    return callback(null, post);
+    var endpoint =
+        "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/";
+
+    // Set the LUIS_APP_ID environment variable 
+    // to df67dcdb-c37d-46af-88e1-8b97951ca1c2, which is the ID
+    // of a public sample application.    
+    var luisAppId = "685c7d5b-9d64-4182-a69d-bb220a7482ae";
+    
+    var utterance = post.get("text");
+    utterance = utterance.substring(utterance, 500);
+
+    // Set the LUIS_SUBSCRIPTION_KEY environment variable
+    // to the value of your Cognitive Services subscription key
+    var queryParams = {
+        "subscription-key": "0dd6f5d766284cfc94828371ecce99a0",
+        "staging": true,
+        "timezoneOffset": "-480",
+        "verbose":  true,
+        "q": utterance
+    };
+
+    var luisRequest =
+        endpoint + luisAppId +
+        '?' + querystring.stringify(queryParams);
+
+    request(luisRequest,
+        function (err,
+            response, body) {
+            if (err)
+                console.log(err);
+            else {
+                var data = JSON.parse(body);
+
+                //console.log(`Query: ${data.query}`);
+                //console.log(`Top Intent: ${data.topScoringIntent.intent}`);
+                console.log('Intents:');
+                console.log(data.topScoringIntent.intent);
+                
+                console.log("Input post: " + JSON.stringify(post));
+                req.object.set("topIntent", data.topScoringIntent.intent);
+                
+                return callback(null, post);            
+                
+            }
+        });
+    
   }
   
   async.parallel([ 
