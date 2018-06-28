@@ -13,6 +13,7 @@ var indexUsers = client.initIndex('dev_users');
 var indexHashtags = client.initIndex('dev_hashtags');
 var indexMeetings = client.initIndex('dev_meeetings');
 var indexProject = client.initIndex('dev_channels');
+var indexWorkspaces = client.initIndex('dev_workspaces');
 
 
 // Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
@@ -263,6 +264,24 @@ Parse.Cloud.afterSave('_User', function(request) {
   });
 });
 
+// Add and Update AlgoliaSearch Workspace object if it's deleted from Parse
+Parse.Cloud.afterSave('WorkSpace', function(request) {
+  
+  // Convert Parse.Object to JSON
+  var objectToSave = request.object.toJSON();
+  
+  // Specify Algolia's objectID with the Parse.Object unique ID
+  objectToSave.objectID = objectToSave.objectId;
+  
+  // Add or update object
+  indexWorkspaces.saveObject(objectToSave, function(err, content) {
+    if (err) {
+      throw err;
+    }
+    console.log('Parse<>Algolia object saved');
+  });
+});
+
 
 
 // Delete AlgoliaSearch post object if it's deleted from Parse
@@ -294,6 +313,22 @@ Parse.Cloud.afterDelete('Project', function(request) {
     console.log('Parse<>Algolia object deleted');
   });
 });
+
+// Delete AlgoliaSearch workspace object if it's deleted from Parse
+Parse.Cloud.afterDelete('WorkSpace', function(request) {
+  
+  // Get Algolia objectID
+  var objectID = request.object.id;
+  
+  // Remove the object from Algolia
+  indexWorkspaces.deleteObject(objectID, function(err, content) {
+    if (err) {
+      throw err;
+    }
+    console.log('Parse<>Algolia object deleted');
+  });
+});
+
 
 
 // Delete AlgoliaSearch user object if it's deleted from Parse
