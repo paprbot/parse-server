@@ -4,16 +4,83 @@ var client = algoliasearch('K3ET7YKLTI', '67085f00b6dbdd989eddc47fd1975c9c');
 var async = require('async');
 var _ = require("underscore");
 var urlRegex = require('url-regex');
-var request = require('request');
+var requestURL = require('request');
 var querystring = require('querystring');
 
 // Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
 var indexPosts = client.initIndex('dev_posts');
 var indexUsers = client.initIndex('dev_users');
-var indexHashtags = client.initIndex('dev_hashtags');
-var indexMeetings = client.initIndex('dev_meeetings');
+var indexMeetings = client.initIndex('dev_meetings');
 var indexProject = client.initIndex('dev_channels');
 var indexWorkspaces = client.initIndex('dev_workspaces');
+
+// cloud API and function to index and import all users from Parse to AlgoliaSearch indexUsers
+Parse.Cloud.define("indexCollection", function(request, response) {
+  
+  var objectsToIndex = [];
+  //Create a new query for User collection in Parse
+  
+  var collection = request.params.collection;
+  var index;
+  var query = new Parse.Query(collection); 
+  query.limit(1000); // limit to at most 1000 results
+  
+  console.log('collection: ' + request.params.collection);
+  
+  switch (collection) {
+    case "Post":
+        index = indexPosts;
+        query.include( ["user", "workspace", "project"] );
+        query.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
+
+        break;
+    case "_User":
+        index = indexUsers;
+
+        break;
+    case "Project":
+        index = indexProject;
+        query.include( ["user", "workspace", "category"] );
+
+        break;
+    case "Meeting":
+        index = indexMeetings;
+
+        break;
+    case "WorkSpace":
+        index = indexWorkspaces;
+
+        break;
+    default:
+        response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Project, Meeting");
+  }; 
+  
+  // Find all items
+  query.find({
+    success: function(objects) {
+      // prepare objects to index from objects
+      objectsToIndex = objects.map(function(object) {
+        // convert to regular key/value JavaScript object
+        object = object.toJSON();
+        // Specify Algolia's objectID with the Parse.Object unique ID
+        object.objectID = object.objectId;
+        return object;
+      });
+      // Add or update new objects
+      index.saveObjects(objectsToIndex, function(err, content) {
+        if (err) {
+          throw err;
+        }
+        console.log('Parse<>Algolia import done');
+        response.success("Imported the following collection: " + collection);
+      });
+    },
+    error: function(err) {
+      throw err;
+    }
+  });
+  
+});
 
 
 // Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
@@ -92,7 +159,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         endpoint + luisAppId +
         '?' + querystring.stringify(queryParams);
 
-    request(luisRequest,
+    requestURL(luisRequest,
         function (err,
             response, body) {
             if (err)
@@ -151,25 +218,52 @@ Parse.Cloud.afterSave('Post', function(request, response) {
   
   queryPost.first({
     success: function(post) {
-      // Successfully retrieved the object.
-      console.log("ObjectToSave: " + JSON.stringify(post));
       
-      // Convert Parse.Object to JSON
-      post = post.toJSON();
-      
-      // Specify Algolia's objectID with the Parse.Object unique ID
-      post.objectID = post.objectId;
-      
-      // Add or update object
-      indexPosts.saveObject(post, function(err, content) {
-        if (err) {
-          throw err;
-        }
-        console.log('Parse<>Algolia object saved');
-        response.success(); 
+      function prepIndex (callback) {
         
-      });
+        // Successfully retrieved the object.
+        console.log("ObjectToSave: " + JSON.stringify(post));
+        
+        // Convert Parse.Object to JSON
+        post = post.toJSON();
+        
+        // Specify Algolia's objectID with the Parse.Object unique ID
+        post.objectID = post.objectId;
+        
+        return callback(null, post);
+        
+      };
       
+            
+     function addObjectAlgolia (post, callback) {
+        
+         console.log("objectToSave: "+ JSON.stringify(post)); 
+        
+         // Add or update object
+        indexPosts.saveObject(post, function(err, content) {
+          if (err) {
+            throw err;
+          }
+          console.log('Parse<>Algolia object saved');
+          return callback(null, post);
+          
+        });
+          
+      };
+      
+      async.waterfall([ 
+      async.apply(prepIndex),
+      async.apply(addObjectAlgolia)
+      
+      ], function (err, post) {
+            if (err) {
+                response.error(err);
+            }
+    
+            console.log("final meeting: " + JSON.stringify(post));
+            response.success();
+      });
+     
     },
     error: function(error) {
       alert("Error: " + error.code + " " + error.message);
@@ -178,6 +272,155 @@ Parse.Cloud.afterSave('Post', function(request, response) {
   
   
 });
+
+
+// Add and Update AlgoliaSearch meetings object if it's deleted from Parse
+/*Parse.Cloud.afterSave('Meeting', function(req, response) {
+  
+  var objectsToIndex = [];
+  
+  // Convert Parse.Object to JSON
+  var meetingObject = req.object.toJSON();
+  var meetingURL = meetingObject.MeetingJson.url;
+  //console.log("meetingURL: " + meetingURL);
+  
+  function getMeetingTranscript (callback) { 
+    
+    console.log("req: " + JSON.stringify(req));
+ 
+    //console.log("url: " + JSON.stringify(urls));
+    
+    console.log("meetingObject url: " + JSON.stringify(meetingObject.MeetingJson.url));
+    
+    
+    /*Parse.Cloud.httpRequest({ url: req.object.MeetingJson() }).then(function(response) {
+      // The file contents are in response.buffer.
+      console.log("meetingURLResponse: "+ JSON.stringify(response));
+     
+      
+      objectsToIndex = response.IBMjson.results;
+              
+      return callback(null, objectsToIndex);
+     
+      
+    });
+    
+    requestURL({
+        url: meetingURL,
+        json: true
+    }, function (error, resp, body) {
+         
+        console.log("error: " + error);
+        console.log("response: " + JSON.stringify(resp));
+        console.log("body: " + JSON.stringify(body));
+        
+        if (!error && resp.statusCode === 200) {
+              console.log("body: " + JSON.stringify(body)); // Print the json response
+              
+              objectsToIndex = body.IBMjson.results;
+              
+              return callback(null, objectsToIndex);
+
+        }
+    });
+   
+    
+  };
+ 
+  function prepIndex (objectsToIndex, callback) { 
+ 
+    // Specify Algolia's objectID with the Parse.Object unique ID
+    
+    console.log("objectsToIndex: " + JSON.stringify(objectsToIndex));
+    
+    
+    // prepare objects to index from users
+    /*objectsToIndex = objectsToIndex.map(function(object) {
+      // convert to regular key/value JavaScript object
+      //object = JSON.stringify(object);
+      // Specify Algolia's objectID with the Parse.Object unique ID
+      //object = object.alternatives;
+
+      object['ConferenceID'] = req.object.ConferenceID;
+      object['MeetingEvents'] = req.object.MeetingEvents;
+      object['MeetingInfo'] = req.object.MeetingInfo;
+      object['meetingID'] = req.object.objectId;
+      object['FullMeetingURL'] = req.object.FullMeetingURL;
+      
+      console.log("object: " + JSON.stringify(object));
+      
+      //object = JSON.parse(object);
+      
+      return object;
+    });
+      
+    //console.log("objectID: " + meetingObject.objectId);
+    //console.log("objectID: " + meetingObject.user.objectId);
+    
+    //objectsToIndex = objectsToIndex.results;
+    
+    async.forEach(objectsToIndex, function (meetingUtterance, callback){ 
+      
+        meetingUtterance = meetingUtterance.alternatives;
+        
+        console.log("meetingUtterance: "+ JSON.stringify(meetingUtterance)); // print the key
+        //var updatedUtterance = meetingUtterance.toJSON();
+        console.log("ConferenceID: " + JSON.stringify(meetingObject.ConferenceID));
+        console.log("MeetingObject: " + JSON.stringify(meetingObject));
+        
+        meetingUtterance['ConferenceID'] = meetingObject.ConferenceID;
+        meetingUtterance['MeetingEvents'] = meetingObject.MeetingEvents;
+        meetingUtterance['MeetingInfo'] = meetingObject.MeetingInfo;
+        meetingUtterance['meetingID'] = meetingObject.objectId;
+        meetingUtterance['FullMeetingURL'] = meetingObject.FullMeetingURL;
+        meetingUtterance['objectID'] = meetingUtterance.AternativeID;
+        
+        console.log("meetingUtterance: "+ JSON.stringify(meetingUtterance));
+        
+        // tell async that that particular element of the iterator is done
+        callback(null, meetingUtterance); 
+    
+    }, function(err, meetingUtterance) {
+        console.log('iterating done: ' + JSON.stringify(objectsToIndex));
+        return meetingUtterance;
+    });  
+    
+    return callback(null, objectsToIndex);
+    
+  };
+  
+  function addObjectsAlgolia (objectsToIndex, callback) {
+      
+     console.log("objectToIndex2: "+ JSON.stringify(objectsToIndex)); 
+    
+     indexMeetings.saveObjects(objectsToIndex, function(err, content) {
+        if (err) {
+          throw err;
+        }
+        console.log('Parse<>Algolia objects saved');
+        
+        return callback(null, objectsToIndex);
+        
+      });
+      
+  };
+    
+   async.waterfall([ 
+    async.apply(getMeetingTranscript),
+    async.apply(prepIndex),
+    async.apply(addObjectsAlgolia)
+    
+  ], function (err, objectsToIndex) {
+        if (err) {
+            response.error(err);
+        }
+
+        console.log("final meeting: " + JSON.stringify(objectsToIndex));
+        response.success();
+    });
+  
+  
+});*/
 
 
 // Add and Update AlgoliaSearch user object if it's deleted from Parse
@@ -313,6 +556,139 @@ Parse.Cloud.afterDelete('Project', function(request) {
     console.log('Parse<>Algolia object deleted');
   });
 });
+
+
+/*
+// Delete AlgoliaSearch meetings object if it's deleted from Parse
+Parse.Cloud.afterDelete('Meeting', function(request) {
+  
+  // Get Algolia objectID
+  var meetingID = request.object.id;
+
+  var objectsToIndex = [];
+  var objectsID = [];
+  
+  // Convert Parse.Object to JSON
+  var meetingObject = request.object.toJSON();
+  var urls = meetingObject.FullMeetingJSON;
+  
+  function getMeetingTranscript (callback) { 
+    
+    console.log("req: " + JSON.stringify(request));
+ 
+    console.log("url: " + JSON.stringify(urls));
+    
+    console.log("meetingObject: " + JSON.stringify(meetingObject));
+
+    requestURL({
+        url: urls,
+        json: true
+    }, function (error, resp, body) {
+         
+        console.log("error: " + error);
+        console.log("response: " + JSON.stringify(resp));
+        console.log("body: " + JSON.stringify(body));
+        
+        if (!error && resp.statusCode === 200) {
+              console.log("body: " + body); // Print the json response
+              
+              objectsToIndex = body;
+              
+              return callback(null, objectsToIndex);
+
+        }
+    });
+   
+    
+  };
+ 
+  // function to get the utterance ID to delete multiple utterances in AlgoliaSearch Meeting Index tied to a given meeting ID
+  function getUtteranceID (objectsToIndex, callback) { 
+ 
+    
+    console.log("objectsToIndex: " + JSON.stringify(objectsToIndex));
+    
+    objectsToIndex = objectsToIndex.results;
+    console.log("results: " + JSON.stringify(objectsToIndex));
+    
+    // prepare objects to index from users
+    /*objectsToIndex = objectsToIndex.map(function(object) {
+      // convert to regular key/value JavaScript object
+      //object = JSON.stringify(object);
+      // Specify Algolia's objectID with the Parse.Object unique ID
+      //object = object.alternatives;
+
+      object['ConferenceID'] = req.object.ConferenceID;
+      object['MeetingEvents'] = req.object.MeetingEvents;
+      object['MeetingInfo'] = req.object.MeetingInfo;
+      object['meetingID'] = req.object.objectId;
+      object['FullMeetingURL'] = req.object.FullMeetingURL;
+      
+      console.log("object: " + JSON.stringify(object));
+      
+      //object = JSON.parse(object);
+      
+      return object;
+    });
+      
+    //console.log("objectID: " + meetingObject.objectId);
+    //console.log("objectID: " + meetingObject.user.objectId);
+    
+    //objectsToIndex = objectsToIndex.results;
+    
+    async.forEach(objectsToIndex, function (meetingUtterance, callback){ 
+      
+        meetingUtterance = meetingUtterance.alternatives;
+        //meetingUtterance["objectID"] = meetingUtterance.AternativeID;
+        
+        console.log("meetingUtteranceID: "+ JSON.stringify(meetingUtterance.objectID)); // print the key
+        
+        objectsID.push(meetingUtterance.objectID);
+          
+        callback(null, objectsID); 
+    
+    }, function(err, objectsID) {
+        console.log('iterating done: ' + JSON.stringify(objectsToIndex));
+        return objectsID;
+    });  
+    
+    return callback(null, objectsID);
+    
+  };
+  
+  function deleteObjectsAlgolia (objectsID, callback) {
+      
+   console.log("objectToIndex2: "+ JSON.stringify(objectsID)); 
+  
+     // Remove the object from Algolia
+     // todo need to filter and only query the utterances with MeetingID to optimize performance
+    indexMeetings.deleteObjects(objectsID, function(err, content) {
+      if (err) {
+        throw err;
+      }
+      console.log('Parse<>Algolia object deleted: ' + JSON.stringify(content));
+    });
+    
+    return callback(null, objectsID);
+      
+  };
+    
+   async.waterfall([ 
+    async.apply(getMeetingTranscript),
+    async.apply(getUtteranceID),
+    async.apply(deleteObjectsAlgolia)
+    
+  ], function (err, objectsID) {
+        if (err) {
+            throw err;
+        }
+
+        console.log("deleted the following meeting utterances: " + JSON.stringify(objectsID));
+
+    });
+  
+  
+});*/
 
 // Delete AlgoliaSearch workspace object if it's deleted from Parse
 Parse.Cloud.afterDelete('WorkSpace', function(request) {
