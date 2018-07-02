@@ -58,21 +58,49 @@ Parse.Cloud.define("indexCollection", function(request, response) {
   // Find all items
   query.find({
     success: function(objects) {
-      // prepare objects to index from objects
-      objectsToIndex = objects.map(function(object) {
-        // convert to regular key/value JavaScript object
-        object = object.toJSON();
-        // Specify Algolia's objectID with the Parse.Object unique ID
-        object.objectID = object.objectId;
-        return object;
-      });
-      // Add or update new objects
-      index.saveObjects(objectsToIndex, function(err, content) {
-        if (err) {
-          throw err;
-        }
-        console.log('Parse<>Algolia import done');
-        response.success("Imported the following collection: " + collection);
+      
+      function prepIndex (callback) {
+        
+        // prepare objects to index from objects
+        objectsToIndex = objects.map(function(object) {
+          // convert to regular key/value JavaScript object
+          object = object.toJSON();
+          // Specify Algolia's objectID with the Parse.Object unique ID
+          object.objectID = object.objectId;
+          return object;
+        });
+        
+        return callback(null, objectsToIndex);
+        
+      };
+      
+            
+     function addObjectsAlgolia (objectsToIndex, callback) {
+        
+         console.log("objectToSave: "+ JSON.stringify(objectsToIndex)); 
+        
+        // Add or update new objects
+        index.saveObjects(objectsToIndex, function(err, content) {
+          if (err) {
+            throw err;
+          }
+          console.log('Parse<>Algolia import done');
+          response.success("Imported the following collection: " + collection);
+        });
+          
+      };
+      
+      async.waterfall([ 
+      async.apply(prepIndex),
+      async.apply(addObjectsAlgolia)
+      
+      ], function (err, post) {
+            if (err) {
+                response.error(err);
+            }
+    
+            console.log("final meeting: " + JSON.stringify(post));
+            response.success();
       });
     },
     error: function(err) {
