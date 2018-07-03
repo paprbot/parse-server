@@ -303,38 +303,48 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
 
 // Add and Update AlgoliaSearch meetings object if it's deleted from Parse
-/*Parse.Cloud.afterSave('Meeting', function(req, response) {
+Parse.Cloud.afterSave('Meeting', function(req, response) {
   
   var objectsToIndex = [];
   
   // Convert Parse.Object to JSON
-  var meetingObject = req.object.toJSON();
-  var meetingURL = meetingObject.MeetingJson.url;
-  //console.log("meetingURL: " + meetingURL);
+  var meeting = req.object.toJSON();
+  //var meetingURL = req.object.MeetingJson.url;
+  console.log("meetingObject1: " + JSON.stringify(meeting));
   
-  function getMeetingTranscript (callback) { 
+  function getMeetingObject (callback) {
     
-    console.log("req: " + JSON.stringify(req));
- 
-    //console.log("url: " + JSON.stringify(urls));
-    
-    console.log("meetingObject url: " + JSON.stringify(meetingObject.MeetingJson.url));
-    
-    
-    /*Parse.Cloud.httpRequest({ url: req.object.MeetingJson() }).then(function(response) {
-      // The file contents are in response.buffer.
-      console.log("meetingURLResponse: "+ JSON.stringify(response));
-     
-      
-      objectsToIndex = response.IBMjson.results;
-              
-      return callback(null, objectsToIndex);
-     
-      
+    meetingObject = Parse.Object.extend("Meeting");
+    var query = new Parse.Query(meetingObject);
+    query.get(req.object.id, {
+      success: function(meetingObject) {
+        // The object was retrieved successfully.
+        console.log("meetingObject2: " + JSON.stringify(meetingObject));  
+            
+        return callback(null, meetingObject);
+        
+      },
+      error: function(object, error) {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        response.error("error: " + error);
+        
+      }
     });
     
+  };
+  
+  function getMeetingTranscript (meetingObject, callback) { 
+    
+    console.log("\n meetingObject3: " + JSON.stringify(meetingObject));
+ 
+    //console.log("\n Meetingurl: " + JSON.stringify(meetingObject.MeetingJson.url));
+    var meetingFile = meetingObject.get("MeetingJson");
+    console.log("MeetingFile: " + JSON.stringify(meetingFile));
+    console.log("MeetingURL: " + JSON.stringify(meetingFile.url()) );
+    
     requestURL({
-        url: meetingURL,
+        url: meetingFile.url(),
         json: true
     }, function (error, resp, body) {
          
@@ -360,6 +370,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     // Specify Algolia's objectID with the Parse.Object unique ID
     
     console.log("objectsToIndex: " + JSON.stringify(objectsToIndex));
+    //objectsToIndex = objectsToIndex.IBMjson.results;
     
     
     // prepare objects to index from users
@@ -380,7 +391,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
       //object = JSON.parse(object);
       
       return object;
-    });
+    });*/
       
     //console.log("objectID: " + meetingObject.objectId);
     //console.log("objectID: " + meetingObject.user.objectId);
@@ -391,19 +402,19 @@ Parse.Cloud.afterSave('Post', function(request, response) {
       
         meetingUtterance = meetingUtterance.alternatives;
         
-        console.log("meetingUtterance: "+ JSON.stringify(meetingUtterance)); // print the key
+        console.log("meetingUtterance1: "+ JSON.stringify(meetingUtterance)); // print the key
         //var updatedUtterance = meetingUtterance.toJSON();
-        console.log("ConferenceID: " + JSON.stringify(meetingObject.ConferenceID));
-        console.log("MeetingObject: " + JSON.stringify(meetingObject));
+        console.log("ConferenceID: " + JSON.stringify(meeting.ConferenceID));
+        console.log("MeetingObject: " + JSON.stringify(meeting));
         
-        meetingUtterance['ConferenceID'] = meetingObject.ConferenceID;
-        meetingUtterance['MeetingEvents'] = meetingObject.MeetingEvents;
-        meetingUtterance['MeetingInfo'] = meetingObject.MeetingInfo;
-        meetingUtterance['meetingID'] = meetingObject.objectId;
-        meetingUtterance['FullMeetingURL'] = meetingObject.FullMeetingURL;
+        meetingUtterance['ConferenceID'] = meeting.ConferenceID;
+        meetingUtterance['MeetingEvents'] = meeting.MeetingEvents;
+        meetingUtterance['MeetingInfo'] = meeting.MeetingInfo;
+        meetingUtterance['meetingID'] = meeting.objectId;
+        meetingUtterance['FullMeetingURL'] = meeting.FullMeetingURL;
         meetingUtterance['objectID'] = meetingUtterance.AternativeID;
         
-        console.log("meetingUtterance: "+ JSON.stringify(meetingUtterance));
+        console.log("meetingUtterance2: "+ JSON.stringify(meetingUtterance));
         
         // tell async that that particular element of the iterator is done
         callback(null, meetingUtterance); 
@@ -434,6 +445,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
   };
     
    async.waterfall([ 
+    async.apply(getMeetingObject),
     async.apply(getMeetingTranscript),
     async.apply(prepIndex),
     async.apply(addObjectsAlgolia)
@@ -448,7 +460,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     });
   
   
-});*/
+});
 
 
 // Add and Update AlgoliaSearch user object if it's deleted from Parse
