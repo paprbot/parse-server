@@ -370,8 +370,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
     // Specify Algolia's objectID with the Parse.Object unique ID
     
     console.log("objectsToIndex: " + JSON.stringify(objectsToIndex));
-    //objectsToIndex = objectsToIndex.IBMjson.results;
-    
+   
     
     // prepare objects to index from users
     /*objectsToIndex = objectsToIndex.map(function(object) {
@@ -400,7 +399,10 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
     
     async.forEach(objectsToIndex, function (meetingUtterance, callback){ 
       
-        meetingUtterance = meetingUtterance.alternatives;
+        console.log("meetingUtterance: " + JSON.stringify(meetingUtterance));
+
+      
+        //meetingUtterance = meetingUtterance.alternatives[0];
         
         console.log("meetingUtterance1: "+ JSON.stringify(meetingUtterance)); // print the key
         //var updatedUtterance = meetingUtterance.toJSON();
@@ -412,16 +414,16 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
         meetingUtterance['MeetingInfo'] = meeting.MeetingInfo;
         meetingUtterance['meetingID'] = meeting.objectId;
         meetingUtterance['FullMeetingURL'] = meeting.FullMeetingURL;
-        meetingUtterance['objectID'] = meetingUtterance.AternativeID;
+        meetingUtterance['objectID'] = meetingUtterance.alternatives[0].AternativeID;
         
         console.log("meetingUtterance2: "+ JSON.stringify(meetingUtterance));
         
         // tell async that that particular element of the iterator is done
         callback(null, meetingUtterance); 
     
-    }, function(err, meetingUtterance) {
+    }, function(err) {
         console.log('iterating done: ' + JSON.stringify(objectsToIndex));
-        return meetingUtterance;
+
     });  
     
     return callback(null, objectsToIndex);
