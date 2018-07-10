@@ -14,6 +14,246 @@ var indexMeetings = client.initIndex('dev_meetings');
 var indexProject = client.initIndex('dev_channels');
 var indexWorkspaces = client.initIndex('dev_workspaces');
 
+// cloud API and function to test query performance of AlgoliaSearch versus Parse
+Parse.Cloud.define("testQueryPerformance", function(request, response) {
+  
+  var time = new Date().getTime();
+  
+  console.log("timeFirst: " + time);
+  
+  //Create a new query for User collection in Parse 
+  var collection = request.params.collection;
+  var search = request.params.search;
+  var index;
+  
+  var query = new Parse.Query(collection); 
+  
+  console.log('collection: ' + request.params.collection);
+  
+  switch (collection) {
+    case "Post":
+        index = indexPosts;
+        query.include( ["user", "workspace", "project"] );
+        query.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "project.name", "project.type", "project.archive"]); 
+        
+        break;
+    case "_User":
+        index = indexUsers;
+
+        break;
+    case "Project":
+        index = indexProject;
+        query.include( ["user", "workspace", "category"] );
+
+        break;
+    case "Meeting":
+        index = indexMeetings;
+
+        break;
+    case "WorkSpace":
+        index = indexWorkspaces;
+
+        break;
+    default:
+        response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Project, Meeting");
+  }; 
+  
+  function queryLarge (callback) {
+    
+      if (search == 'Parse') {
+        
+        query.limit(1000); // limit to at most 1000 results
+          
+        // Find all items
+        query.find({
+          success: function(objects) {
+            
+            //console.log("queryLarge: " + JSON.stringify(objects));
+            
+            var timeLarge = new Date().getTime();
+            
+            timeLarge = timeLarge - time;
+              
+            console.log("time queryLarge: " + timeLarge);
+      
+            return callback(null, query);
+                       
+          },
+          error: function(err) {
+            throw err;
+          }
+        });
+      
+      }
+      
+      else if (search == 'Algolia') {
+        
+        index.search(
+          {
+            query: '*',
+            hitsPerPage: 1000,
+          },
+          function searchDone(err, content) {
+            if (err) throw err;
+        
+            var timeLarge = new Date().getTime();
+            
+            timeLarge = timeLarge - time;
+              
+            console.log("time queryLarge: " + timeLarge);
+      
+            return callback(null, query);
+          }
+        );
+        
+        
+      }
+      
+      else {
+        
+        response.error("error: this search option is not available, please use algolia or parse");
+      }
+              
+        
+  };
+            
+   function querySmall (callback) {
+     
+       if (search == 'Parse') {
+        
+          query.limit(20); // limit to at most 20 results
+          
+          // Find all items
+            query.find({
+              success: function(objects) {
+                
+                var timeSmall = new Date().getTime();
+                
+                timeSmall = timeSmall - time;
+                  
+                console.log("time querySmall: " + timeSmall);
+          
+                return callback(null, query);
+                           
+              },
+              error: function(err) {
+                throw err;
+              }
+            });
+       }
+            
+      else if (search == 'Algolia') {
+          
+          index.search(
+            {
+              query: '*',
+              hitsPerPage: 20,
+            },
+            function searchDone(err, content) {
+              if (err) throw err;
+          
+              var timeSmall = new Date().getTime();
+                
+              timeSmall = timeSmall - time;
+                
+              console.log("time querySmall: " + timeSmall);
+        
+              return callback(null, query);
+            }
+          );
+          
+          
+        }
+        
+      else {
+        
+        response.error("error: this search option is not available, please use algolia or parse");
+      }
+           
+        
+    };
+    
+    function queryMedium (callback) {
+      
+       if (search == 'Parse') {
+      
+        query.limit(100); // limit to at most 100 results
+        
+        // Find all items
+          query.find({
+            success: function(objects) {
+              
+              //console.log("queryMedium: " + JSON.stringify(objects));
+              
+              var timeMedium = new Date().getTime();
+              
+              timeMedium = timeMedium - time;
+  
+              console.log("time queryMedium: " + timeMedium);
+        
+              return callback(null, query);
+                         
+            },
+            error: function(err) {
+              throw err;
+            }
+          });
+       }
+          
+      else if (search == 'Algolia') {
+        
+        index.search(
+          {
+            query: '*',
+            hitsPerPage: 100,
+          },
+          function searchDone(err, content) {
+            if (err) throw err;
+        
+            var timeMedium = new Date().getTime();
+              
+            timeMedium = timeMedium - time;
+
+            console.log("time queryMedium: " + timeMedium);
+            
+            return callback(null, query);
+          }
+        );
+        
+        
+      }
+        
+      else {
+        
+        response.error("error: this search option is not available, please use algolia or parse");
+      }
+        
+    };
+    
+    async.series([ 
+    async.apply(querySmall),
+    async.apply(queryMedium), 
+    async.apply(queryLarge)
+    
+    ], function (err, query) {
+          if (err) {
+              response.error(err);
+          }
+  
+          var timeFinal = new Date().getTime();
+          
+          timeFinal = timeFinal - time;
+  
+          console.log("time Final: " + timeFinal);
+          
+          response.success("time Final: " + timeFinal);
+    });
+  
+  
+});
+
+
+
 // cloud API and function to index and import all users from Parse to AlgoliaSearch indexUsers
 Parse.Cloud.define("indexCollection", function(request, response) {
   
@@ -31,8 +271,8 @@ Parse.Cloud.define("indexCollection", function(request, response) {
     case "Post":
         index = indexPosts;
         query.include( ["user", "workspace", "project"] );
-        query.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
-
+        query.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "project.name", "project.type", "project.archive"]); 
+        
         break;
     case "_User":
         index = indexUsers;
@@ -237,7 +477,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
   //var Post = Parse.Object.extend("Post");
   var queryPost = new Parse.Query("Post");
   queryPost.include( ["user", "workspace", "project"] );
-  queryPost.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
+  queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
   queryPost.equalTo("objectId", objectToSave.objectId);
   
   console.log("Request: " + JSON.stringify(request));
@@ -314,7 +554,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
   
   function getMeetingObject (callback) {
     
-    meetingObject = Parse.Object.extend("Meeting");
+    var meetingObject = Parse.Object.extend("Meeting");
     var query = new Parse.Query(meetingObject);
     query.get(req.object.id, {
       success: function(meetingObject) {
@@ -414,7 +654,8 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
         meetingUtterance['MeetingInfo'] = meeting.MeetingInfo;
         meetingUtterance['meetingID'] = meeting.objectId;
         meetingUtterance['FullMeetingURL'] = meeting.FullMeetingURL;
-        meetingUtterance['objectID'] = meetingUtterance.alternatives[0].AternativeID;
+        meetingUtterance['FullMeetingText'] = meeting.FullMeetingText;
+        meetingUtterance['objectID'] = meetingUtterance.alternatives[0].objectID;
         
         console.log("meetingUtterance2: "+ JSON.stringify(meetingUtterance));
         
@@ -600,30 +841,52 @@ Parse.Cloud.afterDelete('Project', function(request) {
 });
 
 
-/*
+
 // Delete AlgoliaSearch meetings object if it's deleted from Parse
-Parse.Cloud.afterDelete('Meeting', function(request) {
+/*Parse.Cloud.afterDelete('Meeting', function(request, response) {
   
   // Get Algolia objectID
-  var meetingID = request.object.id;
+  //var meetingID = request.object.id;
 
   var objectsToIndex = [];
   var objectsID = [];
   
-  // Convert Parse.Object to JSON
-  var meetingObject = request.object.toJSON();
-  var urls = meetingObject.FullMeetingJSON;
+  function getMeetingObject (callback) {
+    
+    var meetingObject = Parse.Object.extend("Meeting");
+    var query = new Parse.Query(meetingObject);
+    console.log("objectId: " + JSON.stringify(request.object.id));  
+            
+    query.get(request.object.id, {
+      success: function(meetingObject) {
+        // The object was retrieved successfully.
+        console.log("meetingObject2: " + JSON.stringify(meetingObject));  
+            
+        return callback(null, meetingObject);
+        
+      },
+      error: function(object, error) {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        response.error("error: " + error);
+        
+      }
+    });
+    
+  };
   
-  function getMeetingTranscript (callback) { 
+  function getMeetingTranscript (meetingObject, callback) { 
     
     console.log("req: " + JSON.stringify(request));
- 
-    console.log("url: " + JSON.stringify(urls));
+     
+    var meetingFile = meetingObject.get("MeetingJson");
+    console.log("MeetingFile: " + JSON.stringify(meetingFile));
+    console.log("MeetingURL: " + JSON.stringify(meetingFile.url()) );
     
     console.log("meetingObject: " + JSON.stringify(meetingObject));
 
     requestURL({
-        url: urls,
+        url: meetingFile.url(),
         json: true
     }, function (error, resp, body) {
          
@@ -634,7 +897,7 @@ Parse.Cloud.afterDelete('Meeting', function(request) {
         if (!error && resp.statusCode === 200) {
               console.log("body: " + body); // Print the json response
               
-              objectsToIndex = body;
+              objectsToIndex = body.IBMjson.results;
               
               return callback(null, objectsToIndex);
 
@@ -649,30 +912,7 @@ Parse.Cloud.afterDelete('Meeting', function(request) {
  
     
     console.log("objectsToIndex: " + JSON.stringify(objectsToIndex));
-    
-    objectsToIndex = objectsToIndex.results;
-    console.log("results: " + JSON.stringify(objectsToIndex));
-    
-    // prepare objects to index from users
-    /*objectsToIndex = objectsToIndex.map(function(object) {
-      // convert to regular key/value JavaScript object
-      //object = JSON.stringify(object);
-      // Specify Algolia's objectID with the Parse.Object unique ID
-      //object = object.alternatives;
-
-      object['ConferenceID'] = req.object.ConferenceID;
-      object['MeetingEvents'] = req.object.MeetingEvents;
-      object['MeetingInfo'] = req.object.MeetingInfo;
-      object['meetingID'] = req.object.objectId;
-      object['FullMeetingURL'] = req.object.FullMeetingURL;
-      
-      console.log("object: " + JSON.stringify(object));
-      
-      //object = JSON.parse(object);
-      
-      return object;
-    });
-      
+        
     //console.log("objectID: " + meetingObject.objectId);
     //console.log("objectID: " + meetingObject.user.objectId);
     
@@ -680,8 +920,8 @@ Parse.Cloud.afterDelete('Meeting', function(request) {
     
     async.forEach(objectsToIndex, function (meetingUtterance, callback){ 
       
-        meetingUtterance = meetingUtterance.alternatives;
-        //meetingUtterance["objectID"] = meetingUtterance.AternativeID;
+        //meetingUtterance = meetingUtterance.alternatives;
+        //meetingUtterance['objectID'] = meetingUtterance.alternatives[0].AternativeID;
         
         console.log("meetingUtteranceID: "+ JSON.stringify(meetingUtterance.objectID)); // print the key
         
@@ -716,6 +956,7 @@ Parse.Cloud.afterDelete('Meeting', function(request) {
   };
     
    async.waterfall([ 
+    async.apply(getMeetingObject),
     async.apply(getMeetingTranscript),
     async.apply(getUtteranceID),
     async.apply(deleteObjectsAlgolia)
