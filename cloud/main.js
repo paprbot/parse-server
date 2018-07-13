@@ -6,6 +6,7 @@ var _ = require("underscore");
 var urlRegex = require('url-regex');
 var requestURL = require('request');
 var querystring = require('querystring');
+var process = require('process');
 
 // Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
 var indexPosts = client.initIndex('dev_posts');
@@ -14,10 +15,16 @@ var indexMeetings = client.initIndex('dev_meetings');
 var indexProject = client.initIndex('dev_channels');
 var indexWorkspaces = client.initIndex('dev_workspaces');
 
+
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
 Parse.Cloud.define("testQueryPerformance", function(request, response) {
   
-  var time = new Date().getTime();
+  //var time = new Date().getTime();
+  
+  var NS_PER_SEC = 1e9;
+  const MS_PER_NS = 1e-6;
+  var time = process.hrtime();
+
   
   console.log("timeFirst: " + time);
   
@@ -70,11 +77,16 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
             
             //console.log("queryLarge: " + JSON.stringify(objects));
             
-            var timeLarge = new Date().getTime();
+            /*var timeLarge = new Date().getTime();
             
             timeLarge = timeLarge - time;
               
-            console.log("time queryLarge: " + timeLarge);
+            console.log("time queryLarge: " + timeLarge);*/
+            
+            // using process.hrtime since it's more precise 
+            var diffLarge = process.hrtime(time);
+            
+            console.log(`queryLarge took ${(diffLarge[0] * NS_PER_SEC + diffLarge[1])  * MS_PER_NS} milliseconds`);
       
             return callback(null, query);
                        
@@ -96,11 +108,16 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
           function searchDone(err, content) {
             if (err) throw err;
         
-            var timeLarge = new Date().getTime();
+            /*var timeLarge = new Date().getTime();
             
             timeLarge = timeLarge - time;
               
-            console.log("time queryLarge: " + timeLarge);
+            console.log("time queryLarge: " + timeLarge);*/
+            
+            // using process.hrtime since it's more precise 
+            var diffLarge = process.hrtime(time);
+            
+            console.log(`queryLarge took ${(diffLarge[0] * NS_PER_SEC + diffLarge[1])  * MS_PER_NS} milliseconds`);
       
             return callback(null, query);
           }
@@ -127,11 +144,17 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
             query.find({
               success: function(objects) {
                 
-                var timeSmall = new Date().getTime();
+                /*var timeSmall = new Date().getTime();
                 
                 timeSmall = timeSmall - time;
                   
-                console.log("time querySmall: " + timeSmall);
+                console.log("time querySmall: " + timeSmall);*/
+                
+                // using process.hrtime since it's more precise 
+                var diffSmall = process.hrtime(time);
+              
+                console.log(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
+
           
                 return callback(null, query);
                            
@@ -152,11 +175,16 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
             function searchDone(err, content) {
               if (err) throw err;
           
-              var timeSmall = new Date().getTime();
+              /*var timeSmall = new Date().getTime();
                 
               timeSmall = timeSmall - time;
                 
-              console.log("time querySmall: " + timeSmall);
+              console.log("time querySmall: " + timeSmall);*/
+              
+              // using process.hrtime since it's more precise 
+              var diffSmall = process.hrtime(time);
+            
+              console.log(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
         
               return callback(null, query);
             }
@@ -185,11 +213,17 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
               
               //console.log("queryMedium: " + JSON.stringify(objects));
               
-              var timeMedium = new Date().getTime();
+              /*var timeMedium = new Date().getTime();
               
               timeMedium = timeMedium - time;
   
-              console.log("time queryMedium: " + timeMedium);
+              console.log("time queryMedium: " + timeMedium);*/
+              
+             // using process.hrtime since it's more precise 
+              var diffMedium = process.hrtime(time);
+            
+              console.log(`queryMedium took ${(diffMedium[0] * NS_PER_SEC + diffMedium[1])  * MS_PER_NS} milliseconds`);
+
         
               return callback(null, query);
                          
@@ -210,11 +244,16 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
           function searchDone(err, content) {
             if (err) throw err;
         
-            var timeMedium = new Date().getTime();
+            /*var timeMedium = new Date().getTime();
               
             timeMedium = timeMedium - time;
 
-            console.log("time queryMedium: " + timeMedium);
+            console.log("time queryMedium: " + timeMedium);*/
+            
+            // using process.hrtime since it's more precise 
+            var diffMedium = process.hrtime(time);
+          
+            console.log(`queryMedium took ${(diffMedium[0] * NS_PER_SEC + diffMedium[1])  * MS_PER_NS} milliseconds`);
             
             return callback(null, query);
           }
@@ -240,13 +279,23 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
               response.error(err);
           }
   
-          var timeFinal = new Date().getTime();
+          /*var timeFinal = new Date().getTime();
           
           timeFinal = timeFinal - time;
   
           console.log("time Final: " + timeFinal);
           
-          response.success("time Final: " + timeFinal);
+          response.success("time Final: " + timeFinal);*/
+          
+          // using process.hrtime since it's more precise 
+          var diff = process.hrtime(time);
+        
+          console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+          
+          response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+                   
+              
+                
     });
   
   
