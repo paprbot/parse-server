@@ -65,80 +65,12 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
         response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Project, Meeting");
   }; 
   
-  function queryLarge (callback) {
-    
-      if (search == 'Parse') {
-        
-        query.limit(1000); // limit to at most 1000 results
-          
-        // Find all items
-        query.find({
-          success: function(objects) {
-            
-            //console.log("queryLarge: " + JSON.stringify(objects));
-            
-            /*var timeLarge = new Date().getTime();
-            
-            timeLarge = timeLarge - time;
-              
-            console.log("time queryLarge: " + timeLarge);*/
-            
-            // using process.hrtime since it's more precise 
-            var diffLarge = process.hrtime(time);
-            
-            console.log(`queryLarge took ${(diffLarge[0] * NS_PER_SEC + diffLarge[1])  * MS_PER_NS} milliseconds`);
-      
-            return callback(null, query);
-                       
-          },
-          error: function(err) {
-            throw err;
-          }
-        });
-      
-      }
-      
-      else if (search == 'Algolia') {
-        
-        index.search(
-          {
-            query: '*',
-            hitsPerPage: 1000,
-          },
-          function searchDone(err, content) {
-            if (err) throw err;
-        
-            /*var timeLarge = new Date().getTime();
-            
-            timeLarge = timeLarge - time;
-              
-            console.log("time queryLarge: " + timeLarge);*/
-            
-            // using process.hrtime since it's more precise 
-            var diffLarge = process.hrtime(time);
-            
-            console.log(`queryLarge took ${(diffLarge[0] * NS_PER_SEC + diffLarge[1])  * MS_PER_NS} milliseconds`);
-      
-            return callback(null, query);
-          }
-        );
-        
-        
-      }
-      
-      else {
-        
-        response.error("error: this search option is not available, please use algolia or parse");
-      }
-              
-        
-  };
             
    function querySmall (callback) {
      
        if (search == 'Parse') {
         
-          query.limit(20); // limit to at most 20 results
+          query.limit(10); // limit to at most 20 results
           
           // Find all items
             query.find({
@@ -170,7 +102,7 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
           index.search(
             {
               query: '*',
-              hitsPerPage: 20,
+              hitsPerPage: 10,
             },
             function searchDone(err, content) {
               if (err) throw err;
@@ -205,7 +137,7 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
       
        if (search == 'Parse') {
       
-        query.limit(100); // limit to at most 100 results
+        query.limit(20); // limit to at most 100 results
         
         // Find all items
           query.find({
@@ -239,7 +171,7 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
         index.search(
           {
             query: '*',
-            hitsPerPage: 100,
+            hitsPerPage: 20,
           },
           function searchDone(err, content) {
             if (err) throw err;
@@ -269,7 +201,76 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
         
     };
     
-    async.series([ 
+      function queryLarge (callback) {
+    
+      if (search == 'Parse') {
+        
+        query.limit(50); // limit to at most 1000 results
+          
+        // Find all items
+        query.find({
+          success: function(objects) {
+            
+            //console.log("queryLarge: " + JSON.stringify(objects));
+            
+            /*var timeLarge = new Date().getTime();
+            
+            timeLarge = timeLarge - time;
+              
+            console.log("time queryLarge: " + timeLarge);*/
+            
+            // using process.hrtime since it's more precise 
+            var diffLarge = process.hrtime(time);
+            
+            console.log(`queryLarge took ${(diffLarge[0] * NS_PER_SEC + diffLarge[1])  * MS_PER_NS} milliseconds`);
+      
+            return callback(null, query);
+                       
+          },
+          error: function(err) {
+            throw err;
+          }
+        });
+      
+      }
+      
+      else if (search == 'Algolia') {
+        
+        index.search(
+          {
+            query: '*',
+            hitsPerPage: 50,
+          },
+          function searchDone(err, content) {
+            if (err) throw err;
+        
+            /*var timeLarge = new Date().getTime();
+            
+            timeLarge = timeLarge - time;
+              
+            console.log("time queryLarge: " + timeLarge);*/
+            
+            // using process.hrtime since it's more precise 
+            var diffLarge = process.hrtime(time);
+            
+            console.log(`queryLarge took ${(diffLarge[0] * NS_PER_SEC + diffLarge[1])  * MS_PER_NS} milliseconds`);
+      
+            return callback(null, query);
+          }
+        );
+        
+        
+      }
+      
+      else {
+        
+        response.error("error: this search option is not available, please use algolia or parse");
+      }
+              
+        
+  };
+    
+    async.parallel([ 
     async.apply(querySmall),
     async.apply(queryMedium), 
     async.apply(queryLarge)
