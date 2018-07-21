@@ -403,10 +403,12 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
 // Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
 Parse.Cloud.beforeSave('Post', function(req, response) {
+  
+  var NS_PER_SEC = 1e9;
+  const MS_PER_NS = 1e-6;
+  var time = process.hrtime();
  
   var post = req.object;
-  var postcount;
-  var user = post.get("user");
   var text = post.get("text");
   var workspace = post.get("workspace");
   console.log("workspace_post: " + JSON.stringify(workspace));
@@ -419,6 +421,11 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
   // Function to count number of posts
   function countPosts (callback) {
     
+      var NS_PER_SEC = 1e9;
+      const MS_PER_NS = 1e-6;
+      var timeCountPosts = process.hrtime();
+      var countPosts_Time; 
+      
       // if there is a post that got added, then increase counter, else ignoremyObject
       if (post.isNew()) {
         
@@ -552,6 +559,11 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
                         
                 post = Post;
                 
+                countPosts_Time = process.hrtime(timeCountPosts);
+              
+                console.log(`querySmall took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
+
+                
                 return callback(null, post);
                 
               },
@@ -560,6 +572,9 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
               // error is a Parse.Error with an error code and message.
               alert('Failed to refresh workspace, with error code: Workspace Save ' + error.message);
               
+              countPosts_Time = process.hrtime(timeCountPosts); 
+              console.log(`querySmall took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
+
               return callback(null, post);
             }
         });
@@ -568,6 +583,9 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         } else {
         
         //post = Post;
+        countPosts_Time = process.hrtime(timeCountPosts); 
+        console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
+
         return callback(null, post);
         
         }
@@ -578,6 +596,9 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
       
       else {
         
+        countPosts_Time = process.hrtime(timeCountPosts); 
+        console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
+ 
         return callback(null, post);
         
       }
@@ -588,7 +609,11 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
   
   // Function to capture hashtags from text posts
   function getHashtags (callback) {
-    
+      var NS_PER_SEC = 1e9;
+      const MS_PER_NS = 1e-6;
+      var timeCountPosts = process.hrtime();
+      var getHashtags_Time;
+      
       var hashtags;
       
        // if there is a post that got added and no hashtags from client then add hashtags
@@ -601,6 +626,10 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
           });
           req.object.set("hashtags", hashtags);
           console.log("getHashtags: " + JSON.stringify(hashtags));
+          
+          getHashtags_Time = process.hrtime(timeCountPosts); 
+          console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
         
           return callback(null, post);
       } 
@@ -616,10 +645,17 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         req.object.set("hashtags", hashtags);
         console.log("getHashtags: " + JSON.stringify(hashtags));
         
+        getHashtags_Time = process.hrtime(timeCountPosts); 
+        console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
         return callback(null, post);
         
       } 
       else {
+        
+        getHashtags_Time = process.hrtime(timeCountPosts); 
+        console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
         
         return callback(null, post);
         
@@ -631,36 +667,120 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
   // Function to capture mentions from text posts
   function getMentions (callback) {
     
-    var mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
-    mentions = _.map(mentions, toLowerCase);
-    mentions = mentions.map(function (mention) {
-      return mention.trim();
-    });
-    req.object.set("mentions", mentions);
-    console.log("getMentions: " + JSON.stringify(mentions));
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var timeCountPosts = process.hrtime();
+    var getMentions_Time;
     
-    return callback(null, post);
+    var mentions;
+      
+       // if there is a post that got added and no mentions from client then add mentions
+      if (post.isNew() && !post.mentions) {
+       
+          mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
+          mentions = _.map(mentions, toLowerCase);
+          mentions = mentions.map(function (mention) {
+            return mention.trim();
+          });
+          req.object.set("mentions", mentions);
+          console.log("getMentions: " + JSON.stringify(mentions));
+          
+          getMentions_Time = process.hrtime(timeCountPosts); 
+          console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+        
+          return callback(null, post);
+      } 
+      
+      // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
+      else if (!post.isNew() && post.dirty("text") && !post.dirty("mentions")) {
+        
+        mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
+        mentions = _.map(mentions, toLowerCase);
+        mentions = mentions.map(function (mention) {
+          return mention.trim();
+        });
+        req.object.set("mentions", mentions);
+        console.log("getMentions: " + JSON.stringify(mentions));
+        
+        getMentions_Time = process.hrtime(timeCountPosts); 
+        console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+        return callback(null, post);
+        
+      } 
+      else {
+        
+        getMentions_Time = process.hrtime(timeCountPosts); 
+        console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+        
+        return callback(null, post);
+        
+      }
+    
   }
   
   // Function to identify if a text post hasURL
   function getURL (callback) {
+    
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var timeCountPosts = process.hrtime();
+    var getURL_Time;
+    
+    var hasurl;
+      
+       // if there is a post that got added and no hasURL from client then add hasURL
+      if (post.isNew() && !post.hasURL) {
+        
+          hasurl = urlRegex().test(text);
+          console.log("hasURL: " + JSON.stringify(hasurl));
+          
+          req.object.set("hasURL", hasurl);
+                 
+          getURL_Time = process.hrtime(timeCountPosts); 
+          console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+        
+          return callback(null, post);
+      } 
+      
+      // if an updated for text field (only) in a post occured, and there was no hasURL from client then get hashtags
+      else if (!post.isNew() && post.dirty("text") && !post.dirty("hasURL")) {
+        
+        hasurl = urlRegex().test(text);
+        console.log("hasURL: " + JSON.stringify(hasurl));
+        
+        req.object.set("hasURL", hasurl);
+        
+        getURL_Time = process.hrtime(timeCountPosts); 
+        console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
 
-    var hasurl = urlRegex().test(text);
-    console.log("hasURL: " + JSON.stringify(hasurl));
+        return callback(null, post);
+        
+      } 
+      else {
+        
+        getURL_Time = process.hrtime(timeCountPosts); 
+        console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+  
+        return callback(null, post);
+        
+      }
     
-    req.object.set("hasURL", hasurl);
-    
-    return callback(null, post);
   }
   
   // Function to get luis.ai topIntent from text post
   function getIntents (callback) {
-
-    // todo need to check if 'text' field was modified on update if not ignore request to get inents
+    
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var timegetIntents = process.hrtime();
+    var getIntents_Time;
     
     var endpoint =
-        "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/";
-
+              "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/";
+      
     // Set the LUIS_APP_ID environment variable 
     // to df67dcdb-c37d-46af-88e1-8b97951ca1c2, which is the ID
     // of a public sample application.    
@@ -678,34 +798,89 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         "verbose":  true,
         "q": utterance
     };
+    
+    var luisRequest;
+      
+       // if there is a post that got added and no topIntent from client then add hasURL
+      if (post.isNew() && !post.topIntent) {
+      
+          luisRequest =
+              endpoint + luisAppId +
+              '?' + querystring.stringify(queryParams);
+      
+          requestURL(luisRequest,
+              function (err,
+                  response, body) {
+                  if (err)
+                      console.log(err);
+                  else {
+                      var data = JSON.parse(body);
+      
+                      //console.log(`Query: ${data.query}`);
+                      //console.log(`Top Intent: ${data.topScoringIntent.intent}`);
+                      if (data.topScoringIntent) {
+                        
+                        console.log('Intent:'+ data.topScoringIntent.intent);
+                        req.object.set("topIntent", data.topScoringIntent.intent);
+                      }
+                      //console.log('Intent:'+ data.topScoringIntent.intent);
+                      
+                      //console.log("Input post: " + JSON.stringify(post));
+                      getIntents_Time = process.hrtime(timegetIntents); 
+                      console.log(`getIntents_Time took ${(getIntents_Time[0] * NS_PER_SEC + getIntents_Time[1])  * MS_PER_NS} milliseconds`);
+                      
+                      return callback(null, post);            
+                      
+                  }
+              });
+                 
+        
+      } 
+      
+      // if an updated for text field (only) in a post occured, and there was no hasURL from client then get hashtags
+      else if (!post.isNew() && post.dirty("text") && !post.dirty("topIntent")) {
+       
+          luisRequest =
+              endpoint + luisAppId +
+              '?' + querystring.stringify(queryParams);
+      
+          requestURL(luisRequest,
+              function (err,
+                  response, body) {
+                  if (err)
+                      console.log(err);
+                  else {
+                      var data = JSON.parse(body);
+      
+                      //console.log(`Query: ${data.query}`);
+                      //console.log(`Top Intent: ${data.topScoringIntent.intent}`);
+                      if (data.topScoringIntent) {
+                        
+                        console.log('Intent:'+ data.topScoringIntent.intent);
+                        req.object.set("topIntent", data.topScoringIntent.intent);
+                      }
+                      //console.log('Intent:'+ data.topScoringIntent.intent);
+                      
+                      //console.log("Input post: " + JSON.stringify(post));
+                      getIntents_Time = process.hrtime(timegetIntents); 
+                      console.log(`getIntents_Time took ${(getIntents_Time[0] * NS_PER_SEC + getIntents_Time[1])  * MS_PER_NS} milliseconds`);
+    
+                      return callback(null, post);            
+                      
+                  }
+              });
 
-    var luisRequest =
-        endpoint + luisAppId +
-        '?' + querystring.stringify(queryParams);
-
-    requestURL(luisRequest,
-        function (err,
-            response, body) {
-            if (err)
-                console.log(err);
-            else {
-                var data = JSON.parse(body);
-
-                //console.log(`Query: ${data.query}`);
-                //console.log(`Top Intent: ${data.topScoringIntent.intent}`);
-                if (data.topScoringIntent) {
-                  
-                  console.log('Intent:'+ data.topScoringIntent.intent);
-                  req.object.set("topIntent", data.topScoringIntent.intent);
-                }
-                //console.log('Intent:'+ data.topScoringIntent.intent);
-                
-                //console.log("Input post: " + JSON.stringify(post));
-                
-                return callback(null, post);            
-                
-            }
-        });
+        
+      } 
+      else {
+        
+        getIntents_Time = process.hrtime(timegetIntents); 
+        console.log(`getIntents_Time took ${(getIntents_Time[0] * NS_PER_SEC + getIntents_Time[1])  * MS_PER_NS} milliseconds`);
+  
+        return callback(null, post);
+        
+      }
+  
     
   }
   
@@ -714,7 +889,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     async.apply(getHashtags),
     async.apply(getMentions),
     async.apply(getURL),
-    async.apply(getIntents)
+    //async.apply(getIntents)
     
   ], function (err, post) {
         if (err) {
@@ -722,6 +897,10 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         }
 
         console.log("final post: " + JSON.stringify(post));
+        
+        var beforeSave_Time = process.hrtime(time); 
+        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
         response.success();
     });
   
