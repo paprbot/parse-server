@@ -313,7 +313,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
   var collection = request.params.collection;
   var index;
   var query = new Parse.Query(collection); 
-  query.limit(1000); // limit to at most 1000 results
+  query.limit(1000); // todo limit to at most 1000 results need to change and iterate until done todo
   
   console.log('collection: ' + request.params.collection);
   
@@ -405,22 +405,227 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 Parse.Cloud.beforeSave('Post', function(req, response) {
  
   var post = req.object;
+  var postcount;
+  var user = post.get("user");
   var text = post.get("text");
+  var workspace = post.get("workspace");
+  console.log("workspace_post: " + JSON.stringify(workspace));
+  var project = post.get("project"); 
+  console.log("project_post: " + JSON.stringify(project));
+
   var toLowerCase = function(w) { return w.toLowerCase(); };
   console.log("post: " + JSON.stringify(post));
   
+  // Function to count number of posts
+  function countPosts (callback) {
+    
+      // if there is a post that got added, then increase counter, else ignoremyObject
+      if (post.isNew()) {
+        
+        var POST = Parse.Object.extend("Post");
+        var Post = new POST();
+        Post.id = post.objectId;
+        
+        // add counter for posts to workspace collection
+        var WORKSPACE = Parse.Object.extend("WorkSpace");
+        var Workspace = new WORKSPACE();
+        Workspace.id = workspace.id;
+        
+        // Convert Parse.Object to JSON
+        //var objectToSave = Workspace.id.toJSON();
+        
+        //var Post = Parse.Object.extend("Post");
+        var queryWorkspace = new Parse.Query(Workspace);
+        //queryWorkspace.include( ["workspace"] );
+        queryWorkspace.select(["postCount"]);
+        queryWorkspace.equalTo("objectId", workspace.id);
+        
+        console.log("Request: " + JSON.stringify(req));
+        console.log("Workspace.id: " + workspace.id);
+  
+        queryWorkspace.first({
+          success: function(myObject) {
+              
+              // Successfully retrieved the object.
+              console.log("queryWorkspace: " + JSON.stringify(myObject));
+                     
+              if (!myObject.get("postCount")) {
+                myObject.set("postCount", 0);
+                console.log("Workspace undefined: " + JSON.stringify(myObject));
+              } 
+              
+              console.log("postcount before: "+ JSON.stringify(myObject.get("postCount")));
+              
+              myObject.increment("postCount", 1);
+              console.log("postcount after: "+ JSON.stringify(myObject.get("postCount")));
+              //myObject.set("user", user);
+              //myObject.setACL(new Parse.ACL(user));
+              
+              Post.set("workspace", myObject);
+              console.log("postWorkspace: " + JSON.stringify(Post));
+              console.log("Workspace final: " + JSON.stringify(myObject));
+              
+              myObject.save(null, {
+                  success: function(object) {
+                    // Execute any logic that should take place after the object is saved.
+                    console.log("postCount Updated: " + JSON.stringify(object));
+                    
+                    alert('New post created for this workspace ID: ' + object.id);
+                   
+                  
+                },
+                  error: function(object, error) {
+                    // Execute any logic that should take place if the save fails.
+                    // error is a Parse.Error with an error code and message.
+                    alert('Failed to create new object, with error code: Workspace Save ' + error.message);
+                    response.error('error Save postCount for Workspace' + error.message);
+                  }
+                });
+                      
+              post = Post;
+              
+              //return callback(null, post);
+              
+            },
+          error: function(myObject, error) {
+            // The object was not refreshed successfully.
+            // error is a Parse.Error with an error code and message.
+            alert('Failed to refresh workspace, with error code: Workspace Save ' + error.message);
+            
+            //return callback(null, post);
+          }
+        });
+        
+         if (project) {
+          // add counter for posts to project collection
+          var PROJECT = Parse.Object.extend("Project");
+          var Project = new PROJECT();
+          Project.id = project.id;
+          
+          console.log("Project: " + JSON.stringify(Project));
+          
+          //var Post = Parse.Object.extend("Post");
+          var queryProject = new Parse.Query(Project);
+          //queryWorkspace.include( ["workspace"] );
+          queryProject.select(["postCount"]);
+          queryProject.equalTo("objectId", project.id);
+          
+         
+          queryProject.first({
+            success: function(myObject) {
+                
+                // Successfully retrieved the object.
+                console.log("queryProject: " + JSON.stringify(myObject));
+                       
+                if (!myObject.get("postCount")) {
+                  myObject.set("postCount", 0);
+                  console.log("Project undefined: " + JSON.stringify(myObject));
+                } 
+                
+                console.log("postcount before: "+ JSON.stringify(myObject.get("postCount")));
+                
+                myObject.increment("postCount", 1);
+                console.log("postcount after: "+ JSON.stringify(myObject.get("postCount")));
+                //myObject.set("user", user);
+                //myObject.setACL(new Parse.ACL(user));
+                
+                Post.set("Project", myObject);
+                console.log("postProject: " + JSON.stringify(Post));
+                console.log("Project final: " + JSON.stringify(myObject));
+                
+                myObject.save(null, {
+                    success: function(object) {
+                      // Execute any logic that should take place after the object is saved.
+                      console.log("postCount Updated: " + JSON.stringify(object));
+                      
+                      alert('New post created for this project ID: ' + object.id);
+                     
+                    
+                  },
+                    error: function(object, error) {
+                      // Execute any logic that should take place if the save fails.
+                      // error is a Parse.Error with an error code and message.
+                      alert('Failed to create new object, with error code: Workspace Save ' + error.message);
+                      response.error('error Save postCount for Workspace' + error.message);
+                    }
+                  });
+                        
+                post = Post;
+                
+                return callback(null, post);
+                
+              },
+            error: function(myObject, error) {
+              // The object was not refreshed successfully.
+              // error is a Parse.Error with an error code and message.
+              alert('Failed to refresh workspace, with error code: Workspace Save ' + error.message);
+              
+              return callback(null, post);
+            }
+        });
+          
+          
+        } else {
+        
+        //post = Post;
+        return callback(null, post);
+        
+        }
+      
+               
+        
+      }
+      
+      else {
+        
+        return callback(null, post);
+        
+      }
+        
+       
+
+  }
+  
   // Function to capture hashtags from text posts
   function getHashtags (callback) {
-   
-      var hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
-      hashtags = _.map(hashtags, toLowerCase);
-      hashtags = hashtags.map(function (hashtag) {
-        return hashtag.trim();
-      });
-      req.object.set("hashtags", hashtags);
-      console.log("getHashtags: " + JSON.stringify(hashtags));
     
-      return callback(null, post);
+      var hashtags;
+      
+       // if there is a post that got added and no hashtags from client then add hashtags
+      if (post.isNew() && !post.hashtags) {
+       
+          hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
+          hashtags = _.map(hashtags, toLowerCase);
+          hashtags = hashtags.map(function (hashtag) {
+            return hashtag.trim();
+          });
+          req.object.set("hashtags", hashtags);
+          console.log("getHashtags: " + JSON.stringify(hashtags));
+        
+          return callback(null, post);
+      } 
+      
+      // if an updated for text field (only) in a post occured, and there was no hashtags from client then get hashtags
+      else if (!post.isNew() && post.dirty("text") && !post.dirty("hashtags")) {
+        
+        hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
+        hashtags = _.map(hashtags, toLowerCase);
+        hashtags = hashtags.map(function (hashtag) {
+          return hashtag.trim();
+        });
+        req.object.set("hashtags", hashtags);
+        console.log("getHashtags: " + JSON.stringify(hashtags));
+        
+        return callback(null, post);
+        
+      } 
+      else {
+        
+        return callback(null, post);
+        
+      }
+      
+      
   }
   
   // Function to capture mentions from text posts
@@ -450,7 +655,8 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
   
   // Function to get luis.ai topIntent from text post
   function getIntents (callback) {
-    //console.log("getIntents: " + JSON.stringify(post));
+
+    // todo need to check if 'text' field was modified on update if not ignore request to get inents
     
     var endpoint =
         "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/";
@@ -460,7 +666,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     // of a public sample application.    
     var luisAppId = "685c7d5b-9d64-4182-a69d-bb220a7482ae";
     
-    var utterance = post.get("text");
+    var utterance = text;
     utterance = utterance.substring(utterance, 500);
 
     // Set the LUIS_SUBSCRIPTION_KEY environment variable
@@ -487,11 +693,14 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
                 //console.log(`Query: ${data.query}`);
                 //console.log(`Top Intent: ${data.topScoringIntent.intent}`);
-                console.log('Intents:');
-                console.log(data.topScoringIntent.intent);
+                if (data.topScoringIntent) {
+                  
+                  console.log('Intent:'+ data.topScoringIntent.intent);
+                  req.object.set("topIntent", data.topScoringIntent.intent);
+                }
+                //console.log('Intent:'+ data.topScoringIntent.intent);
                 
-                console.log("Input post: " + JSON.stringify(post));
-                req.object.set("topIntent", data.topScoringIntent.intent);
+                //console.log("Input post: " + JSON.stringify(post));
                 
                 return callback(null, post);            
                 
@@ -501,6 +710,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
   }
   
   async.parallel([ 
+    async.apply(countPosts),
     async.apply(getHashtags),
     async.apply(getMentions),
     async.apply(getURL),
