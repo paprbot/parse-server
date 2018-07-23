@@ -15,6 +15,207 @@ var indexMeetings = client.initIndex('dev_meetings');
 var indexProject = client.initIndex('dev_channels');
 var indexWorkspaces = client.initIndex('dev_workspaces');
 
+// cloud API and function to test query performance of AlgoliaSearch versus Parse
+Parse.Cloud.define("QueryPostFeed", function(request, response) {
+   
+  var NS_PER_SEC = 1e9;
+  const MS_PER_NS = 1e-6;
+  var time = process.hrtime();
+  
+  console.log("timeFirst: " + time);
+  
+  //get request params
+  var search = request.params.search;
+  var hit = parseInt(request.params.hit); 
+  var user = request.params.user;
+  var project = request.params.project;
+  var workspace = request.params.workspace;
+  var skip = parseInt(request.params.skip);
+  
+  // Setup Algolia Index;
+  var index;
+  index = indexPosts;
+  
+  // Setup Parse query
+  var queryPost = Parse.Object.extend("Post");
+  var query = new Parse.Query(queryPost); 
+  
+  var WORKSPACE = Parse.Object.extend("WorkSpace");
+  var queryWorkspace = new Parse.Query(WORKSPACE);
+  
+  var USER = Parse.Object.extend("_User");
+  var queryUser = new Parse.Query(USER);
+           
+   //function getPostFeed (callback) {
+     
+     var timeGetPostFeed = process.hrtime();
+     var getPostFeed_Time;
+     
+       if (search == 'Parse') {
+        
+          query.include( ["user", "workspace", "project", "ACL"] );
+          query.doesNotExist("project.archive");
+          query.doesNotExist("workspace.archive");
+          
+          //query.equalTo("workspace.workspace_name", workspace);
+          //console.log("workspaceId: " + workspace);
+          //query.matchesQuery("workspace", queryWorkspace);
+          
+          if (project == 'all') { 
+            // do nothing, since we want all projects in a workspace
+          } else { 
+            // only get project that the user needs
+            var PROJECT = Parse.Object.extend("Project");
+            var queryProject = new Parse.Query(PROJECT);
+            
+            queryProject.equalTo("ObjectId", project);
+            query.matchesQuery("workspace", queryProject);
+          }
+
+          // todo get posts that the user is allowed to view
+ 
+          query.doesNotExist("Archive");
+          query.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked"]); 
+          query.descending("updatedAt");
+          query.limit(hit); // limit to hits
+          if (skip) {
+            query.skip(skip);
+          }
+          var liked;
+          var bookmarked;
+          
+          query.find({
+            success: function(results) {
+              //console.log("query result: " + JSON.stringify(results));
+              
+              async.forEach(results, function (result, callback){ 
+
+                  
+                  if (result.get('isLikedBy')) {
+                    
+                    var likeArray = result.get('isLikedBy');
+                    console.log("likeArray: "+ likeArray);
+                    liked = likeArray.includes(user);
+                    console.log("isLikedBy: "+ liked);
+                    result = result.toJSON();
+                                        
+                    result.isLiked = liked;
+                    console.log("isLiked exists: "+ result.isLiked);
+                                      
+                  } 
+                  
+                  else {
+                      result = result.toJSON();
+                      result.isLiked =  false;
+                      console.log("isLiked notExist: "+ result.isLiked);
+                  }  
+                  
+
+                  /*
+                  if (result.get('isBookmarkedBy')) {
+                    
+                    var bookmarkArray = result.get('isBookmarkedBy');
+                    console.log("bookmarkArray: "+ bookmarkArray);
+                    bookmarked = bookmarkArray.includes(user);
+                    console.log("isLikedBy: "+ bookmarked);
+                    result = result.toJSON();
+                                        
+                    result.isBookmarked = liked;
+                    console.log("isBookmarked exists: "+ result.isBookmarked);
+                                      
+                  } 
+                  
+                  else {
+                      result = result.toJSON();
+                      result.isBookmarked =  false;
+                      console.log("isBookmarked notExist: "+ result.isBookmarked);
+                  }  */
+                  
+                  return callback(null, result);                   
+                
+              }, function(err) {
+                  //console.log('iterating done: ' + JSON.stringify(results));
+                      
+                  // using process.hrtime since it's more precise 
+                  //getPostFeed_Time = process.hrtime(timeGetPostFeed);
+                  //console.log(`getPostFeed_Time took ${(getPostFeed_Time[0] * NS_PER_SEC + getPostFeed_Time[1])  * MS_PER_NS} milliseconds`);
+                  
+                  /*var diff = process.hrtime(time);
+                  console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+                  console.log("FinalResults: " + JSON.stringify(results));
+                  response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);         
+                 */
+                  return results;
+                            
+              });  
+              
+              var diff = process.hrtime(time);
+              console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+              console.log("FinalResults: " + JSON.stringify(results));
+              response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);         
+                         
+            },
+            error: function(err) {
+              throw err;
+            }
+          });
+          
+       }
+            
+      else if (search == 'Algolia') {
+          
+          index.search(
+            {
+              query: '*',
+              hitsPerPage: hit,
+            },
+            function searchDone(err, results) {
+              if (err) throw err;
+              
+              // using process.hrtime since it's more precise 
+              getPostFeed_Time = process.hrtime(timeGetPostFeed);
+              console.log(`getPostFeed took ${(getPostFeed_Time[0] * NS_PER_SEC + getPostFeed_Time[1])  * MS_PER_NS} milliseconds`);
+              
+              var diff = process.hrtime(time);
+              response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);         
+              //return callback(null, results);
+            }
+          );
+          
+          
+        }
+        
+      else {
+        
+        response.error("error: this search option is not available, please use algolia or parse");
+      }
+           
+        
+    /*};
+       
+       
+    async.parallel([ 
+    async.apply(getPostFeed),
+    //async.apply(prepareData)
+    
+    ], function (err, results) {
+          if (err) {
+              response.error(err);
+          }
+          
+          //console.log("results final: " + JSON.stringify(results));
+          
+          // using process.hrtime since it's more precise 
+          var diff = process.hrtime(time);
+          console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+          
+          response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);         
+                
+    });*/
+  
+  
+});
+
 
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
 Parse.Cloud.define("testQueryPerformance", function(request, response) {
