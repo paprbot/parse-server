@@ -83,76 +83,111 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
           }
           var liked;
           var bookmarked;
+          var objectsToIndex = [];
+          var result;
+          var result2;
           
           query.find({
             success: function(results) {
               //console.log("query result: " + JSON.stringify(results));
               
-              async.forEach(results, function (result, callback){ 
-
-                  
-                  if (result.get('isLikedBy')) {
-                    
-                    var likeArray = result.get('isLikedBy');
-                    console.log("likeArray: "+ likeArray);
-                    liked = likeArray.includes(user);
-                    console.log("isLikedBy: "+ liked);
-                    result = result.toJSON();
-                                        
-                    result.isLiked = liked;
-                    console.log("isLiked exists: "+ result.isLiked);
-                                      
-                  } 
-                  
-                  else {
-                      result = result.toJSON();
-                      result.isLiked =  false;
-                      console.log("isLiked notExist: "+ result.isLiked);
-                  }  
-                  
-
-                  /*
-                  if (result.get('isBookmarkedBy')) {
-                    
-                    var bookmarkArray = result.get('isBookmarkedBy');
-                    console.log("bookmarkArray: "+ bookmarkArray);
-                    bookmarked = bookmarkArray.includes(user);
-                    console.log("isLikedBy: "+ bookmarked);
-                    result = result.toJSON();
-                                        
-                    result.isBookmarked = liked;
-                    console.log("isBookmarked exists: "+ result.isBookmarked);
-                                      
-                  } 
-                  
-                  else {
-                      result = result.toJSON();
-                      result.isBookmarked =  false;
-                      console.log("isBookmarked notExist: "+ result.isBookmarked);
-                  }  */
-                  
-                  return callback(null, result);                   
+              //objectsToIndex = results;
+              
+              async.map(results, function (object, callback){ 
                 
-              }, function(err) {
-                  //console.log('iterating done: ' + JSON.stringify(results));
+                  result = object;
+                  result2 = object;
+                  
+                  function addIsLiked (callback) {
+                    
+                      if (result2.get('isLikedBy')) {
+                      
+                        var likeArray = result2.get('isLikedBy');
+                        console.log("likeArray: "+ likeArray);
+                        liked = likeArray.includes(user);
+                        console.log("isLiked: "+ liked);
+                        //result2 = result2.toJSON();
+                                            
+                        result.isLiked = liked;
+                        console.log("isLiked exists: "+ result.isLiked);
+                        //result = result2;
+                        return callback(null, result); 
+                                        
+                      } 
+                      
+                      else {
+                        //result2 = result2.toJSON();
+                        result.isLiked =  false;
+                        console.log("isLiked notExist: "+ result.isLiked);
+                        //result = result2;
+                        return callback(null, result); 
+                      }  
+                    
+                  }
+                  
+                  function addIsBookmarked (callback) {
+                    
+                      if (result.get('isBookmarkedBy')) {
+                      
+                        var bookmarkArray = result.get('isBookmarkedBy');
+                        console.log("bookmarkArray: "+ bookmarkArray);
+                        bookmarked = bookmarkArray.includes(user);
+                        console.log("BookmarkedBy: "+ bookmarked);
+                        result = result.toJSON();
+                                            
+                        result.isBookmarked = bookmarked;
+                        console.log("isBookmarked exists: "+ result.isBookmarked);
+                        return callback(null, result); 
+                                        
+                      } 
+                      
+                      else {
+                        result = result.toJSON();
+                        result.isBookmarked =  false;
+                        console.log("isBookmarked notExist: "+ result.isBookmarked);
+                        return callback(null, result); 
+                      }  
+                    
+                  }
+                  
+                  
+                  async.parallel([ 
+                    async.apply(addIsBookmarked),
+                    async.apply(addIsLiked)
+                    
+                    ], function (err, result) {
+                      
+                          
+                          if (err) {
+                              response.error(err);
+                          }
+                          object = result[0];
+                          console.log("async parallel final: " + JSON.stringify(result[0]));
+                          
+                          // using process.hrtime since it's more precise 
+                          var diff = process.hrtime(time);
+                          console.log(`async.parallel took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+                          
+                          callback(null, object);                   
+                                
+                    });
+                  
+                
+              }, function(err, results) {
+                  console.log('iterating done: ' + JSON.stringify(results));
                       
                   // using process.hrtime since it's more precise 
                   //getPostFeed_Time = process.hrtime(timeGetPostFeed);
                   //console.log(`getPostFeed_Time took ${(getPostFeed_Time[0] * NS_PER_SEC + getPostFeed_Time[1])  * MS_PER_NS} milliseconds`);
                   
-                  /*var diff = process.hrtime(time);
+                  var diff = process.hrtime(time);
                   console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-                  console.log("FinalResults: " + JSON.stringify(results));
+                  //console.log("FinalResults: " + JSON.stringify(results));
+                  //response.render('userPosts', results);
                   response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);         
-                 */
-                  return results;
+                  
                             
               });  
-              
-              var diff = process.hrtime(time);
-              console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-              console.log("FinalResults: " + JSON.stringify(results));
-              response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);         
                          
             },
             error: function(err) {
@@ -189,30 +224,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
         
         response.error("error: this search option is not available, please use algolia or parse");
       }
-           
-        
-    /*};
-       
-       
-    async.parallel([ 
-    async.apply(getPostFeed),
-    //async.apply(prepareData)
-    
-    ], function (err, results) {
-          if (err) {
-              response.error(err);
-          }
-          
-          //console.log("results final: " + JSON.stringify(results));
-          
-          // using process.hrtime since it's more precise 
-          var diff = process.hrtime(time);
-          console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-          
-          response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);         
-                
-    });*/
-  
+            
   
 });
 
