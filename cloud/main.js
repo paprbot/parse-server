@@ -56,7 +56,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
  
           // Setup Parse query
           var queryPost = Parse.Object.extend("Post");
-          var query = new Parse.Query(queryPost); 
+          var queryP = new Parse.Query(queryPost); 
           var querypostSocial = Parse.Object.extend("PostSocial");
           var queryPostSocial = new Parse.Query(querypostSocial); 
           
@@ -66,35 +66,35 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
           var User = new Parse.Object("_User");
           User.id = user;
         
-          query.include( ["user", "workspace", "project", "postSocial.user", "postSocial.isLiked", "postSocial.isBookmarked"] );
-          query.doesNotExist("project.archive", "workspace.archive", "Archive");
+          queryP.include( ["user", "workspace", "project", "postSocial.user", "postSocial.isLiked", "postSocial.isBookmarked"] );
+          queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
           
-          query.equalTo("workspace", Workspace);
+          queryP.equalTo("workspace", Workspace);
           //console.log("workspaceId: " + workspace);
 
           // todo get posts that the user is allowed to view
           
           // setup query filter for post
-          query.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
-          query.descending("updatedAt");   
-          query.limit(hit); // limit to hits
+          queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
+          queryP.descending("updatedAt");   
+          queryP.limit(hit); // limit to hits
           if (skip) {
-            query.skip(skip);
+            queryP.skip(skip);
           }
           if (project == 'all') { 
             // do nothing, since we want all projects in a workspace
           } else if (project) {
               var Project = new Parse.Object("Project");
               Project.id = project;
-              query.equalTo("project", Project);
+              queryP.equalTo("project", Project);
                 
           }
           
           // only get postSocial record where the user browsing matches. i.e. if user is part of the isLiked:true, isBookmarked:false group
           queryPostSocial.equalTo("user", User);
-          queryPostSocial.matchesQuery("post", query);      
+          queryPostSocial.matchesQuery("post", queryP);      
           
-          //queryPostSocial.matchesQuery("post", query);
+          //queryPostSocial.matchesQuery("post", queryP);
           queryPostSocial.select(["post", "type","isBookmarked", "isLiked"]); 
           //queryPostSocial.include(["userGroup", "post.workspace", "post.project", "post", "post.user"]);    
 
@@ -102,7 +102,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
           //console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);       
           //var bQuery = process.hrtime();
           
-          query.find({
+          queryP.find({
             success: function(results) {
               //console.log("query result: " + JSON.stringify(results));
               
@@ -111,17 +111,45 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
               //console.log(`after query took ${(queryTime[0] * NS_PER_SEC + queryTime[1])  * MS_PER_NS} milliseconds`);
               //var mQuery = process.hrtime();   
               
-              /*for (var i in results) { 
+             for (var i=0;i< results.length; i++) { 
 
                 var postSocialRelation = results[i].relation("postSocial"); 
-                postSocialRelation.query().find({
-                 success: function(PostSocialResults) { for (var j in PostSocialResults) {
-                 console.log(PostSocialResults[j].id); } } }); } 
-              }, error: function(error) { console.log(error); } })*/    
+                var postSocialRelationQuery = postSocialRelation.query();
+                postSocialRelationQuery.equalTo("user", User);
+                postSocialRelationQuery.find({
+                success: function(postSocialResults) {
+                  //console.log(JSON.stringify(postSocialResults));
+                  
+                  if (postSocialResults) {
+                              results[i].set("isLiked", postSocialResults.isLiked);
+                              results[i].set("isBookmarked", postSocialResults.isBookmarked);
+                  } else {
+                             results[i].set("isLiked", false);
+                             results[i].set("isBookmarked", false);
+                  }
+                                           
+                  //console.log(JSON.stringify(results[i]));
+                
+                },
+                error: function(err) {
+                  response.error(err);
+                }
+                  
+                  
+                  
+                });
+
+             }
+             
+            var diff = process.hrtime(time);
+            //console.log("finalResults: "+ JSON.stringify(results));
+            //console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);    
+            response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds` + JSON.stringify(results));
               
                                 
               
               // setup second query for PostSocial
+              /*
               queryPostSocial.find({
                 success: function(postSocialResults) {
                   
@@ -130,15 +158,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
                   var object;
                   
                   for (var i=0;i< postSocialResults.length; i++){
-                    
-                    //console.log("post id: "+postSocialResults[i].post.objectId);
-                    /*PostResult.set("objectId",postSocialResults[i].id);
-                    PostResult.set("isLiked",postSocialResults[i].isLiked);
-                    PostResult.set("isBookmarked",postSocialResults[i].isBookmarked);
-                    console.log("PostResult:" + JSON.stringify(PostResult));*/
-                    
-                    
-
+                  
                     //console.log("postSocialResults:" + JSON.stringify(postSocialResults[i].get("post").id));
                     //object = postSocialResults[i];
                     
@@ -173,8 +193,10 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
                 //console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
                 //console.log("FinalResults: " + JSON.stringify(results));
                 //response.render('userPosts', results);
-                response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);    
-                                      
+                console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);    
+                response.success(results);
+
+                                
 
                   
                   
@@ -185,7 +207,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
                   
                 }
                 
-              });
+              });*/
               
               
               /*for(var i=0; i< results.length; i++) {
