@@ -36,496 +36,110 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
   const MS_PER_NS = 1e-6;
   var time = process.hrtime();
   
-  //console.log("timeFirst: " + time);
-  
   //get request params
-  var search = request.params.search;
   var hit = parseInt(request.params.hit); 
   var user = request.params.user;
   var project = request.params.project;
   var workspace = request.params.workspace;
   var skip = parseInt(request.params.skip); 
-        
-   //function getPostFeed (callback) {
-
-       if (search == 'Parse') {
          
-          //var beforeConnection = process.hrtime(time);
-          //console.log(`before searchParse took ${(beforeConnection[0] * NS_PER_SEC + beforeConnection[1])  * MS_PER_NS} milliseconds`);       
-          //var bCQuery = process.hrtime();
- 
-          // Setup Parse query
-          var queryPost = Parse.Object.extend("Post");
-          var queryP = new Parse.Query(queryPost); 
-          var querypostSocial = Parse.Object.extend("PostSocial");
-          var queryPostSocial = new Parse.Query(querypostSocial); 
-          
-          var Workspace = new Parse.Object("WorkSpace"); 
-          Workspace.id = workspace;
-          
-          var User = new Parse.Object("_User");
-          User.id = user;
-        
-          queryP.include( ["user", "workspace", "project", "postSocial.user", "postSocial.isLiked", "postSocial.isBookmarked"] );
-          queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
-          
-          queryP.equalTo("workspace", Workspace);
-          //console.log("workspaceId: " + workspace);
-
-          // todo get posts that the user is allowed to view
-          
-          // setup query filter for post
-          queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
-          queryP.descending("updatedAt");   
-          queryP.limit(hit); // limit to hits
-          if (skip) {
-            queryP.skip(skip);
-          }
-          if (project == 'all') { 
-            // do nothing, since we want all projects in a workspace
-          } else if (project) {
-              var Project = new Parse.Object("Project");
-              Project.id = project;
-              queryP.equalTo("project", Project);
-                
-          }
-          
-          // only get postSocial record where the user browsing matches. i.e. if user is part of the isLiked:true, isBookmarked:false group
-          queryPostSocial.equalTo("user", User);
-          queryPostSocial.matchesQuery("post", queryP);      
-          
-          //queryPostSocial.matchesQuery("post", queryP);
-          queryPostSocial.select(["post", "type","isBookmarked", "isLiked"]); 
-          //queryPostSocial.include(["userGroup", "post.workspace", "post.project", "post", "post.user"]);    
-
-          //var beforeQuery = process.hrtime(bCQuery);
-          //console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);       
-          //var bQuery = process.hrtime();
-          
-          queryP.find({
-            success: function(results) {
-              //console.log("query result: " + JSON.stringify(results));
-              
-              //objectsToIndex = results;
-              //var queryTime = process.hrtime(bQuery);
-              //console.log(`after query took ${(queryTime[0] * NS_PER_SEC + queryTime[1])  * MS_PER_NS} milliseconds`);
-              //var mQuery = process.hrtime();   
-              
-             for (var i=0;i< results.length; i++) { 
-
-                var postSocialRelation = results[i].relation("postSocial"); 
-                var postSocialRelationQuery = postSocialRelation.query();
-                postSocialRelationQuery.equalTo("user", User);
-                postSocialRelationQuery.find({
-                success: function(postSocialResults) {
-                  //console.log(JSON.stringify(postSocialResults));
-                  
-                  if (postSocialResults) {
-                              results[i].set("isLiked", postSocialResults.isLiked);
-                              results[i].set("isBookmarked", postSocialResults.isBookmarked);
-                  } else {
-                             results[i].set("isLiked", false);
-                             results[i].set("isBookmarked", false);
-                  }
-                                           
-                  //console.log(JSON.stringify(results[i]));
-                
-                },
-                error: function(err) {
-                  response.error(err);
-                }
-                  
-                  
-                  
-                });
-
-             }
-             
-            var diff = process.hrtime(time);
-            //console.log("finalResults: "+ JSON.stringify(results));
-            //console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);    
-            response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds` + JSON.stringify(results));
-              
-                                
-              
-              // setup second query for PostSocial
-              /*
-              queryPostSocial.find({
-                success: function(postSocialResults) {
-                  
-                  var postResult = Parse.Object.extend('Post');
-                  var PostResult = new Parse.Object(postResult);
-                  var object;
-                  
-                  for (var i=0;i< postSocialResults.length; i++){
-                  
-                    //console.log("postSocialResults:" + JSON.stringify(postSocialResults[i].get("post").id));
-                    //object = postSocialResults[i];
-                    
-                    for (var j=0;j< results.length; j++){
-                    
-                      if (results[j].id === (postSocialResults[i].get("post").id)) {
-                          
-                          if (postSocialResults[i].get("isLiked")) {
-                              results[j].set("isLiked", postSocialResults[i].get("isLiked"));
-                          } else {
-                             results[j].set("isLiked", false);
-                          }
-                          
-                          if (postSocialResults[i].get("isBookmarked")) {
-                              results[j].set("isBookmarked", postSocialResults[i].get("isBookmarked"));
-                          } else {
-                             results[j].set("isBookmarked", false);
-                          }
-
-                          //console.log("result j:" + JSON.stringify(results[j]));
-                        
-                      } else {
-                        results[j].set("isLiked", false);
-                        results[j].set("isBookmarked", false);
-                        
-                      }
-
-                    }
-                  }
-                  
-                var diff = process.hrtime(time);
-                //console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-                //console.log("FinalResults: " + JSON.stringify(results));
-                //response.render('userPosts', results);
-                console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);    
-                response.success(results);
-
-                                
-
-                  
-                  
-                },
-                error: function(err) {
-                  
-                  response.error("queryPostSocial Error: "+ err);
-                  
-                }
-                
-              });*/
-              
-              
-              /*for(var i=0; i< results.length; i++) {
-                  
-                  var object = results[i];
-                  result = object;
-                  result2 = object;
-                  
-                  var addIsLIkedTime = process.hrtime();
-                     var likeTime;
-                 
-                    
-                      if (object.get('isLikedBy')) {
-                      
-                        var likeArray = object.get('isLikedBy');
-                        //console.log("likeArray: "+ likeArray);
-                        liked = likeArray.includes(user);
-                        //console.log("isLiked: "+ liked);
-                        result2 = result2.toJSON();
-                                            
-                        result2.isLiked = liked;
-                        //console.log("isLiked exists: "+ result.isLiked);
-                        //result = result2;
-                        object = result2;
-                        results[i] = object;
-                        
-                        likeTime = process.hrtime(addIsLIkedTime);
-                        console.log(`addIsLiked function took ${(likeTime[0] * NS_PER_SEC + likeTime[1])  * MS_PER_NS} milliseconds`);
-                        
-                                        
-                      } 
-                      
-                      else {
-                        result2 = result2.toJSON();
-                        result2.isLiked =  false;
-                        //console.log("isLiked notExist: "+ result.isLiked);
-                        //result = result2;
-                        object = result2;
-                        results[i] = object;
-                        
-                        likeTime = process.hrtime(addIsLIkedTime);
-                        console.log(`addIsLiked function took ${(likeTime[0] * NS_PER_SEC + likeTime[1])  * MS_PER_NS} milliseconds`);
-
-                      }  
-                      
-                     var addIsBookmarkedTime = process.hrtime();
-                     var bookmarkedTime;
-                                        
-                      if (result.get('isBookmarkedBy')) {
-                      
-                        var bookmarkArray = result.get('isBookmarkedBy');
-                        //console.log("bookmarkArray: "+ bookmarkArray);
-                        bookmarked = bookmarkArray.includes(user);
-                        //console.log("BookmarkedBy: "+ bookmarked);
-                        result = result.toJSON();
-                                            
-                        result.isBookmarked = bookmarked;
-                        //console.log("isBookmarked exists: "+ result.isBookmarked);
-                        object = result;
-                        results[i] = object;
-                        
-                        bookmarkedTime = process.hrtime(addIsBookmarkedTime);
-                        console.log(`addIsBookmarked function took ${(bookmarkedTime[0] * NS_PER_SEC + bookmarkedTime[1])  * MS_PER_NS} milliseconds`);
-                                        
-                      } 
-                      
-                      else {
-                        result = result.toJSON();
-                        result.isBookmarked =  false;
-                        //console.log("isBookmarked notExist: "+ result.isBookmarked);
-                        object = result;
-                        results[i] = object;
-                        
-                        bookmarkedTime = process.hrtime(addIsBookmarkedTime);
-                        console.log(`addIsBookmarked function took ${(bookmarkedTime[0] * NS_PER_SEC + bookmarkedTime[1])  * MS_PER_NS} milliseconds`);
-
-                      }  
-              }*/
-              
-              /*async.map(results, function (object, callback){ 
-                
-                var parallelTime = process.hrtime();
-                                
-                  result = object;
-                  result2 = object;
-                  
-                  /*var addIsLIkedTime = process.hrtime();
-                     var likeTime;
-                 
-                    
-                      if (object.get('isLikedBy')) {
-                      
-                        var likeArray = object.get('isLikedBy');
-                        //console.log("likeArray: "+ likeArray);
-                        liked = likeArray.includes(user);
-                        //console.log("isLiked: "+ liked);
-                        result2 = result2.toJSON();
-                                            
-                        result2.isLiked = liked;
-                        //console.log("isLiked exists: "+ result.isLiked);
-                        //result = result2;
-                        object = result2;
-                        
-                        likeTime = process.hrtime(addIsLIkedTime);
-                        console.log(`addIsLiked function took ${(likeTime[0] * NS_PER_SEC + likeTime[1])  * MS_PER_NS} milliseconds`);
-                         
-
-                                        
-                      } 
-                      
-                      else {
-                        result2 = result2.toJSON();
-                        result2.isLiked =  false;
-                        //console.log("isLiked notExist: "+ result.isLiked);
-                        //result = result2;
-                        object = result2;
-                        
-                        likeTime = process.hrtime(addIsLIkedTime);
-                        console.log(`addIsLiked function took ${(likeTime[0] * NS_PER_SEC + likeTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                      }  
-                      
-                     var addIsBookmarkedTime = process.hrtime();
-                     var bookmarkedTime;
-                                        
-                      if (result.get('isBookmarkedBy')) {
-                      
-                        var bookmarkArray = result.get('isBookmarkedBy');
-                        //console.log("bookmarkArray: "+ bookmarkArray);
-                        bookmarked = bookmarkArray.includes(user);
-                        //console.log("BookmarkedBy: "+ bookmarked);
-                        result = result.toJSON();
-                                            
-                        result.isBookmarked = bookmarked;
-                        //console.log("isBookmarked exists: "+ result.isBookmarked);
-                        object = result;
-
-                        
-                        bookmarkedTime = process.hrtime(addIsBookmarkedTime);
-                        console.log(`addIsBookmarked function took ${(bookmarkedTime[0] * NS_PER_SEC + bookmarkedTime[1])  * MS_PER_NS} milliseconds`);
-                                        
-                      } 
-                      
-                      else {
-                        result = result.toJSON();
-                        result.isBookmarked =  false;
-                        //console.log("isBookmarked notExist: "+ result.isBookmarked);
-                        object = result;
-
-                        
-                        bookmarkedTime = process.hrtime(addIsBookmarkedTime);
-                        console.log(`addIsBookmarked function took ${(bookmarkedTime[0] * NS_PER_SEC + bookmarkedTime[1])  * MS_PER_NS} milliseconds`);
-
-                      }  
-                      
-                      callback(null, object); 
-                      
-                  
-                  function addIsLiked (callback) {
-                    
-                     var addIsLIkedTime = process.hrtime();
-                     var likeTime;
-                 
-                    
-                      if (result2.get('isLikedBy')) {
-                      
-                        var likeArray = result2.get('isLikedBy');
-                        //console.log("likeArray: "+ likeArray);
-                        liked = likeArray.includes(user);
-                        //console.log("isLiked: "+ liked);
-                        //result2 = result2.toJSON();
-                                            
-                        result.isLiked = liked;
-                        //console.log("isLiked exists: "+ result.isLiked);
-                        //result = result2;
-                        
-                        likeTime = process.hrtime(addIsLIkedTime);
-                        console.log(`addIsLiked function took ${(likeTime[0] * NS_PER_SEC + likeTime[1])  * MS_PER_NS} milliseconds`);
-
-                        return callback(null, result); 
-                                        
-                      } 
-                      
-                      else {
-                        //result2 = result2.toJSON();
-                        result.isLiked =  false;
-                        //console.log("isLiked notExist: "+ result.isLiked);
-                        //result = result2;
-                        likeTime = process.hrtime(addIsLIkedTime);
-                        console.log(`addIsLiked function took ${(likeTime[0] * NS_PER_SEC + likeTime[1])  * MS_PER_NS} milliseconds`);
-
-                        return callback(null, result); 
-                      }  
-                    
-                  }
-                  
-                  function addIsBookmarked (callback) {
-                    
-                     var addIsBookmarkedTime = process.hrtime();
-                     var bookmarkedTime;
-                                        
-                      if (result.get('isBookmarkedBy')) {
-                      
-                        var bookmarkArray = result.get('isBookmarkedBy');
-                        //console.log("bookmarkArray: "+ bookmarkArray);
-                        bookmarked = bookmarkArray.includes(user);
-                        //console.log("BookmarkedBy: "+ bookmarked);
-                        result = result.toJSON();
-                                            
-                        result.isBookmarked = bookmarked;
-                        //console.log("isBookmarked exists: "+ result.isBookmarked);
-                        
-                        bookmarkedTime = process.hrtime(addIsBookmarkedTime);
-                        console.log(`addIsBookmarked function took ${(bookmarkedTime[0] * NS_PER_SEC + bookmarkedTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                        return callback(null, result); 
-                                        
-                      } 
-                      
-                      else {
-                        result = result.toJSON();
-                        result.isBookmarked =  false;
-                        //console.log("isBookmarked notExist: "+ result.isBookmarked);
-                        
-                        bookmarkedTime = process.hrtime(addIsBookmarkedTime);
-                        console.log(`addIsBookmarked function took ${(bookmarkedTime[0] * NS_PER_SEC + bookmarkedTime[1])  * MS_PER_NS} milliseconds`);
-
-                        return callback(null, result); 
-                      }  
-                    
-                  }
-                  
-                  
-                  async.parallel([ 
-                    async.apply(addIsBookmarked),
-                    async.apply(addIsLiked)
-                    
-                    ], function (err, result) {
-                      
-                          
-                          if (err) {
-                              response.error(err);
-                          }
-                          object = result[0];
-                          //console.log("async parallel final: " + JSON.stringify(result[0]));
-                          
-                          // using process.hrtime since it's more precise 
-                          var diff = process.hrtime(parallelTime);
-                          console.log(`async.parallel took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-                          
-                          callback(null, object);                   
-                                
-                    });
-                  
-                
-              }, function(err, results) {
-                  //console.log('iterating done: ' + JSON.stringify(results));
-                      
-                  // using process.hrtime since it's more precise 
-                  //getPostFeed_Time = process.hrtime(timeGetPostFeed);
-                  //console.log(`getPostFeed_Time took ${(getPostFeed_Time[0] * NS_PER_SEC + getPostFeed_Time[1])  * MS_PER_NS} milliseconds`);
-                  var asyncMap = process.hrtime(mQuery);
-                  console.log(`asyncMap took ${(asyncMap[0] * NS_PER_SEC + asyncMap[1])  * MS_PER_NS} milliseconds`);
-
-                  var diff = process.hrtime(time);
-                  console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-                  //console.log("FinalResults: " + JSON.stringify(results));
-                  //response.render('userPosts', results);
-                  response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);                          
-                            
-              });  */
-
-              //var diff = process.hrtime(time);
-              //console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-              //console.log("FinalResults: " + JSON.stringify(results));
-              //response.render('userPosts', results);
-              //response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);                          
-
-                                                      
-            },
-            error: function(err) {
-              response.error("queryPost Error: "+ err);
-            }
-          });
-          
-       }
-            
-      else if (search == 'Algolia') {
-
-          indexPosts.search(
-            {
-              query: '*',
-              hitsPerPage: hit,
-            },
-            function searchDone(err, results) {
-              if (err) throw err;
-              
-              // using process.hrtime since it's more precise 
-              getPostFeed_Time = process.hrtime(timeGetPostFeed);
-              console.log(`getPostFeed took ${(getPostFeed_Time[0] * NS_PER_SEC + getPostFeed_Time[1])  * MS_PER_NS} milliseconds`);
-              
-              var diff = process.hrtime(time);
-              response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);         
-              //return callback(null, results);
-            }
-          );
-          
-          
-        }
-        
-      else {
-        
-        response.error("error: this search option is not available, please use algolia or parse");
-      }
-            
+  // Setup Parse query
+  var queryPost = Parse.Object.extend("Post");
+  var queryP = new Parse.Query(queryPost); 
+  //var querypostSocial = Parse.Object.extend("PostSocial");
+  //var queryPostSocial = new Parse.Query(querypostSocial); 
   
+  var Workspace = new Parse.Object("WorkSpace"); 
+  Workspace.id = workspace;
+  
+  var User = new Parse.Object("_User");
+  User.id = user;
+
+  queryP.include( ["user", "workspace", "project", "postSocial.user", "postSocial.isLiked", "postSocial.isBookmarked"] );
+  queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
+  
+  queryP.equalTo("workspace", Workspace);
+
+  // todo get posts that the user is allowed to view
+  
+  // setup query filter for post
+  queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
+  queryP.descending("updatedAt");   
+  queryP.limit(hit); // limit to hits
+  if (skip) {
+    queryP.skip(skip);
+  }
+  if (project == 'all') { 
+    // do nothing, since we want all projects in a workspace
+  } else if (project) {
+      var Project = new Parse.Object("Project");
+      Project.id = project;
+      queryP.equalTo("project", Project);
+        
+  } 
+
+  //var beforeQuery = process.hrtime(time);
+  //console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);       
+  //var bQuery = process.hrtime();
+          
+  queryP.find({
+    success: function(results) {
+      
+      //var queryTime = process.hrtime(bQuery);
+      //console.log(`after queryP took ${(queryTime[0] * NS_PER_SEC + queryTime[1])  * MS_PER_NS} milliseconds`);
+      //var mQuery = process.hrtime();   
+      
+      for (var i=0;i< results.length; i++) { 
+
+        var postSocialRelation = results[i].relation("postSocial"); 
+        var postSocialRelationQuery = postSocialRelation.query();
+        postSocialRelationQuery.equalTo("user", User);
+        //postSocialRelationQuery.doesNotExist("archive");
+        //postSocialRelationQuery.select(["isBookmarked", "isLiked"]); 
+        postSocialRelationQuery.find({
+        success: function(postSocialResults) {
+          //console.log(JSON.stringify(postSocialResults));
+          
+           if (postSocialResults.isLiked) {
+                object.set("isLiked", postSocialResults.get("isLiked"));
+                
+          } else if (postSocialResults.isBookmarked) {
+            
+                object.set("isBookmarked", postSocialResults.get("isBookmarked"));
+                    
+          } else {
+               object.set("isLiked", false);
+               object.set("isBookmarked", false);
+          }
+          
+          //var postSocialRelationQueryTime = process.hrtime(mQuery);
+          //console.log(`after postSocialRelationQuery took ${(postSocialRelationQueryTime[0] * NS_PER_SEC + postSocialRelationQueryTime[1])  * MS_PER_NS} milliseconds`);
+                                   
+        
+        },
+        error: function(err) {
+          response.error(err);
+        }
+         
+      });
+
+     }
+     
+    //var forLoop = process.hrtime(mQuery);
+    //console.log(`forLoop took ${(forLoop[0] * NS_PER_SEC + forLoop[1])  * MS_PER_NS} milliseconds`);                    
+    
+    var diff = process.hrtime(time);
+    //console.log("finalResults: "+ JSON.stringify(results));
+    console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);    
+    response.success(results); 
+                                          
+    },
+    error: function(err) {
+      response.error("queryPost Error: "+ err);
+    }
+  });
+        
+
 });
 
 
