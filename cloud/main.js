@@ -16,6 +16,20 @@ var indexMeetings = client.initIndex('dev_meetings');
 var indexProject = client.initIndex('dev_channels');
 var indexWorkspaces = client.initIndex('dev_workspaces');
 
+// test cloud code functions
+Parse.Cloud.define("cloudCodeTest", function(request, response) {
+  
+  Parse.Cloud.run("QueryPostFeed", {}).then(function(result) {
+    
+    console.log("result: "+ result);
+    
+  }, function(error) {
+     response.error(error);
+  });
+  
+  
+});
+
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
 Parse.Cloud.define("QueryPostFeed", function(request, response) {
    
