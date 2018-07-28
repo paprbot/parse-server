@@ -9,19 +9,6 @@ var querystring = require('querystring');
 var process = require('process');
 var mongoClient = require("mongodb").MongoClient;
 
-/*var mongo = require('mongodb'),  
-  Server = mongo.Server,
-  Db = mongo.Db;
-var server = new Server('mongodb://parseserverdevdb-parse:4zkso2VhP8RrVcvWymyNAlNKfa0KGGThwfmbJCIUuHspnDro9dtkLf3KMkQOT8Fu530m44yhaxvu0HBaouSK5w%3D%3D@parseserverdevdb-parse.documents.azure.com:10255/?ssl=true', 10255, {  
-  auto_reconnect: true
-});
-var db = new Db('parse', server);  
-var onErr = function(err, callback) {  
-  db.close();
-  callback(err);
-};*/
-
-
 // Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
 var indexPosts = client.initIndex('dev_posts');
 var indexUsers = client.initIndex('dev_users');
@@ -865,6 +852,46 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     
   }
   
+  // function to archive/unarchive postSocial relatio if a post is archived/unarchived
+  function archivePostSocial (callback) {
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var timeArchive = process.hrtime();
+    var archive_Time;
+    
+    // if post is updated and specifically the archive field is updated then update postSocial archive field.
+    if (!post.isNew() && post.dirty("archive")) {
+      
+      var postSocialRelation = post.relation("postSocial");
+      var postSocialRelationQuery = postSocialRelation.query();
+      postSocialRelationQuery.find({
+        success: function(postSocialResults) {
+          
+          for (var i = 0; i < postSocialResults.length; i++) {
+            
+            postSocialResults[i].set("archive", post.get("archive"));
+            postSocialResults[i].save();
+            
+          }
+          
+          archive_Time = process.hrtime(timeArchive);
+          console.log(`archive_Time took ${(archive_Time[0] * NS_PER_SEC + archive_Time[1]) * MS_PER_NS} milliseconds`);
+          
+          return callback(null, post);
+          
+        }, 
+        error: function(err) {
+          // if there is no postSocial results, then just ignore
+          return callback(null, post);
+        }
+        
+      });
+      
+      
+    } else { return callback(null, post);}
+    
+  }
+  
   // Function to identify if a text post hasURL
   function getURL (callback) {
     
@@ -1033,6 +1060,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     async.apply(getHashtags),
     async.apply(getMentions),
     async.apply(getURL),
+    async.apply(archivePostSocial)
     //async.apply(getIntents)
     
   ], function (err, post) {
@@ -1272,6 +1300,32 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
   
 });
 
+// Create relationship from post to PostSocial after a PostSocial is saved
+Parse.Cloud.afterSave('PostSocial', function(request, response) {
+  
+  var NS_PER_SEC = 1e9;
+  const MS_PER_NS = 1e-6;
+  var time = process.hrtime();
+  
+  // Convert Parse.Object to JSON
+  var postSocial = request.object;
+  var post = postSocial.get("post");
+  
+  var relation = post.relation("postSocial");
+  //console.log("beforeAdd: " + JSON.stringify(relation));
+          
+  relation.add(postSocial);
+  //console.log("afterAdd: " + JSON.stringify(relation));
+      
+  post.save();
+        
+  var diff = process.hrtime(time);
+  console.log(`PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+  response.success();
+  
+  
+});
+
 // Add and Update AlgoliaSearch post object if it's deleted from Parse
 Parse.Cloud.afterSave('Post', function(request, response) {
  
@@ -1284,9 +1338,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
   queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
   queryPost.equalTo("objectId", objectToSave.objectId);
   
-  console.log("Request: " + JSON.stringify(request));
-  console.log("objectID: " + objectToSave.objectId);
-  console.log("objectID: " + objectToSave.user.objectId);
+  //console.log("Request: " + JSON.stringify(request));
+  //console.log("objectID: " + objectToSave.objectId);
+  //console.log("objectID: " + objectToSave.user.objectId);
   
   queryPost.first({
     success: function(post) {
@@ -1294,7 +1348,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
       function prepIndex (callback) {
         
         // Successfully retrieved the object.
-        console.log("ObjectToSave: " + JSON.stringify(post));
+        //console.log("ObjectToSave: " + JSON.stringify(post));
         
         // Convert Parse.Object to JSON
         post = post.toJSON();
@@ -1309,7 +1363,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             
      function addObjectAlgolia (post, callback) {
         
-         console.log("objectToSave: "+ JSON.stringify(post)); 
+         //console.log("objectToSave: "+ JSON.stringify(post)); 
         
          // Add or update object
         indexPosts.saveObject(post, function(err, content) {
@@ -1332,7 +1386,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 response.error(err);
             }
     
-            console.log("final meeting: " + JSON.stringify(post));
+            //console.log("final meeting: " + JSON.stringify(post));
             response.success();
       });
      
