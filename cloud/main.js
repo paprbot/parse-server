@@ -19,9 +19,18 @@ var indexWorkspaces = client.initIndex('dev_workspaces');
 // test cloud code functions
 Parse.Cloud.define("cloudCodeTest", function(request, response) {
   
-  Parse.Cloud.run("QueryPostFeed", {}).then(function(result) {
+  Parse.Cloud.run("QueryPostFeed", { 
     
-    console.log("result: "+ result);
+    hit: 10, 
+    user: "7LW63IRFT6",
+    workspace: "SZ8PICViue",
+    project: "all",
+    skip: 10  
+    
+  }).then(function(result) {
+    
+    console.log("result: "+ JSON.stringify(result));
+    response.success();
     
   }, function(error) {
      response.error(error);
