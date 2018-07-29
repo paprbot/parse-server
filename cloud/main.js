@@ -2,6 +2,7 @@
 var algoliasearch = require('algoliasearch');
 var client = algoliasearch('K3ET7YKLTI', '67085f00b6dbdd989eddc47fd1975c9c');
 var async = require('async');
+var lodash = require('lodash');
 var _ = require("underscore");
 var urlRegex = require('url-regex');
 var requestURL = require('request');
@@ -37,6 +38,186 @@ Parse.Cloud.define("cloudCodeTest", function(request, response) {
   });
   
   
+});
+
+// cloud API and function to test query performance of AlgoliaSearch versus Parse
+Parse.Cloud.define("QueryPostFeed3", function(request, response) {
+   
+  var NS_PER_SEC = 1e9;
+  const MS_PER_NS = 1e-6;
+  var time = process.hrtime();
+  
+  //get request params
+  var hit = parseInt(request.params.hit); 
+  var user = request.params.user;
+  var project = request.params.project;
+  var workspace = request.params.workspace;
+  var skip = parseInt(request.params.skip); 
+       
+  // Setup Parse query
+  var queryPost = Parse.Object.extend("Post");
+  var queryP = new Parse.Query(queryPost); 
+  var querypostSocial = Parse.Object.extend("PostSocial");
+  var queryPostSocial = new Parse.Query(querypostSocial); 
+  
+  var Workspace = new Parse.Object("WorkSpace"); 
+  Workspace.id = workspace;
+  
+  var User = new Parse.Object("_User");
+  User.id = user;
+
+  queryP.include( ["user", "workspace", "project", "postSocial.user", "postSocial.isLiked", "postSocial.isBookmarked"] );
+  queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
+  
+  queryP.equalTo("workspace", Workspace);
+
+  // todo get posts that the user is allowed to view
+  
+  // setup query filter for post
+  queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
+  queryP.descending("updatedAt");   
+  queryP.limit(hit); // limit to hits
+  if (skip) {
+    queryP.skip(skip);
+  }
+  if (project == 'all') { 
+    // do nothing, since we want all projects in a workspace
+  } else if (project) {
+      var Project = new Parse.Object("Project");
+      Project.id = project;
+      queryP.equalTo("project", Project);
+        
+  } 
+
+  //var beforeQuery = process.hrtime(time);
+  //console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);       
+  //var bQuery = process.hrtime();
+  
+    
+  // function to do two queries in parallel async
+  //function queryParallel (callback) {
+    
+  
+      //function to find queryP results
+      function queryPostFind (callback) {
+        
+        //var NS_PER_SEC = 1e9;
+        //const MS_PER_NS = 1e-6;
+        //var timequeryPostFind = process.hrtime();
+        //var queryPTime;
+        
+        queryP.find({
+        success: function(results) {
+          
+          //queryPTime = process.hrtime(timequeryPostFind);
+          //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+          //console.log("results: "+JSON.stringify(results));   
+          
+          return callback(null, results);
+                                                   
+        },
+        error: function(err) {
+          response.error("queryPost Error: "+ err);
+        }
+       });
+        
+      }
+      
+      // function to find socialPosts results
+      function querySocialPostFind (callback) {
+        
+        //var NS_PER_SEC = 1e9;
+        //const MS_PER_NS = 1e-6;
+        //var timequerySocialPostFind = process.hrtime();
+        //var querySocialPostFindTime;
+        
+        queryPostSocial.equalTo("user", User);
+        queryPostSocial.containedIn("type", ["1", "2"]);
+        //queryPostSocial.matchesQuery("post", queryP);
+        //postSocialRelationQuery.doesNotExist("archive");
+        //postSocialRelationQuery.select(["isBookmarked", "isLiked"]); 
+        queryPostSocial.find({
+        success: function(postSocialResults) {
+          //console.log("postSocialResults 1: "+JSON.stringify(postSocialResults));
+                   
+          //querySocialPostFindTime = process.hrtime(timequerySocialPostFind);
+          //console.log(`function querySocialPostFindTime took ${(querySocialPostFindTime[0] * NS_PER_SEC + querySocialPostFindTime[1])  * MS_PER_NS} milliseconds`);                             
+          
+          return callback(null, postSocialResults);
+        },
+        error: function(err) {
+          response.error(err);
+        }     
+         
+      });
+        
+        
+      }
+      
+      async.parallel([ 
+        async.apply(queryPostFind),
+        async.apply(querySocialPostFind) 
+        
+        ], function (err, results) {
+              if (err) {
+                  response.error(err);
+              }
+    
+              //var postResults = results[0];
+              //var postSocialResults = results[1];
+              
+              // using process.hrtime since it's more precise 
+              //var queryFinal = process.hrtime(time);            
+              //console.log(`queryFinal took ${(queryFinal[0] * NS_PER_SEC + queryFinal[1])  * MS_PER_NS} milliseconds`);             
+              //var beforelodash = process.hrtime();
+              
+
+            var merge = lodash.merge(results[0], results[1]);
+            
+            /*var merge = _.map(postSocialResults, function(item) {
+                return _.merge(item, _.find(postResults, { 'objectId' : (item.get("post")).objectId }));
+            });*/
+
+                
+             /*var postResultsFinal = lodash.find(postResults, function(obj2){ 
+                                  
+                  POST = obj2;
+                  postId2 = obj2.objectId;
+                  //postId1 = lodash.filter(postResults, { "objectId": postId2 } );
+                  
+                  lodash.find(postSocialResults, function(obj){ 
+                  
+                  	if((obj.get("post")).objectId == postId2){
+                  
+                  		POST.set("isLiked", obj.isLiked);
+                      POST.set("isBookmarked", obj.isBookmarked);
+                      POST.set("postSocialId", obj.id);
+                      console.log("we have a match! WOhooo: " + POST);       
+                  
+                  	}
+                    
+                    var lodashTime = process.hrtime(beforelodash);            
+                    console.log(`lodash took ${(lodashTime[0] * NS_PER_SEC + lodashTime[1])  * MS_PER_NS} milliseconds`);             
+
+                  
+                  });
+                  
+                                
+              });*/
+                           
+                         
+              //console.log("postResults: "+ JSON.stringify(merge.length));
+              var finalTime = process.hrtime(time); 
+              console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+              response.success(merge);
+              //return callback (null, resultsToMap);             
+                    
+        });
+   // }
+          
+  
+        
+
 });
 
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
@@ -754,65 +935,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         //var queryWorkspace = new Parse.Query(Workspace);
         Workspace.increment("postCount");
         Workspace.save();
-        //queryWorkspace.include( ["workspace"] );
-        //queryWorkspace.select(["postCount"]);
-        //queryWorkspace.equalTo("objectId", workspace.id);
-        
-        //console.log("Request: " + JSON.stringify(req));
-        //console.log("Workspace.id: " + workspace.id);
-  
-        /*queryWorkspace.get(workspace.id, {
-          success: function(myObject) {
-              
-              // Successfully retrieved the object.
-              //console.log("queryWorkspace: " + JSON.stringify(myObject));
-                     
-              if (!myObject.get("postCount")) {
-                myObject.set("postCount", 0);
-                //console.log("Workspace undefined: " + JSON.stringify(myObject));
-              } 
-              
-              //console.log("postcount before: "+ JSON.stringify(myObject.get("postCount")));
-              
-              myObject.increment("postCount", 1);
-              //console.log("postcount after: "+ JSON.stringify(myObject.get("postCount")));
-              //myObject.set("user", user);
-              //myObject.setACL(new Parse.ACL(user));
-              
-              Post.set("workspace", myObject);
-              //console.log("postWorkspace: " + JSON.stringify(Post));
-              //console.log("Workspace final: " + JSON.stringify(myObject));
-              
-              myObject.save(null, {
-                  success: function(object) {
-                    // Execute any logic that should take place after the object is saved.
-                    //console.log("postCount Updated: " + JSON.stringify(object));
-                    
-                    alert('New post created for this workspace ID: ' + object.id);
-                   
-                  
-                },
-                  error: function(object, error) {
-                    // Execute any logic that should take place if the save fails.
-                    // error is a Parse.Error with an error code and message.
-                    alert('Failed to create new object, with error code: Workspace Save ' + error.message);
-                    response.error('error Save postCount for Workspace' + error.message);
-                  }
-                });
-                      
-              post = Post;
-              
-              //return callback(null, post);
-              
-            },
-          error: function(myObject, error) {
-            // The object was not refreshed successfully.
-            // error is a Parse.Error with an error code and message.
-            alert('Failed to refresh workspace, with error code: Workspace Save ' + error.message);
-            
-            //return callback(null, post);
-          }
-        });*/
+
         
          if (project) {
           // add counter for posts to project collection
@@ -825,76 +948,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
           
           return callback(null, post);
           
-          //console.log("Project: " + JSON.stringify(Project));
-          
-          //var Post = Parse.Object.extend("Post");
-          //var queryProject = new Parse.Query(Project);
-          //queryWorkspace.include( ["workspace"] );
-          //queryProject.select(["postCount"]);
-          //queryProject.equalTo("objectId", project.id);
-          
-         
-          /*queryProject.get(project.id, {
-            success: function(myObject) {
-                
-                // Successfully retrieved the object.
-                //console.log("queryProject: " + JSON.stringify(myObject));
-                       
-                if (!myObject.get("postCount")) {
-                  myObject.set("postCount", 0);
-                  //console.log("Project undefined: " + JSON.stringify(myObject));
-                } 
-                
-                //console.log("postcount before: "+ JSON.stringify(myObject.get("postCount")));
-                
-                myObject.increment("postCount", 1);
-                //console.log("postcount after: "+ JSON.stringify(myObject.get("postCount")));
-                //myObject.set("user", user);
-                //myObject.setACL(new Parse.ACL(user));
-                
-                Post.set("Project", myObject);
-                //console.log("postProject: " + JSON.stringify(Post));
-                //console.log("Project final: " + JSON.stringify(myObject));
-                
-                myObject.save(null, {
-                    success: function(object) {
-                      // Execute any logic that should take place after the object is saved.
-                      //console.log("postCount Updated: " + JSON.stringify(object));
-                      
-                      alert('New post created for this project ID: ' + object.id);
-                     
-                    
-                  },
-                    error: function(object, error) {
-                      // Execute any logic that should take place if the save fails.
-                      // error is a Parse.Error with an error code and message.
-                      alert('Failed to create new object, with error code: Workspace Save ' + error.message);
-                      response.error('error Save postCount for Workspace' + error.message);
-                    }
-                  });
-                        
-                post = Post;
-                
-                countPosts_Time = process.hrtime(timeCountPosts);
-              
-                console.log(`countPosts took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
-
-                
-                return callback(null, post);
-                
-              },
-            error: function(myObject, error) {
-              // The object was not refreshed successfully.
-              // error is a Parse.Error with an error code and message.
-              alert('Failed to refresh workspace, with error code: Workspace Save ' + error.message);
-              
-              countPosts_Time = process.hrtime(timeCountPosts); 
-              console.log(`countPosts took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
-
-              return callback(null, post);
-            }
-        });*/
-          
+               
           
         } else {
         
