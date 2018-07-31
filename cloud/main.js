@@ -9,6 +9,8 @@ var requestURL = require('request');
 var querystring = require('querystring');
 var process = require('process');
 var mongoClient = require("mongodb").MongoClient;
+var Promise = require('promise');
+
 
 // Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
 var indexPosts = client.initIndex('dev_posts');
@@ -41,7 +43,7 @@ Parse.Cloud.define("cloudCodeTest", function(request, response) {
 });
 
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
-Parse.Cloud.define("QueryPostFeed3", function(request, response) {
+Parse.Cloud.define("QueryPostFeed", function(request, response) {
    
   var NS_PER_SEC = 1e9;
   const MS_PER_NS = 1e-6;
@@ -183,6 +185,8 @@ Parse.Cloud.define("QueryPostFeed3", function(request, response) {
             //console.log("OnePost: "+ JSON.stringify(postResults[0]));
             //console.log("postSocialResults: "+ postSocialResults.length);
             //var i = 0;
+            
+           
             var merge = lodash.map(postResults, function(item) {
                 //console.log("count: "+ i++);
                 //console.log("item id post: " + JSON.stringify(item));
@@ -190,24 +194,18 @@ Parse.Cloud.define("QueryPostFeed3", function(request, response) {
                 return lodash.merge(JSON.parse(JSON.stringify(item)), 
                   {
                      "postSocial": lodash.find(postSocialResults, function(obj){ 
+                            //console.log("item id post: " + JSON.stringify((obj.get("post")).id));
                      
-                            return (obj.get("postId") === item.id);  
+                            return ((obj.get("post")).id === item.id);  
                       
                       })
                   }
                                    
                 ); 
                 
-                //return item;              
                 
             });
-            
-            //console.log("length: "+ merge.length);
-           
-            
-
-       
-                           
+                                     
                          
               //console.log("postResults: "+ JSON.stringify(merge.length));
               var finalTime = process.hrtime(time); 
@@ -224,7 +222,7 @@ Parse.Cloud.define("QueryPostFeed3", function(request, response) {
 });
 
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
-Parse.Cloud.define("QueryPostFeed", function(request, response) {
+Parse.Cloud.define("QueryPostFeed2", function(request, response) {
    
   var NS_PER_SEC = 1e9;
   const MS_PER_NS = 1e-6;
@@ -416,80 +414,6 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
 
 });
 
-// cloud API and function to test query performance of AlgoliaSearch versus Parse
-Parse.Cloud.define("QueryPostFeed2", function(request, response) {
-   
-  var NS_PER_SEC = 1e9;
-  const MS_PER_NS = 1e-6;
-  var time = process.hrtime();
-  
-  //get request params
-  var hit = parseInt(request.params.hit); 
-  var user = request.params.user;
-  var project = request.params.project;
-  var workspace = request.params.workspace;
-  var skip = parseInt(request.params.skip); 
-         
-  // Setup Parse query
-  var queryPost = Parse.Object.extend("Post");
-  var queryP = new Parse.Query(queryPost); 
-  var querypostSocial = Parse.Object.extend("PostSocial");
-  var queryPostSocial = new Parse.Query(querypostSocial); 
-  
-  var Workspace = new Parse.Object("WorkSpace"); 
-  Workspace.id = workspace;
-  
-  var User = new Parse.Object("_User");
-  User.id = user;
-
-  queryP.include(["user", "workspace", "project", "postSocial.user", "postSocial.isLiked", "postSocial.isBookmarked"] );
-  queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
-  
-  queryP.equalTo("workspace", Workspace);
-
-  // todo get posts that the user is allowed to view
-  
-  // setup query filter for post
-  queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
-  queryP.descending("updatedAt");   
-  queryP.limit(hit); // limit to hits
-  if (skip) {
-    queryP.skip(skip);
-  }
-  if (project == 'all') { 
-    // do nothing, since we want all projects in a workspace
-  } else if (project) {
-      var Project = new Parse.Object("Project");
-      Project.id = project;
-      queryP.equalTo("project", Project);
-        
-  } 
-  queryPostSocial.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
-  queryPostSocial.matchesQuery("post", queryP);
-  queryPostSocial.include(["post.user", "post", "post.workspace", "post.project"]);
-  queryPostSocial.equalTo("userGroup", User);
-
-  var beforeQuery = process.hrtime(time);
-  console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);       
-          
-  queryPostSocial.find({
-    success: function(results) {
-      
-      //console.log("results: "+JSON.stringify(results.length));  
-     
-                        
-      var finalTime = process.hrtime(time);
-      console.log(`after finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);                             
-      response.success(results);  
-                                          
-    },
-    error: function(err) {
-      response.error("queryPost Error: "+ err);
-    }
-  });
-        
-
-});
 
 
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
@@ -1134,59 +1058,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     
   }
   
-  // function to create 4 postSocials for each post to track likes/bookmarks
-  function createPostSocial (callback) {
-    
-    var NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    var timecreatePostSocial = process.hrtime();
-    var reatePostSocial_Time;
-    
-    var objs = [];
-    var postSocialObj = Parse.Object.extend("PostSocial");
-    var PostSocialObj1 = new Parse.Object(postSocialObj);
-    var PostSocialObj2 = new Parse.Object(postSocialObj);
-    var PostSocialObj3 = new Parse.Object(postSocialObj);
-    var PostSocialObj4 = new Parse.Object(postSocialObj);
-    PostSocialObj1.set("post", post.id);
-    PostSocialObj1.set("isBookmarked", true);
-    PostSocialObj1.set("isLiked", true);
-    PostSocialObj2.set("post", post.id);
-    PostSocialObj2.set("isBookmarked", true);
-    PostSocialObj2.set("isLiked", false);
-    PostSocialObj3.set("post", post.id);
-    PostSocialObj3.set("isBookmarked", false);
-    PostSocialObj3.set("isLiked", true);
-    PostSocialObj4.set("post", post.id);
-    PostSocialObj4.set("isBookmarked", false);
-    PostSocialObj4.set("isLiked", false);
-    objs.push([PostSocialObj1,PostSocialObj2, PostSocialObj3, PostSocialObj4 ]);   
-    
-    if(post.isNew()) {
-      
-      
-      Parse.Object.saveAll(objs, {
-        success: function (result) {
-
-            console.log('success: '+ JSON.stringify(result));
-            reatePostSocial_Time = process.hrtime(timecreatePostSocial);
-            console.log(`CreatePostSocial_Time took ${(reatePostSocial_Time[0] * NS_PER_SEC + reatePostSocial_Time[1]) * MS_PER_NS} milliseconds`);
-             
-            return callback(null, post);
-        },
-        error: function (err) {
-            response.error('error:' + err);
-             
-        }
-      });
-        
-      
-      
-      
-    }
-    
-    
-  }
+  
   
   // Function to identify if a text post hasURL
   function getURL (callback) {
@@ -1385,215 +1257,300 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
  
   var workspace_follower = req.object;
   var workspace = workspace_follower.get("workspace");
-  console.log("workspace_post: " + JSON.stringify(workspace));
-  var project = workspace_follower.get("project"); 
-  console.log("project_post: " + JSON.stringify(project));
-
-  console.log("post: " + JSON.stringify(workspace_follower));
   
-  // Function to count number of followers/members
-  function countWorkspaceFollower (callback) {
+  var WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+  var WorkspaceFollower = new WORKSPACEFOLLOWER();
+  WorkspaceFollower.id = workspace_follower.id;
+  var queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
     
-      var NS_PER_SEC = 1e9;
-      const MS_PER_NS = 1e-6;
-      var timeCountPosts = process.hrtime();
-      var countPosts_Time; 
-      
-      // if there is a post that got added, then increase counter, else ignoremyObject
-      if (workspace_follower.isNew()) {
-        
-        var WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-        var WorkspaceFollower = new WORKSPACEFOLLOWER();
-        WorkspaceFollower.id = workspace_follower.objectId;
-        
-        // add counter for posts to workspace collection
-        var WORKSPACE = Parse.Object.extend("WorkSpace");
-        var Workspace = new WORKSPACE();
-        Workspace.id = workspace.id;
-        
-        // Convert Parse.Object to JSON
-        //var objectToSave = Workspace.id.toJSON();
-        
-        //var Post = Parse.Object.extend("Post");
-        var queryWorkspace = new Parse.Query(Workspace);
-        //queryWorkspace.include( ["workspace"] );
-        queryWorkspace.select(["followerCount", "memberCount"]);
-        queryWorkspace.equalTo("objectId", workspace.id);
-        
-        console.log("Request: " + JSON.stringify(req));
-        console.log("Workspace.id: " + workspace.id);
+  // add counter for posts to workspace collection
+  var WORKSPACE = Parse.Object.extend("WorkSpace");
+  var Workspace = new WORKSPACE();
+  Workspace.id = workspace.id;
   
-        queryWorkspace.first({
-          success: function(myObject) {
-              
-              // Successfully retrieved the object.
-              console.log("queryWorkspace: " + JSON.stringify(myObject));
-                     
-              if (!myObject.get("followerCount")) {
-                myObject.set("followerCount", 0);
-                console.log("Workspace undefined: " + JSON.stringify(myObject));
-              } 
-              
-              console.log("followerCount before: "+ JSON.stringify(myObject.get("followerCount")));
-              
-              myObject.increment("followerCount", 1);
-              console.log("followerCount after: "+ JSON.stringify(myObject.get("followerCount")));
-              //myObject.set("user", user);
-              //myObject.setACL(new Parse.ACL(user));
-              
-              WorkspaceFollower.set("workspace", myObject);
-              console.log("postWorkspace: " + JSON.stringify(WorkspaceFollower));
-              console.log("Workspace final: " + JSON.stringify(myObject));
-              
-              myObject.save(null, {
-                  success: function(object) {
-                    // Execute any logic that should take place after the object is saved.
-                    console.log("followerCount Updated: " + JSON.stringify(object));
-                    
-                    alert('New post created for this workspace ID: ' + object.id);
-                   
-                  
-                },
-                  error: function(object, error) {
-                    // Execute any logic that should take place if the save fails.
-                    // error is a Parse.Error with an error code and message.
-                    alert('Failed to create new object, with error code: Workspace Save ' + error.message);
-                    response.error('error Save followerCount for Workspace' + error.message);
-                  }
-                });
-                      
-              workspace_follower = WorkspaceFollower;
-              
-              //return callback(null, post);
-              
-            },
-          error: function(myObject, error) {
-            // The object was not refreshed successfully.
-            // error is a Parse.Error with an error code and message.
-            alert('Failed to refresh workspace, with error code: Workspace Save ' + error.message);
-            
-            //return callback(null, post);
-          }
-        });
-        
-         if (project) {
-          // add counter for posts to project collection
-          var PROJECT = Parse.Object.extend("Project");
-          var Project = new PROJECT();
-          Project.id = project.id;
-          
-          console.log("Project: " + JSON.stringify(Project));
-          
-          var queryProject = new Parse.Query(Project);
-          queryProject.select(["followerCount", "memberCount"]);
-          queryProject.equalTo("objectId", project.id);
-          
-         
-          queryProject.first({
-            success: function(myObject) {
-                
-                // Successfully retrieved the object.
-                console.log("queryProject: " + JSON.stringify(myObject));
-                       
-                if (!myObject.get("followerCount")) {
-                  myObject.set("followerCount", 0);
-                  console.log("Project undefined: " + JSON.stringify(myObject));
-                } 
-                
-                console.log("followerCount before: "+ JSON.stringify(myObject.get("followerCount")));
-                
-                myObject.increment("followerCount", 1);
-                console.log("followerCount after: "+ JSON.stringify(myObject.get("followerCount")));
-                //myObject.set("user", user);
-                //myObject.setACL(new Parse.ACL(user));
-                
-                WorkspaceFollower.set("Project", myObject);
-                console.log("postProject: " + JSON.stringify(WorkspaceFollower));
-                console.log("Project final: " + JSON.stringify(myObject));
-                
-                myObject.save(null, {
-                    success: function(object) {
-                      // Execute any logic that should take place after the object is saved.
-                      console.log("postCount Updated: " + JSON.stringify(object));
-                      
-                      alert('New post created for this project ID: ' + object.id);
-                     
-                    
-                  },
-                    error: function(object, error) {
-                      // Execute any logic that should take place if the save fails.
-                      // error is a Parse.Error with an error code and message.
-                      alert('Failed to create new object, with error code: Workspace Save ' + error.message);
-                      response.error('error Save postCount for Workspace' + error.message);
-                    }
-                  });
-                        
-                workspace_follower = WorkspaceFollower;
-                
-                countPosts_Time = process.hrtime(timeCountPosts);
-              
-                console.log(`countWorkspaceFollower took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
-
-                
-                return callback(null, workspace_follower);
-                
-              },
-            error: function(myObject, error) {
-              // The object was not refreshed successfully.
-              // error is a Parse.Error with an error code and message.
-              alert('Failed to refresh workspace, with error code: Workspace Save ' + error.message);
-              
-              countPosts_Time = process.hrtime(timeCountPosts); 
-              console.log(`countWorkspaceFollower took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
-
-              return callback(null, workspace_follower);
-            }
-        });
-          
-          
-        } else {
-        
-        countPosts_Time = process.hrtime(timeCountPosts); 
-        console.log(`countWorkspaceFollower took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
-
-        return callback(null, workspace_follower);
-        
-        }
-      
-               
-        
-      }
-      
-      else {
-        
-        countPosts_Time = process.hrtime(timeCountPosts); 
-        console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
- 
-        return callback(null, workspace_follower);
-        
-      }
-        
-       
-
-  }
- 
-  
-  async.parallel([ 
-    async.apply(countWorkspaceFollower)
+  // if there is a post that got added, then increase counter, else ignoremyObject
+  if (workspace_follower.isNew()) {
     
-  ], function (err, post) {
-        if (err) {
-            response.error(err);
-        }
-
-        console.log("final post: " + JSON.stringify(post));
-        
-        var beforeSave_Time = process.hrtime(time); 
+    var beforeSave_Time;
+    
+    if(workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === true) {
+        Workspace.increment("followerCount"); 
+        Workspace.increment("memberCount");
+        Workspace.save();         
+        beforeSave_Time = process.hrtime(time); 
         console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
         response.success();
-    });
+    } else if (workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === false) {
+        Workspace.increment("followerCount"); 
+        Workspace.save();  
+        beforeSave_Time = process.hrtime(time); 
+        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+      
+    } else if (workspace_follower.get("isFollower") === false && workspace_follower.get("isMember") === true) {
+        Workspace.increment("memberCount");
+        Workspace.save();  
+        beforeSave_Time = process.hrtime(time); 
+        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+      
+    } else {
+        if (workspace_follower.get("type") === "1") {
+          response.error("error: type is 1, Please mark isMember or isFollower to true or change workspace_follower.type = 2 for comments");
+        } else {
+          
+          beforeSave_Time = process.hrtime(time); 
+          console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
   
+          response.success();
+        }
+           
+    }  
+             
+  } else if (!workspace_follower.isNew() && (workspace_follower.dirty("isFollower") || workspace_follower.dirty("isMember"))) {
+    
+    //console.log(WorkspaceFollower.id);
+    //queryWorkspaceFollower.equalTo("objectId", WorkspaceFollower.id);
+    queryWorkspaceFollower.get(WorkspaceFollower.id, {
+        success: function(result) {
+          
+          console.log("queryWorkspaceFollower: "+JSON.stringify(result.get("isFollower") ));
+          
+          //queryPTime = process.hrtime(timequeryPostFind);
+          //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+          
+          if (workspace_follower.dirty("isFollower")) {
+            
+            if (result.get("isFollower") === workspace_follower.get("isFollower")) {
+            
+              console.log("user isFollower did not change");
+              // doin't increment or decrement because the user isFollow status did not change
+                        
+            } else if ((result.get("isFollower")  === false || !result.get("isFollower") ) && workspace_follower.get("isFollower") === true) {
+              
+              Workspace.increment("followerCount"); 
+              console.log("increment Follower");
+              //Workspace.save();              
+              
+            } else if ((result.get("isFollower")  === true) && workspace_follower.get("isFollower") === false) {
+              
+              Workspace.decrement("followerCount"); 
+              console.log("decrement Follower");
+              //Workspace.save();  
+              
+            } else {
+              
+              console.log("do nothing Follower");
+              // do nothing
+              
+            }                 
+       
+          } else if (workspace_follower.dirty("isMember")) {
+            
+            if (result.get("isMember")  === workspace_follower.get("isMember")) {
+            
+              console.log("user isMember did not change");
+              // doin't increment or decrement because the user isFollow status did not change
+                        
+            } else if ((result.get("isMember") === false || !result.get("isMember")) && workspace_follower.get("isMember") === true) {
+              
+              Workspace.increment("memberCount"); 
+              console.log("increment Member");
+              //Workspace.save();              
+              
+            } else if ((result.get("isMember") === true) && workspace_follower.get("isMember") === false) {
+              
+              Workspace.decrement("memberCount");  
+              console.log("decrement Member");
+              //Workspace.save();  
+              
+            } else {
+              
+              console.log("do nothing Member");
+              // do nothing
+              
+            }            
+      
+      
+          }
+          
+          console.log("Workspace: "+JSON.stringify(Workspace));
+          Workspace.save();
+          beforeSave_Time = process.hrtime(time); 
+          console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+  
+          response.success();    
+          
+          
+                                                   
+        },
+        error: function(object, error){
+          response.error("queryWorkspaceFollower Error: "+ JSON.stringify(error));
+        }
+       }
+      
+      
+    );
+    
+  }   else {
+    
+    console.log("do nothing at all");
+      
+    var beforeSaveElse_Time = process.hrtime(time); 
+    console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1])  * MS_PER_NS} milliseconds`);
+
+    response.success();
+        
+  }
+  
+});
+
+// Run beforeSave functions to count number of project followers and members
+Parse.Cloud.beforeSave('ProjectFollow', function(req, response) {
+  
+  var NS_PER_SEC = 1e9;
+  const MS_PER_NS = 1e-6;
+  var time = process.hrtime();
+ 
+  var projectfollow = req.object;
+  var project = projectfollow.get("workspace");
+  
+  var PROJECTFOLLOW = Parse.Object.extend("ProjectFollow");
+  var ProjectFollow = new PROJECTFOLLOW();
+  ProjectFollow.id = projectfollow.id;
+  var queryProjectFollow = new Parse.Query(PROJECTFOLLOW);
+    
+  var PROJECT = Parse.Object.extend("Project");
+  var Project = new PROJECT();
+  Project.id = project.id;
+
+  //console.log("post: " + JSON.stringify(projectfollow));
+  
+  // if there is a post that got added, then increase counter, else ignoremyObject
+  if (projectfollow.isNew()) {
+    
+    var beforeSave_Time;
+    
+    if(projectfollow.get("isFollower") === true && projectfollow.get("isMember") === true) {
+        Project.increment("followerCount"); 
+        Project.increment("memberCount");
+        Project.save();         
+        beforeSave_Time = process.hrtime(time); 
+        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+    } else if (projectfollow.get("isFollower") === true && projectfollow.get("isMember") === false) {
+        Project.increment("followerCount"); 
+        Project.save();  
+        beforeSave_Time = process.hrtime(time); 
+        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+      
+    } else if (projectfollow.get("isFollower") === false && projectfollow.get("isMember") === true) {
+        Project.increment("memberCount");
+        Project.save();  
+        beforeSave_Time = process.hrtime(time); 
+        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+      
+    } else {
+          
+          beforeSave_Time = process.hrtime(time); 
+          console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+  
+          response.success();
+           
+    }  
+             
+  } else if (!projectfollow.isNew() && (projectfollow.dirty("isFollower") || projectfollow.dirty("isMember"))) {
+    
+    queryProjectFollow.get(ProjectFollow.id, {
+        success: function(result) {
+          
+          console.log("queryWorkspaceFollower: "+JSON.stringify(result));
+          
+          //queryPTime = process.hrtime(timequeryPostFind);
+          //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+          //console.log("results: "+JSON.stringify(results));   
+          
+          if (projectfollow.dirty("isFollower")) {
+            
+            if (result.get("isFollower") === projectfollow.get("isFollower")) {
+            
+              console.log("user isFollower did not change");
+              // doin't increment or decrement because the user isFollow status did not change
+                        
+            } else if ((result.get("isFollower") === false || !result.get("isFollower")) && projectfollow.get("isFollower") === true) {
+              
+              Project.increment("followerCount"); 
+              //Workspace.save();              
+              
+            } else if ((result.get("isFollower") === true) && projectfollow.get("isFollower") === false) {
+              
+              Project.decrement("followerCount"); 
+              //Workspace.save();  
+              
+            } else {
+              
+              // do nothing
+              
+            }                 
+       
+          } else if (projectfollow.dirty("isMember")) {
+            
+            if (result.get("isMember") === projectfollow.get("isMember")) {
+            
+              console.log("user isMember did not change");
+              // doin't increment or decrement because the user isFollow status did not change
+                        
+            } else if ((result.get("isMember") === false || !result.get("isMember")) && projectfollow.get("isMember") === true) {
+              
+              Project.increment("memberCount"); 
+              //Workspace.save();              
+              
+            } else if ((result.get("isMember") === true) && projectfollow.get("isMember") === false) {
+              
+              Project.decrement("memberCount"); 
+              //Workspace.save();  
+              
+            } else {
+              
+              console.log("do nothing Member");
+              // do nothing
+              
+            }     
+      
+          }
+          
+          Project.save();
+          beforeSave_Time = process.hrtime(time); 
+          console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+  
+          response.success();               
+               
+                                                   
+        },
+        error: function(err) {
+          response.error("queryProjectFollow Error: "+ err);
+        }
+       }
+      
+      
+    );
+    
+  }   else {
+      
+    var beforeSaveElse_Time = process.hrtime(time); 
+    console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1])  * MS_PER_NS} milliseconds`);
+
+    response.success();
+        
+  }
   
 });
 
