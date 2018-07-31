@@ -56,7 +56,7 @@ Parse.Cloud.define("QueryPostFeed3", function(request, response) {
        
   // Setup Parse query
   var queryPost = Parse.Object.extend("Post");
-  var queryP = new Parse.Query(queryPost); 
+  var queryPOST = new Parse.Query(queryPost); 
   var querypostSocial = Parse.Object.extend("PostSocial");
   var queryPostSocial = new Parse.Query(querypostSocial); 
   
@@ -66,26 +66,26 @@ Parse.Cloud.define("QueryPostFeed3", function(request, response) {
   var User = new Parse.Object("_User");
   User.id = user;
 
-  queryP.include( ["user", "workspace", "project", "postSocial.user", "postSocial.isLiked", "postSocial.isBookmarked"] );
-  queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
+  queryPOST.include( ["user", "workspace", "project"] );
+  //queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
   
-  queryP.equalTo("workspace", Workspace);
+  queryPOST.equalTo("workspace", Workspace);
 
   // todo get posts that the user is allowed to view
   
   // setup query filter for post
-  queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
-  queryP.descending("updatedAt");   
-  queryP.limit(hit); // limit to hits
+  //queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
+  queryPOST.descending("updatedAt");   
+  queryPOST.limit(hit); // limit to hits
   if (skip) {
-    queryP.skip(skip);
+    queryPOST.skip(skip);
   }
   if (project == 'all') { 
     // do nothing, since we want all projects in a workspace
   } else if (project) {
       var Project = new Parse.Object("Project");
       Project.id = project;
-      queryP.equalTo("project", Project);
+      queryPOST.equalTo("project", Project);
         
   } 
 
@@ -106,8 +106,10 @@ Parse.Cloud.define("QueryPostFeed3", function(request, response) {
         //var timequeryPostFind = process.hrtime();
         //var queryPTime;
         
-        queryP.find({
+        queryPOST.find({
         success: function(results) {
+          
+          //console.log("queryPostFind: "+results.length);
           
           //queryPTime = process.hrtime(timequeryPostFind);
           //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
@@ -126,19 +128,23 @@ Parse.Cloud.define("QueryPostFeed3", function(request, response) {
       // function to find socialPosts results
       function querySocialPostFind (callback) {
         
+        
         //var NS_PER_SEC = 1e9;
         //const MS_PER_NS = 1e-6;
         //var timequerySocialPostFind = process.hrtime();
         //var querySocialPostFindTime;
         
+        
         queryPostSocial.equalTo("user", User);
-        queryPostSocial.containedIn("type", ["1", "2"]);
+        queryPostSocial.equalTo("type", "1");
         //queryPostSocial.matchesQuery("post", queryP);
         //postSocialRelationQuery.doesNotExist("archive");
-        //postSocialRelationQuery.select(["isBookmarked", "isLiked"]); 
+        //queryPostSocial.select(["postId", "isBookmarked", "isLiked" ]); 
         queryPostSocial.find({
         success: function(postSocialResults) {
           //console.log("postSocialResults 1: "+JSON.stringify(postSocialResults));
+          
+          //console.log("querySocialPostFind: "+ postSocialResults.length);
                    
           //querySocialPostFindTime = process.hrtime(timequerySocialPostFind);
           //console.log(`function querySocialPostFindTime took ${(querySocialPostFindTime[0] * NS_PER_SEC + querySocialPostFindTime[1])  * MS_PER_NS} milliseconds`);                             
@@ -163,8 +169,8 @@ Parse.Cloud.define("QueryPostFeed3", function(request, response) {
                   response.error(err);
               }
     
-              //var postResults = results[0];
-              //var postSocialResults = results[1];
+              var postResults = results[0];
+              var postSocialResults = results[1];
               
               // using process.hrtime since it's more precise 
               //var queryFinal = process.hrtime(time);            
@@ -172,38 +178,35 @@ Parse.Cloud.define("QueryPostFeed3", function(request, response) {
               //var beforelodash = process.hrtime();
               
 
-            var merge = lodash.merge(results[0], results[1]);
-            
-            /*var merge = _.map(postSocialResults, function(item) {
-                return _.merge(item, _.find(postResults, { 'objectId' : (item.get("post")).objectId }));
-            });*/
-
+            //var merge = lodash.merge(results[0], results[1]);
+            //console.log("postResults: "+ postResults.length);
+            //console.log("OnePost: "+ JSON.stringify(postResults[0]));
+            //console.log("postSocialResults: "+ postSocialResults.length);
+            //var i = 0;
+            var merge = lodash.map(postResults, function(item) {
+                //console.log("count: "+ i++);
+                //console.log("item id post: " + JSON.stringify(item));
+              
+                return lodash.merge(JSON.parse(JSON.stringify(item)), 
+                  {
+                     "postSocial": lodash.find(postSocialResults, function(obj){ 
+                     
+                            return (obj.get("postId") === item.id);  
+                      
+                      })
+                  }
+                                   
+                ); 
                 
-             /*var postResultsFinal = lodash.find(postResults, function(obj2){ 
-                                  
-                  POST = obj2;
-                  postId2 = obj2.objectId;
-                  //postId1 = lodash.filter(postResults, { "objectId": postId2 } );
-                  
-                  lodash.find(postSocialResults, function(obj){ 
-                  
-                  	if((obj.get("post")).objectId == postId2){
-                  
-                  		POST.set("isLiked", obj.isLiked);
-                      POST.set("isBookmarked", obj.isBookmarked);
-                      POST.set("postSocialId", obj.id);
-                      console.log("we have a match! WOhooo: " + POST);       
-                  
-                  	}
-                    
-                    var lodashTime = process.hrtime(beforelodash);            
-                    console.log(`lodash took ${(lodashTime[0] * NS_PER_SEC + lodashTime[1])  * MS_PER_NS} milliseconds`);             
+                //return item;              
+                
+            });
+            
+            //console.log("length: "+ merge.length);
+           
+            
 
-                  
-                  });
-                  
-                                
-              });*/
+       
                            
                          
               //console.log("postResults: "+ JSON.stringify(merge.length));
