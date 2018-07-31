@@ -1337,7 +1337,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
               
             } else if ((result.get("isFollower")  === true) && workspace_follower.get("isFollower") === false) {
               
-              Workspace.decrement("followerCount"); 
+              Workspace.increment("followerCount", -1); 
               console.log("decrement Follower");
               //Workspace.save();  
               
@@ -1363,7 +1363,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
               
             } else if ((result.get("isMember") === true) && workspace_follower.get("isMember") === false) {
               
-              Workspace.decrement("memberCount");  
+              Workspace.increment("memberCount", -1);  
               console.log("decrement Member");
               //Workspace.save();  
               
@@ -1492,7 +1492,7 @@ Parse.Cloud.beforeSave('ProjectFollow', function(req, response) {
               
             } else if ((result.get("isFollower") === true) && projectfollow.get("isFollower") === false) {
               
-              Project.decrement("followerCount"); 
+              Project.increment("followerCount", -1); 
               //Workspace.save();  
               
             } else {
@@ -1515,7 +1515,7 @@ Parse.Cloud.beforeSave('ProjectFollow', function(req, response) {
               
             } else if ((result.get("isMember") === true) && projectfollow.get("isMember") === false) {
               
-              Project.decrement("memberCount"); 
+              Project.increment("memberCount", -1); 
               //Workspace.save();  
               
             } else {
