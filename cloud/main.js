@@ -62,6 +62,8 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
   var querypostSocial = Parse.Object.extend("PostSocial");
   var queryPostSocial = new Parse.Query(querypostSocial); 
   
+  var PostSocial = new Parse.Object("PostSocial");
+  
   var Workspace = new Parse.Object("WorkSpace"); 
   Workspace.id = workspace;
   
@@ -139,7 +141,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
         
         queryPostSocial.equalTo("user", User);
         queryPostSocial.equalTo("type", "1");
-        //queryPostSocial.matchesQuery("post", queryP);
+        queryPostSocial.matchesQuery("post", queryPOST);
         //postSocialRelationQuery.doesNotExist("archive");
         //queryPostSocial.select(["postId", "isBookmarked", "isLiked" ]); 
         queryPostSocial.find({
@@ -186,37 +188,271 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
             //console.log("postSocialResults: "+ postSocialResults.length);
             //var i = 0;
             
-           
-            var merge = lodash.map(postResults, function(item) {
-                //console.log("count: "+ i++);
-                //console.log("item id post: " + JSON.stringify(item));
+            /*for (var i=0; i<postResults.length;i++) {
               
-                return lodash.merge(JSON.parse(JSON.stringify(item)), 
-                  {
-                     "postSocial": lodash.find(postSocialResults, function(obj){ 
-                            //console.log("item id post: " + JSON.stringify((obj.get("post")).id));
+              (postResults[i]).set("PostSocial", postSocialResults.find( function(obj){ 
+                            //console.log("obj: " + obj);
+                            //console.log("obj JSON: " + JSON.stringify(obj));
+                            
+      
                      
                             return ((obj.get("post")).id === item.id);  
-                      
-                      })
-                  }
-                                   
-                ); 
+              
+                }));
+            }*/
+                       
+           
+            /*postResults.map( function(item) {
+                //console.log("count: "+ i++);
+                //console.log("item id post: " + JSON.stringify(item));
                 
                 
-            });
+                return item.set("postSocial", postSocialResults.find( function(obj){ 
+                            //console.log("obj: " + obj);
+                            //console.log("obj JSON: " + JSON.stringify(obj));
+                            
+      
+                     
+                            return ((obj.get("post")).id === item.id);  
+              
+                }));
+         
+                
+                
+            });*/
                                      
                          
-              //console.log("postResults: "+ JSON.stringify(merge.length));
+              //console.log("postResults: "+ JSON.stringify(postResults));
+              
               var finalTime = process.hrtime(time); 
               console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-              response.success(merge);
+              response.success(results);
               //return callback (null, resultsToMap);             
                     
         });
    // }
           
   
+        
+
+});
+
+// cloud API and function to test query performance of AlgoliaSearch versus Parse
+Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
+   
+  var NS_PER_SEC = 1e9;
+  const MS_PER_NS = 1e-6;
+  var time = process.hrtime();
+  
+  //get request params
+  var hit = parseInt(request.params.hit); 
+  var user = request.params.user;
+  var project = request.params.project;
+  var workspace = request.params.workspace;
+  var skip = parseInt(request.params.skip); 
+       
+  // Setup Parse query
+  var queryWorkspaceFollow = Parse.Object.extend("workspace_follower");
+  var queryWORKSPACEFOLLOW = new Parse.Query(queryWorkspaceFollow); 
+  var queryProjectFollow = Parse.Object.extend("ProjectFollow");
+  var queryPROJECTFOLLOW = new Parse.Query(queryProjectFollow); 
+  var queryCategory = Parse.Object.extend("Category");
+  var queryCATEGORY = new Parse.Query(queryCategory); 
+  
+  var Workspace = new Parse.Object("WorkSpace"); 
+  var queryWORKSPACE = new Parse.Query("WorkSpace");
+  Workspace.id = workspace;
+  
+  var Project = new Parse.Object("Project"); 
+  Project.id = project;
+  
+  var User = new Parse.Object("_User");
+  User.id = user;
+
+  //var beforeQuery = process.hrtime(time);
+  //console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);       
+  //var bQuery = process.hrtime();
+  
+  
+  // todo get posts that the user is allowed to view
+  // todo check isMember/isFollower for workspace
+  // question - should we give all projects for all workspaces even if they are not selected? an store in local db?
+  
+  // setup query filter for post
+
+  //var NS_PER_SEC = 1e9;
+  //const MS_PER_NS = 1e-6;
+  //var timequerySocialPostFind = process.hrtime();
+  //var querySocialPostFindTime; 
+ 
+  //function to find queryP results
+      function queryWorkspaceFollowFind (callback) {
+        
+        //var NS_PER_SEC = 1e9;
+        //const MS_PER_NS = 1e-6;
+        //var timequeryPostFind = process.hrtime();
+        //var queryPTime;
+        
+        queryWORKSPACEFOLLOW.include("workspace"); 
+        queryWORKSPACEFOLLOW.doesNotExist("archive");     
+        queryWORKSPACEFOLLOW.equalTo("user", User); 
+        queryWORKSPACEFOLLOW.equalTo("type", "1"); 
+        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]); 
+        if (!workspace || (workspace === "all")) {
+          // do nothing, get all workspaces for the user
+        } else {
+          // only get workspace that the client is asking for
+          queryWORKSPACEFOLLOW.equalTo("workspace", Workspace);
+          
+        }
+        
+        queryWORKSPACEFOLLOW.find({
+        success: function(results) {
+          
+          //console.log("queryPostFind: "+results.length);
+          
+          //queryPTime = process.hrtime(timequeryPostFind);
+          //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+          //console.log("results: "+JSON.stringify(results));   
+                   
+          return callback(null, results);
+                                                   
+        },
+        error: function(err) {
+          response.error("queryPost Error: "+ err);
+        }
+       });
+        
+      }
+      
+      // function to find queryProjectFollowFind results
+      function queryProjectFollowFind (callback) {
+        
+        
+        //var NS_PER_SEC = 1e9;
+        //const MS_PER_NS = 1e-6;
+        //var timequerySocialPostFind = process.hrtime();
+        //var querySocialPostFindTime;
+        
+        queryPROJECTFOLLOW.include("project"); 
+        queryPROJECTFOLLOW.doesNotExist("archive");     
+        queryPROJECTFOLLOW.equalTo("user", User); 
+        queryPROJECTFOLLOW.equalTo("type", "1"); // user is either a member of follower of this project
+        
+        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]); 
+        if (!workspace || (workspace === "all")) {
+          // do nothing, get all projects for the user 
+          //queryPROJECTFOLLOW.matchesQuery("workspace", queryWORKSPACE);
+        } else {
+          // only get workspace that the client is asking for
+          queryPROJECTFOLLOW.equalTo("workspace", Workspace);
+          
+        }
+        
+        if (!project || (project === "all")) {
+          // do nothing, get all projects for the user
+        } else {
+          // only get project that the client is asking for
+          queryPROJECTFOLLOW.equalTo("project", Project);
+          
+        }
+        
+        queryPROJECTFOLLOW.find({
+        success: function(projectResults) {
+          //console.log("postSocialResults 1: "+JSON.stringify(postSocialResults));
+          
+          //console.log("querySocialPostFind: "+ postSocialResults.length);
+                   
+          //querySocialPostFindTime = process.hrtime(timequerySocialPostFind);
+          //console.log(`function querySocialPostFindTime took ${(querySocialPostFindTime[0] * NS_PER_SEC + querySocialPostFindTime[1])  * MS_PER_NS} milliseconds`);                             
+          
+          return callback(null, projectResults);
+        },
+        error: function(err) {
+          response.error(err);
+        }     
+         
+      });
+        
+        
+      }
+      
+      // function to find queryCategoryFind results
+      function queryCategoryFind (callback) {
+               
+        //var NS_PER_SEC = 1e9;
+        //const MS_PER_NS = 1e-6;
+        //var timequerySocialPostFind = process.hrtime();
+        //var querySocialPostFindTime;      
+        
+        //queryCategoryFind.matchesQuery("workspaceID", queryWorkspaceFollow);
+        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]); 
+        if (!workspace || (workspace === "all")) {
+          // get all categories in workspaces for the user that he is either following or is a member of
+          //var CategoryObject = new Parse.Object(queryCategory);
+          //var workspaceFollowRelation = CategoryObject.relation("workspace_follower"); 
+          //var workspaceFollowRelationQuery = workspaceFollowRelation.query();
+          //workspaceFollowRelationQuery.equalTo("user", User);
+          //workspaceFollowRelationQuery.doesNotExist("archive");     
+          //workspaceFollowRelationQuery.equalTo("type", "1"); 
+          queryCATEGORY.matchesQuery("workspaceFollow", queryWORKSPACEFOLLOW);
+        } else {
+          // only get workspace that the client is asking for
+          queryCATEGORY.equalTo("workspaceID", Workspace);
+          
+        }
+        
+        if (!project || (project === "all")) {
+          // do nothing, get all projects for the user
+        } else {
+          // only get project that the client is asking for
+          queryCATEGORY.equalTo("project", Project);
+          
+        }
+        
+        queryCATEGORY.find({
+        success: function(categoeryResults) {
+          //console.log("postSocialResults 1: "+JSON.stringify(postSocialResults));
+          
+          //console.log("querySocialPostFind: "+ postSocialResults.length);
+                   
+          //querySocialPostFindTime = process.hrtime(timequerySocialPostFind);
+          //console.log(`function querySocialPostFindTime took ${(querySocialPostFindTime[0] * NS_PER_SEC + querySocialPostFindTime[1])  * MS_PER_NS} milliseconds`);                             
+          
+          return callback(null, categoeryResults);
+        },
+        error: function(err) {
+          response.error(err);
+        }     
+         
+      });
+        
+        
+      }
+      
+      async.parallel([ 
+        async.apply(queryWorkspaceFollowFind),
+        async.apply(queryProjectFollowFind),
+        async.apply(queryCategoryFind) 
+        
+        ], function (err, results) {
+              if (err) {
+                  response.error(err);
+              }
+    
+      
+                         
+              //console.log("postResults: "+ JSON.stringify(results));
+              
+              var finalTime = process.hrtime(time); 
+              console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+              response.success(results);
+              //return callback (null, resultsToMap);             
+                    
+        });
+   // }
+          
+             
         
 
 });
@@ -1397,7 +1633,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
     
   }   else {
     
-    console.log("do nothing at all");
+    //console.log("do nothing at all");
       
     var beforeSaveElse_Time = process.hrtime(time); 
     console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1])  * MS_PER_NS} milliseconds`);
