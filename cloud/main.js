@@ -395,7 +395,7 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
           //workspaceFollowRelationQuery.equalTo("user", User);
           //workspaceFollowRelationQuery.doesNotExist("archive");     
           //workspaceFollowRelationQuery.equalTo("type", "1"); 
-          queryCATEGORY.matchesQuery("workspaceFollow", queryWORKSPACEFOLLOW);
+          queryCATEGORY.matchesQuery("WorkspaceFollow", queryWORKSPACEFOLLOW);
         } else {
           // only get workspace that the client is asking for
           queryCATEGORY.equalTo("workspaceID", Workspace);
