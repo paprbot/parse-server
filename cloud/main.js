@@ -1790,6 +1790,49 @@ Parse.Cloud.beforeSave('ProjectFollow', function(req, response) {
   
 });
 
+// auto-add type when isBookmarked, isLiked or Comment is added
+Parse.Cloud.beforeSave('PostSocial', function(request, response) {
+  
+  var NS_PER_SEC = 1e9;
+  const MS_PER_NS = 1e-6;
+  var time = process.hrtime();
+  
+  
+  // Convert Parse.Object to JSON
+  var postSocial = request.object;
+  
+
+  
+  if (postSocial.isNew()) {
+    
+        console.log("isLiked: "+postSocial.get("isLiked"));
+        console.log("isBookmarked: "+postSocial.get("isBookmarked"));
+        console.log("Comments: "+postSocial.get("comment"));
+        
+        if (!postSocial.get("isLiked")) {postSocial.set("isLiked", false); }
+        if (!postSocial.get("isBookmarked")) {postSocial.set("isBookmarked", false);}
+        
+        
+        if(postSocial.get("isLiked") === true || postSocial.get("isBookmarked")=== true) {
+          postSocial.set("type", "1");  
+        }
+        else if (postSocial.get("isLiked") === false && postSocial.get("isBookmarked")=== false && !postSocial.get("comment")) { 
+          postSocial.set("type", "0"); 
+        } 
+        else if (postSocial.get("comment")) {
+          postSocial.set("type", "2");
+        } 
+    
+  } else {}
+  
+  
+  var diff = process.hrtime(time);
+  console.log(`PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+  response.success();
+  
+  
+});
+
 // Create relationship from post to PostSocial after a PostSocial is saved
 Parse.Cloud.afterSave('PostSocial', function(request, response) {
   
