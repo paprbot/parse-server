@@ -140,8 +140,9 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
         
         
         queryPostSocial.equalTo("user", User);
-        queryPostSocial.equalTo("type", "1");
+        //queryPostSocial.containedIn("type", ["1", "2"]);
         queryPostSocial.matchesQuery("post", queryPOST);
+        queryPostSocial.descending("updatedAt"); 
         //postSocialRelationQuery.doesNotExist("archive");
         //queryPostSocial.select(["postId", "isBookmarked", "isLiked" ]); 
         queryPostSocial.find({
