@@ -79,7 +79,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
   
   // setup query filter for post
   //queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
-  queryPOST.descending("updatedAt");   
+  queryPOST.descending("createdAt");   
   queryPOST.limit(hit); // limit to hits
   if (skip) {
     queryPOST.skip(skip);
