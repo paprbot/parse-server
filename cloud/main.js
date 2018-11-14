@@ -459,6 +459,8 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
 });
 
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
+// Start function QueryPostFeed2
+/*
 Parse.Cloud.define("QueryPostFeed2", function(request, response) {
    
   var NS_PER_SEC = 1e9;
@@ -640,7 +642,7 @@ Parse.Cloud.define("QueryPostFeed2", function(request, response) {
       });
 
      }*/
-     
+     /*
                                           
     },
     error: function(err) {
@@ -650,7 +652,7 @@ Parse.Cloud.define("QueryPostFeed2", function(request, response) {
         
 
 });
-
+// End function QueryPostFeed2
 
 
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
@@ -952,10 +954,10 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
               
                 
     });*/
-  
+  /*
   
 });
-
+*/
 
 
 // cloud API and function to index and import all users from Parse to AlgoliaSearch indexUsers
