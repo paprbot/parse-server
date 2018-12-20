@@ -13,7 +13,7 @@ var config = parseServerConfig(__dirname);
 
 var app = express();
 app.use('/public', express.static(__dirname + '/public'));
-app.use('/parse', new ParseServer(config.server,liveQuery: {classNames: ['PostQuestionMessage']}));
+app.use('/parse', new ParseServer(config.server));
 //app.use('/parse-dashboard', ParseDashboard(config.dashboard, true));
 
 // need to switch insecure http off once we enable ssl
