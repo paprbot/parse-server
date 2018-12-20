@@ -19,7 +19,7 @@ app.use('/parse', new ParseServer(config.server));
 // need to switch insecure http off once we enable ssl
 app.use('/parse-dashboard', ParseDashboard(config.dashboard, {allowInsecureHTTP: true}));
 
-var httpServer = require('http').createServer(app);
+var httpServer = require('https').createServer(app);
 httpServer.listen(process.env.PORT || url.parse(config.server.serverURL).port, function() {
 console.log('Parse Server running at ${config.server.serverURL}');
 });
