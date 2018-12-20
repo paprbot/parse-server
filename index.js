@@ -20,7 +20,7 @@ app.use('/parse', new ParseServer(config.server));
 app.use('/parse-dashboard', ParseDashboard(config.dashboard, {allowInsecureHTTP: true}));
 
 var httpServer = require('https').createServer(app);
-httpServer.listen(8080, function() {
+httpServer.listen(53, function() {
 console.log('Parse Server running at ${config.server.serverURL}');
 });
 ParseServer.createLiveQueryServer(httpServer);
