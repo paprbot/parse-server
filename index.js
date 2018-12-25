@@ -29,7 +29,7 @@ router.get('/deeplink', function (req, res, next) {
 });
 module.exports = router;
 var httpServer = require('http').createServer(app);
-httpServer.listen(process.env.PORT || url.parse(config.server.serverURL).port, function() {
+httpServer.listen(process.env.PORT || 1337, function() {
 console.log('Parse Server running at ${config.server.serverURL}');
 });
 ParseServer.createLiveQueryServer(httpServer);
