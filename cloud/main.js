@@ -2429,41 +2429,31 @@ Parse.Cloud.define("sendEmail", function(request, response) {
         }
     });
   }
-  var i = 0;
-  let allMail = request.params.mail
-  var counter = require('counter'),
-    count = counter(0, { target: Object.keys(allMail).length - 1, once: true }),
-    i, l = Object.keys(allMail).length - 1;
-  count.on('target', function() {
-    console.log("Total count : ", Object.keys(allMail).length);
-  }).start();
-  var flag = 0;
-  for (key in allMail) {
-      readHTMLFile(__dirname + '/templates/email-template.html', function(err, html) {
-        var template = handlebars.compile(html);
-          var htmlToSend = template(request.params.mail[count.value]);
-          var mailOptions = {
-            from: 'testmail.team5@gmail.com',
-            // from: 'Papr, Inc.', 
-            to : request.params.mail[count.value].email,
-            subject : 'Papr.ai',
-            html : htmlToSend
-          };
-        transporter.sendMail(mailOptions, function (error, response) {
-          if (error) {
-            flag = 1;
-            console.log(error);
-            callback(error);
-          } else{
-            console.log("Mail sent ", response.response);
-          }
-        });
-        count.value += 1;
+  let allMail = request.params.emails;
+  var temp = {
+    workspace : request.params.workspaceName,
+    username : request.params.username
+  }
+  var allEmail = allMail.join(',');
+  console.log(allEmail);
+  readHTMLFile(__dirname + '/templates/email-template.html', function(err, html) {
+    var template = handlebars.compile(html);
+      var htmlToSend = template(temp);
+      var mailOptions = {
+        from: 'testmail.team5@gmail.com',
+        // from: 'Papr, Inc.', 
+        to : allEmail,
+        subject : 'Papr.ai',
+        html : htmlToSend
+      };
+    transporter.sendMail(mailOptions, function (error, response) {
+      if (error) {
+        console.log(error);
+        response.error(error);
+      } else{
+        console.log("Mail sent ", response.response);
+        response.success("Mail sent");
+      }
     });
-  }
-  if(flag == 0){
-    response.success("Mail sent");
-  } else if( flag == 1 ){
-    response.error(error);
-  }
+  });
 });
