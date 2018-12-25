@@ -2406,7 +2406,6 @@ Parse.Cloud.define("sendEmail", function(request, response) {
   var transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com', 
     port: 587,
-    secure: false,
     auth: {
       user: 'testmail.team5@gmail.com',
       pass: '123team5'
