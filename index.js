@@ -16,12 +16,11 @@ app.use('/parse', new ParseServer(config.server));
 
 // need to switch insecure http off once we enable ssl
 app.use('/parse-dashboard', ParseDashboard(config.dashboard, {allowInsecureHTTP: true}));
-app.get('/deeplink', 
-	deeplink({
-		fallback: 'https://www.facebook.com/',
-		android_package_name: 'com.facebook.katana',
-		ios_store_link: 'https://itunes.apple.com/us/app/facebook/id284882215?mt=8'
-	})
+app.get('/deeplink', deeplink({
+        fallback: 'https://www.facebook.com/',
+        android_package_name: 'com.facebook.katana',
+        ios_store_link: 'https://itunes.apple.com/us/app/facebook/id284882215?mt=8'
+    })
 );
 var httpServer = require('http').createServer(app);
 httpServer.listen(process.env.PORT || 1337, function() {
