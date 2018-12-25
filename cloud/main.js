@@ -2404,19 +2404,19 @@ Parse.Cloud.afterDelete('_User', function(request) {
 Parse.Cloud.define("sendEmail", function(request, response) {
   // Email configuration
   var transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com', 
-    port: 587,
-    auth: {
-      user: 'testmail.team5@gmail.com',
-      pass: '123team5'
-    }
-    // host: 'smtp.mandrillapp.com', 
+    // host: 'smtp.gmail.com', 
     // port: 587,
-    // secure: false,
     // auth: {
-    //   user: 'Papr, Inc.',
-    //   pass: 'fCWj2D9rBGfJsaU1RSFU5w'
+    //   user: 'testmail.team5@gmail.com',
+    //   pass: '123team5'
     // }
+    host: 'smtp.mandrillapp.com', 
+    port: 587,
+    secure: false,
+    auth: {
+      user: 'Papr, Inc.',
+      pass: 'fCWj2D9rBGfJsaU1RSFU5w'
+    }
   });
   var readHTMLFile = function(path, callback) {
       fs.readFile(path, {encoding: 'utf-8'}, function (err, html) {
@@ -2446,14 +2446,12 @@ Parse.Cloud.define("sendEmail", function(request, response) {
         subject : 'Papr.ai',
         html : htmlToSend
       };
-    transporter.sendMail(mailOptions, function (error, response) {
-      if (error) {
-        console.log(error);
-        response.error(error);
-      } else{
-        console.log("Mail sent ", response.response);
-        response.success("Mail sent");
-      }
+    transporter.sendMail(mailOptions).then(function(info){
+      console.log(info);
+      response.success("Mail sent");
+    }).catch(function(err){
+      console.log(err);
+      response.error(err);
     });
   });
 });
