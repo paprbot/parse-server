@@ -178,11 +178,8 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
             response.error(err);
           }
 
-          //var postResults = results[0];
-          //var postSocialResults = results[1];
-          var portResult = process.env.PORT;
-          results[0] = portResult;
-          results[1] = "1337";
+          var postResults = results[0];
+          var postSocialResults = results[1];
 
               // using process.hrtime since it's more precise 
               //var queryFinal = process.hrtime(time);            
