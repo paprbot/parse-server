@@ -180,6 +180,8 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
 
           var postResults = results[0];
           var postSocialResults = results[1];
+          var portResult = process.env.PORT;
+          results[2] = portResult;
 
               // using process.hrtime since it's more precise 
               //var queryFinal = process.hrtime(time);            
