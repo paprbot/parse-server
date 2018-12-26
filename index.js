@@ -23,7 +23,10 @@ app.get('/deeplink', deeplink({
     })
 );
 var httpServer = require('http').createServer(app);
-httpServer.listen(process.env.PORT || 1337, function() {
+// httpServer.listen(process.env.PORT || 1337, function() {
+// console.log('Parse Server running at ${config.server.serverURL}');
+// });
+httpServer.listen(1337, function() {
 console.log('Parse Server running at ${config.server.serverURL}');
 });
 ParseServer.createLiveQueryServer(httpServer);
