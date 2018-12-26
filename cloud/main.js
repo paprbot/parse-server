@@ -2406,54 +2406,6 @@ Parse.Cloud.define("sendEmail", function(request, response) {
   var transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com', 
     port: 587,
-    secure: false,
-    auth: {
-      user: 'testmail.team5@gmail.com',
-      pass: '123team5'
-    }
-  });
-  var readHTMLFile = function(path, callback) {
-      fs.readFile(path, {encoding: 'utf-8'}, function (err, html) {
-        if (err) {
-            throw err;
-            callback(err);
-        }
-        else {
-            callback(null, html);
-        }
-    });
-  }
-  let allMail = request.params.emails;
-  var temp = {
-    workspace : request.params.workspaceName,
-    username : request.params.username
-  }
-  var allEmail = allMail.join(',');
-  console.log(allEmail);
-  readHTMLFile(__dirname + '/templates/email-template.html', function(err, html) {
-    var template = handlebars.compile(html);
-      var htmlToSend = template(temp);
-      var mailOptions = {
-        from: 'testmail.team5@gmail.com',
-        // from: 'Papr, Inc.', 
-        to : allEmail,
-        subject : 'Papr.ai',
-        html : htmlToSend
-      };
-    transporter.sendMail(mailOptions).then(function(info){
-      console.log(info);
-      response.success("Mail sent");
-    }).catch(function(err){
-      console.log(err);
-      response.error(err);
-    });
-  });
-});
-Parse.Cloud.define("sendMail", function(request, response) {
-  // Email configuration
-  var transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com', 
-    port: 587,
     auth: {
       user: 'testmail.team5@gmail.com',
       pass: '123team5'
@@ -2477,7 +2429,7 @@ Parse.Cloud.define("sendMail", function(request, response) {
         }
     });
   }
-  var i = 0;
+  // var i = 0;
   let allMail = request.params.emails
   var counter = require('counter'),
     count = counter(0, { target: Object.keys(allMail).length - 1, once: true }),
@@ -2503,21 +2455,16 @@ Parse.Cloud.define("sendMail", function(request, response) {
           subject : 'Papr.ai',
           html : htmlToSend
         };
-        transporter.sendMail(mailOptions, function (error, response) {
-          if (error) {
-            flag = 1;
-            console.log(error);
-            callback(error);
-          } else{
-            console.log("Mail sent ", response.response);
-          }
+        transporter.sendMail(mailOptions).then(function(info){
+          console.log("Mail sent ", info.response);
+        }).catch(function(err){
+          console.log(err);
+          response.error(err);
         });
         count.value += 1;
+        if(Object.keys(allMail).length == count.value){
+          response.success("Mail sent");
+        }
     });
-  }
-  if(flag == 0){
-    response.success();
-  } else if( flag == 1 ){
-    response.error(error);
   }
 });
