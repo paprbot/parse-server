@@ -23,7 +23,7 @@ app.get('/deeplink', deeplink({
     })
 );
 var httpServer = require('http').createServer(app);
-var port = process.env.PORT || 1337;
+var port = 8030;
 
 process.env.VERBOSE = true;
 
