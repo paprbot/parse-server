@@ -2468,3 +2468,24 @@ Parse.Cloud.define("sendEmail", function(request, response) {
     });
   }
 });
+
+Parse.Cloud.define("sendNotification", function(request, response) {
+  var Notification = Parse.Object.extend("Notification");
+  var query = new Parse.Query(Notification);
+  query.include('message');
+  query.find({
+    success: function(notify) {
+      console.log('Notification pre .toJSON()', notify);
+      notify = notify.map(function(notif) {
+        return notif.toJSON();
+      });
+      console.log('notify post .toJSON()', notify);
+
+      response.success(notify);
+    },
+    error: function(e) {
+        console.error(e);
+        response.error(e);
+    }
+  });
+});
