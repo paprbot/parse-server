@@ -22,9 +22,9 @@ app.get('/deeplink', deeplink({
         ios_store_link: 'https://itunes.apple.com/us/app/facebook/id284882215?mt=8'
     })
 );
-var httpServer = require('https').createServer(app);
+var httpServer = require('http').createServer(app);
 //var port = process.env.PORT || 1337;
-var port = 443;
+var port = 1337;
 
 process.env.VERBOSE = true;
 
