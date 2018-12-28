@@ -2472,20 +2472,35 @@ Parse.Cloud.define("sendEmail", function(request, response) {
 Parse.Cloud.define("sendNotification", function(request, response) {
   var Notification = Parse.Object.extend("Notification");
   var query = new Parse.Query(Notification);
-  query.include('message');
+  query.include('userTo');
   query.find({
-    success: function(notify) {
-      console.log('Notification pre .toJSON()', notify);
-      notify = notify.map(function(notif) {
-        return notif.toJSON();
+    success: function(results) {
+      var tokenArray = new Array();
+      async.map(results, function(obj, callback) {
+        var message = obj.get("message");
+        var deviceToken = obj.get("userTo").get("username");
+        tokenArray.push({
+          message: message,
+          deviceToken: deviceToken
+        });
+        callback(null, obj);
+      }, function(err, results) {
+        console.log(tokenArray);
+        response.success(tokenArray);
       });
-      console.log('notify post .toJSON()', notify);
-
-      response.success(notify);
     },
     error: function(e) {
         console.error(e);
         response.error(e);
     }
   });
+});
+
+Parse.Cloud.define("liveQuery", function(request, response) {
+    let query = new Parse.Query('PostQuestionMessage');
+    query.equalTo('type', '2');
+    let subscription = query.subscribe();
+    subscription.on('update', (people) => {
+      response.success(people); // This should output Mengyan
+    });
 });
