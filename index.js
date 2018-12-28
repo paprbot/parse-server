@@ -25,7 +25,7 @@ liveQuery: {
 }
 });
 
-var mountPath = process.env.PARSE_MOUNT || '/parse';
+var mountPath = '/parse';
 app.use(mountPath, api);
 
 app.use('/parse-dashboard', ParseDashboard(config.dashboard, {allowInsecureHTTP: true}));
