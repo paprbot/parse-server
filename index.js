@@ -17,6 +17,8 @@ app.use('/public', express.static(__dirname + '/public'));
 // need to switch insecure http off once we enable ssl
 
 var api = new ParseServer({
+databaseURI: 'mongodb://paprvmdatabase.westus2.cloudapp.azure.com:27017/parse',
+cloud: __dirname + '/cloud/main.js',
 appId: '671e705a-f735-4ec0-8474-15899a475440',
 clientKey:'671e705a-f735-4ec0-8474-15899a475440',
 serverURL: 'https://parseserverwest.azurewebsites.net/parse',
