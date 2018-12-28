@@ -17,13 +17,11 @@ app.use('/public', express.static(__dirname + '/public'));
 // need to switch insecure http off once we enable ssl
 
 var api = new ParseServer({
-databaseURI: {},
-cloud: process.env.CLOUD_CODE_MAIN || __dirname + '/cloud/main.js',
-appId: process.env.APP_ID || '671e705a-f735-4ec0-8474-15899a475440',
+appId: '671e705a-f735-4ec0-8474-15899a475440',
 clientKey:'671e705a-f735-4ec0-8474-15899a475440',
-serverURL: process.env.SERVER_URL || 'https://parseserverwest.azurewebsites.net/parse',
+serverURL: 'https://parseserverwest.azurewebsites.net/parse',
 liveQuery: {
-classNames: ["PostQuestionMessage","User","PostQuestion"]
+	classNames: ["PostQuestionMessage","User","PostQuestion"]
 }
 });
 
