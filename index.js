@@ -11,11 +11,11 @@ var config = parseServerConfig(__dirname);
 // Modify config as necessary before initializing parse server & dashboard
 var app = express();
 app.use('/public', express.static(__dirname + '/public'));
-//app.use('/parse', new ParseServer(config.server));
+app.use('/parse', new ParseServer(config.server));
 //app.use('/parse-dashboard', ParseDashboard(config.dashboard, true));
 
 // need to switch insecure http off once we enable ssl
-
+/*
 var api = new ParseServer({
 databaseURI: 'mongodb://paprvmdatabase.westus2.cloudapp.azure.com:27017/parse',
 cloud: __dirname + '/cloud/main.js',
@@ -29,7 +29,7 @@ liveQuery: {
 
 var mountPath = '/parse';
 app.use(mountPath, api);
-
+*/
 app.use('/parse-dashboard', ParseDashboard(config.dashboard, {allowInsecureHTTP: true}));
 app.get('/deeplink', deeplink({
         fallback: 'https://www.facebook.com/',
@@ -37,6 +37,7 @@ app.get('/deeplink', deeplink({
         ios_store_link: 'https://itunes.apple.com/us/app/facebook/id284882215?mt=8'
     })
 );
+
 var httpServer = require('http').createServer(app);
 var port = process.env.PORT || 1337;
 //var port = 1337;
