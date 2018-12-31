@@ -2473,26 +2473,28 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   var Notification = Parse.Object.extend("Notification");
   var query = new Parse.Query(Notification);
   query.include('userTo');
+  var tokenArray = new Array();
   query.find({
     success: function(results) {
-      var tokenArray = new Array();
-      var seq = ASQ();
-      seq.gate(function(done , results){
-        for(i in results){
-          var obj = results[i];
-          var message = obj.get("message");
-          var deviceToken = obj.get("userTo").get("username");
-          tokenArray.push({
-            message: message,
-            deviceToken: deviceToken
-          });
-          console.log("tokenArray == "+JSON.stringify(tokenArray));
-          done(tokenArray);
+      var counter = require('counter'),
+      count = counter(0, { target: Object.keys(results).length - 1, once: true }),
+      i, l = Object.keys(results).length - 1;
+      count.on('target', function() {
+        console.log("Total count : ", Object.keys(results).length);
+      }).start();
+      for(i in results){
+        var obj = results[count.value];
+        var message = obj.get("message");
+        var deviceToken = obj.get("userTo").get("username");
+        tokenArray.push({
+          message: message,
+          deviceToken: deviceToken
+        });
+        count.value += 1;
+        if(Object.keys(results).length == count.value){
+          response.success(tokenArray);
         }
-      }).then(function(done, results){
-          response.success(results);
-      })
-      return seq;
+      }
     },
     error: function(e) {
         console.error(e);
