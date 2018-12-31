@@ -2517,11 +2517,10 @@ Parse.Cloud.define("sendNotification", function(request, response) {
       for(i in results){
         if(results[count.value].userTo.deviceToken != "" || results[count.value].userTo.deviceToken != undefined){
           sendPushNotification(results[count.value].userTo.deviceToken, results[count.value].message);
-          count.value += 1;
-          if(Object.keys(results).length == count.value){
-            response.success(results);
-            response.success("Notification sent to all users");
-          }
+        }
+        count.value += 1;
+        if(Object.keys(results).length == count.value){
+          response.success("Notification sent to all users");
         }
       }
     },
@@ -2530,10 +2529,6 @@ Parse.Cloud.define("sendNotification", function(request, response) {
         response.error(e);
     }
   });
-});
-Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
-  
-  // pn.pushToAPN('fc5fd972a1c544a7ddfa6ea3646aa0940dcf08eb8569cefafeedf478d8d9b8e8fc', data);
 });
 
 Parse.Cloud.define("liveQueryMessageType", function(request, response) {
