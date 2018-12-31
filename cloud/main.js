@@ -11,7 +11,6 @@ var process = require('process');
 var mongoClient = require("mongodb").MongoClient;
 var Promise = require('promise');
 var ASQ = require('asynquence');
-
 // Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
 var indexPosts = client.initIndex('dev_posts');
 var indexUsers = client.initIndex('dev_users');
@@ -25,6 +24,9 @@ var EmailTemplate = require('email-templates');
 var smtpTransport = require('nodemailer-smtp-transport');
 var handlebars = require('handlebars');
 var fs = require('fs');
+
+const path = require('path');
+const PushNotification = require('push-notification');
 
 // test cloud code functions
 Parse.Cloud.define("cloudCodeTest", function(request, response) {
@@ -2470,13 +2472,14 @@ Parse.Cloud.define("sendEmail", function(request, response) {
 });
 
 Parse.Cloud.define("sendNotification", function(request, response) {
-  var Notification = Parse.Object.extend("Notification");
+  var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
-  query.include('userTo');
+  query.include('user');
   var tokenArray = new Array();
   query.find({
     success: function(results) {
-      var counter = require('counter'),
+      response.success(results);
+      /*var counter = require('counter'),
       count = counter(0, { target: Object.keys(results).length - 1, once: true }),
       i, l = Object.keys(results).length - 1;
       count.on('target', function() {
@@ -2494,13 +2497,43 @@ Parse.Cloud.define("sendNotification", function(request, response) {
         if(Object.keys(results).length == count.value){
           response.success(tokenArray);
         }
-      }
+      }*/
     },
     error: function(e) {
         console.error(e);
         response.error(e);
     }
   });
+});
+Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
+  const pn = PushNotification({
+    apn: {
+      cert: path.resolve('Papr-Development-APNS.pem'),
+      key: path.resolve('Key.pem'),
+      passphrase: 'papr@123',
+      production: false,
+    }
+  });
+  const DeviceType = PushNotification.DeviceType;
+  const data = {
+    title: 'Title',
+    message: 'Message',
+    badge: '',
+    sound: '',
+    payload: {
+      param1: 'additional data',
+      param2: 'another data'
+    }
+  };
+  pn.push("7689db229f040ad9e35a59732a5506b7fd27bb5c0b6f151615383ff8c71caddf", data, DeviceType.IOS)
+  .then(res => {
+    console.log(res); 
+    response.success(res)
+  }).catch(err => {
+    console.log(err); 
+    response.error(JSON.stringify(err))
+  });
+  // pn.pushToAPN('fc5fd972a1c544a7ddfa6ea3646aa0940dcf08eb8569cefafeedf478d8d9b8e8fc', data);
 });
 
 Parse.Cloud.define("liveQueryMessageType", function(request, response) {
