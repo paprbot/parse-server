@@ -2474,8 +2474,8 @@ Parse.Cloud.define("sendEmail", function(request, response) {
 Parse.Cloud.define("sendNotification", function(request, response) {
   const pn = PushNotification({
     apn: {
-      cert: path.resolve('/Papr-Development-APNS.pem'),
-      key: path.resolve('/Key.pem'),
+      cert: path.resolve('D:/home/site/wwwroot/cloud/Papr-Development-APNS.pem'),
+      key: path.resolve('D:/home/site/wwwroot/cloud/Key.pem'),
       passphrase: 'papr@123',
       production: false,
     }
