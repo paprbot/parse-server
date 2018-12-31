@@ -2485,8 +2485,8 @@ Parse.Cloud.define("sendNotification", function(request, response) {
         });
         callback(null, obj);
       }, function(err, results) {
-        console.log(tokenArray);
-        response.success(tokenArray);
+        console.log(results);
+        response.success(results);
       });
     },
     error: function(e) {
