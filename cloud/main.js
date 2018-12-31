@@ -2502,6 +2502,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
 });
 
 Parse.Cloud.define("liveQueryMessageType", function(request, response) {
+  response.success(request);
     let query = new Parse.Query('PostQuestionMessage');
     query.equalTo('type', '2');
     let subscription = query.subscribe();
