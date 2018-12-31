@@ -2476,7 +2476,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   query.find({
     success: function(results) {
       var tokenArray = new Array();
-      var seq =  ASQ();
+      var seq = ASQ();
       seq.gate(function(done , results){
         for(i in results){
           var obj = results[i];
@@ -2501,7 +2501,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   });
 });
 
-Parse.Cloud.define("liveQuery", function(request, response) {
+Parse.Cloud.define("liveQueryMessageType", function(request, response) {
     let query = new Parse.Query('PostQuestionMessage');
     query.equalTo('type', '2');
     let subscription = query.subscribe();
