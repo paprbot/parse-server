@@ -2474,7 +2474,7 @@ Parse.Cloud.define("sendEmail", function(request, response) {
 Parse.Cloud.define("sendNotification", function(request, response) {
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
-  query.include('user.deviceToken');
+  query.include('userTo.deviceToken');
   // var tokenArray = new Array();
   query.find({
     success: function(results) {
