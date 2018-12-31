@@ -2474,37 +2474,16 @@ Parse.Cloud.define("sendEmail", function(request, response) {
 Parse.Cloud.define("sendNotification", function(request, response) {
   const pn = PushNotification({
     apn: {
-      cert: path.resolve('Papr-Development-APNS.pem'),
-      key: path.resolve('Key.pem'),
+      cert: path.resolve(__dirname + 'Papr-Development-APNS.pem'),
+      key: path.resolve(__dirname + 'Key.pem'),
       passphrase: 'papr@123',
       production: false,
     }
   });
   const DeviceType = PushNotification.DeviceType;
-  function sendPushNotification(deviceToken, message){
-    var data = {
-      title: 'Papr',
-      message: message,
-      badge: '',
-      sound: '',
-      payload: {
-        param1: 'additional data',
-        param2: 'another data'
-      }
-    };
-    pn.push(deviceToken, data, DeviceType.IOS)
-    .then(res => {
-      console.log(res); 
-      response.success(res)
-    }).catch(err => {
-      console.log(err); 
-      response.error(JSON.stringify(err))
-    });
-  }
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
   query.include('userTo.deviceToken');
-  query.exist('userTo.deviceToken');
   // var tokenArray = new Array();
   query.find({
     success: function(results) {
@@ -2517,14 +2496,31 @@ Parse.Cloud.define("sendNotification", function(request, response) {
       }).start();
       for(i in results){
         if(results[count.value].userTo.deviceToken != "" || results[count.value].userTo.deviceToken != undefined){
-          sendPushNotification(results[count.value].userTo.deviceToken, results[count.value].message);
+          var data = {
+            title: 'Papr',
+            message: results[count.value].message,
+            badge: '',
+            sound: '',
+            payload: {
+              param1: 'additional data',
+              param2: 'another data'
+            }
+          };
+          pn.push(results[count.value].userTo.deviceToken, data, DeviceType.IOS)
+          .then(res => {
+            console.log(res); 
+            response.success(res)
+          }).catch(err => {
+            console.log(err); 
+            response.error(JSON.stringify(err))
+          });
         }
         count.value += 1;
         if(Object.keys(results).length == count.value){
           response.success("Notification sent to all users");
         }
       }
-    },
+      },
     error: function(e) {
         console.error(e);
         response.error(e);
