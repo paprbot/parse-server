@@ -2437,7 +2437,6 @@ Parse.Cloud.define("sendEmail", function(request, response) {
   count.on('target', function() {
     console.log("Total count : ", Object.keys(allMail).length);
   }).start();
-  var flag = 0;
   for (key in allMail) {
       readHTMLFile(__dirname + '/templates/email-template.html', function(err, html) {
         var template = handlebars.compile(html);
@@ -2475,19 +2474,26 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   query.include('userTo');
   query.find({
     success: function(results) {
+      var counter = require('counter'),
+      count = counter(0, { target: Object.keys(results).length - 1, once: true }),
+      i, l = Object.keys(results).length - 1;
+      count.on('target', function() {
+        console.log("Total count : ", Object.keys(results).length);
+      }).start();
       var tokenArray = new Array();
-      async.map(results, function(obj, callback) {
+      for(i in results){
+        var obj = results[count.value];
         var message = obj.get("message");
         var deviceToken = obj.get("userTo").get("username");
         tokenArray.push({
           message: message,
           deviceToken: deviceToken
         });
-        callback(null, obj);
-      }, function(err, results) {
-        console.log(results);
-        response.success(results);
-      });
+        count.value += 1;
+        if(Object.keys(results).length == count.value){
+          response.success(tokenArray);
+        }
+      }
     },
     error: function(e) {
         console.error(e);
