@@ -10,7 +10,7 @@ var querystring = require('querystring');
 var process = require('process');
 var mongoClient = require("mongodb").MongoClient;
 var Promise = require('promise');
-
+var ASQ = require('asynquence');
 
 // Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
 var indexPosts = client.initIndex('dev_posts');
@@ -2437,6 +2437,7 @@ Parse.Cloud.define("sendEmail", function(request, response) {
   count.on('target', function() {
     console.log("Total count : ", Object.keys(allMail).length);
   }).start();
+  var flag = 0;
   for (key in allMail) {
       readHTMLFile(__dirname + '/templates/email-template.html', function(err, html) {
         var template = handlebars.compile(html);
@@ -2474,26 +2475,23 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   query.include('userTo');
   query.find({
     success: function(results) {
-      var counter = require('counter'),
-      count = counter(0, { target: Object.keys(results).length - 1, once: true }),
-      i, l = Object.keys(results).length - 1;
-      count.on('target', function() {
-        console.log("Total count : ", Object.keys(results).length);
-      }).start();
       var tokenArray = new Array();
-      for(i in results){
-        var obj = results[count.value];
-        var message = obj.get("message");
-        var deviceToken = obj.get("userTo").get("username");
-        tokenArray.push({
-          message: message,
-          deviceToken: deviceToken
-        });
-        count.value += 1;
-        if(Object.keys(results).length == count.value){
-          response.success(tokenArray);
+      var seq =  ASQ();
+      seq.gate(function(done , results){
+        for(i in results){
+          var obj = results[i];
+          var message = obj.get("message");
+          var deviceToken = obj.get("userTo").get("username");
+          tokenArray.push({
+            message: message,
+            deviceToken: deviceToken
+          });
+          done(tokenArray);
         }
-      }
+      }).then(function(done, results){
+          response.success(results);
+      })
+      return seq;
     },
     error: function(e) {
         console.error(e);

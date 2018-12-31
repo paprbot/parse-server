@@ -9,6 +9,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "asynquence": "^0.10.2",
     "buffer-shims": "^1.0.0",
     "counter": "^0.1.1",
     "email-templates": "^5.0.2",
