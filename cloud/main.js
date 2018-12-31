@@ -2486,6 +2486,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
             message: message,
             deviceToken: deviceToken
           });
+          console.log("tokenArray == "+JSON.stringify(tokenArray));
           done(tokenArray);
         }
       }).then(function(done, results){
