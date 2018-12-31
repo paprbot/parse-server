@@ -2504,6 +2504,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
   query.include('userTo.deviceToken');
+  query.exist('userTo.deviceToken');
   // var tokenArray = new Array();
   query.find({
     success: function(results) {
