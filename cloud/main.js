@@ -2472,40 +2472,6 @@ Parse.Cloud.define("sendEmail", function(request, response) {
 });
 
 Parse.Cloud.define("sendNotification", function(request, response) {
-  var Notification = Parse.Object.extend('Notification');
-  var query = new Parse.Query(Notification);
-  query.include('userTo.deviceToken');
-  // var tokenArray = new Array();
-  query.find({
-    success: function(results) {
-      response.success(results);
-      /*var counter = require('counter'),
-      count = counter(0, { target: Object.keys(results).length - 1, once: true }),
-      i, l = Object.keys(results).length - 1;
-      count.on('target', function() {
-        console.log("Total count : ", Object.keys(results).length);
-      }).start();
-      for(i in results){
-        var obj = results[count.value];
-        var message = obj.get("message");
-        var deviceToken = obj.get("userTo").get("username");
-        tokenArray.push({
-          message: message,
-          deviceToken: deviceToken
-        });
-        count.value += 1;
-        if(Object.keys(results).length == count.value){
-          response.success(tokenArray);
-        }
-      }*/
-    },
-    error: function(e) {
-        console.error(e);
-        response.error(e);
-    }
-  });
-});
-Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
   const pn = PushNotification({
     apn: {
       cert: path.resolve('Papr-Development-APNS.pem'),
@@ -2515,24 +2481,58 @@ Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
     }
   });
   const DeviceType = PushNotification.DeviceType;
-  const data = {
-    title: 'Title',
-    message: 'Message',
-    badge: '',
-    sound: '',
-    payload: {
-      param1: 'additional data',
-      param2: 'another data'
+  function sendPushNotification(deviceToken, message){
+    var data = {
+      title: 'Papr',
+      message: message,
+      badge: '',
+      sound: '',
+      payload: {
+        param1: 'additional data',
+        param2: 'another data'
+      }
+    };
+    pn.push(deviceToken, data, DeviceType.IOS)
+    .then(res => {
+      console.log(res); 
+      response.success(res)
+    }).catch(err => {
+      console.log(err); 
+      response.error(JSON.stringify(err))
+    });
+  }
+  var Notification = Parse.Object.extend('Notification');
+  var query = new Parse.Query(Notification);
+  query.include('userTo.deviceToken');
+  // var tokenArray = new Array();
+  query.find({
+    success: function(results) {
+
+      var counter = require('counter'),
+      count = counter(0, { target: Object.keys(results).length - 1, once: true }),
+      i, l = Object.keys(results).length - 1;
+      count.on('target', function() {
+        console.log("Total count : ", Object.keys(results).length);
+      }).start();
+      for(i in results){
+        if(results[count.value].userTo.deviceToken != "" || results[count.value].userTo.deviceToken != undefined){
+          sendPushNotification(results[count.value].userTo.deviceToken, results[count.value].message);
+          count.value += 1;
+          if(Object.keys(results).length == count.value){
+            response.success(results);
+            response.success("Notification sent to all users");
+          }
+        }
+      }
+    },
+    error: function(e) {
+        console.error(e);
+        response.error(e);
     }
-  };
-  pn.push("7689db229f040ad9e35a59732a5506b7fd27bb5c0b6f151615383ff8c71caddf", data, DeviceType.IOS)
-  .then(res => {
-    console.log(res); 
-    response.success(res)
-  }).catch(err => {
-    console.log(err); 
-    response.error(JSON.stringify(err))
   });
+});
+Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
+  
   // pn.pushToAPN('fc5fd972a1c544a7ddfa6ea3646aa0940dcf08eb8569cefafeedf478d8d9b8e8fc', data);
 });
 
