@@ -2486,6 +2486,36 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   query.include('userTo.deviceToken');
   query.find({
     success: function(results) {
+      var counter = require('counter'),
+      count = counter(0, { target: Object.keys(results).length - 1, once: true }),
+      i, l = Object.keys(results).length - 1;
+      count.on('target', function() {
+        console.log("Total count : ", Object.keys(results).length);
+      }).start();
+      for(i in results){
+        if(results[count.value].get("userTo").get("deviceToken") != "" || results[count.value].get("userTo").get("deviceToken") != undefined){
+          var data = {
+            title: 'Papr',
+            message: results[count.value].get("message"),
+            badge: '',
+            sound: '',
+            payload: {
+              param1: 'additional data',
+              param2: 'another data'
+            }
+          };
+          pn.push(results[count.value].get("userTo").get("deviceToken"), data, DeviceType.IOS)
+          .then(res => {
+            console.log(res);
+          }).catch(err => {
+            console.log(err);
+          });
+        }
+        count.value += 1;
+        if(Object.keys(results).length == count.value){
+          response.success("Notification sent to all users");
+        }
+      }
       response.success(results[0].get("userTo").get("deviceToken"));
     },
     error: function(e) {
