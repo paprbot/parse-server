@@ -2484,45 +2484,36 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
   query.include('userTo.deviceToken');
-
-  function notifyUser (callback) {
-    query.find({
-      success: function(results) {
-        for (var i = 0; i < results.length; i++) {
-          if(results[i].get("userTo").get("deviceToken") != "" || results[i].get("userTo").get("deviceToken") != undefined){
-            var data = {
-              title: 'Papr',
-              message: results[i].get("message"),
-              badge: '',
-              sound: '',
-              payload: {
-                param1: 'additional data',
-                param2: 'another data'
-              }
-            };
-            pn.push(results[i].get("userTo").get("deviceToken"), data, DeviceType.IOS)
-            .then(res => {
-              console.log(res);
-            }).catch(err => {
-              console.log(err);
-            });
+  query.find({
+    success: function(results) {
+      async.each(results, function (result, callback) {
+        var data = {
+          title: 'Papr',
+          message: result.get("message"),
+          badge: '',
+          sound: '',
+          payload: {
+            param1: 'additional data',
+            param2: 'another data'
           }
-        }
-        return callback(null, results);
-      },
-      error: function(e) {
-        console.error(e);
-        return callback(null, results);
-        response.error(e);
-      }
-    });
-  }
-
-  async.parallel([async.apply(notifyUser)], function (err, results) {
-    if (err) {
-      response.error(err);
+        };
+        pn.push(result.get("userTo").get("deviceToken"), data, DeviceType.IOS)
+        .then(res => {
+          console.log(res);
+        }).catch(err => {
+          console.log(err);
+          callback(err);
+        });
+      }, function(err) {
+        if (err) console.log('ERROR', err);
+        console.log("ALL FINISH");
+        response.success("Notification sent to all users");
+      });
+    },
+    error: function(e) {
+      console.error(e);
+      response.error(e);
     }
-    response.success("Notification sent to all users");
   });
 });
 
