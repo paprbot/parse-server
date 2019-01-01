@@ -2471,7 +2471,7 @@ Parse.Cloud.define("sendEmail", function(request, response) {
   }
 });
 
-Parse.Cloud.define("sendNotification", function(request, response) {
+Parse.Cloud.define("sendNotification", async function(request, response) {
   const pn = PushNotification({
     apn: {
       cert: path.resolve('Papr-Development-APNS.pem'),
@@ -2484,50 +2484,26 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
   query.include('userTo.deviceToken');
-  var tokenArray = new Array();
-  query.find({
+  try {
+    await query.find({
     success: function(results) {
-      var data = [];
-      for(i in results){
-        data.push(results[i]);
+      var tokenArray = new Array();
+      for (let i = 0; i < results.length; i++) {
+        tokenArray.push({
+          message: results[i].get("message"),
+          deviceToken: results[i].get("userTo").get("deviceToken"),
+        });
       }
-      response.success(data.result);
-      /*var counter = require('counter'),
-      count = counter(0, { target: Object.keys(results).length - 1, once: true }),
-      i, l = Object.keys(results).length - 1;
-      count.on('target', function() {
-        console.log("Total count : ", Object.keys(results).length);
-      }).start();
-      for(i in results){
-        if(results[count.value].userTo.deviceToken != "" || results[count.value].userTo.deviceToken != undefined){
-          var data = {
-            title: 'Papr',
-            message: results[count.value].message,
-            badge: '',
-            sound: '',
-            payload: {
-              param1: 'additional data',
-              param2: 'another data'
-            }
-          };
-          pn.push(results[count.value].userTo.deviceToken, data, DeviceType.IOS)
-          .then(res => {
-            console.log(res);
-          }).catch(err => {
-            console.log(err);
-          });
-        }
-        count.value += 1;
-        if(Object.keys(results).length == count.value){
-          response.success("Notification sent to all users");
-        }
-      }*/
+      response.success(tokenArray);
     },
     error: function(e) {
         console.error(e);
         response.error(e);
     }
   });
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
