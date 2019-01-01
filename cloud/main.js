@@ -2484,7 +2484,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
   query.include('userTo.deviceToken');
-  query.notEqualTo('hasSent', true);
+  query.equalTo('hasSent', false);
   query.find({
     success: function(results) {
       async.each(results, function (result, callback) {
@@ -2500,6 +2500,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
           console.log(err);
           callback(err);
         });
+        callback(null, result);
       }, function(err) {
         if (err) console.log('ERROR', err);
         console.log("ALL FINISH");
