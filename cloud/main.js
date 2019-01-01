@@ -2484,11 +2484,17 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
   query.include('userTo.deviceToken');
-  query.notEqualTo('userTo.deviceToken', undefined);
-  // var tokenArray = new Array();
+  var tokenArray = new Array();
   query.find({
     success: function(results) {
-      response.success(results);
+      let deviceTokens = results.map(result => {
+        console.log(result.userTo.deviceToken);
+        tokenArray.push({
+          message : result.message,
+        }
+        );
+      });
+      response.success(tokenArray);
       /*var counter = require('counter'),
       count = counter(0, { target: Object.keys(results).length - 1, once: true }),
       i, l = Object.keys(results).length - 1;
