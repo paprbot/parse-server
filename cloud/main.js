@@ -2481,28 +2481,30 @@ Parse.Cloud.define("sendNotification", function(request, response) {
     }
   });
   const DeviceType = PushNotification.DeviceType;
+  var User = Parse.Object.extend('User');
+  var user = new Parse.Query(User);
+  user.exists("deviceToken");
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
   query.include('userTo.deviceToken');
+  query.matchesQuery("userTo", user);
   query.equalTo('hasSent', false);
   query.find({
     success: function(results) {
       async.each(results, function (result, callback) {
-        if(result.get("userTo").get("deviceToken") != "" && result.get("userTo").get("deviceToken") != undefined){
-          var data = {
-            title: 'Papr',
-            message: result.get("message"),
-          };
-          pn.push(result.get("userTo").get("deviceToken"), data, DeviceType.IOS)
-          .then(res => {
-            result.set("hasSent", true);
-            result.save();
-            console.log(res);
-          }).catch(err => {
-            console.log(err);
-            callback(err);
-          });
-        }
+        var data = {
+          title: 'Papr',
+          message: result.get("message"),
+        };
+        pn.push(result.get("userTo").get("deviceToken"), data, DeviceType.IOS)
+        .then(res => {
+          result.set("hasSent", true);
+          result.save();
+          console.log(res);
+        }).catch(err => {
+          console.log(err);
+          callback(err);
+        });
         callback(null, result);
       }, function(err) {
         if (err){
