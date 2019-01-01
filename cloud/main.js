@@ -27,6 +27,7 @@ var fs = require('fs');
 
 const path = require('path');
 const PushNotification = require('push-notification');
+var cron = require('node-cron');
 
 // test cloud code functions
 Parse.Cloud.define("cloudCodeTest", function(request, response) {
@@ -2472,6 +2473,58 @@ Parse.Cloud.define("sendEmail", function(request, response) {
 });
 
 Parse.Cloud.define("sendNotification", function(request, response) {
+  const pn = PushNotification({
+    apn: {
+      cert: path.resolve('Papr-Development-APNS.pem'),
+      key: path.resolve('Key.pem'),
+      passphrase: 'papr@123',
+      production: false,
+    }
+  });
+  const DeviceType = PushNotification.DeviceType;
+  var User = Parse.Object.extend('User');
+  var user = new Parse.Query(User);
+  user.exists("deviceToken");
+  var Notification = Parse.Object.extend('Notification');
+  var query = new Parse.Query(Notification);
+  query.include('userTo.deviceToken');
+  query.matchesQuery("userTo", user);
+  query.notEqualTo('hasSent', true);
+  query.find({
+    success: function(results) {
+      async.each(results, function (result, callback) {
+        var data = {
+          title: 'Papr',
+          message: result.get("message"),
+        };
+        pn.push(result.get("userTo").get("deviceToken"), data, DeviceType.IOS)
+        .then(res => {
+          result.set("hasSent", true);
+          result.save();
+          console.log(res);
+        }).catch(err => {
+          console.log(err);
+          callback(err);
+        });
+        callback(null, result);
+      }, function(err) {
+        if (err){
+          console.log('ERROR', err);
+          response.error(err);
+        }
+        console.log("ALL FINISH");
+        response.success("Notification sent to all users");
+      });
+    },
+    error: function(e) {
+      console.error(e);
+      response.error(e);
+    }
+  });
+});
+
+cron.schedule('*/1 * * * *', () => {
+  console.log("Cron Job Called at : ", new Date());
   const pn = PushNotification({
     apn: {
       cert: path.resolve('Papr-Development-APNS.pem'),
