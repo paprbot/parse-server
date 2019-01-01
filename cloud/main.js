@@ -2484,21 +2484,17 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
   query.include('userTo.deviceToken');
+  query.notEqualTo('hasSent', true);
   query.find({
     success: function(results) {
       async.each(results, function (result, callback) {
         var data = {
           title: 'Papr',
           message: result.get("message"),
-          badge: '',
-          sound: '',
-          payload: {
-            param1: 'additional data',
-            param2: 'another data'
-          }
         };
         pn.push(result.get("userTo").get("deviceToken"), data, DeviceType.IOS)
         .then(res => {
+          result.set("hasSent", true);
           console.log(res);
         }).catch(err => {
           console.log(err);
