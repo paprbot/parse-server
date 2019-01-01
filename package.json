@@ -9,18 +9,23 @@
   },
   "license": "MIT",
   "dependencies": {
+    "apn": "^2.2.0",
+    "asynquence": "^0.10.2",
     "buffer-shims": "^1.0.0",
     "counter": "^0.1.1",
     "email-templates": "^5.0.2",
     "express": "^4.13.4",
     "fs": "0.0.1-security",
     "handlebars": "^4.0.12",
+    "node-cron": "^2.0.3",
     "node-deeplink": "^0.5.0",
     "nodemailer": "^4.7.0",
     "nodemailer-smtp-transport": "^2.7.4",
     "parse-dashboard": "^1.0.11",
     "parse-server": "2.3.x",
     "parse-server-azure-config": "^1.0.0",
+    "path": "^0.12.7",
+    "push-notification": "^0.2.5",
     "url-regex": "^4.1.1"
   },
   "scripts": {
