@@ -2474,8 +2474,8 @@ Parse.Cloud.define("sendEmail", function(request, response) {
 Parse.Cloud.define("sendNotification", function(request, response) {
   const pn = PushNotification({
     apn: {
-      cert: path.resolve('D:/home/site/wwwroot/cloud/Papr-Development-APNS.pem'),
-      key: path.resolve('D:/home/site/wwwroot/cloud/Key.pem'),
+      cert: path.resolve('Papr-Development-APNS.pem'),
+      key: path.resolve('Key.pem'),
       passphrase: 'papr@123',
       production: false,
     }
@@ -2484,10 +2484,11 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
   query.include('userTo.deviceToken');
+  query.notEqualTo('userTo.deviceToken', undefined);
   // var tokenArray = new Array();
   query.find({
     success: function(results) {
-      response.success(Object.keys(results).length - 1);
+      response.success(results);
       /*var counter = require('counter'),
       count = counter(0, { target: Object.keys(results).length - 1, once: true }),
       i, l = Object.keys(results).length - 1;
