@@ -2487,7 +2487,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   // var tokenArray = new Array();
   query.find({
     success: function(results) {
-      response.success(results[0].userTo.deviceToken);
+      response.success(results[0].userTo);
       /*var counter = require('counter'),
       count = counter(0, { target: Object.keys(results).length - 1, once: true }),
       i, l = Object.keys(results).length - 1;
@@ -2525,6 +2525,37 @@ Parse.Cloud.define("sendNotification", function(request, response) {
     }
   });
 });
+
+Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
+  const pn = PushNotification({
+    apn: {
+      cert: path.resolve('Papr-Development-APNS.pem'),
+      key: path.resolve('Key.pem'),
+      passphrase: 'papr@123',
+      production: false,
+    }
+  });
+  const DeviceType = PushNotification.DeviceType;
+  const data = {
+    title: 'Title',
+    message: 'Message',
+    badge: '',
+    sound: '',
+    payload: {
+      param1: 'additional data',
+      param2: 'another data'
+    }
+  };
+  pn.push("7689db229f040ad9e35a59732a5506b7fd27bb5c0b6f151615383ff8c71caddf", data, DeviceType.IOS)
+  .then(res => {
+    console.log(res); 
+    response.success(res)
+  }).catch(err => {
+    console.log(err); 
+    response.error(JSON.stringify(err))
+  });
+});
+
 
 Parse.Cloud.define("liveQueryMessageType", function(request, response) {
   response.success(request);
