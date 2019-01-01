@@ -2487,7 +2487,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   var tokenArray = new Array();
   query.find({
     success: function(results) {
-      response.success(results[0].objectId);
+      response.success(results[0]);
       /*let deviceTokens = results.map(result => {
         console.log(result.userTo.deviceToken);
         tokenArray.push({
