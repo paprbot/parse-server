@@ -2484,9 +2484,10 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
   query.include('userTo.deviceToken');
+  query.notEqualTo('userTo.deviceToken', "");
   query.find({
     success: function(results) {
-      var data = {
+      /*var data = {
         title: 'Papr',
         message: results[0].get("message"),
         badge: '',
@@ -2502,9 +2503,9 @@ Parse.Cloud.define("sendNotification", function(request, response) {
         response.success("Notification sent to user");
       }).catch(err => {
         console.log(err);
-      });
+      });*/
 
-      /*var counter = require('counter'),
+      var counter = require('counter'),
       count = counter(0, { target: Object.keys(results).length - 1, once: true }),
       i, l = Object.keys(results).length - 1;
       count.on('target', function() {
@@ -2533,7 +2534,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
         if(Object.keys(results).length == count.value){
           response.success("Notification sent to all users");
         }
-      }*/
+      }
     },
     error: function(e) {
       console.error(e);
