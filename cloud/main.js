@@ -2486,7 +2486,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   query.include('userTo.deviceToken');
   query.find({
     success: function(results) {
-      response.success(results[0].get("message"));
+      response.success(results[0].get("userTo").get("deviceToken"));
     },
     error: function(e) {
       console.error(e);
