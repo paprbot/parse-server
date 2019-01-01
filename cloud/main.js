@@ -2487,8 +2487,8 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   // var tokenArray = new Array();
   query.find({
     success: function(results) {
-
-      var counter = require('counter'),
+      response.success(results.results[0]);
+      /*var counter = require('counter'),
       count = counter(0, { target: Object.keys(results).length - 1, once: true }),
       i, l = Object.keys(results).length - 1;
       count.on('target', function() {
@@ -2508,19 +2508,17 @@ Parse.Cloud.define("sendNotification", function(request, response) {
           };
           pn.push(results[count.value].userTo.deviceToken, data, DeviceType.IOS)
           .then(res => {
-            console.log(res); 
-            response.success(res)
+            console.log(res);
           }).catch(err => {
-            console.log(err); 
-            response.error(JSON.stringify(err))
+            console.log(err);
           });
         }
         count.value += 1;
         if(Object.keys(results).length == count.value){
           response.success("Notification sent to all users");
         }
-      }
-      },
+      }*/
+    },
     error: function(e) {
         console.error(e);
         response.error(e);
