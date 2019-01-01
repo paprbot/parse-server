@@ -2471,7 +2471,7 @@ Parse.Cloud.define("sendEmail", function(request, response) {
   }
 });
 
-Parse.Cloud.define("sendNotification", async (request, response) => {
+Parse.Cloud.define("sendNotification", function(request, response) {
   const pn = PushNotification({
     apn: {
       cert: path.resolve('Papr-Development-APNS.pem'),
@@ -2484,20 +2484,15 @@ Parse.Cloud.define("sendNotification", async (request, response) => {
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
   query.include('userTo.deviceToken');
-  try {
-    const results = await query.find();
-    var tokenArray = new Array();
-    for (let i = 0; i < results.length; i++) {
-      tokenArray.push({
-        message: results[i].get("message"),
-        deviceToken: results[i].get("userTo").get("deviceToken"),
-      });
+  query.find({
+    success: function(results) {
+      response.success(results[0].get("message"));
+    },
+    error: function(e) {
+      console.error(e);
+      response.error(e);
     }
-    response.success(tokenArray);
-  } catch (error) {
-    console.log(error);
-    response.error(e);
-  }
+  });
 });
 
 Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
