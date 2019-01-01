@@ -2491,7 +2491,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
       for(i in results){
         data.push(results[i]);
       }
-      response.success(data);
+      response.success(data.result);
       /*var counter = require('counter'),
       count = counter(0, { target: Object.keys(results).length - 1, once: true }),
       i, l = Object.keys(results).length - 1;
