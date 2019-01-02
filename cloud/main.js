@@ -29,7 +29,7 @@ const path = require('path');
 const PushNotification = require('push-notification');
 var cron = require('node-cron');
 
-const isProduction = true;
+const isProduction = false;
 var fileForPushNotification;
 var keyFileForPushNotification;
 if( isProduction ){
