@@ -17,7 +17,6 @@ var indexUsers = client.initIndex('dev_users');
 var indexMeetings = client.initIndex('dev_meetings');
 var indexProject = client.initIndex('dev_channels');
 var indexWorkspaces = client.initIndex('dev_workspaces');
-var request = require('request-promise');
 
 // Send Email
 var nodemailer = require('nodemailer');
@@ -30,16 +29,16 @@ const path = require('path');
 const PushNotification = require('push-notification');
 var cron = require('node-cron');
 
-// Send Email
-var nodemailer = require('nodemailer');
-var EmailTemplate = require('email-templates');
-var smtpTransport = require('nodemailer-smtp-transport');
-var handlebars = require('handlebars');
-var fs = require('fs');
-
-const path = require('path');
-const PushNotification = require('push-notification');
-var cron = require('node-cron');
+const isProduction = true;
+var fileForPushNotification;
+var keyFileForPushNotification;
+if( isProduction ){
+  fileForPushNotification = 'Papr-Distribution-APNS.pem';
+  keyFileForPushNotification = 'Key-Distribution.pem';
+} else {
+  fileForPushNotification = 'Papr-Development-APNS.pem';
+  keyFileForPushNotification = 'Key.pem';
+}
 
 // test cloud code functions
 Parse.Cloud.define("cloudCodeTest", function(request, response) {
@@ -59,6 +58,26 @@ Parse.Cloud.define("cloudCodeTest", function(request, response) {
   });
   
   
+});
+
+Parse.Cloud.define("liveQueryMessage", function(request, response) {
+    console.log("LiveQuery starting...");
+    var query = new Parse.Query('PostQuestionMessage');
+    query.equalTo('type', '2');
+    var subscription = query.subscribe();
+    subscription.on('open', () => {
+      console.log('subscription opened');
+    });
+    
+    subscription.on('update', (message) => {
+      console.log("update: "+ JSON.stringify(message));
+      response.success(message); // This should output 
+    });
+    
+    subscription.on('enter', (message) => {
+      console.log("enter: "+ JSON.stringify(message));
+      response.success(message); // This should output 
+    });
 });
 
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
@@ -1985,89 +2004,78 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
     
   };
   
-
   function createMeetingPost (meetingObject, callback) {
-     
-    console.log("meetingObject: " + JSON.stringify(meetingObject.get("post")));
-    
-    if (meetingObject.get("MeetingEvents") === "completed" && !meetingObject.get("post")) {
-      
-      console.log("no post id availble and meeting is completed");
-      
-      var MeetingPost = Parse.Object.extend("Post");
-      var meetingPost = new MeetingPost();
-      //var postFile = new Parse.File("officeHours.m4a", meetingObject.get("FullMeetingURL"));
-      var Workspace = new Parse.Object("WorkSpace"); 
-      Workspace.id = meetingObject.get("workspace");
-      console.log("workspace ID: "  + JSON.stringify(Workspace.id));
-      
-      var Project = new Parse.Object("Project"); 
-      Project.id = meetingObject.get("channel");
-      console.log("Project ID: "  + JSON.stringify(Project.id));
-      
-      var User = new Parse.Object("_User");
-      User.id = meetingObject.get("user");
-      console.log("User ID: "  + JSON.stringify(User.id));
-      
-      console.log("meetingPost: " + JSON.stringify(meetingPost));
-      
-      meetingPost.set("workspace", Workspace.id);
-      meetingPost.set("project", Project.id);
-      meetingPost.set("user", User.id);
-      meetingPost.set("post_type", '2'); //video post for office hours QNA
-      meetingPost.set("privacy", '3');
-      meetingPost.set("text", 'We are starting our #office-hours session now, look forward to answering your questions!');
-      meetingPost.set("post_title", 'Office Hours QnA');
-      meetingPost.set("questionAnswerEnabled", true);
-      meetingPost.set("transcript", meetingObject.get("FullMeetingText"));
-      meetingPost.set("postNumberOfLines", 3);
-      meetingPost.set("CommentCount", 0);
-      meetingPost.set("likesCount", 0);
-      meetingPost.set("media_duration", '1600');
-      //meetingPost.set("post_File", postFile);
-      
-      console.log("meetingPost2: " + JSON.stringify(meetingPost));
-      
-      
-      meetingPost.save()
-      .then((meetingPost) => {
-        // Execute any logic that should take place after the object is saved.
-        alert('New object created with objectId: ' + meetingPost.id);
-        console.log("meetingPost saved");
-        
-        meetingObject.set("post", meetingPost.id);
-        meetingObject.save();
-        
-        return callback(null, meetingObject);
-      }, (error) => {
-        // Execute any logic that should take place if the save fails.
-        // error is a Parse.Error with an error code and message.
-        alert('Failed to create new object, with error code: ' + error.message);
-        return callback(null, meetingObject);
-        
-      });
-            
-      
-    }  else {
-      
-      console.log("post id exists or meeting is not completed");
-      return callback(null, meetingObject);
-      
-    }
-    
-    
-  };
+
+        console.log("meetingObject: " + JSON.stringify(meetingObject.get("post")));
+
+        if (meetingObject.get("MeetingEvents") === "completed" && !meetingObject.get("post")) {
+
+            console.log("no post id availble and meeting is completed");
+
+            var MeetingPost = Parse.Object.extend("Post");
+            var meetingPost = new MeetingPost();
+            //var postFile = new Parse.File("officeHours.m4a", meetingObject.get("FullMeetingURL"));
+            var Workspace = new Parse.Object("WorkSpace");
+            Workspace.id = meetingObject.get("workspace");
+            console.log("workspace ID: "  + JSON.stringify(Workspace.id));
+
+            var Project = new Parse.Object("Project");
+            Project.id = meetingObject.get("channel");
+            console.log("Project ID: "  + JSON.stringify(Project.id));
+
+            var User = new Parse.Object("_User");
+            User.id = meetingObject.get("user");
+            console.log("User ID: "  + JSON.stringify(User.id));
+
+            console.log("meetingPost: " + JSON.stringify(meetingPost));
+
+            meetingPost.set("workspace", Workspace.id);
+            meetingPost.set("project", Project.id);
+            meetingPost.set("user", User.id);
+            meetingPost.set("post_type", '2'); //video post for office hours QNA
+            meetingPost.set("privacy", '3');
+            meetingPost.set("text", 'We are starting our #office-hours session now, look forward to answering your questions!');
+            meetingPost.set("post_title", 'Office Hours QnA');
+            meetingPost.set("questionAnswerEnabled", true);
+            meetingPost.set("transcript", meetingObject.get("FullMeetingText"));
+            meetingPost.set("postNumberOfLines", 3);
+            meetingPost.set("CommentCount", 0);
+            meetingPost.set("likesCount", 0);
+            meetingPost.set("media_duration", '1600');
+            //meetingPost.set("post_File", postFile);
+
+            console.log("meetingPost2: " + JSON.stringify(meetingPost));
+
+
+            meetingPost.save()
+                .then((meetingPost) => {
+                // Execute any logic that should take place after the object is saved.
+                alert('New object created with objectId: ' + meetingPost.id);
+            console.log("meetingPost saved");
+
+            meetingObject.set("post", meetingPost.id);
+            meetingObject.save();
+
+            return callback(null, meetingObject);
+        }, (error) => {
+                // Execute any logic that should take place if the save fails.
+                // error is a Parse.Error with an error code and message.
+                alert('Failed to create new object, with error code: ' + error.message);
+                return callback(null, meetingObject);
+
+            });
+
+
+        }  else {
+
+            console.log("post id exists or meeting is not completed");
+            return callback(null, meetingObject);
+
+        }
+
+
+    };
   
-  function extractMeetingQnA (meetingObject, callback) {
-
-    
-    
-  };
-  
-  function getMeetingTranscript (meetingObject, callback) { 
-
-    //console.log("\n meetingObject3: " + JSON.stringify(meetingObject));
-
   function getMeetingTranscript (meetingObject, callback) { 
 
     //console.log("\n meetingObject3: " + JSON.stringify(meetingObject));
@@ -2081,13 +2089,6 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
       url: meetingFile.url(),
       json: true
     }, function (error, resp, body) {
-
-      //console.log("error: " + error);
-      //console.log("response: " + JSON.stringify(resp));
-      //console.log("body: " + JSON.stringify(body));
-
-      if (!error && resp.statusCode === 200) {
-              //console.log("body: " + JSON.stringify(body)); // Print the json response
 
       console.log("error: " + error);
       //console.log("response: " + JSON.stringify(resp));
@@ -2155,7 +2156,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
         meetingUtterance['MeetingInfo'] = meeting.MeetingInfo;
         meetingUtterance['meetingID'] = meeting.objectId;
         meetingUtterance['FullMeetingURL'] = meeting.FullMeetingURL;
-        //meetingUtterance['FullMeetingText'] = meeting.FullMeetingText; 
+        //meetingUtterance['FullMeetingText'] = meeting.FullMeetingText;
         meetingUtterance['objectID'] = meetingUtterance.alternatives[0].objectID;
         
         //console.log("meetingUtterance2: "+ JSON.stringify(meetingUtterance));
@@ -2166,8 +2167,6 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
       }, function(err) {
         //console.log('iterating done: ' + JSON.stringify(objectsToIndex));
 
-      }, function(err) {
-        console.log('iterating done: ' + JSON.stringify(objectsToIndex));
       });  
     
     return callback(null, objectsToIndex);
@@ -2203,7 +2202,6 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
     }
 
     //console.log("final meeting: " + JSON.stringify(objectsToIndex));
-
     response.success();
   });
 
@@ -2581,10 +2579,10 @@ Parse.Cloud.define("sendEmail", function(request, response) {
 Parse.Cloud.define("sendNotification", function(request, response) {
   const pn = PushNotification({
     apn: {
-      cert: path.resolve('Papr-Development-APNS.pem'),
-      key: path.resolve('Key.pem'),
+      cert: path.resolve(fileForPushNotification),
+      key: path.resolve(keyFileForPushNotification),
       passphrase: 'papr@123',
-      production: false,
+      production: isProduction,
     }
   });
   const DeviceType = PushNotification.DeviceType;
@@ -2602,6 +2600,13 @@ Parse.Cloud.define("sendNotification", function(request, response) {
         var data = {
           title: 'Papr',
           message: result.get("message"),
+          payload: {
+            workspace : result.get("workspace"),
+            type : result.get("type"),
+            post : result.get("post"),
+            postQuestionMessage : result.get("postQuestionMessage"),
+            postQuestion : result.get("postQuestion"),
+          }
         };
         pn.push(result.get("userTo").get("deviceToken"), data, DeviceType.IOS)
         .then(res => {
@@ -2633,10 +2638,10 @@ cron.schedule('*/1 * * * *', () => {
   console.log("Cron Job Called at : ", new Date());
   const pn = PushNotification({
     apn: {
-      cert: path.resolve('Papr-Development-APNS.pem'),
-      key: path.resolve('Key.pem'),
+      cert: path.resolve(fileForPushNotification),
+      key: path.resolve(keyFileForPushNotification),
       passphrase: 'papr@123',
-      production: false,
+      production: isProduction,
     }
   });
   const DeviceType = PushNotification.DeviceType;
@@ -2654,6 +2659,13 @@ cron.schedule('*/1 * * * *', () => {
         var data = {
           title: 'Papr',
           message: result.get("message"),
+          payload: {
+            workspace : result.get("workspace"),
+            type : result.get("type"),
+            post : result.get("post"),
+            postQuestionMessage : result.get("postQuestionMessage"),
+            postQuestion : result.get("postQuestion"),
+          }
         };
         pn.push(result.get("userTo").get("deviceToken"), data, DeviceType.IOS)
         .then(res => {
@@ -2712,12 +2724,3 @@ Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
 });
 
 
-Parse.Cloud.define("liveQueryMessageType", function(request, response) {
-  response.success(request);
-    let query = new Parse.Query('PostQuestionMessage');
-    query.equalTo('type', '2');
-    let subscription = query.subscribe();
-    subscription.on('update', (people) => {
-      response.success(people); // This should output Mengyan
-    });
-});
