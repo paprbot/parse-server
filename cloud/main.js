@@ -2496,6 +2496,13 @@ Parse.Cloud.define("sendNotification", function(request, response) {
         var data = {
           title: 'Papr',
           message: result.get("message"),
+          payload: {
+            workspace : result.get("workspace"),
+            type : result.get("type"),
+            post : result.get("post"),
+            postQuestionMessage : result.get("postQuestionMessage"),
+            postQuestion : result.get("postQuestion"),
+          }
         };
         pn.push(result.get("userTo").get("deviceToken"), data, DeviceType.IOS)
         .then(res => {
@@ -2548,6 +2555,13 @@ cron.schedule('*/1 * * * *', () => {
         var data = {
           title: 'Papr',
           message: result.get("message"),
+          payload: {
+            workspace : result.get("workspace"),
+            type : result.get("type"),
+            post : result.get("post"),
+            postQuestionMessage : result.get("postQuestionMessage"),
+            postQuestion : result.get("postQuestion"),
+          }
         };
         pn.push(result.get("userTo").get("deviceToken"), data, DeviceType.IOS)
         .then(res => {
