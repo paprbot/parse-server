@@ -2487,7 +2487,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   user.exists("deviceToken");
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
-  query.include(['userTo.deviceToken', 'workspace.objectId', 'post.objectId', 'postQuestionMessage.objectId', 'postQuestion.objectId']);
+  query.include(['userTo.deviceToken', 'workspace.objectId']);
   query.matchesQuery("userTo", user);
   query.notEqualTo('hasSent', true);
   query.find({
