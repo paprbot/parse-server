@@ -2487,12 +2487,13 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   user.exists("deviceToken");
   var Notification = Parse.Object.extend('Notification');
   var query = new Parse.Query(Notification);
-  query.include('userTo.deviceToken');
+  query.include(['userTo.deviceToken', 'workspace.objectId', 'post.objectId', 'postQuestionMessage.objectId', 'postQuestion.objectId']);
   query.matchesQuery("userTo", user);
   query.notEqualTo('hasSent', true);
   query.find({
     success: function(results) {
-      async.each(results, function (result, callback) {
+      response.success(results);
+      /*async.each(results, function (result, callback) {
         var data = {
           title: 'Papr',
           message: result.get("message"),
@@ -2521,7 +2522,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
         }
         console.log("ALL FINISH");
         response.success("Notification sent to all users");
-      });
+      });*/
     },
     error: function(e) {
       console.error(e);
