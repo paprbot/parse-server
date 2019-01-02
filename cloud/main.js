@@ -30,6 +30,17 @@ const path = require('path');
 const PushNotification = require('push-notification');
 var cron = require('node-cron');
 
+// Send Email
+var nodemailer = require('nodemailer');
+var EmailTemplate = require('email-templates');
+var smtpTransport = require('nodemailer-smtp-transport');
+var handlebars = require('handlebars');
+var fs = require('fs');
+
+const path = require('path');
+const PushNotification = require('push-notification');
+var cron = require('node-cron');
+
 // test cloud code functions
 Parse.Cloud.define("cloudCodeTest", function(request, response) {
   Parse.Cloud.run("QueryPostFeed", { 
@@ -1974,6 +1985,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
     
   };
   
+
   function createMeetingPost (meetingObject, callback) {
      
     console.log("meetingObject: " + JSON.stringify(meetingObject.get("post")));
@@ -2056,6 +2068,10 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
 
     //console.log("\n meetingObject3: " + JSON.stringify(meetingObject));
 
+  function getMeetingTranscript (meetingObject, callback) { 
+
+    //console.log("\n meetingObject3: " + JSON.stringify(meetingObject));
+
     //console.log("\n Meetingurl: " + JSON.stringify(meetingObject.MeetingJson.url));
     var meetingFile = meetingObject.get("MeetingJson");
     //console.log("MeetingFile: " + JSON.stringify(meetingFile));
@@ -2072,6 +2088,13 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
 
       if (!error && resp.statusCode === 200) {
               //console.log("body: " + JSON.stringify(body)); // Print the json response
+
+      console.log("error: " + error);
+      //console.log("response: " + JSON.stringify(resp));
+      //console.log("body: " + JSON.stringify(body));
+
+      if (!error && resp.statusCode === 200) {
+              console.log("body: " + JSON.stringify(body)); // Print the json response
               
               objectsToIndex = body.IBMjson.results;
               
@@ -2143,6 +2166,8 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
       }, function(err) {
         //console.log('iterating done: ' + JSON.stringify(objectsToIndex));
 
+      }, function(err) {
+        console.log('iterating done: ' + JSON.stringify(objectsToIndex));
       });  
     
     return callback(null, objectsToIndex);
@@ -2178,6 +2203,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
     }
 
     //console.log("final meeting: " + JSON.stringify(objectsToIndex));
+
     response.success();
   });
 
