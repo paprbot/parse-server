@@ -1,7 +1,12 @@
 module.exports = {
-  server: {},
-  liveQuery: {
+  server: {
+    
+    liveQuery: {
         classNames: ['PostQuestionMessage']
+    }, 
+    
+    maxUploadSize: "50mb" 
+    
     },
   dashboard: {},
   storage: {},
