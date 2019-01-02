@@ -17,6 +17,7 @@ var indexUsers = client.initIndex('dev_users');
 var indexMeetings = client.initIndex('dev_meetings');
 var indexProject = client.initIndex('dev_channels');
 var indexWorkspaces = client.initIndex('dev_workspaces');
+var request = require('request-promise');
 
 // Send Email
 var nodemailer = require('nodemailer');
@@ -1876,7 +1877,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
   //var Post = Parse.Object.extend("Post");
   var queryPost = new Parse.Query("Post");
   queryPost.include( ["user", "workspace", "project"] );
-  queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
+  queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
   queryPost.equalTo("objectId", objectToSave.objectId);
   
   //console.log("Request: " + JSON.stringify(request));
@@ -1949,7 +1950,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
   // Convert Parse.Object to JSON
   var meeting = req.object.toJSON();
   //var meetingURL = req.object.MeetingJson.url;
-  console.log("meetingObject1: " + JSON.stringify(meeting));
+  //console.log("meetingObject1: " + JSON.stringify(meeting));
   
   function getMeetingObject (callback) {
 
@@ -1958,7 +1959,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
     query.get(req.object.id, {
       success: function(meetingObject) {
         // The object was retrieved successfully.
-        console.log("meetingObject2: " + JSON.stringify(meetingObject));  
+        //console.log("meetingObject2: " + JSON.stringify(meetingObject));  
 
         return callback(null, meetingObject);
         
@@ -1973,26 +1974,104 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
     
   };
   
+  function createMeetingPost (meetingObject, callback) {
+     
+    console.log("meetingObject: " + JSON.stringify(meetingObject.get("post")));
+    
+    if (meetingObject.get("MeetingEvents") === "completed" && !meetingObject.get("post")) {
+      
+      console.log("no post id availble and meeting is completed");
+      
+      var MeetingPost = Parse.Object.extend("Post");
+      var meetingPost = new MeetingPost();
+      //var postFile = new Parse.File("officeHours.m4a", meetingObject.get("FullMeetingURL"));
+      var Workspace = new Parse.Object("WorkSpace"); 
+      Workspace.id = meetingObject.get("workspace");
+      console.log("workspace ID: "  + JSON.stringify(Workspace.id));
+      
+      var Project = new Parse.Object("Project"); 
+      Project.id = meetingObject.get("channel");
+      console.log("Project ID: "  + JSON.stringify(Project.id));
+      
+      var User = new Parse.Object("_User");
+      User.id = meetingObject.get("user");
+      console.log("User ID: "  + JSON.stringify(User.id));
+      
+      console.log("meetingPost: " + JSON.stringify(meetingPost));
+      
+      meetingPost.set("workspace", Workspace.id);
+      meetingPost.set("project", Project.id);
+      meetingPost.set("user", User.id);
+      meetingPost.set("post_type", '2'); //video post for office hours QNA
+      meetingPost.set("privacy", '3');
+      meetingPost.set("text", 'We are starting our #office-hours session now, look forward to answering your questions!');
+      meetingPost.set("post_title", 'Office Hours QnA');
+      meetingPost.set("questionAnswerEnabled", true);
+      meetingPost.set("transcript", meetingObject.get("FullMeetingText"));
+      meetingPost.set("postNumberOfLines", 3);
+      meetingPost.set("CommentCount", 0);
+      meetingPost.set("likesCount", 0);
+      meetingPost.set("media_duration", '1600');
+      //meetingPost.set("post_File", postFile);
+      
+      console.log("meetingPost2: " + JSON.stringify(meetingPost));
+      
+      
+      meetingPost.save()
+      .then((meetingPost) => {
+        // Execute any logic that should take place after the object is saved.
+        alert('New object created with objectId: ' + meetingPost.id);
+        console.log("meetingPost saved");
+        
+        meetingObject.set("post", meetingPost.id);
+        meetingObject.save();
+        
+        return callback(null, meetingObject);
+      }, (error) => {
+        // Execute any logic that should take place if the save fails.
+        // error is a Parse.Error with an error code and message.
+        alert('Failed to create new object, with error code: ' + error.message);
+        return callback(null, meetingObject);
+        
+      });
+            
+      
+    }  else {
+      
+      console.log("post id exists or meeting is not completed");
+      return callback(null, meetingObject);
+      
+    }
+    
+    
+  };
+  
+  function extractMeetingQnA (meetingObject, callback) {
+
+    
+    
+  };
+  
   function getMeetingTranscript (meetingObject, callback) { 
 
-    console.log("\n meetingObject3: " + JSON.stringify(meetingObject));
+    //console.log("\n meetingObject3: " + JSON.stringify(meetingObject));
 
     //console.log("\n Meetingurl: " + JSON.stringify(meetingObject.MeetingJson.url));
     var meetingFile = meetingObject.get("MeetingJson");
-    console.log("MeetingFile: " + JSON.stringify(meetingFile));
-    console.log("MeetingURL: " + JSON.stringify(meetingFile.url()) );
+    //console.log("MeetingFile: " + JSON.stringify(meetingFile));
+    //console.log("MeetingURL: " + JSON.stringify(meetingFile.url()) );
     
     requestURL({
       url: meetingFile.url(),
       json: true
     }, function (error, resp, body) {
 
-      console.log("error: " + error);
-      console.log("response: " + JSON.stringify(resp));
-      console.log("body: " + JSON.stringify(body));
+      //console.log("error: " + error);
+      //console.log("response: " + JSON.stringify(resp));
+      //console.log("body: " + JSON.stringify(body));
 
       if (!error && resp.statusCode === 200) {
-              console.log("body: " + JSON.stringify(body)); // Print the json response
+              //console.log("body: " + JSON.stringify(body)); // Print the json response
               
               objectsToIndex = body.IBMjson.results;
               
@@ -2008,7 +2087,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
 
     // Specify Algolia's objectID with the Parse.Object unique ID
     
-    console.log("objectsToIndex: " + JSON.stringify(objectsToIndex));
+    //console.log("objectsToIndex: " + JSON.stringify(objectsToIndex));
 
     
     // prepare objects to index from users
@@ -2038,31 +2117,31 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
     
     async.forEach(objectsToIndex, function (meetingUtterance, callback){ 
 
-      console.log("meetingUtterance: " + JSON.stringify(meetingUtterance));
+      //console.log("meetingUtterance: " + JSON.stringify(meetingUtterance));
 
       
         //meetingUtterance = meetingUtterance.alternatives[0];
         
-        console.log("meetingUtterance1: "+ JSON.stringify(meetingUtterance)); // print the key
+        //console.log("meetingUtterance1: "+ JSON.stringify(meetingUtterance)); // print the key
         //var updatedUtterance = meetingUtterance.toJSON();
-        console.log("ConferenceID: " + JSON.stringify(meeting.ConferenceID));
-        console.log("MeetingObject: " + JSON.stringify(meeting));
+        //console.log("ConferenceID: " + JSON.stringify(meeting.ConferenceID));
+        //console.log("MeetingObject: " + JSON.stringify(meeting));
         
         meetingUtterance['ConferenceID'] = meeting.ConferenceID;
         meetingUtterance['MeetingEvents'] = meeting.MeetingEvents;
         meetingUtterance['MeetingInfo'] = meeting.MeetingInfo;
         meetingUtterance['meetingID'] = meeting.objectId;
         meetingUtterance['FullMeetingURL'] = meeting.FullMeetingURL;
-        meetingUtterance['FullMeetingText'] = meeting.FullMeetingText;
+        //meetingUtterance['FullMeetingText'] = meeting.FullMeetingText; 
         meetingUtterance['objectID'] = meetingUtterance.alternatives[0].objectID;
         
-        console.log("meetingUtterance2: "+ JSON.stringify(meetingUtterance));
+        //console.log("meetingUtterance2: "+ JSON.stringify(meetingUtterance));
         
         // tell async that that particular element of the iterator is done
         callback(null, meetingUtterance); 
 
       }, function(err) {
-        console.log('iterating done: ' + JSON.stringify(objectsToIndex));
+        //console.log('iterating done: ' + JSON.stringify(objectsToIndex));
 
       });  
     
@@ -2072,7 +2151,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
   
   function addObjectsAlgolia (objectsToIndex, callback) {
 
-   console.log("objectToIndex2: "+ JSON.stringify(objectsToIndex)); 
+   //console.log("objectToIndex2: "+ JSON.stringify(objectsToIndex)); 
 
    indexMeetings.saveObjects(objectsToIndex, function(err, content) {
     if (err) {
@@ -2088,6 +2167,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
 
  async.waterfall([ 
   async.apply(getMeetingObject),
+  async.apply(createMeetingPost),
   async.apply(getMeetingTranscript),
   async.apply(prepIndex),
   async.apply(addObjectsAlgolia)
@@ -2097,7 +2177,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
       response.error(err);
     }
 
-    console.log("final meeting: " + JSON.stringify(objectsToIndex));
+    //console.log("final meeting: " + JSON.stringify(objectsToIndex));
     response.success();
   });
 

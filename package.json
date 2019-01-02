@@ -26,6 +26,7 @@
     "parse-server-azure-config": "^1.0.0",
     "path": "^0.12.7",
     "push-notification": "^0.2.5",
+    "request-promise": "^4.2.2",
     "url-regex": "^4.1.1"
   },
   "scripts": {
