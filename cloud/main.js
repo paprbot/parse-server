@@ -63,20 +63,22 @@ Parse.Cloud.define("cloudCodeTest", function(request, response) {
 Parse.Cloud.define("liveQueryMessage", function(request, response) {
     console.log("LiveQuery starting...");
     var query = new Parse.Query('PostQuestionMessage');
-    query.equalTo('type', '2');
+    query.equalTo('type', 2);
     var subscription = query.subscribe();
     subscription.on('open', () => {
       console.log('subscription opened');
     });
     
     subscription.on('update', (message) => {
-      console.log("update: "+ JSON.stringify(message));
-      response.success(message); // This should output 
+      console.log("update: "+ JSON.stringify(message.get("message")));
+      response.success(message.get("message")); // This should output 
+      //subscription.unsubcribe();
     });
     
     subscription.on('enter', (message) => {
-      console.log("enter: "+ JSON.stringify(message));
-      response.success(message); // This should output 
+      console.log("enter: "+ JSON.stringify(message.get("message")));
+      response.success(message.get("message")); // This should output 
+      //subscription.unsubcribe();
     });
 });
 
@@ -2029,15 +2031,15 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
 
             console.log("meetingPost: " + JSON.stringify(meetingPost));
 
-            meetingPost.set("workspace", Workspace.id);
-            meetingPost.set("project", Project.id);
-            meetingPost.set("user", User.id);
+            if (meetingObject.get("workspace")) {meetingPost.set("workspace", Workspace.id);}
+            if (meetingObject.get("channel")) {meetingPost.set("project", Project.id);}
+            if (meetingObject.get("user")) { meetingPost.set("user", User.id);}
             meetingPost.set("post_type", '2'); //video post for office hours QNA
             meetingPost.set("privacy", '3');
             meetingPost.set("text", 'We are starting our #office-hours session now, look forward to answering your questions!');
             meetingPost.set("post_title", 'Office Hours QnA');
             meetingPost.set("questionAnswerEnabled", true);
-            meetingPost.set("transcript", meetingObject.get("FullMeetingText"));
+            if (meetingObject.get("FullMeetingText")) {meetingPost.set("transcript", meetingObject.get("FullMeetingText"));}
             meetingPost.set("postNumberOfLines", 3);
             meetingPost.set("CommentCount", 0);
             meetingPost.set("likesCount", 0);
