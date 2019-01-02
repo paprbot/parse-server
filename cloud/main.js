@@ -2492,8 +2492,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   query.notEqualTo('hasSent', true);
   query.find({
     success: function(results) {
-      response.success(results);
-      /*async.each(results, function (result, callback) {
+      async.each(results, function (result, callback) {
         var data = {
           title: 'Papr',
           message: result.get("message"),
@@ -2522,7 +2521,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
         }
         console.log("ALL FINISH");
         response.success("Notification sent to all users");
-      });*/
+      });
     },
     error: function(e) {
       console.error(e);
