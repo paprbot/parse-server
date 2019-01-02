@@ -29,6 +29,17 @@ const path = require('path');
 const PushNotification = require('push-notification');
 var cron = require('node-cron');
 
+const isProduction = true;
+var fileForPushNotification;
+var keyFileForPushNotification;
+if( isProduction ){
+  fileForPushNotification = 'Papr-Distribution-APNS.pem';
+  keyFileForPushNotification = 'Key-Distribution.pem';
+} else {
+  fileForPushNotification = 'Papr-Development-APNS.pem';
+  keyFileForPushNotification = 'Key.pem';
+}
+
 // test cloud code functions
 Parse.Cloud.define("cloudCodeTest", function(request, response) {
   Parse.Cloud.run("QueryPostFeed", { 
@@ -2475,10 +2486,10 @@ Parse.Cloud.define("sendEmail", function(request, response) {
 Parse.Cloud.define("sendNotification", function(request, response) {
   const pn = PushNotification({
     apn: {
-      cert: path.resolve('Papr-Distribution-APNS.pem'),
-      key: path.resolve('Key-Distribution.pem'),
+      cert: path.resolve(fileForPushNotification),
+      key: path.resolve(keyFileForPushNotification),
       passphrase: 'papr@123',
-      production: true,
+      production: isProduction,
     }
   });
   const DeviceType = PushNotification.DeviceType;
@@ -2534,10 +2545,10 @@ cron.schedule('*/1 * * * *', () => {
   console.log("Cron Job Called at : ", new Date());
   const pn = PushNotification({
     apn: {
-      cert: path.resolve('Papr-Distribution-APNS.pem'),
-      key: path.resolve('Key-Distribution.pem'),
+      cert: path.resolve(fileForPushNotification),
+      key: path.resolve(keyFileForPushNotification),
       passphrase: 'papr@123',
-      production: true,
+      production: isProduction,
     }
   });
   const DeviceType = PushNotification.DeviceType;
