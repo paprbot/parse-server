@@ -1,7 +1,8 @@
 module.exports = {
   server: {},
   liveQuery: {
-        classNames: ['PostQuestionMessage']
+        classNames: ['PostQuestionMessage'],
+        redisURL: 'paprtest.redis.cache.windows.net'
     },
   dashboard: {},
   storage: {},
