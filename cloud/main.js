@@ -10,7 +10,6 @@ var querystring = require('querystring');
 var process = require('process');
 var mongoClient = require("mongodb").MongoClient;
 var Promise = require('promise');
-var ASQ = require('asynquence');
 // Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
 var indexPosts = client.initIndex('dev_posts');
 var indexUsers = client.initIndex('dev_users');
