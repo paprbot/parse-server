@@ -44,7 +44,7 @@ var port = process.env.PORT || 1337;
 
 
 httpServer.listen(port, function() {
-console.log('Parse Server running at ${port}');
+console.log('Parse Server running at' + port);
 });
 // httpServer.listen(1337, function() {
 // console.log('Parse Server running at ${config.server.serverURL}');
