@@ -49,7 +49,7 @@ console.log('Parse Server running at ${port}');
 // httpServer.listen(1337, function() {
 // console.log('Parse Server running at ${config.server.serverURL}');
 // });
-ParseServer.createLiveQueryServer(httpServer);
+ParseServer.createLiveQueryServer(httpServer,{redisURL: 'redis://paprtest.redis.cache.windows.net:6379'});
 
 
 // app.listen(process.env.PORT || url.parse(config.server.serverURL).port, function () {
