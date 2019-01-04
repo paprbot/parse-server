@@ -34,8 +34,8 @@ app.use(mountPath, api);
 var api = new ParseServer(
 {
     databaseURI: 'mongodb://paprvmdatabase.westus2.cloudapp.azure.com:27017/parse',
-    appId: "671e705a-f735-4ec0-8474-15899a475440",
-    masterKey: "f24d6630-a35a-4db8-9fc7-6a851042bfd6",
+    appId: "",
+    masterKey: "",
     //fileKey: "",
     serverURL: "https://parseserverwest.azurewebsites.net/parse",
     liveQuery: {
