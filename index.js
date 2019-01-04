@@ -29,7 +29,7 @@ liveQuery: {
 
 var mountPath = '/parse';
 app.use(mountPath, api);
-*/
+
 
 var api = new ParseServer(
 {
@@ -44,8 +44,10 @@ var api = new ParseServer(
      //   logLevel:'VERBOSE'
     }
 });
-app.use('/parse', api);
 
+app.use('/parse', api);
+*/
+app.use('/parse', new ParseServer(config.server));
 app.use('/parse-dashboard', ParseDashboard(config.dashboard, {allowInsecureHTTP: true}));
 app.get('/deeplink', deeplink({
         fallback: 'https://www.facebook.com/',
