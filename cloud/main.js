@@ -66,20 +66,20 @@ Parse.Cloud.define("liveQueryMessage", function(request, response) {
     query.equalTo('type', 2);
     var subscription = query.subscribe();
     subscription.on('open', () => {
-      console.log('subscription opened');
-    });
-    
+        console.log('subscription opened');
+});
+
     subscription.on('update', (message) => {
-      console.log("update: "+ JSON.stringify(message.get("message")));
-      response.success(message.get("message")); // This should output 
-      //subscription.unsubcribe();
-    });
-    
+        console.log("update: "+ JSON.stringify(message.get("message")));
+    response.success(message.get("message")); // This should output 
+    //subscription.unsubcribe();
+});
+
     subscription.on('enter', (message) => {
-      console.log("enter: "+ JSON.stringify(message.get("message")));
-      response.success(message.get("message")); // This should output 
-      //subscription.unsubcribe();
-    });
+        console.log("enter: "+ JSON.stringify(message.get("message")));
+    response.success(message.get("message")); // This should output 
+    //subscription.unsubcribe();
+});
 });
 
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
@@ -2008,75 +2008,75 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
   
   function createMeetingPost (meetingObject, callback) {
 
-        console.log("meetingObject: " + JSON.stringify(meetingObject.get("post")));
+    console.log("meetingObject: " + JSON.stringify(meetingObject.get("post")));
 
-        if (meetingObject.get("MeetingEvents") === "completed" && !meetingObject.get("post")) {
+    if (meetingObject.get("MeetingEvents") === "completed" && !meetingObject.get("post")) {
 
-            console.log("no post id availble and meeting is completed");
+        console.log("no post id availble and meeting is completed");
 
-            var MeetingPost = Parse.Object.extend("Post");
-            var meetingPost = new MeetingPost();
-            //var postFile = new Parse.File("officeHours.m4a", meetingObject.get("FullMeetingURL"));
-            var Workspace = new Parse.Object("WorkSpace");
-            Workspace.id = meetingObject.get("workspace");
-            console.log("workspace ID: "  + JSON.stringify(Workspace.id));
+        var MeetingPost = Parse.Object.extend("Post");
+        var meetingPost = new MeetingPost();
+        //var postFile = new Parse.File("officeHours.m4a", meetingObject.get("FullMeetingURL"));
+        var Workspace = new Parse.Object("WorkSpace");
+        Workspace.id = meetingObject.get("workspace");
+        console.log("workspace ID: "  + JSON.stringify(Workspace.id));
 
-            var Project = new Parse.Object("Project");
-            Project.id = meetingObject.get("channel");
-            console.log("Project ID: "  + JSON.stringify(Project.id));
+        var Project = new Parse.Object("Project");
+        Project.id = meetingObject.get("channel");
+        console.log("Project ID: "  + JSON.stringify(Project.id));
 
-            var User = new Parse.Object("_User");
-            User.id = meetingObject.get("user");
-            console.log("User ID: "  + JSON.stringify(User.id));
+        var User = new Parse.Object("_User");
+        User.id = meetingObject.get("user");
+        console.log("User ID: "  + JSON.stringify(User.id));
 
-            console.log("meetingPost: " + JSON.stringify(meetingPost));
+        console.log("meetingPost: " + JSON.stringify(meetingPost));
 
-            if (meetingObject.get("workspace")) {meetingPost.set("workspace", Workspace.id);}
-            if (meetingObject.get("channel")) {meetingPost.set("project", Project.id);}
-            if (meetingObject.get("user")) { meetingPost.set("user", User.id);}
-            meetingPost.set("post_type", '2'); //video post for office hours QNA
-            meetingPost.set("privacy", '3');
-            meetingPost.set("text", 'We are starting our #office-hours session now, look forward to answering your questions!');
-            meetingPost.set("post_title", 'Office Hours QnA');
-            meetingPost.set("questionAnswerEnabled", true);
-            if (meetingObject.get("FullMeetingText")) {meetingPost.set("transcript", meetingObject.get("FullMeetingText"));}
-            meetingPost.set("postNumberOfLines", 3);
-            meetingPost.set("CommentCount", 0);
-            meetingPost.set("likesCount", 0);
-            meetingPost.set("media_duration", '1600');
-            //meetingPost.set("post_File", postFile);
+        if (meetingObject.get("workspace")) {meetingPost.set("workspace", Workspace.id);}
+        if (meetingObject.get("channel")) {meetingPost.set("project", Project.id);}
+        if (meetingObject.get("user")) { meetingPost.set("user", User.id);}
+        meetingPost.set("post_type", '2'); //video post for office hours QNA
+        meetingPost.set("privacy", '3');
+        meetingPost.set("text", 'We are starting our #office-hours session now, look forward to answering your questions!');
+        meetingPost.set("post_title", 'Office Hours QnA');
+        meetingPost.set("questionAnswerEnabled", true);
+        if (meetingObject.get("FullMeetingText")) {meetingPost.set("transcript", meetingObject.get("FullMeetingText"));}
+        meetingPost.set("postNumberOfLines", 3);
+        meetingPost.set("CommentCount", 0);
+        meetingPost.set("likesCount", 0);
+        meetingPost.set("media_duration", '1600');
+        //meetingPost.set("post_File", postFile);
 
-            console.log("meetingPost2: " + JSON.stringify(meetingPost));
-
-
-            meetingPost.save()
-                .then((meetingPost) => {
-                // Execute any logic that should take place after the object is saved.
-                alert('New object created with objectId: ' + meetingPost.id);
-            console.log("meetingPost saved");
-
-            meetingObject.set("post", meetingPost.id);
-            meetingObject.save();
-
-            return callback(null, meetingObject);
-        }, (error) => {
-                // Execute any logic that should take place if the save fails.
-                // error is a Parse.Error with an error code and message.
-                alert('Failed to create new object, with error code: ' + error.message);
-                return callback(null, meetingObject);
-
-            });
+        console.log("meetingPost2: " + JSON.stringify(meetingPost));
 
 
-        }  else {
+        meetingPost.save()
+            .then((meetingPost) => {
+            // Execute any logic that should take place after the object is saved.
+            alert('New object created with objectId: ' + meetingPost.id);
+        console.log("meetingPost saved");
 
-            console.log("post id exists or meeting is not completed");
+        meetingObject.set("post", meetingPost.id);
+        meetingObject.save();
+
+        return callback(null, meetingObject);
+    }, (error) => {
+            // Execute any logic that should take place if the save fails.
+            // error is a Parse.Error with an error code and message.
+            alert('Failed to create new object, with error code: ' + error.message);
             return callback(null, meetingObject);
 
-        }
+        });
 
 
-    };
+    }  else {
+
+        console.log("post id exists or meeting is not completed");
+        return callback(null, meetingObject);
+
+    }
+
+
+};
   
   function getMeetingTranscript (meetingObject, callback) { 
 
