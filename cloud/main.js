@@ -23,11 +23,14 @@ var EmailTemplate = require('email-templates');
 var smtpTransport = require('nodemailer-smtp-transport');
 var handlebars = require('handlebars');
 var fs = require('fs');
-
+// Push Notification
+var apn = require('apn');
 const path = require('path');
-const PushNotification = require('push-notification');
+
+// Set cron job
 var cron = require('node-cron');
 
+// Set production mode and add certification and key file accordingly
 const isProduction = true;
 var fileForPushNotification;
 var keyFileForPushNotification;
@@ -36,8 +39,15 @@ if( isProduction ){
   keyFileForPushNotification = 'Key-Distribution.pem';
 } else {
   fileForPushNotification = 'Papr-Development-APNS.pem';
-  keyFileForPushNotification = 'Key.pem';
+  keyFileForPushNotification = 'Key-Development.pem';
 }
+var options = {
+  cert: path.resolve(fileForPushNotification),
+  key: path.resolve(keyFileForPushNotification),
+  passphrase: 'papr@123',
+  production: isProduction
+};
+var apnProvider = new apn.Provider(options);
 
 // test cloud code functions
 Parse.Cloud.define("cloudCodeTest", function(request, response) {
@@ -2483,15 +2493,6 @@ Parse.Cloud.define("sendEmail", function(request, response) {
 });
 
 Parse.Cloud.define("sendNotification", function(request, response) {
-  const pn = PushNotification({
-    apn: {
-      cert: path.resolve(fileForPushNotification),
-      key: path.resolve(keyFileForPushNotification),
-      passphrase: 'papr@123',
-      production: isProduction,
-    }
-  });
-  const DeviceType = PushNotification.DeviceType;
   var User = Parse.Object.extend('User');
   var user = new Parse.Query(User);
   user.exists("deviceToken");
@@ -2503,25 +2504,28 @@ Parse.Cloud.define("sendNotification", function(request, response) {
   query.find({
     success: function(results) {
       async.each(results, function (result, callback) {
-        var data = {
-          title: 'Papr',
-          message: result.get("message"),
-          payload: {
-            workspace : result.get("workspace"),
-            type : result.get("type"),
-            post : result.get("post"),
-            postQuestionMessage : result.get("postQuestionMessage"),
-            postQuestion : result.get("postQuestion"),
-          }
+        var note = new apn.Notification();
+        note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
+        note.title = "Papr.ai",
+        note.body = result.get("message"),
+        note.payload = {
+          'workspace' : result.get("workspace"),
+          'type' : result.get("type"),
+          'post' : result.get("post"),
+          'postQuestionMessage' : result.get("postQuestionMessage"),
+          'postQuestion' : result.get("postQuestion"),
         };
-        pn.push(result.get("userTo").get("deviceToken"), data, DeviceType.IOS)
-        .then(res => {
+        note.topic = "com.bluelabellabs.bl248";
+        apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
           result.set("hasSent", true);
           result.save();
-          console.log(res);
+          if((res.sent).length == 1) {
+            console.log("Sent To ", res.sent[0].device);
+          } else{
+            console.log("Error Sending Notification: \nUsername : " + result.get("userTo").get("username") + "\nDevice Token : " + res.failed[0].device + "\nReason : " + res.failed[0].response.reason);
+          }
         }).catch(err => {
           console.log(err);
-          callback(err);
         });
         callback(null, result);
       }, function(err) {
@@ -2529,7 +2533,6 @@ Parse.Cloud.define("sendNotification", function(request, response) {
           console.log('ERROR', err);
           response.error(err);
         }
-        console.log("ALL FINISH");
         response.success("Notification sent to all users");
       });
     },
@@ -2542,15 +2545,6 @@ Parse.Cloud.define("sendNotification", function(request, response) {
 
 cron.schedule('*/1 * * * *', () => {
   console.log("Cron Job Called at : ", new Date());
-  const pn = PushNotification({
-    apn: {
-      cert: path.resolve(fileForPushNotification),
-      key: path.resolve(keyFileForPushNotification),
-      passphrase: 'papr@123',
-      production: isProduction,
-    }
-  });
-  const DeviceType = PushNotification.DeviceType;
   var User = Parse.Object.extend('User');
   var user = new Parse.Query(User);
   user.exists("deviceToken");
@@ -2562,25 +2556,28 @@ cron.schedule('*/1 * * * *', () => {
   query.find({
     success: function(results) {
       async.each(results, function (result, callback) {
-        var data = {
-          title: 'Papr',
-          message: result.get("message"),
-          payload: {
-            workspace : result.get("workspace"),
-            type : result.get("type"),
-            post : result.get("post"),
-            postQuestionMessage : result.get("postQuestionMessage"),
-            postQuestion : result.get("postQuestion"),
-          }
+        var note = new apn.Notification();
+        note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
+        note.title = "Papr.ai",
+        note.body = result.get("message"),
+        note.payload = {
+          'workspace' : result.get("workspace"),
+          'type' : result.get("type"),
+          'post' : result.get("post"),
+          'postQuestionMessage' : result.get("postQuestionMessage"),
+          'postQuestion' : result.get("postQuestion"),
         };
-        pn.push(result.get("userTo").get("deviceToken"), data, DeviceType.IOS)
-        .then(res => {
+        note.topic = "com.bluelabellabs.bl248";
+        apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
           result.set("hasSent", true);
           result.save();
-          console.log(res);
+          if((res.sent).length == 1) {
+            console.log("Sent To ", res.sent[0].device);
+          } else{
+            console.log("Error Sending Notification: \nUsername : " + result.get("userTo").get("username") + "\nDevice Token : " + res.failed[0].device + "\nReason : " + res.failed[0].response.reason);
+          }
         }).catch(err => {
           console.log(err);
-          callback(err);
         });
         callback(null, result);
       }, function(err) {
@@ -2588,7 +2585,6 @@ cron.schedule('*/1 * * * *', () => {
           console.log('ERROR', err);
           response.error(err);
         }
-        console.log("ALL FINISH");
         response.success("Notification sent to all users");
       });
     },
@@ -2600,35 +2596,43 @@ cron.schedule('*/1 * * * *', () => {
 });
 
 Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
-  const pn = PushNotification({
-    apn: {
-      cert: path.resolve('Papr-Development-APNS.pem'),
-      key: path.resolve('Key.pem'),
-      passphrase: 'papr@123',
-      production: false,
-    }
-  });
-  const DeviceType = PushNotification.DeviceType;
-  const data = {
-    title: 'Title',
-    message: 'Message',
-    badge: '',
-    sound: '',
-    payload: {
-      param1: 'additional data',
-      param2: 'another data'
-    }
+  // let deviceToken = "60e4c51275d60d79b9a73332cd14c9f82e8474176ed19de4a41131a21363ef96"; // Production true
+  // let deviceToken = "7689db229f040ad9e35a59732a5506b7fd27bb5c0b6f151615383ff8c71caddf"; // Production false
+  let deviceToken = request.params.token;
+  let production = request.params.production;
+  if( production ){
+    fileForPushNotification = 'Papr-Distribution-APNS.pem';
+    keyFileForPushNotification = 'Key-Distribution.pem';
+  } else {
+    fileForPushNotification = 'Papr-Development-APNS.pem';
+    keyFileForPushNotification = 'Key-Development.pem';
+  }
+  var options = {
+    cert: path.resolve(fileForPushNotification),
+    key: path.resolve(keyFileForPushNotification),
+    passphrase: 'papr@123',
+    production: production
   };
-  pn.push("7689db229f040ad9e35a59732a5506b7fd27bb5c0b6f151615383ff8c71caddf", data, DeviceType.IOS)
-  .then(res => {
-    console.log(res); 
-    response.success(res)
+  var apnProvider = new apn.Provider(options);
+  var note = new apn.Notification();
+  note.expiry = Math.floor(Date.now() / 1000) + 3600; 
+  note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
+  note.title = "Papr.ai";
+  note.body = "test message";
+  note.payload = {'messageFrom': 'John Doe'};
+  note.topic = "com.bluelabellabs.bl248";
+  apnProvider.send(note, deviceToken).then( (result) => {
+    if((result.sent).length == 1) {
+      console.log("Sent To ", deviceToken);
+    } else{
+      console.log("Error Sending Notification: \nDevice Token : " + result.failed[0].device + " \nReason : " + result.failed[0].response.reason);
+    }
+    response.success(result);
   }).catch(err => {
-    console.log(err); 
+    console.log(JSON.stringify(err));
     response.error(JSON.stringify(err))
   });
 });
-
 
 Parse.Cloud.define("liveQueryMessageType", function(request, response) {
   response.success(request);
