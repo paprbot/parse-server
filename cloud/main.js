@@ -16,6 +16,10 @@ var indexUsers = client.initIndex('dev_users');
 var indexMeetings = client.initIndex('dev_meetings');
 var indexProject = client.initIndex('dev_channels');
 var indexWorkspaces = client.initIndex('dev_workspaces');
+var indexSkills = client.initIndex('dev_skills');
+const requestPromise = require('request-promise');
+//const sharp = require('sharp');
+
 
 // Send Email
 var nodemailer = require('nodemailer');
@@ -35,645 +39,821 @@ const isProduction = true;
 var fileForPushNotification;
 var keyFileForPushNotification;
 if( isProduction ){
-  fileForPushNotification = 'Papr-Distribution-APNS.pem';
-  keyFileForPushNotification = 'Key-Distribution.pem';
+    fileForPushNotification = 'Papr-Distribution-APNS.pem';
+    keyFileForPushNotification = 'Key-Distribution.pem';
 } else {
-  fileForPushNotification = 'Papr-Development-APNS.pem';
-  keyFileForPushNotification = 'Key-Development.pem';
+    fileForPushNotification = 'Papr-Development-APNS.pem';
+    keyFileForPushNotification = 'Key-Development.pem';
 }
 var options = {
-  cert: path.resolve(fileForPushNotification),
-  key: path.resolve(keyFileForPushNotification),
-  passphrase: 'papr@123',
-  production: isProduction
+    cert: path.resolve(fileForPushNotification),
+    key: path.resolve(keyFileForPushNotification),
+    passphrase: 'papr@123',
+    production: isProduction
 };
 var apnProvider = new apn.Provider(options);
 
 // test cloud code functions
 Parse.Cloud.define("cloudCodeTest", function(request, response) {
-  Parse.Cloud.run("QueryPostFeed", { 
-    hit: 10, 
-    user: "7LW63IRFT6",
-    workspace: "SZ8PICViue",
-    project: "all",
-    skip: 10  
-    
-  }).then(function(result) {
-    console.log("result: "+ JSON.stringify(result));
-    response.success();
-    
-  }, function(error) {
-     response.error(error);
-  });
-  
-  
+    Parse.Cloud.run("QueryPostFeed", {
+        hit: 10,
+        user: "7LW63IRFT6",
+        workspace: "SZ8PICViue",
+        project: "all",
+        skip: 10
+
+    }).then(function(result) {
+        console.log("result: "+ JSON.stringify(result));
+        response.success();
+
+    }, function(error) {
+        response.error(error);
+    });
+
+
 });
 
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
 Parse.Cloud.define("QueryPostFeed", function(request, response) {
-   
-  var NS_PER_SEC = 1e9;
-  const MS_PER_NS = 1e-6;
-  var time = process.hrtime();
-  
-  //get request params
-  var hit = parseInt(request.params.hit); 
-  var user = request.params.user;
-  var project = request.params.project;
-  var workspace = request.params.workspace;
-  var skip = parseInt(request.params.skip); 
-       
-  // Setup Parse query
-  var queryPost = Parse.Object.extend("Post");
-  var queryPOST = new Parse.Query(queryPost); 
-  var querypostSocial = Parse.Object.extend("PostSocial");
-  var queryPostSocial = new Parse.Query(querypostSocial); 
-  
-  var PostSocial = new Parse.Object("PostSocial");
-  
-  var Workspace = new Parse.Object("WorkSpace"); 
-  Workspace.id = workspace;
-  
-  var User = new Parse.Object("_User");
-  User.id = user;
 
-  queryPOST.include( ["user", "workspace", "project"] );
-  //queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
-  
-  queryPOST.equalTo("workspace", Workspace);
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
 
-  // todo get posts that the user is allowed to view
-  
-  // setup query filter for post
-  //queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
-  queryPOST.descending("createdAt");   
-  queryPOST.limit(hit); // limit to hits
-  if (skip) {
-    queryPOST.skip(skip);
-  }
-  if (project == 'all') { 
-    // do nothing, since we want all projects in a workspace
-  } else if (project) {
-      var Project = new Parse.Object("Project");
-      Project.id = project;
-      queryPOST.equalTo("project", Project);
+    //get request params
+    var hit = parseInt(request.params.hit);
+    var user = request.params.user;
+    var project = request.params.project;
+    var workspace = request.params.workspace;
+    var skip = parseInt(request.params.skip);
 
-  } 
+    // Setup Parse query
+    var queryPost = Parse.Object.extend("Post");
+    var queryPOST = new Parse.Query(queryPost);
+    var querypostSocial = Parse.Object.extend("PostSocial");
+    var queryPostSocial = new Parse.Query(querypostSocial);
 
-  //var beforeQuery = process.hrtime(time);
-  //console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);       
-  //var bQuery = process.hrtime();
-  
+    var PostSocial = new Parse.Object("PostSocial");
 
-  // function to do two queries in parallel async
-  //function queryParallel (callback) {
+    var Workspace = new Parse.Object("WorkSpace");
+    Workspace.id = workspace;
+
+    var User = new Parse.Object("_User");
+    User.id = user;
+
+    queryPOST.include( ["user", "workspace", "project"] );
+    //queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
+
+    queryPOST.equalTo("workspace", Workspace);
+
+    // todo get posts that the user is allowed to view
+
+    // setup query filter for post
+    //queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]);
+    queryPOST.descending("createdAt");
+    queryPOST.limit(hit); // limit to hits
+    if (skip) {
+        queryPOST.skip(skip);
+    }
+    if (project == 'all') {
+        // do nothing, since we want all projects in a workspace
+    } else if (project) {
+        var Project = new Parse.Object("Project");
+        Project.id = project;
+        queryPOST.equalTo("project", Project);
+
+    }
+
+    //var beforeQuery = process.hrtime(time);
+    //console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);
+    //var bQuery = process.hrtime();
 
 
-      //function to find queryP results
-      function queryPostFind (callback) {
+    // function to do two queries in parallel async
+    //function queryParallel (callback) {
+
+
+    //function to find queryP results
+    function queryPostFind (callback) {
 
         //var NS_PER_SEC = 1e9;
         //const MS_PER_NS = 1e-6;
         //var timequeryPostFind = process.hrtime();
         //var queryPTime;
-        
+
         queryPOST.find({
-          success: function(results) {
+            success: function(results) {
 
-          //console.log("queryPostFind: "+results.length);
-          
-          //queryPTime = process.hrtime(timequeryPostFind);
-          //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
-          //console.log("results: "+JSON.stringify(results));   
-          
-          return callback(null, results);
+                //console.log("queryPostFind: "+results.length);
 
-        },
-        error: function(err) {
-          response.error("queryPost Error: "+ err);
-        }
-      });
-        
-      }
-      
-      // function to find socialPosts results
-      function querySocialPostFind (callback) {
+                //queryPTime = process.hrtime(timequeryPostFind);
+                //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+                //console.log("results: "+JSON.stringify(results));
+
+                return callback(null, results);
+
+            },
+            error: function(err) {
+                response.error("queryPost Error: "+ err);
+            }
+        });
+
+    }
+
+    // function to find socialPosts results
+    function querySocialPostFind (callback) {
 
 
         //var NS_PER_SEC = 1e9;
         //const MS_PER_NS = 1e-6;
         //var timequerySocialPostFind = process.hrtime();
         //var querySocialPostFindTime;
-        
-        
+
+
         queryPostSocial.equalTo("user", User);
         //queryPostSocial.containedIn("type", ["1", "2"]);
         queryPostSocial.matchesQuery("post", queryPOST);
-        queryPostSocial.descending("updatedAt"); 
+        queryPostSocial.descending("updatedAt");
         //postSocialRelationQuery.doesNotExist("archive");
-        //queryPostSocial.select(["postId", "isBookmarked", "isLiked" ]); 
+        //queryPostSocial.select(["postId", "isBookmarked", "isLiked" ]);
         queryPostSocial.find({
-          success: function(postSocialResults) {
-          //console.log("postSocialResults 1: "+JSON.stringify(postSocialResults));
-          
-          //console.log("querySocialPostFind: "+ postSocialResults.length);
+            success: function(postSocialResults) {
+                //console.log("postSocialResults 1: "+JSON.stringify(postSocialResults));
 
-          //querySocialPostFindTime = process.hrtime(timequerySocialPostFind);
-          //console.log(`function querySocialPostFindTime took ${(querySocialPostFindTime[0] * NS_PER_SEC + querySocialPostFindTime[1])  * MS_PER_NS} milliseconds`);                             
-          
-          return callback(null, postSocialResults);
-        },
-        error: function(err) {
-          response.error(err);
-        }     
+                //console.log("querySocialPostFind: "+ postSocialResults.length);
 
-      });
-        
-        
-      }
-      
-      async.parallel([ 
-        async.apply(queryPostFind),
-        async.apply(querySocialPostFind) 
-        
-        ], function (err, results) {
-          if (err) {
-            response.error(err);
-          }
+                //querySocialPostFindTime = process.hrtime(timequerySocialPostFind);
+                //console.log(`function querySocialPostFindTime took ${(querySocialPostFindTime[0] * NS_PER_SEC + querySocialPostFindTime[1])  * MS_PER_NS} milliseconds`);
 
-          var postResults = results[0];
-          var postSocialResults = results[1];
-
-              // using process.hrtime since it's more precise 
-              //var queryFinal = process.hrtime(time);            
-              //console.log(`queryFinal took ${(queryFinal[0] * NS_PER_SEC + queryFinal[1])  * MS_PER_NS} milliseconds`);             
-              //var beforelodash = process.hrtime();
-              
-
-            //var merge = lodash.merge(results[0], results[1]);
-            //console.log("postResults: "+ postResults.length);
-            //console.log("OnePost: "+ JSON.stringify(postResults[0]));
-            //console.log("postSocialResults: "+ postSocialResults.length);
-            //var i = 0;
-            
-            /*for (var i=0; i<postResults.length;i++) {
-              
-              (postResults[i]).set("PostSocial", postSocialResults.find( function(obj){ 
-                            //console.log("obj: " + obj);
-                            //console.log("obj JSON: " + JSON.stringify(obj));
-                            
-      
-                     
-                            return ((obj.get("post")).id === item.id);  
-              
-                }));
-              }*/
-
-
-            /*postResults.map( function(item) {
-                //console.log("count: "+ i++);
-                //console.log("item id post: " + JSON.stringify(item));
-                
-                
-                return item.set("postSocial", postSocialResults.find( function(obj){ 
-                            //console.log("obj: " + obj);
-                            //console.log("obj JSON: " + JSON.stringify(obj));
-                            
-      
-                     
-                            return ((obj.get("post")).id === item.id);  
-              
-                }));
-         
-                
-                
-              });*/
-
-
-              //console.log("postResults: "+ JSON.stringify(postResults));
-              
-              var finalTime = process.hrtime(time); 
-              console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-              response.success(results);
-              //return callback (null, resultsToMap);             
-
-            });
-   // }
-
-
-
-
- });
-
-// cloud API and function to test query performance of AlgoliaSearch versus Parse
-Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
-
-  var NS_PER_SEC = 1e9;
-  const MS_PER_NS = 1e-6;
-  var time = process.hrtime();
-  
-  //get request params
-  var hit = parseInt(request.params.hit); 
-  var user = request.params.user;
-  var project = request.params.project;
-  var workspace = request.params.workspace;
-  var skip = parseInt(request.params.skip); 
-
-  // Setup Parse query
-  var queryWorkspaceFollow = Parse.Object.extend("workspace_follower");
-  var queryWORKSPACEFOLLOW = new Parse.Query(queryWorkspaceFollow); 
-  var queryProjectFollow = Parse.Object.extend("ProjectFollow");
-  var queryPROJECTFOLLOW = new Parse.Query(queryProjectFollow); 
-  var queryCategory = Parse.Object.extend("Category");
-  var queryCATEGORY = new Parse.Query(queryCategory); 
-  
-  var Workspace = new Parse.Object("WorkSpace"); 
-  var queryWORKSPACE = new Parse.Query("WorkSpace");
-  Workspace.id = workspace;
-  
-  var Project = new Parse.Object("Project"); 
-  Project.id = project;
-  
-  var User = new Parse.Object("_User");
-  User.id = user;
-
-  //var beforeQuery = process.hrtime(time);
-  //console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);       
-  //var bQuery = process.hrtime();
-  
-  
-  // todo get posts that the user is allowed to view
-  // todo check isMember/isFollower for workspace
-  // question - should we give all projects for all workspaces even if they are not selected? an store in local db?
-  
-  // setup query filter for post
-
-  //var NS_PER_SEC = 1e9;
-  //const MS_PER_NS = 1e-6;
-  //var timequerySocialPostFind = process.hrtime();
-  //var querySocialPostFindTime; 
-
-  //function to find queryP results
-  function queryWorkspaceFollowFind (callback) {
-
-        //var NS_PER_SEC = 1e9;
-        //const MS_PER_NS = 1e-6;
-        //var timequeryPostFind = process.hrtime();
-        //var queryPTime;
-        
-        queryWORKSPACEFOLLOW.include("workspace"); 
-        queryWORKSPACEFOLLOW.doesNotExist("archive");     
-        queryWORKSPACEFOLLOW.equalTo("user", User); 
-        queryWORKSPACEFOLLOW.equalTo("type", "1"); 
-        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]); 
-        if (!workspace || (workspace === "all")) {
-          // do nothing, get all workspaces for the user
-        } else {
-          // only get workspace that the client is asking for
-          queryWORKSPACEFOLLOW.equalTo("workspace", Workspace);
-          
-        }
-        
-        queryWORKSPACEFOLLOW.find({
-          success: function(results) {
-
-          //console.log("queryPostFind: "+results.length);
-          
-          //queryPTime = process.hrtime(timequeryPostFind);
-          //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
-          //console.log("results: "+JSON.stringify(results));   
-
-          return callback(null, results);
-
-        },
-        error: function(err) {
-          response.error("queryPost Error: "+ err);
-        }
-      });
-        
-      }
-      
-      // function to find queryProjectFollowFind results
-      function queryProjectFollowFind (callback) {
-
-
-        //var NS_PER_SEC = 1e9;
-        //const MS_PER_NS = 1e-6;
-        //var timequerySocialPostFind = process.hrtime();
-        //var querySocialPostFindTime;
-        
-        queryPROJECTFOLLOW.include("project"); 
-        queryPROJECTFOLLOW.doesNotExist("archive");     
-        queryPROJECTFOLLOW.equalTo("user", User); 
-        queryPROJECTFOLLOW.equalTo("type", "1"); // user is either a member of follower of this project
-        
-        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]); 
-        if (!workspace || (workspace === "all")) {
-          // do nothing, get all projects for the user 
-          //queryPROJECTFOLLOW.matchesQuery("workspace", queryWORKSPACE);
-        } else {
-          // only get workspace that the client is asking for
-          queryPROJECTFOLLOW.equalTo("workspace", Workspace);
-          
-        }
-        
-        if (!project || (project === "all")) {
-          // do nothing, get all projects for the user
-        } else {
-          // only get project that the client is asking for
-          queryPROJECTFOLLOW.equalTo("project", Project);
-          
-        }
-        
-        queryPROJECTFOLLOW.find({
-          success: function(projectResults) {
-          //console.log("postSocialResults 1: "+JSON.stringify(postSocialResults));
-          
-          //console.log("querySocialPostFind: "+ postSocialResults.length);
-
-          //querySocialPostFindTime = process.hrtime(timequerySocialPostFind);
-          //console.log(`function querySocialPostFindTime took ${(querySocialPostFindTime[0] * NS_PER_SEC + querySocialPostFindTime[1])  * MS_PER_NS} milliseconds`);                             
-          
-          return callback(null, projectResults);
-        },
-        error: function(err) {
-          response.error(err);
-        }     
-
-      });
-        
-        
-      }
-      
-      // function to find queryCategoryFind results
-      function queryCategoryFind (callback) {
-
-        //var NS_PER_SEC = 1e9;
-        //const MS_PER_NS = 1e-6;
-        //var timequerySocialPostFind = process.hrtime();
-        //var querySocialPostFindTime;      
-        
-        //queryCategoryFind.matchesQuery("workspaceID", queryWorkspaceFollow);
-        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]); 
-        if (!workspace || (workspace === "all")) {
-          // get all categories in workspaces for the user that he is either following or is a member of
-          //var CategoryObject = new Parse.Object(queryCategory);
-          //var workspaceFollowRelation = CategoryObject.relation("workspace_follower"); 
-          //var workspaceFollowRelationQuery = workspaceFollowRelation.query();
-          //workspaceFollowRelationQuery.equalTo("user", User);
-          //workspaceFollowRelationQuery.doesNotExist("archive");     
-          //workspaceFollowRelationQuery.equalTo("type", "1"); 
-          queryCATEGORY.matchesQuery("WorkspaceFollow", queryWORKSPACEFOLLOW);
-        } else {
-          // only get workspace that the client is asking for
-          queryCATEGORY.equalTo("workspaceID", Workspace);
-          
-        }
-        
-        if (!project || (project === "all")) {
-          // do nothing, get all projects for the user
-        } else {
-          // only get project that the client is asking for
-          queryCATEGORY.equalTo("project", Project);
-          
-        }
-        
-        queryCATEGORY.find({
-          success: function(categoeryResults) {
-          //console.log("postSocialResults 1: "+JSON.stringify(postSocialResults));
-          
-          //console.log("querySocialPostFind: "+ postSocialResults.length);
-
-          //querySocialPostFindTime = process.hrtime(timequerySocialPostFind);
-          //console.log(`function querySocialPostFindTime took ${(querySocialPostFindTime[0] * NS_PER_SEC + querySocialPostFindTime[1])  * MS_PER_NS} milliseconds`);                             
-          
-          return callback(null, categoeryResults);
-        },
-        error: function(err) {
-          response.error(err);
-        }     
-
-      });
-        
-        
-      }
-      
-      async.parallel([ 
-        async.apply(queryWorkspaceFollowFind),
-        async.apply(queryProjectFollowFind),
-        async.apply(queryCategoryFind) 
-        
-        ], function (err, results) {
-          if (err) {
-            response.error(err);
-          }
-
-
-
-              //console.log("postResults: "+ JSON.stringify(results));
-              
-              var finalTime = process.hrtime(time); 
-              console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-              response.success(results);
-              //return callback (null, resultsToMap);             
-
-            });
-   // }
-
-
-
-
- });
-
-// cloud API and function to test query performance of AlgoliaSearch versus Parse
-Parse.Cloud.define("QueryPostFeed2", function(request, response) {
-
-  var NS_PER_SEC = 1e9;
-  const MS_PER_NS = 1e-6;
-  var time = process.hrtime();
-  
-  //get request params
-  var hit = parseInt(request.params.hit); 
-  var user = request.params.user;
-  var project = request.params.project;
-  var workspace = request.params.workspace;
-  var skip = parseInt(request.params.skip); 
-
-  // Setup Parse query
-  var queryPost = Parse.Object.extend("Post");
-  var queryP = new Parse.Query(queryPost); 
-  //var querypostSocial = Parse.Object.extend("PostSocial");
-  //var queryPostSocial = new Parse.Query(querypostSocial); 
-  
-  var Workspace = new Parse.Object("WorkSpace"); 
-  Workspace.id = workspace;
-  
-  var User = new Parse.Object("_User");
-  User.id = user;
-
-  queryP.include( ["user", "workspace", "project", "postSocial.user", "postSocial.isLiked", "postSocial.isBookmarked"] );
-  queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
-  
-  queryP.equalTo("workspace", Workspace);
-
-  // todo get posts that the user is allowed to view
-  
-  // setup query filter for post
-  queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]); 
-  queryP.descending("updatedAt");   
-  queryP.limit(hit); // limit to hits
-  if (skip) {
-    queryP.skip(skip);
-  }
-  if (project == 'all') { 
-    // do nothing, since we want all projects in a workspace
-  } else if (project) {
-    var Project = new Parse.Object("Project");
-    Project.id = project;
-    queryP.equalTo("project", Project);
-
-  } 
-
-  var beforeQuery = process.hrtime(time);
-  console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);       
-  var bQuery = process.hrtime();
-
-  queryP.find({
-    success: function(results) {
-
-      var queryTime = process.hrtime(bQuery);
-      console.log(`after queryP took ${(queryTime[0] * NS_PER_SEC + queryTime[1])  * MS_PER_NS} milliseconds`);
-      var mQuery = process.hrtime();   
-      //console.log("results: "+JSON.stringify(results));
-      var postSocialRelation;
-      var postSocialRelationQuery;
-      
-      async.map(results, function (object, callback){
-
-        postSocialRelation = object.relation("postSocial"); 
-        postSocialRelationQuery = postSocialRelation.query();
-        postSocialRelationQuery.equalTo("user", User);
-        //postSocialRelationQuery.doesNotExist("archive");
-        //postSocialRelationQuery.select(["isBookmarked", "isLiked"]); 
-        postSocialRelationQuery.first({
-          success: function(postSocialResults) {
-          //console.log("postSocialResults 1: "+object);
-
-          if (postSocialResults) {
-
-            //console.log("postSocialResults 2: "+ JSON.stringify(object));
-            
-            if (postSocialResults.get("isLiked")) {
-              object.set("isLiked", postSocialResults.get("isLiked"));
-                  //console.log("postSocialResults 3: "+JSON.stringify(postSocialResults));
-                  if (!object.get("postSocialId")) {
-                    object.set("postSocialId", postSocialResults.id);
-                    //console.log("postSocialResults: "+ JSON.stringify(object));
-                  }
-                  
-                } else if (postSocialResults.get("isBookmarked")) {
-
-                  object.set("isBookmarked", postSocialResults.id);
-                  if (!object.get("postSocialId")) {
-                    object.set("postSocialId", postSocialResults.get("objectId"));
-                  }
-
-                } else {
-                 object.set("isLiked", false);
-                 object.set("isBookmarked", false);
-               }
-             } else {
-              object.set("isLiked", false);
-              object.set("isBookmarked", false);
-            }       
-            var postSocialRelationQueryTime = process.hrtime(mQuery);
-            console.log(`after postSocialRelationQuery took ${(postSocialRelationQueryTime[0] * NS_PER_SEC + postSocialRelationQueryTime[1])  * MS_PER_NS} milliseconds`);                             
-
-            return callback(null, object);
-          },
-          error: function(err) {
-            response.error(err);
-          }     
+                return callback(null, postSocialResults);
+            },
+            error: function(err) {
+                response.error(err);
+            }
 
         });
 
 
+    }
 
-      }, function(err, results) {
+    async.parallel([
+        async.apply(queryPostFind),
+        async.apply(querySocialPostFind)
 
-           //console.log('iterating done: ' + JSON.stringify(results));
+    ], function (err, results) {
+        if (err) {
+            response.error(err);
+        }
 
-           // using process.hrtime since it's more precise
-           //getPostFeed_Time = process.hrtime(timeGetPostFeed);
-           //console.log(`getPostFeed_Time took ${(getPostFeed_Time[0] * NS_PER_SEC + getPostFeed_Time[1])  * MS_PER_NS} milliseconds`);
+        var postResults = results[0];
+        var postSocialResults = results[1];
 
-           var diff = process.hrtime(time);
-           console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-           //console.log("FinalResults: " + JSON.stringify(results));
-           //response.render('userPosts', results);
-           response.success(results);
-
-         });  
+        // using process.hrtime since it's more precise
+        //var queryFinal = process.hrtime(time);
+        //console.log(`queryFinal took ${(queryFinal[0] * NS_PER_SEC + queryFinal[1])  * MS_PER_NS} milliseconds`);
+        //var beforelodash = process.hrtime();
 
 
-      
-      /*for (var j=0;j< results.length; j++) {  
+        //var merge = lodash.merge(results[0], results[1]);
+        //console.log("postResults: "+ postResults.length);
+        //console.log("OnePost: "+ JSON.stringify(postResults[0]));
+        //console.log("postSocialResults: "+ postSocialResults.length);
+        //var i = 0;
 
-        var postSocialRelation = results[j].relation("postSocial"); 
-        var postSocialRelationQuery = postSocialRelation.query();
-        postSocialRelationQuery.equalTo("user", User);
-        //postSocialRelationQuery.doesNotExist("archive");
-        //postSocialRelationQuery.select(["isBookmarked", "isLiked"]); 
-        postSocialRelationQuery.first({
-        success: function(postSocialResults) {
-          console.log("postSocialResults 1: "+results[j]);
-                  
-          if (postSocialResults) {
-            
-            console.log("postSocialResults 2: "+ JSON.stringify(results[j]));
-            
-             if (postSocialResults.get("isLiked")) {
-                  console.log("results: "+ JSON.stringify(results[0]));
-                  results[j].set("isLiked", postSocialResults.get("isLiked"));
-                  console.log("postSocialResults 3: "+JSON.stringify(postSocialResults));
-                  if (!results[j].get("postSocialId")) {
-                    results[j].set("postSocialId", postSocialResults.get("objectId"));
-                    console.log("postSocialResults: "+ JSON.stringify(postSocialResults));
-                  }
-                  
-            } else if (postSocialResults.get("isBookmarked")) {
-              
-                  results[j].set("isBookmarked", postSocialResults.get("isBookmarked"));
-                  if (!results[j].get("postSocialId")) {
-                    results[j].set("postSocialId", postSocialResults.get("objectId"));
-                  }
-                      
-            } else {
-                 results[j].set("isLiked", false);
-                 results[j].set("isBookmarked", false);
+      /*for (var i=0; i<postResults.length;i++) {
+
+       (postResults[i]).set("PostSocial", postSocialResults.find( function(obj){
+       //console.log("obj: " + obj);
+       //console.log("obj JSON: " + JSON.stringify(obj));
+
+
+
+       return ((obj.get("post")).id === item.id);
+
+       }));
+       }*/
+
+
+      /*postResults.map( function(item) {
+       //console.log("count: "+ i++);
+       //console.log("item id post: " + JSON.stringify(item));
+
+
+       return item.set("postSocial", postSocialResults.find( function(obj){
+       //console.log("obj: " + obj);
+       //console.log("obj JSON: " + JSON.stringify(obj));
+
+
+
+       return ((obj.get("post")).id === item.id);
+
+       }));
+
+
+
+       });*/
+
+
+        //console.log("postResults: "+ JSON.stringify(postResults));
+
+        var finalTime = process.hrtime(time);
+        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+        response.success(results);
+        //return callback (null, resultsToMap);
+
+    });
+    // }
+
+
+
+
+});
+
+// cloud API and function to add one or multiple skills to skills table.
+Parse.Cloud.define("addSkills", function(request, response) {
+
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
+    var skills;
+    var skillObjects = [];
+
+    //get request params
+    skills = request.params.skills;
+
+    function addLevel (callback) {
+
+        async.forEach(skills, function (skill, cb){
+
+            // add starter level
+            var SKILL_1 = new Parse.Object("Skill");
+            SKILL_1.set('name', skill.name);
+            SKILL_1.set('level','starter');
+            SKILL_1.set('nameLevel', skill.name + ':' + 'starter');
+            skillObjects.push(SKILL_1);
+
+            // add Ninja level
+            var SKILL_2 = new Parse.Object("Skill");
+            SKILL_2.set('name', skill.name);
+            SKILL_2.set('level','ninja');
+            SKILL_2.set('nameLevel', skill.name + ':' + 'ninja');
+            skillObjects.push(SKILL_2);
+
+
+            // add Master level
+            var SKILL_3 = new Parse.Object("Skill");
+            SKILL_3.set('name', skill.name);
+            SKILL_3.set('level','master');
+            SKILL_3.set('nameLevel', skill.name + ':' + 'master');
+            skillObjects.push(SKILL_3);
+
+            //console.log("skill:s " + JSON.stringify(skillObjects));
+
+            // tell async that that particular element of the iterator is done
+            cb(null, skill);
+
+        }, function(err) {
+            //console.log('iterating done: ' + JSON.stringify(objectsToIndex));
+
+            //cb(err);
+
+        });
+
+        return callback(null, skills);
+
+    };
+
+    function addLevelFast (callback) {
+
+        _.each(skills, function (skill){
+
+            // add starter level
+            var SKILL_1 = new Parse.Object("Skill");
+            SKILL_1.set('name', skill.name);
+            SKILL_1.set('level','starter');
+            SKILL_1.set('nameLevel', skill.name + ':' + 'starter');
+            skillObjects.push(SKILL_1);
+
+            // add Ninja level
+            var SKILL_2 = new Parse.Object("Skill");
+            SKILL_2.set('name', skill.name);
+            SKILL_2.set('level','ninja');
+            SKILL_2.set('nameLevel', skill.name + ':' + 'ninja');
+            skillObjects.push(SKILL_2);
+
+
+            // add Master level
+            var SKILL_3 = new Parse.Object("Skill");
+            SKILL_3.set('name', skill.name);
+            SKILL_3.set('level','master');
+            SKILL_3.set('nameLevel', skill.name + ':' + 'master');
+            skillObjects.push(SKILL_3);
+
+            //console.log("skill:s " + JSON.stringify(skillObjects));
+
+            // tell async that that particular element of the iterator is done
+            //cb(null, skill);
+
+        }, function(err) {
+            //console.log('iterating done: ' + JSON.stringify(objectsToIndex));
+
+            //cb(err);
+
+        });
+
+        return callback(null, skills);
+
+    };
+
+    function addLevelFaster (callback) {
+
+        for (var i = 0; i < skills.length; i++) {
+
+            var skill = skills[i];
+            // add starter level
+            var SKILL_1 = new Parse.Object("Skill");
+            SKILL_1.set('name', skill.name);
+            SKILL_1.set('level','starter');
+            SKILL_1.set('nameLevel', skill.name + ':' + 'starter');
+            skillObjects.push(SKILL_1);
+
+            // add Ninja level
+            var SKILL_2 = new Parse.Object("Skill");
+            SKILL_2.set('name', skill.name);
+            SKILL_2.set('level','ninja');
+            SKILL_2.set('nameLevel', skill.name + ':' + 'ninja');
+            skillObjects.push(SKILL_2);
+
+
+            // add Master level
+            var SKILL_3 = new Parse.Object("Skill");
+            SKILL_3.set('name', skill.name);
+            SKILL_3.set('level','master');
+            SKILL_3.set('nameLevel', skill.name + ':' + 'master');
+            skillObjects.push(SKILL_3);
+
+            //console.log("skill:s " + JSON.stringify(skillObjects));
+
+            // tell async that that particular element of the iterator is done
+            //cb(null, skill);
+
+        };
+
+        return callback(null, skills);
+
+    };
+
+    function saveAllSkills (skills, callback) {
+
+        skills = skillObjects;
+
+        //console.log("skills: " + JSON.stringify(skills));
+
+        Parse.Object.saveAll(skills , {
+            success: function (result) {
+                return callback(null, result);
+
+                console.log('success');
+            },
+            error: function (err) {
+                return callback(err);
+                console.log('failed');
             }
-          } else {
-            results[j].set("isLiked", false);
-            results[j].set("isBookmarked", false);
-          }       
-          //var postSocialRelationQueryTime = process.hrtime(mQuery);
-          //console.log(`after postSocialRelationQuery took ${(postSocialRelationQueryTime[0] * NS_PER_SEC + postSocialRelationQueryTime[1])  * MS_PER_NS} milliseconds`);                             
-        
+        });
+
+
+    }
+
+    async.waterfall([
+        async.apply(addLevelFaster),
+        async.apply(saveAllSkills)
+
+    ], function (err, result) {
+        if (err) {
+            response.error(err);
+        }
+
+        var finalTime = process.hrtime(time);
+        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+        response.success(result);
+
+    });
+
+
+
+});
+
+// cloud API and function to test query performance of AlgoliaSearch versus Parse
+Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
+
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
+
+    //get request params
+    var hit = parseInt(request.params.hit);
+    var user = request.params.user;
+    var project = request.params.project;
+    var workspace = request.params.workspace;
+    var skip = parseInt(request.params.skip);
+
+    // Setup Parse query
+    var queryWorkspaceFollow = Parse.Object.extend("workspace_follower");
+    var queryWORKSPACEFOLLOW = new Parse.Query(queryWorkspaceFollow);
+    var queryProjectFollow = Parse.Object.extend("ProjectFollow");
+    var queryPROJECTFOLLOW = new Parse.Query(queryProjectFollow);
+    var queryCategory = Parse.Object.extend("Category");
+    var queryCATEGORY = new Parse.Query(queryCategory);
+
+    var Workspace = new Parse.Object("WorkSpace");
+    var queryWORKSPACE = new Parse.Query("WorkSpace");
+    Workspace.id = workspace;
+
+    var Project = new Parse.Object("Project");
+    Project.id = project;
+
+    var User = new Parse.Object("_User");
+    User.id = user;
+
+    //var beforeQuery = process.hrtime(time);
+    //console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);
+    //var bQuery = process.hrtime();
+
+
+    // todo get posts that the user is allowed to view
+    // todo check isMember/isFollower for workspace
+    // question - should we give all projects for all workspaces even if they are not selected? an store in local db?
+
+    // setup query filter for post
+
+    //var NS_PER_SEC = 1e9;
+    //const MS_PER_NS = 1e-6;
+    //var timequerySocialPostFind = process.hrtime();
+    //var querySocialPostFindTime;
+
+    //function to find queryP results
+    function queryWorkspaceFollowFind (callback) {
+
+        //var NS_PER_SEC = 1e9;
+        //const MS_PER_NS = 1e-6;
+        //var timequeryPostFind = process.hrtime();
+        //var queryPTime;
+
+        queryWORKSPACEFOLLOW.include("workspace");
+        queryWORKSPACEFOLLOW.doesNotExist("archive");
+        queryWORKSPACEFOLLOW.equalTo("user", User);
+        queryWORKSPACEFOLLOW.equalTo("type", "1");
+        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]);
+        if (!workspace || (workspace === "all")) {
+            // do nothing, get all workspaces for the user
+        } else {
+            // only get workspace that the client is asking for
+            queryWORKSPACEFOLLOW.equalTo("workspace", Workspace);
+
+        }
+
+        queryWORKSPACEFOLLOW.find({
+            success: function(results) {
+
+                //console.log("queryPostFind: "+results.length);
+
+                //queryPTime = process.hrtime(timequeryPostFind);
+                //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+                //console.log("results: "+JSON.stringify(results));
+
+                return callback(null, results);
+
+            },
+            error: function(err) {
+                response.error("queryPost Error: "+ err);
+            }
+        });
+
+    }
+
+    // function to find queryProjectFollowFind results
+    function queryProjectFollowFind (callback) {
+
+
+        //var NS_PER_SEC = 1e9;
+        //const MS_PER_NS = 1e-6;
+        //var timequerySocialPostFind = process.hrtime();
+        //var querySocialPostFindTime;
+
+        queryPROJECTFOLLOW.include("project");
+        queryPROJECTFOLLOW.doesNotExist("archive");
+        queryPROJECTFOLLOW.equalTo("user", User);
+        queryPROJECTFOLLOW.equalTo("type", "1"); // user is either a member of follower of this project
+
+        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]);
+        if (!workspace || (workspace === "all")) {
+            // do nothing, get all projects for the user
+            //queryPROJECTFOLLOW.matchesQuery("workspace", queryWORKSPACE);
+        } else {
+            // only get workspace that the client is asking for
+            queryPROJECTFOLLOW.equalTo("workspace", Workspace);
+
+        }
+
+        if (!project || (project === "all")) {
+            // do nothing, get all projects for the user
+        } else {
+            // only get project that the client is asking for
+            queryPROJECTFOLLOW.equalTo("project", Project);
+
+        }
+
+        queryPROJECTFOLLOW.find({
+            success: function(projectResults) {
+                //console.log("postSocialResults 1: "+JSON.stringify(postSocialResults));
+
+                //console.log("querySocialPostFind: "+ postSocialResults.length);
+
+                //querySocialPostFindTime = process.hrtime(timequerySocialPostFind);
+                //console.log(`function querySocialPostFindTime took ${(querySocialPostFindTime[0] * NS_PER_SEC + querySocialPostFindTime[1])  * MS_PER_NS} milliseconds`);
+
+                return callback(null, projectResults);
+            },
+            error: function(err) {
+                response.error(err);
+            }
+
+        });
+
+
+    }
+
+    // function to find queryCategoryFind results
+    function queryCategoryFind (callback) {
+
+        //var NS_PER_SEC = 1e9;
+        //const MS_PER_NS = 1e-6;
+        //var timequerySocialPostFind = process.hrtime();
+        //var querySocialPostFindTime;
+
+        //queryCategoryFind.matchesQuery("workspaceID", queryWorkspaceFollow);
+        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]);
+        if (!workspace || (workspace === "all")) {
+            // get all categories in workspaces for the user that he is either following or is a member of
+            //var CategoryObject = new Parse.Object(queryCategory);
+            //var workspaceFollowRelation = CategoryObject.relation("workspace_follower");
+            //var workspaceFollowRelationQuery = workspaceFollowRelation.query();
+            //workspaceFollowRelationQuery.equalTo("user", User);
+            //workspaceFollowRelationQuery.doesNotExist("archive");
+            //workspaceFollowRelationQuery.equalTo("type", "1");
+            queryCATEGORY.matchesQuery("WorkspaceFollow", queryWORKSPACEFOLLOW);
+        } else {
+            // only get workspace that the client is asking for
+            queryCATEGORY.equalTo("workspaceID", Workspace);
+
+        }
+
+        if (!project || (project === "all")) {
+            // do nothing, get all projects for the user
+        } else {
+            // only get project that the client is asking for
+            queryCATEGORY.equalTo("project", Project);
+
+        }
+
+        queryCATEGORY.find({
+            success: function(categoeryResults) {
+                //console.log("postSocialResults 1: "+JSON.stringify(postSocialResults));
+
+                //console.log("querySocialPostFind: "+ postSocialResults.length);
+
+                //querySocialPostFindTime = process.hrtime(timequerySocialPostFind);
+                //console.log(`function querySocialPostFindTime took ${(querySocialPostFindTime[0] * NS_PER_SEC + querySocialPostFindTime[1])  * MS_PER_NS} milliseconds`);
+
+                return callback(null, categoeryResults);
+            },
+            error: function(err) {
+                response.error(err);
+            }
+
+        });
+
+
+    }
+
+    async.parallel([
+        async.apply(queryWorkspaceFollowFind),
+        async.apply(queryProjectFollowFind),
+        async.apply(queryCategoryFind)
+
+    ], function (err, results) {
+        if (err) {
+            response.error(err);
+        }
+
+
+
+        //console.log("postResults: "+ JSON.stringify(results));
+
+        var finalTime = process.hrtime(time);
+        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+        response.success(results);
+        //return callback (null, resultsToMap);
+
+    });
+    // }
+
+
+
+
+});
+
+// cloud API and function to test query performance of AlgoliaSearch versus Parse
+Parse.Cloud.define("QueryPostFeed2", function(request, response) {
+
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
+
+    //get request params
+    var hit = parseInt(request.params.hit);
+    var user = request.params.user;
+    var project = request.params.project;
+    var workspace = request.params.workspace;
+    var skip = parseInt(request.params.skip);
+
+    // Setup Parse query
+    var queryPost = Parse.Object.extend("Post");
+    var queryP = new Parse.Query(queryPost);
+    //var querypostSocial = Parse.Object.extend("PostSocial");
+    //var queryPostSocial = new Parse.Query(querypostSocial);
+
+    var Workspace = new Parse.Object("WorkSpace");
+    Workspace.id = workspace;
+
+    var User = new Parse.Object("_User");
+    User.id = user;
+
+    queryP.include( ["user", "workspace", "project", "postSocial.user", "postSocial.isLiked", "postSocial.isBookmarked"] );
+    queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
+
+    queryP.equalTo("workspace", Workspace);
+
+    // todo get posts that the user is allowed to view
+
+    // setup query filter for post
+    queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]);
+    queryP.descending("updatedAt");
+    queryP.limit(hit); // limit to hits
+    if (skip) {
+        queryP.skip(skip);
+    }
+    if (project == 'all') {
+        // do nothing, since we want all projects in a workspace
+    } else if (project) {
+        var Project = new Parse.Object("Project");
+        Project.id = project;
+        queryP.equalTo("project", Project);
+
+    }
+
+    var beforeQuery = process.hrtime(time);
+    console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);
+    var bQuery = process.hrtime();
+
+    queryP.find({
+        success: function(results) {
+
+            var queryTime = process.hrtime(bQuery);
+            console.log(`after queryP took ${(queryTime[0] * NS_PER_SEC + queryTime[1])  * MS_PER_NS} milliseconds`);
+            var mQuery = process.hrtime();
+            //console.log("results: "+JSON.stringify(results));
+            var postSocialRelation;
+            var postSocialRelationQuery;
+
+            async.map(results, function (object, callback) {
+
+                postSocialRelation = object.relation("postSocial");
+                postSocialRelationQuery = postSocialRelation.query();
+                postSocialRelationQuery.equalTo("user", User);
+                //postSocialRelationQuery.doesNotExist("archive");
+                //postSocialRelationQuery.select(["isBookmarked", "isLiked"]);
+                postSocialRelationQuery.first({
+                    success: function(postSocialResults) {
+                        //console.log("postSocialResults 1: "+object);
+
+                        if (postSocialResults) {
+
+                            //console.log("postSocialResults 2: "+ JSON.stringify(object));
+
+                            if (postSocialResults.get("isLiked")) {
+                                object.set("isLiked", postSocialResults.get("isLiked"));
+                                //console.log("postSocialResults 3: "+JSON.stringify(postSocialResults));
+                                if (!object.get("postSocialId")) {
+                                    object.set("postSocialId", postSocialResults.id);
+                                    //console.log("postSocialResults: "+ JSON.stringify(object));
+                                }
+
+                            } else if (postSocialResults.get("isBookmarked")) {
+
+                                object.set("isBookmarked", postSocialResults.id);
+                                if (!object.get("postSocialId")) {
+                                    object.set("postSocialId", postSocialResults.get("objectId"));
+                                }
+
+                            } else {
+                                object.set("isLiked", false);
+                                object.set("isBookmarked", false);
+                            }
+                        } else {
+                            object.set("isLiked", false);
+                            object.set("isBookmarked", false);
+                        }
+                        var postSocialRelationQueryTime = process.hrtime(mQuery);
+                        console.log(`after postSocialRelationQuery took ${(postSocialRelationQueryTime[0] * NS_PER_SEC + postSocialRelationQueryTime[1])  * MS_PER_NS} milliseconds`);
+
+                        return callback(null, object);
+                    },
+                    error: function(err) {
+                        response.error(err);
+                    }
+
+                });
+
+
+
+            }, function(err, results) {
+
+                //console.log('iterating done: ' + JSON.stringify(results));
+
+                // using process.hrtime since it's more precise
+                //getPostFeed_Time = process.hrtime(timeGetPostFeed);
+                //console.log(`getPostFeed_Time took ${(getPostFeed_Time[0] * NS_PER_SEC + getPostFeed_Time[1])  * MS_PER_NS} milliseconds`);
+
+                var diff = process.hrtime(time);
+                console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+                //console.log("FinalResults: " + JSON.stringify(results));
+                //response.render('userPosts', results);
+                response.success(results);
+
+            });
+
+
+
+          /*for (var j=0;j< results.length; j++) {
+
+           var postSocialRelation = results[j].relation("postSocial");
+           var postSocialRelationQuery = postSocialRelation.query();
+           postSocialRelationQuery.equalTo("user", User);
+           //postSocialRelationQuery.doesNotExist("archive");
+           //postSocialRelationQuery.select(["isBookmarked", "isLiked"]);
+           postSocialRelationQuery.first({
+           success: function(postSocialResults) {
+           console.log("postSocialResults 1: "+results[j]);
+
+           if (postSocialResults) {
+
+           console.log("postSocialResults 2: "+ JSON.stringify(results[j]));
+
+           if (postSocialResults.get("isLiked")) {
+           console.log("results: "+ JSON.stringify(results[0]));
+           results[j].set("isLiked", postSocialResults.get("isLiked"));
+           console.log("postSocialResults 3: "+JSON.stringify(postSocialResults));
+           if (!results[j].get("postSocialId")) {
+           results[j].set("postSocialId", postSocialResults.get("objectId"));
+           console.log("postSocialResults: "+ JSON.stringify(postSocialResults));
+           }
+
+           } else if (postSocialResults.get("isBookmarked")) {
+
+           results[j].set("isBookmarked", postSocialResults.get("isBookmarked"));
+           if (!results[j].get("postSocialId")) {
+           results[j].set("postSocialId", postSocialResults.get("objectId"));
+           }
+
+           } else {
+           results[j].set("isLiked", false);
+           results[j].set("isBookmarked", false);
+           }
+           } else {
+           results[j].set("isLiked", false);
+           results[j].set("isBookmarked", false);
+           }
+           //var postSocialRelationQueryTime = process.hrtime(mQuery);
+           //console.log(`after postSocialRelationQuery took ${(postSocialRelationQueryTime[0] * NS_PER_SEC + postSocialRelationQueryTime[1])  * MS_PER_NS} milliseconds`);
+
+           },
+           error: function(err) {
+           response.error(err);
+           }
+
+           });
+
+           }*/
+
+
         },
         error: function(err) {
-          response.error(err);
-        }     
-         
-      });
-
-    }*/
-
-
-  },
-  error: function(err) {
-    response.error("queryPost Error: "+ err);
-  }
-});
+            response.error("queryPost Error: "+ err);
+        }
+    });
 
 
 });
@@ -683,62 +863,62 @@ Parse.Cloud.define("QueryPostFeed2", function(request, response) {
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
 Parse.Cloud.define("testQueryPerformance", function(request, response) {
 
-  //var time = new Date().getTime();
-  
-  var NS_PER_SEC = 1e9;
-  const MS_PER_NS = 1e-6;
-  var time = process.hrtime();
+    //var time = new Date().getTime();
 
-  
-  //console.log("timeFirst: " + time);
-  
-  //Create a new query for User collection in Parse 
-  var collection = request.params.collection;
-  var search = request.params.search;
-  var index;
-  
-  var query = new Parse.Query(collection); 
-  
-  //console.log('collection: ' + request.params.collection);
-  
-  switch (collection) {
-    case "Post":
-    index = indexPosts;
-    query.include( ["user", "workspace", "project"] );
-    query.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "project.name", "project.type", "project.archive"]); 
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
 
-    break;
-    case "_User":
-    index = indexUsers;
 
-    break;
-    case "Project":
-    index = indexProject;
-    query.include( ["user", "workspace", "category"] );
+    //console.log("timeFirst: " + time);
 
-    break;
-    case "Meeting":
-    index = indexMeetings;
+    //Create a new query for User collection in Parse
+    var collection = request.params.collection;
+    var search = request.params.search;
+    var index;
 
-    break;
-    case "WorkSpace":
-    index = indexWorkspaces;
+    var query = new Parse.Query(collection);
 
-    break;
-    default:
-    response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Project, Meeting");
-  }; 
-  
-  if (search == 'Parse') {
+    //console.log('collection: ' + request.params.collection);
 
-          query.limit(20); // limit to at most 20 results
-          
-          // Find all items
-          query.find({
+    switch (collection) {
+        case "Post":
+            index = indexPosts;
+            query.include( ["user", "workspace", "project"] );
+            query.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "project.name", "project.type", "project.archive"]);
+
+            break;
+        case "_User":
+            index = indexUsers;
+
+            break;
+        case "Project":
+            index = indexProject;
+            query.include( ["user", "workspace", "category"] );
+
+            break;
+        case "Meeting":
+            index = indexMeetings;
+
+            break;
+        case "WorkSpace":
+            index = indexWorkspaces;
+
+            break;
+        default:
+            response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Project, Meeting");
+    };
+
+    if (search == 'Parse') {
+
+        query.limit(20); // limit to at most 20 results
+
+        // Find all items
+        query.find({
             success: function(objects) {
 
 
-                // using process.hrtime since it's more precise 
+                // using process.hrtime since it's more precise
                 var diffSmall = process.hrtime(time);
 
                 //console.log(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
@@ -747,1899 +927,3811 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
                 //return callback(null, query);
                 response.success(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
 
-              },
-              error: function(err) {
-                throw err;
-              }
-            });
-        }
-
-        else if (search == 'Algolia') {
-
-          index.search(
-          {
-            query: '*',
-            hitsPerPage: 20,
-          },
-          function searchDone(err, content) {
-            if (err) throw err;
-
-
-              // using process.hrtime since it's more precise 
-              var diffSmall = process.hrtime(time);
-
-              console.log(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
-              response.success(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
-              //return callback(null, query);
-            }
-            );
-          
-          
-        }
-        
-        else {
-
-          response.error("error: this search option is not available, please use algolia or parse");
-        }
-
-
-   /*function querySmall (callback) {
-     
-       if (search == 'Parse') {
-        
-          query.limit(10); // limit to at most 20 results
-          
-          // Find all items
-            query.find({
-              success: function(objects) {
-                
-                
-                // using process.hrtime since it's more precise 
-                var diffSmall = process.hrtime(time);
-              
-                console.log(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
-
-          
-                return callback(null, query);
-                           
-              },
-              error: function(err) {
-                throw err;
-              }
-            });
-       }
-            
-      else if (search == 'Algolia') {
-          
-          index.search(
-            {
-              query: '*',
-              hitsPerPage: 10,
-            },
-            function searchDone(err, content) {
-              if (err) throw err;
-          
-              
-              // using process.hrtime since it's more precise 
-              var diffSmall = process.hrtime(time);
-            
-              console.log(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
-        
-              return callback(null, query);
-            }
-          );
-          
-          
-        }
-        
-      else {
-        
-        response.error("error: this search option is not available, please use algolia or parse");
-      }
-           
-        
-    };
-    
-    function queryMedium (callback) {
-      
-       if (search == 'Parse') {
-      
-        query.limit(20); // limit to at most 100 results
-        
-        // Find all items
-          query.find({
-            success: function(objects) {
-              
-              //console.log("queryMedium: " + JSON.stringify(objects));
-              
-              
-             // using process.hrtime since it's more precise 
-              var diffMedium = process.hrtime(time);
-            
-              console.log(`queryMedium took ${(diffMedium[0] * NS_PER_SEC + diffMedium[1])  * MS_PER_NS} milliseconds`);
-
-        
-              return callback(null, query);
-                         
             },
             error: function(err) {
-              throw err;
+                throw err;
             }
-          });
-       }
-          
-      else if (search == 'Algolia') {
-        
-        index.search(
-          {
-            query: '*',
-            hitsPerPage: 20,
-          },
-          function searchDone(err, content) {
-            if (err) throw err;
-        
-
-            
-            // using process.hrtime since it's more precise 
-            var diffMedium = process.hrtime(time);
-          
-            console.log(`queryMedium took ${(diffMedium[0] * NS_PER_SEC + diffMedium[1])  * MS_PER_NS} milliseconds`);
-            
-            return callback(null, query);
-          }
-        );
-        
-        
-      }
-        
-      else {
-        
-        response.error("error: this search option is not available, please use algolia or parse");
-      }
-        
-    };
-    
-      function queryLarge (callback) {
-    
-      if (search == 'Parse') {
-        
-        query.limit(50); // limit to at most 1000 results
-          
-        // Find all items
-        query.find({
-          success: function(objects) {
-            
-            //console.log("queryLarge: " + JSON.stringify(objects));
-            
-            
-            // using process.hrtime since it's more precise 
-            var diffLarge = process.hrtime(time);
-            
-            console.log(`queryLarge took ${(diffLarge[0] * NS_PER_SEC + diffLarge[1])  * MS_PER_NS} milliseconds`);
-      
-            return callback(null, query);
-                       
-          },
-          error: function(err) {
-            throw err;
-          }
         });
-      
-      }
-      
-      else if (search == 'Algolia') {
-        
-        index.search(
-          {
-            query: '*',
-            hitsPerPage: 50,
-          },
-          function searchDone(err, content) {
-            if (err) throw err;
-        
-            
-            // using process.hrtime since it's more precise 
-            var diffLarge = process.hrtime(time);
-            
-            console.log(`queryLarge took ${(diffLarge[0] * NS_PER_SEC + diffLarge[1])  * MS_PER_NS} milliseconds`);
-      
-            return callback(null, query);
-          }
-        );
-        
-        
-      }
-      
-      else {
-        
-        response.error("error: this search option is not available, please use algolia or parse");
-      }
-              
-        
-  };
-    
-    async.parallel([ 
-    async.apply(querySmall),
-    async.apply(queryMedium), 
-    async.apply(queryLarge)
-    
-    ], function (err, query) {
-          if (err) {
-              response.error(err);
-          }
-
-          
-          // using process.hrtime since it's more precise 
-          var diff = process.hrtime(time);
-        
-          console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-          
-          response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-                   
-              
-                
-        });*/
-
-
-      });
-
-
-
-// cloud API and function to index and import all users from Parse to AlgoliaSearch indexUsers
-Parse.Cloud.define("indexCollection", function(request, response) {
-
-  var objectsToIndex = [];
-  //Create a new query for User collection in Parse
-  
-  var collection = request.params.collection;
-  var index;
-  var query = new Parse.Query(collection); 
-  query.limit(1000); // todo limit to at most 1000 results need to change and iterate until done todo
-  
-  console.log('collection: ' + request.params.collection);
-  
-  switch (collection) {
-    case "Post":
-    index = indexPosts;
-    query.include( ["user", "workspace", "project"] );
-    query.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "project.name", "project.type", "project.archive"]); 
-
-    break;
-    case "_User":
-    index = indexUsers;
-
-    break;
-    case "Project":
-    index = indexProject;
-    query.include( ["user", "workspace", "category"] );
-
-    break;
-    case "Meeting":
-    index = indexMeetings;
-
-    break;
-    case "WorkSpace":
-    index = indexWorkspaces;
-
-    break;
-    default:
-    response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Project, Meeting");
-  }; 
-  
-  // Find all items
-  query.find({
-    success: function(objects) {
-
-      function prepIndex (callback) {
-
-        // prepare objects to index from objects
-        objectsToIndex = objects.map(function(object) {
-          // convert to regular key/value JavaScript object
-          object = object.toJSON();
-          // Specify Algolia's objectID with the Parse.Object unique ID
-          object.objectID = object.objectId;
-          return object;
-        });
-        
-        return callback(null, objectsToIndex);
-        
-      };
-      
-
-      function addObjectsAlgolia (objectsToIndex, callback) {
-
-         //console.log("objectToSave: "+ JSON.stringify(objectsToIndex)); 
-
-        // Add or update new objects
-        index.saveObjects(objectsToIndex, function(err, content) {
-          if (err) {
-            throw err;
-          }
-          console.log('Parse<>Algolia import done');
-          response.success("Imported the following collection: " + collection);
-        });
-
-      };
-      
-      async.waterfall([ 
-        async.apply(prepIndex),
-        async.apply(addObjectsAlgolia)
-
-        ], function (err, post) {
-          if (err) {
-            response.error(err);
-          }
-
-            //console.log("final meeting: " + JSON.stringify(post));
-            response.success();
-          });
-    },
-    error: function(err) {
-      throw err;
     }
-  });
-  
-});
+
+    else if (search == 'Algolia') {
+
+        index.search(
+            {
+                query: '*',
+                hitsPerPage: 20,
+            },
+            function searchDone(err, content) {
+                if (err) throw err;
 
 
-// Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
-Parse.Cloud.beforeSave('Post', function(req, response) {
+                // using process.hrtime since it's more precise
+                var diffSmall = process.hrtime(time);
 
-  var NS_PER_SEC = 1e9;
-  const MS_PER_NS = 1e-6;
-  var time = process.hrtime();
-
-  var post = req.object;
-  var text = post.get("text");
-  var workspace = post.get("workspace");
-  //console.log("workspace_post: " + JSON.stringify(workspace));
-  var project = post.get("project"); 
-  //console.log("project_post: " + JSON.stringify(project));
-
-  var toLowerCase = function(w) { return w.toLowerCase(); };
-  //console.log("post: " + JSON.stringify(post));
-  
-  // Function to count number of posts
-  function countPosts (callback) {
-
-    var NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    var timeCountPosts = process.hrtime();
-    var countPosts_Time; 
-
-      // if there is a post that got added, then increase counter, else ignoremyObject
-      if (post.isNew()) {
-
-        var POST = Parse.Object.extend("Post");
-        var Post = new POST();
-        Post.id = post.objectId;
-        
-        // add counter for posts to workspace collection
-        var WORKSPACE = Parse.Object.extend("WorkSpace");
-        var Workspace = new WORKSPACE();
-        Workspace.id = workspace.id;
-        
-        // Convert Parse.Object to JSON
-        //var objectToSave = Workspace.id.toJSON();
-        
-        //var Post = Parse.Object.extend("Post");
-        //var queryWorkspace = new Parse.Query(Workspace);
-        Workspace.increment("postCount");
-        Workspace.save();
-
-        
-        if (project) {
-          // add counter for posts to project collection
-          var PROJECT = Parse.Object.extend("Project");
-          var Project = new PROJECT();
-          Project.id = project.id;
-          
-          Project.increment("postCount");
-          Project.save();
-          
-          return callback(null, post);
-          
-
-          
-        } else {
-
-        //post = Post;
-        countPosts_Time = process.hrtime(timeCountPosts); 
-        console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
-
-        return callback(null, post);
-        
-      }
-      
+                console.log(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
+                response.success(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
+                //return callback(null, query);
+            }
+        );
 
 
     }
 
     else {
 
-      countPosts_Time = process.hrtime(timeCountPosts); 
-      console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
-
-      return callback(null, post);
-
+        response.error("error: this search option is not available, please use algolia or parse");
     }
 
 
+  /*function querySmall (callback) {
 
-  }
-  
-  // Function to capture hashtags from text posts
-  function getHashtags (callback) {
-    var NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    var timeCountPosts = process.hrtime();
-    var getHashtags_Time;
+   if (search == 'Parse') {
 
-    var hashtags;
+   query.limit(10); // limit to at most 20 results
 
-       // if there is a post that got added and no hashtags from client then add hashtags
-       if (post.isNew() && !post.hashtags) {
-
-        hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
-        hashtags = _.map(hashtags, toLowerCase);
-        hashtags = hashtags.map(function (hashtag) {
-          return hashtag.trim();
-        });
-        req.object.set("hashtags", hashtags);
-          //console.log("getHashtags: " + JSON.stringify(hashtags));
-          
-          getHashtags_Time = process.hrtime(timeCountPosts); 
-          console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+   // Find all items
+   query.find({
+   success: function(objects) {
 
 
-          return callback(null, post);
-        } 
+   // using process.hrtime since it's more precise
+   var diffSmall = process.hrtime(time);
 
-      // if an updated for text field (only) in a post occured, and there was no hashtags from client then get hashtags
-      else if (!post.isNew() && post.dirty("text") && !post.dirty("hashtags")) {
-
-        hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
-        hashtags = _.map(hashtags, toLowerCase);
-        hashtags = hashtags.map(function (hashtag) {
-          return hashtag.trim();
-        });
-        req.object.set("hashtags", hashtags);
-        //console.log("getHashtags: " + JSON.stringify(hashtags));
-        
-        getHashtags_Time = process.hrtime(timeCountPosts); 
-        console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
-
-        return callback(null, post);
-        
-      } 
-      else {
-
-        getHashtags_Time = process.hrtime(timeCountPosts); 
-        console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
-
-        
-        return callback(null, post);
-        
-      }
-      
-      
-    }
-
-  // Function to capture mentions from text posts
-  function getMentions (callback) {
-
-    var NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    var timeCountPosts = process.hrtime();
-    var getMentions_Time;
-    
-    var mentions;
-
-       // if there is a post that got added and no mentions from client then add mentions
-       if (post.isNew() && !post.mentions) {
-
-        mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
-        mentions = _.map(mentions, toLowerCase);
-        mentions = mentions.map(function (mention) {
-          return mention.trim();
-        });
-        req.object.set("mentions", mentions);
-          //console.log("getMentions: " + JSON.stringify(mentions));
-          
-          getMentions_Time = process.hrtime(timeCountPosts); 
-          console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+   console.log(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
 
 
-          return callback(null, post);
-        } 
+   return callback(null, query);
 
-      // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
-      else if (!post.isNew() && post.dirty("text") && !post.dirty("mentions")) {
+   },
+   error: function(err) {
+   throw err;
+   }
+   });
+   }
 
-        mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
-        mentions = _.map(mentions, toLowerCase);
-        mentions = mentions.map(function (mention) {
-          return mention.trim();
-        });
-        req.object.set("mentions", mentions);
-        //console.log("getMentions: " + JSON.stringify(mentions));
-        
-        getMentions_Time = process.hrtime(timeCountPosts); 
-        console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+   else if (search == 'Algolia') {
 
-        return callback(null, post);
-        
-      } 
-      else {
+   index.search(
+   {
+   query: '*',
+   hitsPerPage: 10,
+   },
+   function searchDone(err, content) {
+   if (err) throw err;
 
-        getMentions_Time = process.hrtime(timeCountPosts); 
-        console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
 
-        
-        return callback(null, post);
-        
-      }
+   // using process.hrtime since it's more precise
+   var diffSmall = process.hrtime(time);
 
-    }
+   console.log(`querySmall took ${(diffSmall[0] * NS_PER_SEC + diffSmall[1])  * MS_PER_NS} milliseconds`);
 
-  // function to archive/unarchive postSocial relatio if a post is archived/unarchived
-  function archivePostSocial (callback) {
-    var NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    var timeArchive = process.hrtime();
-    var archive_Time;
-    
-    // if post is updated and specifically the archive field is updated then update postSocial archive field.
-    if (!post.isNew() && post.dirty("archive")) {
+   return callback(null, query);
+   }
+   );
 
-      var postSocialRelation = post.relation("postSocial");
-      var postSocialRelationQuery = postSocialRelation.query();
-      postSocialRelationQuery.find({
-        success: function(postSocialResults) {
 
-          for (var i = 0; i < postSocialResults.length; i++) {
+   }
 
-            postSocialResults[i].set("archive", post.get("archive"));
-            postSocialResults[i].save();
-            
-          }
-          
-          archive_Time = process.hrtime(timeArchive);
-          console.log(`archive_Time took ${(archive_Time[0] * NS_PER_SEC + archive_Time[1]) * MS_PER_NS} milliseconds`);
-          
-          return callback(null, post);
-          
-        }, 
-        error: function(err) {
-          // if there is no postSocial results, then just ignore
-          return callback(null, post);
-        }
-        
-      });
-      
-      
-    } else { return callback(null, post);}
-    
-  }
-  
-  
-  
-  // Function to identify if a text post hasURL
-  function getURL (callback) {
+   else {
 
-    var NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    var timeCountPosts = process.hrtime();
-    var getURL_Time;
-    
-    var hasurl;
+   response.error("error: this search option is not available, please use algolia or parse");
+   }
 
-       // if there is a post that got added and no hasURL from client then add hasURL
-       if (post.isNew() && !post.hasURL) {
 
-        hasurl = urlRegex().test(text);
-          //console.log("hasURL: " + JSON.stringify(hasurl));
-          
-          req.object.set("hasURL", hasurl);
+   };
 
-          getURL_Time = process.hrtime(timeCountPosts); 
-          console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+   function queryMedium (callback) {
 
-          return callback(null, post);
-        } 
+   if (search == 'Parse') {
 
-      // if an updated for text field (only) in a post occured, and there was no hasURL from client then get hashtags
-      else if (!post.isNew() && post.dirty("text") && !post.dirty("hasURL")) {
+   query.limit(20); // limit to at most 100 results
 
-        hasurl = urlRegex().test(text);
-        //console.log("hasURL: " + JSON.stringify(hasurl));
-        
-        req.object.set("hasURL", hasurl);
-        
-        getURL_Time = process.hrtime(timeCountPosts); 
-        console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+   // Find all items
+   query.find({
+   success: function(objects) {
 
-        return callback(null, post);
-        
-      } 
-      else {
+   //console.log("queryMedium: " + JSON.stringify(objects));
 
-        getURL_Time = process.hrtime(timeCountPosts); 
-        console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
 
-        return callback(null, post);
-        
-      }
+   // using process.hrtime since it's more precise
+   var diffMedium = process.hrtime(time);
 
-    }
+   console.log(`queryMedium took ${(diffMedium[0] * NS_PER_SEC + diffMedium[1])  * MS_PER_NS} milliseconds`);
 
-  // Function to get luis.ai topIntent from text post
-  function getIntents (callback) {
+
+   return callback(null, query);
+
+   },
+   error: function(err) {
+   throw err;
+   }
+   });
+   }
+
+   else if (search == 'Algolia') {
+
+   index.search(
+   {
+   query: '*',
+   hitsPerPage: 20,
+   },
+   function searchDone(err, content) {
+   if (err) throw err;
+
+
+
+   // using process.hrtime since it's more precise
+   var diffMedium = process.hrtime(time);
+
+   console.log(`queryMedium took ${(diffMedium[0] * NS_PER_SEC + diffMedium[1])  * MS_PER_NS} milliseconds`);
+
+   return callback(null, query);
+   }
+   );
+
+
+   }
+
+   else {
+
+   response.error("error: this search option is not available, please use algolia or parse");
+   }
+
+   };
+
+   function queryLarge (callback) {
+
+   if (search == 'Parse') {
+
+   query.limit(50); // limit to at most 1000 results
+
+   // Find all items
+   query.find({
+   success: function(objects) {
+
+   //console.log("queryLarge: " + JSON.stringify(objects));
+
+
+   // using process.hrtime since it's more precise
+   var diffLarge = process.hrtime(time);
+
+   console.log(`queryLarge took ${(diffLarge[0] * NS_PER_SEC + diffLarge[1])  * MS_PER_NS} milliseconds`);
+
+   return callback(null, query);
+
+   },
+   error: function(err) {
+   throw err;
+   }
+   });
+
+   }
+
+   else if (search == 'Algolia') {
+
+   index.search(
+   {
+   query: '*',
+   hitsPerPage: 50,
+   },
+   function searchDone(err, content) {
+   if (err) throw err;
+
+
+   // using process.hrtime since it's more precise
+   var diffLarge = process.hrtime(time);
+
+   console.log(`queryLarge took ${(diffLarge[0] * NS_PER_SEC + diffLarge[1])  * MS_PER_NS} milliseconds`);
+
+   return callback(null, query);
+   }
+   );
+
+
+   }
+
+   else {
+
+   response.error("error: this search option is not available, please use algolia or parse");
+   }
+
+
+   };
+
+   async.parallel([
+   async.apply(querySmall),
+   async.apply(queryMedium),
+   async.apply(queryLarge)
+
+   ], function (err, query) {
+   if (err) {
+   response.error(err);
+   }
+
+
+   // using process.hrtime since it's more precise
+   var diff = process.hrtime(time);
+
+   console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+
+   response.success(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+
+
+
+   });*/
+
+
+});
+
+
+
+// cloud API and function to index and import all users from Parse to AlgoliaSearch indexUsers
+Parse.Cloud.define("indexCollection", function(request, response) {
 
     var NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
-    var timegetIntents = process.hrtime();
-    var getIntents_Time;
-    
-    var endpoint =
-    "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/";
+    var time = process.hrtime();
 
-    // Set the LUIS_APP_ID environment variable 
-    // to df67dcdb-c37d-46af-88e1-8b97951ca1c2, which is the ID
-    // of a public sample application.    
-    var luisAppId = "685c7d5b-9d64-4182-a69d-bb220a7482ae";
-    
-    var utterance = text;
-    utterance = utterance.substring(utterance, 500);
+    var objectsToIndex = [];
+    //Create a new query for User collection in Parse
 
-    // Set the LUIS_SUBSCRIPTION_KEY environment variable
-    // to the value of your Cognitive Services subscription key
-    var queryParams = {
-      "subscription-key": "0dd6f5d766284cfc94828371ecce99a0",
-      "staging": true,
-      "timezoneOffset": "-480",
-      "verbose":  true,
-      "q": utterance
+    var collection = request.params.collection;
+    var index;
+    var skills;
+    var skillsToLearn;
+    var query = new Parse.Query(collection);
+    query.limit(10000); // todo limit to at most 1000 results need to change and iterate until done todo
+
+    console.log('collection: ' + request.params.collection);
+
+    switch (collection) {
+        case "Post":
+            index = indexPosts;
+            query.include( ["user", "workspace", "project"] );
+            //query.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "project.name", "project.type", "project.archive"]);
+
+            break;
+        case "_User":
+            index = indexUsers;
+            skills = "mySkills";
+            skillsToLearn = "skillsToLearn";
+
+            break;
+        case "Project":
+            index = indexProject;
+            query.include( ["user", "workspace", "category"] );
+
+            break;
+        case "Meeting":
+            index = indexMeetings;
+
+            break;
+        case "WorkSpace":
+            query.include( ["user"] );
+            index = indexWorkspaces;
+            skills = "skills";
+
+            break;
+        case "Skill":
+            index = indexSkills;
+
+            break;
+        default:
+            response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Project, Meeting");
     };
-    
-    var luisRequest;
 
-       // if there is a post that got added and no topIntent from client then add hasURL
-       if (post.isNew() && !post.topIntent) {
 
-        luisRequest =
-        endpoint + luisAppId +
-        '?' + querystring.stringify(queryParams);
 
-        requestURL(luisRequest,
-          function (err,
-            response, body) {
-            if (err)
-              console.log(err);
-            else {
-              var data = JSON.parse(body);
+    // Find all items
+    query.find({
+        success: function(objectsToIndex) {
 
-                      //console.log(`Query: ${data.query}`);
-                      //console.log(`Top Intent: ${data.topScoringIntent.intent}`);
-                      if (data.topScoringIntent) {
+            function prepIndex (callback) {
 
-                        console.log('Intent:'+ data.topScoringIntent.intent);
-                        req.object.set("topIntent", data.topScoringIntent.intent);
-                      }
-                      //console.log('Intent:'+ data.topScoringIntent.intent);
-                      
-                      //console.log("Input post: " + JSON.stringify(post));
-                      getIntents_Time = process.hrtime(timegetIntents); 
-                      console.log(`getIntents_Time took ${(getIntents_Time[0] * NS_PER_SEC + getIntents_Time[1])  * MS_PER_NS} milliseconds`);
-                      
-                      return callback(null, post);            
-                      
+                // prepare objects to index from objects
+                async.map(objectsToIndex, function(object, cb) {
+
+
+                    if (collection === "WorkSpace") {
+
+                        var skillObject = Parse.Object.extend("Skill");
+                        var expertObject = Parse.Object.extend("_User");
+
+                        //console.log("workspace: " + JSON.stringify(object));
+
+                        skillObject = object.get("skills");
+                        //console.log("Skills Index: " + JSON.stringify(skillObject));
+
+                        expertObject = object.get("experts");
+                        //console.log("Experts: " + JSON.stringify(expertObject));
+
+                        // convert to regular key/value JavaScript object
+                        object = object.toJSON();
+                        // Specify Algolia's objectID with the Parse.Object unique ID
+                        object.objectID = object.objectId;
+
+                        skillObject.query().find({
+
+                            success: function (skill) {
+
+                                //console.log("SKills : "+ JSON.stringify(skill));
+
+
+                                object['skills'] = skill;
+                                //console.log("New Workspace: " + JSON.stringify(object));
+
+                                // Specify Algolia's objectID with the Parse.Object unique ID
+                                //workspace.objectID = workspace.objectId;
+
+                                expertObject.query().find({
+
+                                    success: function(user) {
+
+
+                                        //console.log("Experts: " + JSON.stringify(user));
+
+                                        object['experts']  = user;
+                                        //console.log("New Workspace experts: " + JSON.stringify(object));
+
+                                        return cb (null, object);
+
+
+
+                                    },
+                                    error: function(error) {
+                                        alert("Error: " + error.code + " " + error.message);
+                                        return callback(error);
+                                    }
+                                });
+
+
+                            },
+                            error: function(error) {
+                                alert("Error: " + error.code + " " + error.message);
+                                return callback(error);
+                            }
+                        });
+
+
+
+
                     }
-                  });
+                    else {
 
-        
-      } 
-      
-      // if an updated for text field (only) in a post occured, and there was no hasURL from client then get hashtags
-      else if (!post.isNew() && post.dirty("text") && !post.dirty("topIntent")) {
+                        // convert to regular key/value JavaScript object
+                        object = object.toJSON();
+                        // Specify Algolia's objectID with the Parse.Object unique ID
+                        object.objectID = object.objectId;
 
-        luisRequest =
-        endpoint + luisAppId +
-        '?' + querystring.stringify(queryParams);
+                        return cb (null, object); }
 
-        requestURL(luisRequest,
-          function (err,
-            response, body) {
-            if (err)
-              console.log(err);
-            else {
-              var data = JSON.parse(body);
+                }, function(err, objectsToIndex) {
 
-                      //console.log(`Query: ${data.query}`);
-                      //console.log(`Top Intent: ${data.topScoringIntent.intent}`);
-                      if (data.topScoringIntent) {
+                    console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
-                        console.log('Intent:'+ data.topScoringIntent.intent);
-                        req.object.set("topIntent", data.topScoringIntent.intent);
-                      }
-                      //console.log('Intent:'+ data.topScoringIntent.intent);
-                      
-                      //console.log("Input post: " + JSON.stringify(post));
-                      getIntents_Time = process.hrtime(timegetIntents); 
-                      console.log(`getIntents_Time took ${(getIntents_Time[0] * NS_PER_SEC + getIntents_Time[1])  * MS_PER_NS} milliseconds`);
+                    return callback(null, objectsToIndex);
 
-                      return callback(null, post);            
-                      
+                });
+
+
+
+            };
+
+
+            function addObjectsAlgolia (objectsToIndex, callback) {
+
+                console.log("objectToSave: "+ JSON.stringify(objectsToIndex.length));
+
+                // Add or update new objects
+                index.saveObjects(objectsToIndex, function(err, content) {
+                    if (err) {
+                        throw err;
                     }
-                  });
+                    console.log('Parse<>Algolia import done');
+                    return callback(null, objectsToIndex);
+                });
 
-        
-      } 
-      else {
+            };
 
-        getIntents_Time = process.hrtime(timegetIntents); 
-        console.log(`getIntents_Time took ${(getIntents_Time[0] * NS_PER_SEC + getIntents_Time[1])  * MS_PER_NS} milliseconds`);
 
-        return callback(null, post);
-        
-      }
+            async.waterfall([
+                async.apply(prepIndex),
+                async.apply(addObjectsAlgolia)
+
+            ], function (err, objectsToIndex) {
+                if (err) {
+                    response.error(err);
+                }
+
+                var finalTime = process.hrtime(time);
+                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                //console.log("final meeting: " + JSON.stringify(post));
+                response.success();
+            });
+        },
+        error: function(err) {
+            throw err;
+        }
+    });
+
+});
+
+// Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
+Parse.Cloud.beforeSave('_User', function(req, response) {
+
+  /*var NS_PER_SEC = 1e9;
+   const MS_PER_NS = 1e-6;
+   var time = process.hrtime();*/
+    var user = req.object;
+    var socialProfilePicURL = user.get("socialProfilePicURL");
+    var profileImage = user.get("profileimage");
+
+
+    if (user.isNew() && socialProfilePicURL!=null) {
+
+        var displayName = user.get("displayName");
+        var fileName = user.id + displayName + '_profilePicture';
+
+        const options = {
+            uri: socialProfilePicURL,
+            resolveWithFullResponse: true,
+            encoding: null, // <-- this is important for binary data like images.
+        };
+
+        requestPromise(options)
+            .then((response) => {
+            const data = Array.from(Buffer.from(response.body, 'binary'));
+        const contentType = response.headers['content-type'];
+        const file = new Parse.File(fileName, data, contentType);
+        return file.save();
+    })
+    .then((file) => {
+
+            user.set("profileimage", file);
+
+        response.success();
+    })
+    .catch(console.error);
+
+    } else {response.success();}
+
+});
+
+// Run beforeSave functions workspace
+Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
+
+  /*var NS_PER_SEC = 1e9;
+   const MS_PER_NS = 1e-6;
+   var time = process.hrtime();*/
+    var workspace = req.object;
+    var owner = new Parse.Object("_User");
+    owner = workspace.get("user");
+    var expertRelation = workspace.relation("experts");
+
+    //var WORKSPACE = Parse.Object.extend("WorkSpace");
+    var WORKspace = new Parse.Object("WorkSpace");
+
+    var queryWorkspace = new Parse.Query(WORKspace);
+
+    // create roles
+  /*var ownerRole = new Parse.Object("Role");
+   var expertRole = new Parse.Object("Role");
+   var adminRole = new Parse.Object("Role");
+   var moderatorRole = new Parse.Object("Role");
+   var memberRole = new Parse.Object("Role");
+   var followerRole = new Parse.Object("Role");*/
+
+    // create role relation
+    //var ownerRoleRelation = ownerRole.relation("roles");
+    //var expertRoleRelation = expertRole.relation("roles");
+    //var adminRoleRelation = adminRole.relation("roles");
+    //var moderatorRoleRelation = moderatorRole.relation("roles");
+    //var memberRoleRelation = memberRole.relation("roles");
+    //var followerRoleRelation = followerRole.relation("roles");
+
+    // create user relation
+    //var ownerUserRelation = ownerRole.relation("users");
+    //var userRolesRelation = owner.relation("roles");
+    //var expertUserRelation = expertRole.relation("users");
+    //var adminUserRelation = adminRole.relation("users");
+    //var moderatorUserRelation = moderatorRole.relation("users");
+    //var memberUserRelation = memberRole.relation("users");
+    //var followerUserRelation = followerRole.relation("users");
+
+    if (workspace.isNew() ) {
+
+
+        queryWorkspace.equalTo("workspace_url", workspace.get("workspace_url"));
+
+        queryWorkspace.first({
+            success: function(results) {
+
+                if (results) {
+
+                    // workspace url is not unique return error
+
+                    response.error(results);
+
+                } else {
+
+                    // set the workspace owner as an expert
+                    expertRelation.add(owner);
+
+                    workspace.set("isNew", true);
+
+                    console.log("request: " + JSON.stringify(req));
+
+                    response.success();
+
+
+                }
+            },
+            error: function(err) {
+                response.error("An error occured: " + err);
+
+            }
+        });
+
+
+
+
+    } else if (!workspace.isNew() && workspace.dirty("workspace_url")) {
+
+        queryWorkspace.equalTo("workspace_url", workspace.get("workspace_url"));
+
+        queryWorkspace.first({
+            success: function(results) {
+
+                if (results) {
+
+                    // workspace url is not unique return error
+
+                    response.error(results);
+
+                } else {
+
+
+
+                    response.success();
+
+
+                }
+            },
+            error: function(err) {
+                response.error("An error occured: " + err);
+
+            }
+        });
+
+    } else {response.success();}
+
+});
+
+// Run beforeSave functions for Skills to validate data and prevent duplicate entries.
+Parse.Cloud.beforeSave('Skill', function(req, response) {
+
+  /*var NS_PER_SEC = 1e9;
+   const MS_PER_NS = 1e-6;
+   var time = process.hrtime();*/
+
+    var skill = req.object;
+    console.log("Levels: " + skill.get('level'));
+    var level = skill.get("level");
+    var name = skill.get("name");
+    if (level) {level = level.trim();};
+    if (name) {name = name.trim();};
+    var verifyNameLevel = name + ':' + level;
+    var nameLevel;
+
+    // Setup Parse query
+    var querySkill = Parse.Object.extend("Skill");
+    var querySKILL = new Parse.Query(querySkill);
+
+    nameLevel =  skill.get("nameLevel");
+    if (nameLevel) {nameLevel.trim();}
+    querySKILL.equalTo("nameLevel", nameLevel);
+
+    //console.log("nameLevel: " + JSON.stringify(nameLevel));
+
+
+
+    if (skill.isNew()) {
+
+        querySKILL.first({
+            success: function(results) {
+
+                if (results) {
+
+                    //Skill already exists in DB in Skill table, return an error because it needs to be unique
+
+                    response.error(results);
+
+                } else {
+
+                    //Skill doesn't exist, let's add it but before check if level is valid
+
+                    if (nameLevel && name && level) {
+
+                        //console.log("skill.dirty level: " + skill.dirty("level"));
+
+                        if (nameLevel != verifyNameLevel) { response.error("Error 1: NameLevel: " + nameLevel + " Should include the same name: " + name + "and level: " + level + "seperated by : just like this: " + name + ':' + level);}
+
+                        level = level.toLowerCase();
+                        //console.log("skill: " + JSON.stringify(skill));
+
+                        switch (level) {
+                            case "starter":
+                                skill.set('level', level);
+                                //skill.set('nameLevel', name + ':' + level);
+                                response.success();
+
+                                break;
+                            case "ninja":
+                                skill.set('level', level);
+                                //skill.set('nameLevel', name + ':' + level);
+                                response.success();
+
+                                break;
+                            case "master":
+                                skill.set('level', level);
+                                //skill.set('nameLevel', name + ':' + level);
+                                response.success();
+
+                                break;
+                            default:
+                                response.error("Please enter one of the following valid levels: starter, ninja or master");
+                        };
+
+
+                    } else { response.error("nameLevel, name and level fields are all required to add a skill."); }
+
+
+                }
+
+
+            },
+            error: function(err) {
+                response.error("An error occured: " + err);
+
+            }
+        });
+
+
+    } else if (!skill.isNew() && skill.dirty("level")) {
+
+        // can't allow updates to nameLevel, name or level to make sure data is consistent, we can allow delete then add instead
+        response.error("We currently don't allow modifications of level.");
+
+    } else if (!skill.isNew() && skill.dirty("name") && skill.dirty("nameLevel")) {
+
+        // verify first that nameLevel is correct with name and level.
+        if (nameLevel != verifyNameLevel) { response.error("NameLevel: " + nameLevel + "Should include the same name: " + name + "and level: " + level + "seperated by : just like this: " + name + ':' + level);}
+
+        // now let's check to make sure this nameLevel doesn't already exist
+        querySKILL.first({
+            success: function(results) {
+
+                if (results) {
+
+                    //Skill already exists in DB in Skill table, return an error because it needs to be unique
+
+                    response.error(results);
+
+                } else {
+
+                    //Skill doesn't exist, let's add it
+                    response.success();
+
+                }
+
+            },
+            error: function(err) {
+                response.error("An error occured: " + err);
+
+            }
+        });
+
+        //response.success();
+
+    } else { response.error("Please update both name and nameLevel fields."); }
+
+
+});
+
+
+// Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
+Parse.Cloud.beforeSave('Post', function(req, response) {
+
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
+
+    var post = req.object;
+    var text = post.get("text");
+    var workspace = post.get("workspace");
+    //console.log("workspace_post: " + JSON.stringify(workspace));
+    var project = post.get("project");
+    //console.log("project_post: " + JSON.stringify(project));
+
+    var toLowerCase = function(w) { return w.toLowerCase(); };
+    //console.log("post: " + JSON.stringify(post));
+
+    // Function to count number of posts
+    function countPosts (callback) {
+
+        var NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        var timeCountPosts = process.hrtime();
+        var countPosts_Time;
+
+        // if there is a post that got added, then increase counter, else ignoremyObject
+        if (post.isNew()) {
+
+            var POST = Parse.Object.extend("Post");
+            var Post = new POST();
+            Post.id = post.objectId;
+
+            // add counter for posts to workspace collection
+            var WORKSPACE = Parse.Object.extend("WorkSpace");
+            var Workspace = new WORKSPACE();
+            Workspace.id = workspace.id;
+
+            // Convert Parse.Object to JSON
+            //var objectToSave = Workspace.id.toJSON();
+
+            //var Post = Parse.Object.extend("Post");
+            //var queryWorkspace = new Parse.Query(Workspace);
+            Workspace.increment("postCount");
+            Workspace.save();
+
+
+            if (project) {
+                // add counter for posts to project collection
+                var PROJECT = Parse.Object.extend("Project");
+                var Project = new PROJECT();
+                Project.id = project.id;
+
+                Project.increment("postCount");
+                Project.save();
+
+                return callback(null, post);
+
+
+
+            } else {
+
+                //post = Post;
+                countPosts_Time = process.hrtime(timeCountPosts);
+                console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
+
+                return callback(null, post);
+
+            }
+
+
+
+        }
+
+        else {
+
+            countPosts_Time = process.hrtime(timeCountPosts);
+            console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, post);
+
+        }
+
 
 
     }
 
-    async.parallel([ 
-      async.apply(countPosts),
-      async.apply(getHashtags),
-      async.apply(getMentions),
-      async.apply(getURL),
-      async.apply(archivePostSocial),
-    //async.apply(createPostSocial)
-    //async.apply(getIntents)
-    
+    // Function to capture hashtags from text posts
+    function getHashtags (callback) {
+        var NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        var timeCountPosts = process.hrtime();
+        var getHashtags_Time;
+
+        var hashtags;
+
+        // if there is a post that got added and no hashtags from client then add hashtags
+        if (post.isNew() && !post.hashtags) {
+
+            hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
+            hashtags = _.map(hashtags, toLowerCase);
+            hashtags = hashtags.map(function (hashtag) {
+                return hashtag.trim();
+            });
+            req.object.set("hashtags", hashtags);
+            //console.log("getHashtags: " + JSON.stringify(hashtags));
+
+            getHashtags_Time = process.hrtime(timeCountPosts);
+            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, post);
+        }
+
+        // if an updated for text field (only) in a post occured, and there was no hashtags from client then get hashtags
+        else if (!post.isNew() && post.dirty("text") && !post.dirty("hashtags")) {
+
+            hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
+            hashtags = _.map(hashtags, toLowerCase);
+            hashtags = hashtags.map(function (hashtag) {
+                return hashtag.trim();
+            });
+            req.object.set("hashtags", hashtags);
+            //console.log("getHashtags: " + JSON.stringify(hashtags));
+
+            getHashtags_Time = process.hrtime(timeCountPosts);
+            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, post);
+
+        }
+        else {
+
+            getHashtags_Time = process.hrtime(timeCountPosts);
+            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, post);
+
+        }
+
+
+    }
+
+    // Function to capture mentions from text posts
+    function getMentions (callback) {
+
+        var NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        var timeCountPosts = process.hrtime();
+        var getMentions_Time;
+
+        var mentions;
+
+        // if there is a post that got added and no mentions from client then add mentions
+        if (post.isNew() && !post.mentions) {
+
+            mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
+            mentions = _.map(mentions, toLowerCase);
+            mentions = mentions.map(function (mention) {
+                return mention.trim();
+            });
+            req.object.set("mentions", mentions);
+            //console.log("getMentions: " + JSON.stringify(mentions));
+
+            getMentions_Time = process.hrtime(timeCountPosts);
+            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, post);
+        }
+
+        // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
+        else if (!post.isNew() && post.dirty("text") && !post.dirty("mentions")) {
+
+            mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
+            mentions = _.map(mentions, toLowerCase);
+            mentions = mentions.map(function (mention) {
+                return mention.trim();
+            });
+            req.object.set("mentions", mentions);
+            //console.log("getMentions: " + JSON.stringify(mentions));
+
+            getMentions_Time = process.hrtime(timeCountPosts);
+            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, post);
+
+        }
+        else {
+
+            getMentions_Time = process.hrtime(timeCountPosts);
+            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, post);
+
+        }
+
+    }
+
+    // function to archive/unarchive postSocial relatio if a post is archived/unarchived
+    function archivePostSocial (callback) {
+        var NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        var timeArchive = process.hrtime();
+        var archive_Time;
+
+        // if post is updated and specifically the archive field is updated then update postSocial archive field.
+        if (!post.isNew() && post.dirty("archive")) {
+
+            var postSocialRelation = post.relation("postSocial");
+            var postSocialRelationQuery = postSocialRelation.query();
+            postSocialRelationQuery.find({
+                success: function(postSocialResults) {
+
+                    for (var i = 0; i < postSocialResults.length; i++) {
+
+                        postSocialResults[i].set("archive", post.get("archive"));
+                        postSocialResults[i].save();
+
+                    }
+
+                    archive_Time = process.hrtime(timeArchive);
+                    console.log(`archive_Time took ${(archive_Time[0] * NS_PER_SEC + archive_Time[1]) * MS_PER_NS} milliseconds`);
+
+                    return callback(null, post);
+
+                },
+                error: function(err) {
+                    // if there is no postSocial results, then just ignore
+                    return callback(null, post);
+                }
+
+            });
+
+
+        } else { return callback(null, post);}
+
+    }
+
+
+
+    // Function to identify if a text post hasURL
+    function getURL (callback) {
+
+        var NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        var timeCountPosts = process.hrtime();
+        var getURL_Time;
+
+        var hasurl;
+
+        // if there is a post that got added and no hasURL from client then add hasURL
+        if (post.isNew() && !post.hasURL) {
+
+            hasurl = urlRegex().test(text);
+            //console.log("hasURL: " + JSON.stringify(hasurl));
+
+            req.object.set("hasURL", hasurl);
+
+            getURL_Time = process.hrtime(timeCountPosts);
+            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, post);
+        }
+
+        // if an updated for text field (only) in a post occured, and there was no hasURL from client then get hashtags
+        else if (!post.isNew() && post.dirty("text") && !post.dirty("hasURL")) {
+
+            hasurl = urlRegex().test(text);
+            //console.log("hasURL: " + JSON.stringify(hasurl));
+
+            req.object.set("hasURL", hasurl);
+
+            getURL_Time = process.hrtime(timeCountPosts);
+            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, post);
+
+        }
+        else {
+
+            getURL_Time = process.hrtime(timeCountPosts);
+            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, post);
+
+        }
+
+    }
+
+    // Function to get luis.ai topIntent from text post
+    function getIntents (callback) {
+
+        var NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        var timegetIntents = process.hrtime();
+        var getIntents_Time;
+
+        var endpoint =
+            "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/";
+
+        // Set the LUIS_APP_ID environment variable
+        // to df67dcdb-c37d-46af-88e1-8b97951ca1c2, which is the ID
+        // of a public sample application.
+        var luisAppId = "685c7d5b-9d64-4182-a69d-bb220a7482ae";
+
+        var utterance = text;
+        utterance = utterance.substring(utterance, 500);
+
+        // Set the LUIS_SUBSCRIPTION_KEY environment variable
+        // to the value of your Cognitive Services subscription key
+        var queryParams = {
+            "subscription-key": "0dd6f5d766284cfc94828371ecce99a0",
+            "staging": true,
+            "timezoneOffset": "-480",
+            "verbose":  true,
+            "q": utterance
+        };
+
+        var luisRequest;
+
+        // if there is a post that got added and no topIntent from client then add hasURL
+        if (post.isNew() && !post.topIntent) {
+
+            luisRequest =
+                endpoint + luisAppId +
+                '?' + querystring.stringify(queryParams);
+
+            requestURL(luisRequest,
+                function (err,
+                          response, body) {
+                    if (err)
+                        console.log(err);
+                    else {
+                        var data = JSON.parse(body);
+
+                        //console.log(`Query: ${data.query}`);
+                        //console.log(`Top Intent: ${data.topScoringIntent.intent}`);
+                        if (data.topScoringIntent) {
+
+                            console.log('Intent:'+ data.topScoringIntent.intent);
+                            req.object.set("topIntent", data.topScoringIntent.intent);
+                        }
+                        //console.log('Intent:'+ data.topScoringIntent.intent);
+
+                        //console.log("Input post: " + JSON.stringify(post));
+                        getIntents_Time = process.hrtime(timegetIntents);
+                        console.log(`getIntents_Time took ${(getIntents_Time[0] * NS_PER_SEC + getIntents_Time[1])  * MS_PER_NS} milliseconds`);
+
+                        return callback(null, post);
+
+                    }
+                });
+
+
+        }
+
+        // if an updated for text field (only) in a post occured, and there was no hasURL from client then get hashtags
+        else if (!post.isNew() && post.dirty("text") && !post.dirty("topIntent")) {
+
+            luisRequest =
+                endpoint + luisAppId +
+                '?' + querystring.stringify(queryParams);
+
+            requestURL(luisRequest,
+                function (err,
+                          response, body) {
+                    if (err)
+                        console.log(err);
+                    else {
+                        var data = JSON.parse(body);
+
+                        //console.log(`Query: ${data.query}`);
+                        //console.log(`Top Intent: ${data.topScoringIntent.intent}`);
+                        if (data.topScoringIntent) {
+
+                            console.log('Intent:'+ data.topScoringIntent.intent);
+                            req.object.set("topIntent", data.topScoringIntent.intent);
+                        }
+                        //console.log('Intent:'+ data.topScoringIntent.intent);
+
+                        //console.log("Input post: " + JSON.stringify(post));
+                        getIntents_Time = process.hrtime(timegetIntents);
+                        console.log(`getIntents_Time took ${(getIntents_Time[0] * NS_PER_SEC + getIntents_Time[1])  * MS_PER_NS} milliseconds`);
+
+                        return callback(null, post);
+
+                    }
+                });
+
+
+        }
+        else {
+
+            getIntents_Time = process.hrtime(timegetIntents);
+            console.log(`getIntents_Time took ${(getIntents_Time[0] * NS_PER_SEC + getIntents_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, post);
+
+        }
+
+
+    }
+
+    async.parallel([
+        async.apply(countPosts),
+        async.apply(getHashtags),
+        async.apply(getMentions),
+        async.apply(getURL),
+        async.apply(archivePostSocial),
+        //async.apply(createPostSocial)
+        //async.apply(getIntents)
+
     ], function (err, post) {
-      if (err) {
-        response.error(err);
-      }
+        if (err) {
+            response.error(err);
+        }
 
         //console.log("final post: " + JSON.stringify(post));
-        
-        var beforeSave_Time = process.hrtime(time); 
+
+        var beforeSave_Time = process.hrtime(time);
         console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
         response.success();
-      });
+    });
 
 
-  });
+});
 
 // Run beforeSave functions to count number of workspace followers abd members
 Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
-  var NS_PER_SEC = 1e9;
-  const MS_PER_NS = 1e-6;
-  var time = process.hrtime();
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
 
-  var workspace_follower = req.object;
-  var workspace = workspace_follower.get("workspace");
-  
-  var WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-  var WorkspaceFollower = new WORKSPACEFOLLOWER();
-  WorkspaceFollower.id = workspace_follower.id;
-  var queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+    var workspace_follower = req.object;
+    var workspace = workspace_follower.get("workspace");
 
-  // add counter for posts to workspace collection
-  var WORKSPACE = Parse.Object.extend("WorkSpace");
-  var Workspace = new WORKSPACE();
-  Workspace.id = workspace.id;
-  
-  // if there is a post that got added, then increase counter, else ignoremyObject
-  if (workspace_follower.isNew()) {
+    var WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+    var WorkspaceFollower = new WORKSPACEFOLLOWER();
+    WorkspaceFollower.id = workspace_follower.id;
+    var queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
 
-    var beforeSave_Time;
-    
-    if(workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === true) {
-      Workspace.increment("followerCount"); 
-      Workspace.increment("memberCount");
-      Workspace.save();         
-      beforeSave_Time = process.hrtime(time); 
-      console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+    // add counter for posts to workspace collection
+    var WORKSPACE = Parse.Object.extend("WorkSpace");
+    var Workspace = new WORKSPACE();
+    Workspace.id = workspace.id;
 
-      response.success();
-    } else if (workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === false) {
-      Workspace.increment("followerCount"); 
-      Workspace.save();  
-      beforeSave_Time = process.hrtime(time); 
-      console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+    var user = new Parse.Object("_User");
+    user = workspace_follower.get("user");
 
-      response.success();
-      
-    } else if (workspace_follower.get("isFollower") === false && workspace_follower.get("isMember") === true) {
-      Workspace.increment("memberCount");
-      Workspace.save();  
-      beforeSave_Time = process.hrtime(time); 
-      console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+    var memberName = "member-" + Workspace.id;
+    var followerName = "Follower-" + Workspace.id;
 
-      response.success();
-      
-    } else {
-      if (workspace_follower.get("type") === "1") {
-        response.error("error: type is 1, Please mark isMember or isFollower to true or change workspace_follower.type = 2 for comments");
-      } else {
+    var queryMemberRole = new Parse.Query(Parse.Role);
+    var queryfollowerRole = new Parse.Query(Parse.Role);
 
-        beforeSave_Time = process.hrtime(time); 
-        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+    // if there is a post that got added, then increase counter, else ignoremyObject
+    if (workspace_follower.isNew()) {
+
+        var beforeSave_Time;
+        var workspaceFollowerName = workspace_follower.get("user").id + "-" + workspace_follower.get("workspace").id;
+        console.log("workspaceFollowerName user: " + JSON.stringify(workspaceFollowerName));
+
+        //if (!workspaceFollowerName) { response.error("Please enter workspace name: userId-workspaceId");}
+
+        workspace_follower.set("name", workspaceFollowerName);
+
+        queryWorkspaceFollower.equalTo("name", workspaceFollowerName);
+
+        queryWorkspaceFollower.first({
+            success: function(results) {
+
+                if (results) {
+
+                    //Workspace_follower already exists in DB in Skill table, return an error because it needs to be unique
+
+                    response.error(results);
+
+                } else {
+
+                    if(workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === true) {
+                        Workspace.increment("followerCount");
+                        Workspace.increment("memberCount");
+                        Workspace.save(null, {useMasterKey: true});
+
+                        // a member is already a follower so only add member role for this user.
+
+                        console.log("user: " + JSON.stringify(user));
+
+                        queryMemberRole.equalTo('name', memberName);
+                        queryMemberRole.first({
+                            success: function(memberRole) { // Role Object
+                                //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                memberRole.getUsers().add(user);
+                                memberRole.save(null, {useMasterKey: true});
+
+                                var userRolesRelation = user.relation("roles");
+                                userRolesRelation.add(memberRole);
+
+                                // now add follower since a member is by default a follower
+                                queryfollowerRole.equalTo('name', followerName);
+                                queryfollowerRole.first({
+                                    success: function(followerRole) { // Role Object
+                                        //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                        followerRole.getUsers().add(user);
+                                        followerRole.save(null, {useMasterKey: true});
+
+                                        var userRolesRelation = user.relation("roles");
+                                        userRolesRelation.add(followerRole);
+                                        user.save(null, {useMasterKey: true});
+
+                                    },
+                                    error: function(error) {
+                                        console.log("Bruh, can't find the Admin role");
+                                        response.error(error);
+                                    }
+                                });
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+
+                        //beforeSave_Time = process.hrtime(time);
+                        //console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                        response.success();
+                    } else if (workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === false) {
+                        Workspace.increment("followerCount");
+                        Workspace.save(null, {useMasterKey: true});
+
+                        queryfollowerRole.equalTo('name', followerName);
+                        queryfollowerRole.first({
+                            success: function(followerRole) { // Role Object
+                                //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                followerRole.getUsers().add(user);
+                                followerRole.save(null, {useMasterKey: true});
+
+                                var userRolesRelation = user.relation("roles");
+                                userRolesRelation.add(followerRole);
+                                user.save(null, {useMasterKey: true});
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+
+                        //beforeSave_Time = process.hrtime(time);
+                        //console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+                    } else if (workspace_follower.get("isFollower") === false && workspace_follower.get("isMember") === true) {
+                        Workspace.increment("memberCount");
+                        Workspace.save(null, {useMasterKey: true});
+
+                        // a member is already a follower so only add member role for this user.
+                        workspace_follower.set("isFollower", true);
+
+                        //console.log("memberName: " + JSON.stringify(memberName));
+
+                        queryMemberRole.equalTo('name', memberName);
+                        queryMemberRole.first({
+                            success: function(memberRole) { // Role Object
+                                //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                memberRole.getUsers().add(user);
+                                memberRole.save(null, {useMasterKey: true});
+
+                                var userRolesRelation = user.relation("roles");
+                                userRolesRelation.add(memberRole);
+
+                                // now add follower since a member is by default a follower
+                                queryfollowerRole.equalTo('name', followerName);
+                                queryfollowerRole.first({
+                                    success: function(followerRole) { // Role Object
+                                        //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                        followerRole.getUsers().add(user);
+                                        followerRole.save(null, {useMasterKey: true});
+
+                                        var userRolesRelation = user.relation("roles");
+                                        userRolesRelation.add(followerRole);
+                                        user.save(null, {useMasterKey: true});
+
+                                    },
+                                    error: function(error) {
+                                        console.log("Bruh, can't find the Admin role");
+                                        response.error(error);
+                                    }
+                                });
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+                        response.success();
+
+                    } else {
+                        response.error("isFollower and isMember are both required fields and one has to be set to true");
+
+                    }
+
+
+
+
+                }
+
+
+            },
+            error: function(err) {
+                response.error("An error occured: " + err);
+
+            }
+        });
+
+
+
+    } else if (!workspace_follower.isNew() && (workspace_follower.dirty("isFollower") || workspace_follower.dirty("isMember"))) {
+
+        //console.log(WorkspaceFollower.id);
+        //queryWorkspaceFollower.equalTo("objectId", WorkspaceFollower.id);
+        queryWorkspaceFollower.get(WorkspaceFollower.id, {
+                success: function(result) {
+
+                    console.log("old isFollower: "+JSON.stringify(result.get("isFollower")) + " New isFollower: " + JSON.stringify(workspace_follower.get("isFollower")) + " isFollower.dirty: "+JSON.stringify(workspace_follower.dirty("isFollower")));
+                    console.log("old isMember: "+JSON.stringify(result.get("isMember")) + " New isMember: " + JSON.stringify(workspace_follower.get("isMember")) + " isMember.dirty: "+JSON.stringify(workspace_follower.dirty("isMember")));
+
+                    //queryPTime = process.hrtime(timequeryPostFind);
+                    //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+
+                    if (workspace_follower.dirty("isFollower")) {
+
+                        if (result.get("isFollower") === workspace_follower.get("isFollower")) {
+
+                            console.log("user isFollower did not change");
+                            // doin't increment or decrement because the user isFollow status did not change
+
+                        } else if ((result.get("isFollower")  === false || !result.get("isFollower") ) && workspace_follower.get("isFollower") === true) {
+
+                            Workspace.increment("followerCount");
+                            console.log("increment Follower");
+                            //Workspace.save();
+
+                            queryfollowerRole.equalTo('name', followerName);
+                            queryfollowerRole.first({
+                                success: function(followerRole) { // Role Object
+                                    //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                    followerRole.getUsers().add(user);
+                                    followerRole.save(null, {useMasterKey: true});
+
+                                    var userRolesRelation = user.relation("roles");
+                                    userRolesRelation.add(followerRole);
+                                    user.save(null, {useMasterKey: true});
+
+                                },
+                                error: function(error) {
+                                    console.log("Bruh, can't find the Admin role");
+                                    response.error(error);
+                                }
+                            });
+
+                        } else if ((result.get("isFollower")  === true) && workspace_follower.get("isFollower") === false) {
+
+
+                            if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === false) && result.get("isMember")  === false) {
+
+                                // not a member so remove user as follower of that workspace
+                                Workspace.increment("followerCount", -1);
+                                console.log("decrement Follower");
+                                //Workspace.save();
+
+                                queryfollowerRole.equalTo('name', followerName);
+                                queryfollowerRole.first({
+                                    success: function(followerRole) { // Role Object
+                                        //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                        followerRole.getUsers().remove(user);
+                                        followerRole.save(null, {useMasterKey: true});
+
+                                        var userRolesRelation = user.relation("roles");
+                                        userRolesRelation.remove(followerRole);
+                                        user.save(null, {useMasterKey: true});
+
+                                    },
+                                    error: function(error) {
+                                        console.log("Bruh, can't find the Admin role");
+                                        response.error(error);
+                                    }
+                                });
+
+
+                            } else if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === false) && result.get("isMember")  === true) {
+
+                                // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
+                                workspace_follower.set("isMember", false);
+                                Workspace.increment("followerCount", -1);
+                                //Workspace.increment("memberCount", -1);
+                                console.log("decrement Member & Follower");
+
+                                // now remove both member and follower roles since the user is leaving the workspace and un-following it.
+                                queryMemberRole.equalTo('name', memberName);
+                                queryMemberRole.first({
+                                    success: function(memberRole) { // Role Object
+                                        console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                        memberRole.getUsers().remove(user);
+                                        memberRole.save(null, {useMasterKey: true});
+
+                                        var userRolesRelation = user.relation("roles");
+                                        userRolesRelation.remove(memberRole);
+
+                                        // now add follower since a member is by default a follower
+                                        queryfollowerRole.equalTo('name', followerName);
+                                        queryfollowerRole.first({
+                                            success: function(followerRole) { // Role Object
+                                                console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                                followerRole.getUsers().remove(user);
+                                                followerRole.save(null, {useMasterKey: true});
+
+                                                var userRolesRelation = user.relation("roles");
+                                                userRolesRelation.remove(followerRole);
+                                                user.save(null, {useMasterKey: true});
+
+                                            },
+                                            error: function(error) {
+                                                console.log("Bruh, can't find the Admin role");
+                                                response.error(error);
+                                            }
+                                        });
+
+                                    },
+                                    error: function(error) {
+                                        console.log("Bruh, can't find the Admin role");
+                                        response.error(error);
+                                    }
+                                });
+
+
+                            } else if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === true) && result.get("isMember")  === false) {
+
+                                // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
+                                workspace_follower.set("isMember", false);
+                                Workspace.increment("followerCount", -1);
+                                //Workspace.increment("memberCount", -1);
+                                console.log("decrement Member & Follower");
+
+                                // now remove both member and follower roles since the user is leaving the workspace and un-following it.
+                                queryMemberRole.equalTo('name', memberName);
+                                queryMemberRole.first({
+                                    success: function(memberRole) { // Role Object
+                                        console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                        memberRole.getUsers().remove(user);
+                                        memberRole.save(null, {useMasterKey: true});
+
+                                        var userRolesRelation = user.relation("roles");
+                                        userRolesRelation.remove(memberRole);
+
+                                        // now add follower since a member is by default a follower
+                                        queryfollowerRole.equalTo('name', followerName);
+                                        queryfollowerRole.first({
+                                            success: function(followerRole) { // Role Object
+                                                console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                                followerRole.getUsers().remove(user);
+                                                followerRole.save(null, {useMasterKey: true});
+
+                                                var userRolesRelation = user.relation("roles");
+                                                userRolesRelation.remove(followerRole);
+                                                user.save(null, {useMasterKey: true});
+
+                                            },
+                                            error: function(error) {
+                                                console.log("Bruh, can't find the Admin role");
+                                                response.error(error);
+                                            }
+                                        });
+
+                                    },
+                                    error: function(error) {
+                                        console.log("Bruh, can't find the Admin role");
+                                        response.error(error);
+                                    }
+                                });
+
+
+                            } else if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === true) && result.get("isMember")  === true) {
+
+                                // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
+                                workspace_follower.set("isMember", false);
+                                Workspace.increment("followerCount", -1);
+                                //Workspace.increment("memberCount", -1);
+                                console.log("decrement Member & Follower");
+
+                                // now remove both member and follower roles since the user is leaving the workspace and un-following it.
+                                queryMemberRole.equalTo('name', memberName);
+                                queryMemberRole.first({
+                                    success: function(memberRole) { // Role Object
+                                        console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                        memberRole.getUsers().remove(user);
+                                        memberRole.save(null, {useMasterKey: true});
+
+                                        var userRolesRelation = user.relation("roles");
+                                        userRolesRelation.remove(memberRole);
+
+                                        // now add follower since a member is by default a follower
+                                        queryfollowerRole.equalTo('name', followerName);
+                                        queryfollowerRole.first({
+                                            success: function(followerRole) { // Role Object
+                                                console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                                followerRole.getUsers().remove(user);
+                                                followerRole.save(null, {useMasterKey: true});
+
+                                                var userRolesRelation = user.relation("roles");
+                                                userRolesRelation.remove(followerRole);
+                                                user.save(null, {useMasterKey: true});
+
+                                            },
+                                            error: function(error) {
+                                                console.log("Bruh, can't find the Admin role");
+                                                response.error(error);
+                                            }
+                                        });
+
+                                    },
+                                    error: function(error) {
+                                        console.log("Bruh, can't find the Admin role");
+                                        response.error(error);
+                                    }
+                                });
+
+
+                            }
+
+
+
+                        } else {
+
+                            console.log("do nothing Follower");
+                            // do nothing
+
+                        }
+
+                    }
+
+                    if (workspace_follower.dirty("isMember")) {
+
+                        if (result.get("isMember")  === workspace_follower.get("isMember")) {
+
+                            console.log("user isMember did not change");
+                            // doin't increment or decrement because the user isFollow status did not change
+
+                        } else if ((result.get("isMember") === false || !result.get("isMember")) && workspace_follower.get("isMember") === true) {
+
+                            if ((!workspace_follower.get("isFollower") || workspace_follower.get("isFollower") === false) && result.get("isFollower") === false) {
+
+                                // since user was not a follower, but is now a member make him also a follower
+
+                                Workspace.increment("memberCount");
+                                Workspace.increment("followerCount");
+                                console.log("increment Follower & Member");
+                                //Workspace.save();
+
+                                // now add both member and follower roles since the user is leaving the workspace and un-following it.
+                                queryMemberRole.equalTo('name', memberName);
+                                queryMemberRole.first({
+                                    success: function(memberRole) { // Role Object
+                                        console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                        memberRole.getUsers().add(user);
+                                        memberRole.save(null, {useMasterKey: true});
+
+                                        var userRolesRelation = user.relation("roles");
+                                        userRolesRelation.add(memberRole);
+
+                                        // now add follower since a member is by default a follower
+                                        queryfollowerRole.equalTo('name', followerName);
+                                        queryfollowerRole.first({
+                                            success: function(followerRole) { // Role Object
+                                                console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                                followerRole.getUsers().add(user);
+                                                followerRole.save(null, {useMasterKey: true});
+
+                                                var userRolesRelation = user.relation("roles");
+                                                userRolesRelation.add(followerRole);
+                                                user.save(null, {useMasterKey: true});
+
+                                            },
+                                            error: function(error) {
+                                                console.log("Bruh, can't find the Admin role");
+                                                response.error(error);
+                                            }
+                                        });
+
+                                    },
+                                    error: function(error) {
+                                        console.log("Bruh, can't find the Admin role");
+                                        response.error(error);
+                                    }
+                                });
+
+
+                            } else {
+
+                                // since user is already follower, make him only a member
+
+                                Workspace.increment("memberCount");
+                                console.log("increment  Member");
+                                //Workspace.save();
+
+                                // now add both member and follower roles since the user is leaving the workspace and un-following it.
+                                queryMemberRole.equalTo('name', memberName);
+                                queryMemberRole.first({
+                                    success: function(memberRole) { // Role Object
+                                        console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                        memberRole.getUsers().add(user);
+                                        memberRole.save(null, {useMasterKey: true});
+
+                                        var userRolesRelation = user.relation("roles");
+                                        userRolesRelation.add(memberRole);
+                                        user.save(null, {useMasterKey: true});
+
+
+                                    },
+                                    error: function(error) {
+                                        console.log("Bruh, can't find the Admin role");
+                                        response.error(error);
+                                    }
+                                });
+
+
+
+                            }
+
+
+
+                        } else if ((result.get("isMember") === true) && workspace_follower.get("isMember") === false) {
+
+                            Workspace.increment("memberCount", -1);
+                            console.log("decrement Member");
+                            //Workspace.save();
+
+                            queryMemberRole.equalTo('name', memberName);
+                            queryMemberRole.first({
+                                success: function(memberRole) { // Role Object
+                                    //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                    memberRole.getUsers().remove(user);
+                                    memberRole.save(null, {useMasterKey: true});
+
+                                    var userRolesRelation = user.relation("roles");
+                                    userRolesRelation.remove(memberRole);
+                                    user.save(null, {useMasterKey: true});
+
+                                },
+                                error: function(error) {
+                                    console.log("Bruh, can't find the Admin role");
+                                    response.error(error);
+                                }
+                            });
+
+                        } else {
+
+                            console.log("do nothing Member");
+                            // do nothing
+
+                        }
+
+
+                    }
+
+                    console.log("Workspace: "+JSON.stringify(Workspace));
+                    Workspace.save(null, {useMasterKey: true});
+                    beforeSave_Time = process.hrtime(time);
+                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                    response.success();
+
+
+                },
+                error: function(object, error){
+                    response.error("queryWorkspaceFollower Error: "+ JSON.stringify(error));
+                }
+            }
+
+
+        );
+
+    }   else {
+
+        //console.log("do nothing at all");
+
+        var beforeSaveElse_Time = process.hrtime(time);
+        console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1])  * MS_PER_NS} milliseconds`);
 
         response.success();
-      }
 
-    }  
+    }
 
-  } else if (!workspace_follower.isNew() && (workspace_follower.dirty("isFollower") || workspace_follower.dirty("isMember"))) {
-
-    //console.log(WorkspaceFollower.id);
-    //queryWorkspaceFollower.equalTo("objectId", WorkspaceFollower.id);
-    queryWorkspaceFollower.get(WorkspaceFollower.id, {
-      success: function(result) {
-
-        console.log("queryWorkspaceFollower: "+JSON.stringify(result.get("isFollower") ));
-
-          //queryPTime = process.hrtime(timequeryPostFind);
-          //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
-          
-          if (workspace_follower.dirty("isFollower")) {
-
-            if (result.get("isFollower") === workspace_follower.get("isFollower")) {
-
-              console.log("user isFollower did not change");
-              // doin't increment or decrement because the user isFollow status did not change
-
-            } else if ((result.get("isFollower")  === false || !result.get("isFollower") ) && workspace_follower.get("isFollower") === true) {
-
-              Workspace.increment("followerCount"); 
-              console.log("increment Follower");
-              //Workspace.save();              
-              
-            } else if ((result.get("isFollower")  === true) && workspace_follower.get("isFollower") === false) {
-
-              Workspace.increment("followerCount", -1); 
-              console.log("decrement Follower");
-              //Workspace.save();  
-              
-            } else {
-
-              console.log("do nothing Follower");
-              // do nothing
-              
-            }                 
-
-          } else if (workspace_follower.dirty("isMember")) {
-
-            if (result.get("isMember")  === workspace_follower.get("isMember")) {
-
-              console.log("user isMember did not change");
-              // doin't increment or decrement because the user isFollow status did not change
-
-            } else if ((result.get("isMember") === false || !result.get("isMember")) && workspace_follower.get("isMember") === true) {
-
-              Workspace.increment("memberCount"); 
-              console.log("increment Member");
-              //Workspace.save();              
-              
-            } else if ((result.get("isMember") === true) && workspace_follower.get("isMember") === false) {
-
-              Workspace.increment("memberCount", -1);  
-              console.log("decrement Member");
-              //Workspace.save();  
-              
-            } else {
-
-              console.log("do nothing Member");
-              // do nothing
-              
-            }            
-
-
-          }
-          
-          console.log("Workspace: "+JSON.stringify(Workspace));
-          Workspace.save();
-          beforeSave_Time = process.hrtime(time); 
-          console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-          response.success();    
-          
-          
-
-        },
-        error: function(object, error){
-          response.error("queryWorkspaceFollower Error: "+ JSON.stringify(error));
-        }
-      }
-      
-      
-      );
-    
-  }   else {
-
-    //console.log("do nothing at all");
-
-    var beforeSaveElse_Time = process.hrtime(time); 
-    console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1])  * MS_PER_NS} milliseconds`);
-
-    response.success();
-
-  }
-  
 });
 
 // Run beforeSave functions to count number of project followers and members
 Parse.Cloud.beforeSave('ProjectFollow', function(req, response) {
 
-  var NS_PER_SEC = 1e9;
-  const MS_PER_NS = 1e-6;
-  var time = process.hrtime();
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
 
-  var projectfollow = req.object;
-  var project = projectfollow.get("workspace");
-  
-  var PROJECTFOLLOW = Parse.Object.extend("ProjectFollow");
-  var ProjectFollow = new PROJECTFOLLOW();
-  ProjectFollow.id = projectfollow.id;
-  var queryProjectFollow = new Parse.Query(PROJECTFOLLOW);
+    var projectfollow = req.object;
+    var project = projectfollow.get("workspace");
 
-  var PROJECT = Parse.Object.extend("Project");
-  var Project = new PROJECT();
-  Project.id = project.id;
+    var PROJECTFOLLOW = Parse.Object.extend("ProjectFollow");
+    var ProjectFollow = new PROJECTFOLLOW();
+    ProjectFollow.id = projectfollow.id;
+    var queryProjectFollow = new Parse.Query(PROJECTFOLLOW);
 
-  //console.log("post: " + JSON.stringify(projectfollow));
-  
-  // if there is a post that got added, then increase counter, else ignoremyObject
-  if (projectfollow.isNew()) {
+    var PROJECT = Parse.Object.extend("Project");
+    var Project = new PROJECT();
+    Project.id = project.id;
 
-    var beforeSave_Time;
-    
-    if(projectfollow.get("isFollower") === true && projectfollow.get("isMember") === true) {
-      Project.increment("followerCount"); 
-      Project.increment("memberCount");
-      Project.save();         
-      beforeSave_Time = process.hrtime(time); 
-      console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+    //console.log("post: " + JSON.stringify(projectfollow));
 
-      response.success();
-    } else if (projectfollow.get("isFollower") === true && projectfollow.get("isMember") === false) {
-      Project.increment("followerCount"); 
-      Project.save();  
-      beforeSave_Time = process.hrtime(time); 
-      console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+    // if there is a post that got added, then increase counter, else ignoremyObject
+    if (projectfollow.isNew()) {
 
-      response.success();
-      
-    } else if (projectfollow.get("isFollower") === false && projectfollow.get("isMember") === true) {
-      Project.increment("memberCount");
-      Project.save();  
-      beforeSave_Time = process.hrtime(time); 
-      console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+        var beforeSave_Time;
 
-      response.success();
-      
-    } else {
+        if(projectfollow.get("isFollower") === true && projectfollow.get("isMember") === true) {
+            Project.increment("followerCount");
+            Project.increment("memberCount");
+            Project.save();
+            beforeSave_Time = process.hrtime(time);
+            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
-      beforeSave_Time = process.hrtime(time); 
-      console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+            response.success();
+        } else if (projectfollow.get("isFollower") === true && projectfollow.get("isMember") === false) {
+            Project.increment("followerCount");
+            Project.save();
+            beforeSave_Time = process.hrtime(time);
+            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
-      response.success();
+            response.success();
 
-    }  
+        } else if (projectfollow.get("isFollower") === false && projectfollow.get("isMember") === true) {
+            Project.increment("memberCount");
+            Project.save();
+            beforeSave_Time = process.hrtime(time);
+            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
-  } else if (!projectfollow.isNew() && (projectfollow.dirty("isFollower") || projectfollow.dirty("isMember"))) {
+            response.success();
 
-    queryProjectFollow.get(ProjectFollow.id, {
-      success: function(result) {
+        } else {
 
-        console.log("queryWorkspaceFollower: "+JSON.stringify(result));
+            beforeSave_Time = process.hrtime(time);
+            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
-          //queryPTime = process.hrtime(timequeryPostFind);
-          //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
-          //console.log("results: "+JSON.stringify(results));   
-          
-          if (projectfollow.dirty("isFollower")) {
+            response.success();
 
-            if (result.get("isFollower") === projectfollow.get("isFollower")) {
-
-              console.log("user isFollower did not change");
-              // doin't increment or decrement because the user isFollow status did not change
-
-            } else if ((result.get("isFollower") === false || !result.get("isFollower")) && projectfollow.get("isFollower") === true) {
-
-              Project.increment("followerCount"); 
-              //Workspace.save();              
-              
-            } else if ((result.get("isFollower") === true) && projectfollow.get("isFollower") === false) {
-
-              Project.increment("followerCount", -1); 
-              //Workspace.save();  
-              
-            } else {
-
-              // do nothing
-              
-            }                 
-
-          } else if (projectfollow.dirty("isMember")) {
-
-            if (result.get("isMember") === projectfollow.get("isMember")) {
-
-              console.log("user isMember did not change");
-              // doin't increment or decrement because the user isFollow status did not change
-
-            } else if ((result.get("isMember") === false || !result.get("isMember")) && projectfollow.get("isMember") === true) {
-
-              Project.increment("memberCount"); 
-              //Workspace.save();              
-              
-            } else if ((result.get("isMember") === true) && projectfollow.get("isMember") === false) {
-
-              Project.increment("memberCount", -1); 
-              //Workspace.save();  
-              
-            } else {
-
-              console.log("do nothing Member");
-              // do nothing
-              
-            }     
-
-          }
-          
-          Project.save();
-          beforeSave_Time = process.hrtime(time); 
-          console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-          response.success();               
-
-
-        },
-        error: function(err) {
-          response.error("queryProjectFollow Error: "+ err);
         }
-      }
-      
-      
-      );
-    
-  }   else {
 
-    var beforeSaveElse_Time = process.hrtime(time); 
-    console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1])  * MS_PER_NS} milliseconds`);
+    } else if (!projectfollow.isNew() && (projectfollow.dirty("isFollower") || projectfollow.dirty("isMember"))) {
 
-    response.success();
+        queryProjectFollow.get(ProjectFollow.id, {
+                success: function(result) {
 
-  }
-  
+                    console.log("queryWorkspaceFollower: "+JSON.stringify(result));
+
+                    //queryPTime = process.hrtime(timequeryPostFind);
+                    //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+                    //console.log("results: "+JSON.stringify(results));
+
+                    if (projectfollow.dirty("isFollower")) {
+
+                        if (result.get("isFollower") === projectfollow.get("isFollower")) {
+
+                            console.log("user isFollower did not change");
+                            // doin't increment or decrement because the user isFollow status did not change
+
+                        } else if ((result.get("isFollower") === false || !result.get("isFollower")) && projectfollow.get("isFollower") === true) {
+
+                            Project.increment("followerCount");
+                            //Workspace.save();
+
+                        } else if ((result.get("isFollower") === true) && projectfollow.get("isFollower") === false) {
+
+                            Project.increment("followerCount", -1);
+                            //Workspace.save();
+
+                        } else {
+
+                            // do nothing
+
+                        }
+
+                    } else if (projectfollow.dirty("isMember")) {
+
+                        if (result.get("isMember") === projectfollow.get("isMember")) {
+
+                            console.log("user isMember did not change");
+                            // doin't increment or decrement because the user isFollow status did not change
+
+                        } else if ((result.get("isMember") === false || !result.get("isMember")) && projectfollow.get("isMember") === true) {
+
+                            Project.increment("memberCount");
+                            //Workspace.save();
+
+                        } else if ((result.get("isMember") === true) && projectfollow.get("isMember") === false) {
+
+                            Project.increment("memberCount", -1);
+                            //Workspace.save();
+
+                        } else {
+
+                            console.log("do nothing Member");
+                            // do nothing
+
+                        }
+
+                    }
+
+                    Project.save();
+                    beforeSave_Time = process.hrtime(time);
+                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                    response.success();
+
+
+                },
+                error: function(err) {
+                    response.error("queryProjectFollow Error: "+ err);
+                }
+            }
+
+
+        );
+
+    }   else {
+
+        var beforeSaveElse_Time = process.hrtime(time);
+        console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+
+    }
+
 });
 
 // auto-add type when isBookmarked, isLiked or Comment is added
 Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 
-  var NS_PER_SEC = 1e9;
-  const MS_PER_NS = 1e-6;
-  var time = process.hrtime();
-  
-  
-  // Convert Parse.Object to JSON
-  var postSocial = request.object;
-  
-
-  
-  if (postSocial.isNew()) {
-
-    console.log("isLiked: "+postSocial.get("isLiked"));
-    console.log("isBookmarked: "+postSocial.get("isBookmarked"));
-    console.log("Comments: "+postSocial.get("comment"));
-
-    if (!postSocial.get("isLiked")) {postSocial.set("isLiked", false); }
-    if (!postSocial.get("isBookmarked")) {postSocial.set("isBookmarked", false);}
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
 
 
-    if(postSocial.get("isLiked") === true || postSocial.get("isBookmarked")=== true) {
-      postSocial.set("type", "1");  
-    }
-    else if (postSocial.get("isLiked") === false && postSocial.get("isBookmarked")=== false && !postSocial.get("comment")) { 
-      postSocial.set("type", "0"); 
-    } 
-    else if (postSocial.get("comment")) {
-      postSocial.set("type", "2");
-    } 
-    
-  } else {}
-  
-  
-  var diff = process.hrtime(time);
-  console.log(`PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-  response.success();
-  
-  
+    // Convert Parse.Object to JSON
+    var postSocial = request.object;
+
+
+
+    if (postSocial.isNew()) {
+
+        console.log("isLiked: "+postSocial.get("isLiked"));
+        console.log("isBookmarked: "+postSocial.get("isBookmarked"));
+        console.log("Comments: "+postSocial.get("comment"));
+
+        if (!postSocial.get("isLiked")) {postSocial.set("isLiked", false); }
+        if (!postSocial.get("isBookmarked")) {postSocial.set("isBookmarked", false);}
+
+
+        if(postSocial.get("isLiked") === true || postSocial.get("isBookmarked")=== true) {
+            postSocial.set("type", "1");
+        }
+        else if (postSocial.get("isLiked") === false && postSocial.get("isBookmarked")=== false && !postSocial.get("comment")) {
+            postSocial.set("type", "0");
+        }
+        else if (postSocial.get("comment")) {
+            postSocial.set("type", "2");
+        }
+
+    } else {}
+
+
+    var diff = process.hrtime(time);
+    console.log(`PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+    response.success();
+
+
 });
 
 // Create relationship from post to PostSocial after a PostSocial is saved
 Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
-  var NS_PER_SEC = 1e9;
-  const MS_PER_NS = 1e-6;
-  var time = process.hrtime();
-  
-  // Convert Parse.Object to JSON
-  var postSocial = request.object;
-  var post = postSocial.get("post");
-  
-  var relation = post.relation("postSocial");
-  //console.log("beforeAdd: " + JSON.stringify(relation));
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
 
-  relation.add(postSocial);
-  //console.log("afterAdd: " + JSON.stringify(relation));
+    // Convert Parse.Object to JSON
+    var postSocial = request.object;
+    var post = postSocial.get("post");
 
-  post.save();
+    var relation = post.relation("postSocial");
+    //console.log("beforeAdd: " + JSON.stringify(relation));
 
-  var diff = process.hrtime(time);
-  console.log(`PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-  response.success();
-  
-  
+    relation.add(postSocial);
+    //console.log("afterAdd: " + JSON.stringify(relation));
+
+    post.save();
+
+    var diff = process.hrtime(time);
+    console.log(`PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+    response.success();
+
+
 });
 
 // Add and Update AlgoliaSearch post object if it's deleted from Parse
 Parse.Cloud.afterSave('Post', function(request, response) {
 
-  // Convert Parse.Object to JSON
-  var objectToSave = request.object.toJSON();
-  
-  //var Post = Parse.Object.extend("Post");
-  var queryPost = new Parse.Query("Post");
-  queryPost.include( ["user", "workspace", "project"] );
-  queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
-  queryPost.equalTo("objectId", objectToSave.objectId);
-  
-  //console.log("Request: " + JSON.stringify(request));
-  //console.log("objectID: " + objectToSave.objectId);
-  //console.log("objectID: " + objectToSave.user.objectId);
-  
-  queryPost.first({
-    success: function(post) {
+    // Convert Parse.Object to JSON
+    var objectToSave = request.object.toJSON();
 
-      function prepIndex (callback) {
+    //var Post = Parse.Object.extend("Post");
+    var queryPost = new Parse.Query("Post");
+    queryPost.include( ["user", "workspace", "project"] );
+    queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
+    queryPost.equalTo("objectId", objectToSave.objectId);
 
-        // Successfully retrieved the object.
-        //console.log("ObjectToSave: " + JSON.stringify(post));
-        
-        // Convert Parse.Object to JSON
-        post = post.toJSON();
-        
-        // Specify Algolia's objectID with the Parse.Object unique ID
-        post.objectID = post.objectId;
-        
-        return callback(null, post);
-        
-      };
-      
+    //console.log("Request: " + JSON.stringify(request));
+    //console.log("objectID: " + objectToSave.objectId);
+    //console.log("objectID: " + objectToSave.user.objectId);
 
-      function addObjectAlgolia (post, callback) {
+    queryPost.first({
+        success: function(post) {
 
-         //console.log("objectToSave: "+ JSON.stringify(post)); 
+            function prepIndex (callback) {
 
-         // Add or update object
-         indexPosts.saveObject(post, function(err, content) {
-          if (err) {
-            throw err;
-          }
-          console.log('Parse<>Algolia object saved');
-          return callback(null, post);
-          
+                // Successfully retrieved the object.
+                //console.log("ObjectToSave: " + JSON.stringify(post));
+
+                // Convert Parse.Object to JSON
+                post = post.toJSON();
+
+                // Specify Algolia's objectID with the Parse.Object unique ID
+                post.objectID = post.objectId;
+
+                return callback(null, post);
+
+            };
+
+
+            function addObjectAlgolia (post, callback) {
+
+                //console.log("objectToSave: "+ JSON.stringify(post));
+
+                // Add or update object
+                indexPosts.saveObject(post, function(err, content) {
+                    if (err) {
+                        throw err;
+                    }
+                    console.log('Parse<>Algolia object saved');
+                    return callback(null, post);
+
+                });
+
+            };
+
+            async.waterfall([
+                async.apply(prepIndex),
+                async.apply(addObjectAlgolia)
+
+            ], function (err, post) {
+                if (err) {
+                    response.error(err);
+                }
+
+                //console.log("final meeting: " + JSON.stringify(post));
+                response.success();
+            });
+
+        },
+        error: function(error) {
+            alert("Error: " + error.code + " " + error.message);
+        }
+    });
+
+
+});
+
+// Create QnA's from meetingsSnippet
+Parse.Cloud.afterSave('MeetingSnippet', function(req, response) {
+
+    var objectsToIndex = [];
+
+    // Convert Parse.Object to JSON
+    //var meeting = req.object.toJSON();
+    //var meetingURL = req.object.MeetingJson.url;
+    //console.log("meetingObject1: " + JSON.stringify(meeting));
+
+    function getMeetingObject (callback) {
+
+        var meetingSnippetObject = Parse.Object.extend("MeetingSnippet");
+        var query = new Parse.Query(meetingSnippetObject);
+        query.include( ["meeting"] );
+
+        query.get(req.object.id, {
+            success: function(meetingSnippetObject) {
+                // The object was retrieved successfully.
+                //console.log("meetingSnippetObject: " + JSON.stringify(meetingSnippetObject));
+
+                return callback(null, meetingSnippetObject);
+
+            },
+            error: function(object, error) {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error("error: " + error);
+
+            }
         });
 
-       };
+    };
 
-       async.waterfall([ 
-        async.apply(prepIndex),
-        async.apply(addObjectAlgolia)
+    function createQnACard (meetingSnippetObject, callback) {
 
-        ], function (err, post) {
-          if (err) {
-            response.error(err);
-          }
+        //console.log("meetingSnippetObject: " + JSON.stringify( meetingSnippetObject ));
 
-            //console.log("final meeting: " + JSON.stringify(post));
-            response.success();
-          });
+        if (meetingSnippetObject.get("meeting")) {
 
-     },
-     error: function(error) {
-      alert("Error: " + error.code + " " + error.message);
+            //console.log("no post id availble and meeting is completed");
+
+            var PostQuestion = Parse.Object.extend("PostQuestion");
+            var postQuestion = new PostQuestion("PostQuestion");
+
+            var meetingObject = Parse.Object.extend("meeting");
+            meetingObject = meetingSnippetObject.get("meeting");
+            //console.log("meetingObject: " + JSON.stringify(meetingObject));
+            //console.log("user: " + JSON.stringify(meetingObject.get("user")));
+            //console.log("post: " + JSON.stringify(meetingObject.get("post")));
+            //console.log("snippet_file: " + JSON.stringify(meetingSnippetObject.get("snippet_file")));
+            //console.log("transcript: " + JSON.stringify(meetingSnippetObject.get("transcript")));
+
+            var User = new Parse.Object("_User");
+            User.id = meetingObject.get("user").id;
+            if (meetingObject.get("user")) {postQuestion.set("user", User);}
+            //console.log("User ID: "  + JSON.stringify(User.id));
+
+            var Post = new Parse.Object("Post");
+            Post.id = meetingObject.get("post").id;
+            if (meetingObject.get("post")) {postQuestion.set("post", Post);}
+
+            postQuestion.set("question_like_count", 0);
+            if (meetingSnippetObject.get("transcript")) {postQuestion.set("question_transcript", meetingSnippetObject.get("transcript"));}
+            if (meetingSnippetObject.get("snippet_file")) {postQuestion.set("question_video", meetingSnippetObject.get("snippet_file"));}
+            postQuestion.set("question_caption", "Office Hours QnA");
+            postQuestion.set("question_video_thumbnail",
+
+                {
+                    "__type": "File",
+                    "name": "office_hours_default.png",
+                    "url": "https://parseserverstoragewest.blob.core.windows.net/parse/office_hours_default.png"
+                }
+
+            );
+
+            //console.log("postQuestion: " + JSON.stringify(postQuestion));
+
+            //else { return callback(null, meetingSnippetObject); }
+
+
+          /*else if (!meetingObject.get("post")) {
+           meetingPost.set("post_type", '3'); //video post for office hours QNA
+           meetingPost.set("privacy", '3');
+           //meetingPost.set("text", 'We are starting our #office-hours session now, look forward to answering your questions!');
+           meetingPost.set("post_title", 'Office Hours QnA');
+           meetingPost.set("questionAnswerEnabled", true);
+           if (meetingObject.get("FullMeetingText")) {meetingPost.set("text", meetingObject.get("FullMeetingText"));}
+           meetingPost.set("postNumberOfLines", 3);
+           meetingPost.set("likesCount", 0);
+           meetingPost.set("media_duration", meetingObject.get("MeetingDuration"));
+
+           }
+           */
+
+            postQuestion.save().then((postQuestion) => {
+                // Execute any logic that should take place after the object is saved.
+                //alert('New object created with objectId: ' + postQuestion.id);
+                //console.log("postQuestion 123: " + JSON.stringify(postQuestion.id));
+
+
+                return callback(null, postQuestion);
+        }, (error) => {
+                // Execute any logic that should take place if the save fails.
+                // error is a Parse.Error with an error code and message.
+                //alert('Failed to create new object, with error code: ' + error.message);
+
+                return callback(null, postQuestion);
+
+            });
+
+
+        }  else {
+
+            //console.log("post id exists or meeting is not completed");
+            return callback(null, postQuestion);
+
+        }
+
+
+    };
+
+    function attachQuestiontoPost (postQuestion, callback) {
+
+        //console.log("postQuestion-callback:" + JSON.stringify(postQuestion));
+
+        var Post = new Parse.Object("Post");
+        Post.id = postQuestion.get("post").id;
+
+        var postQuestionRelation = Post.relation("post_questions");
+        postQuestionRelation.add(postQuestion);
+        Post.save();
+
+        return callback(null, postQuestion);
+
     }
-  });
-  
-  
+
+
+
+
+    async.waterfall([
+        async.apply(getMeetingObject),
+        async.apply(createQnACard),
+        async.apply(attachQuestiontoPost)
+
+    ], function (err, objectsToIndex) {
+        if (err) {
+            response.error(err);
+        }
+
+        //console.log("final meeting: " + JSON.stringify(objectsToIndex));
+        response.success();
+    });
+
+
 });
+
 
 
 // Add and Update AlgoliaSearch meetings object if it's deleted from Parse
 Parse.Cloud.afterSave('Meeting', function(req, response) {
 
-  var objectsToIndex = [];
-  
-  // Convert Parse.Object to JSON
-  var meeting = req.object.toJSON();
-  //var meetingURL = req.object.MeetingJson.url;
-  console.log("meetingObject1: " + JSON.stringify(meeting));
-  
-  function getMeetingObject (callback) {
+    var objectsToIndex = [];
 
-    var meetingObject = Parse.Object.extend("Meeting");
-    var query = new Parse.Query(meetingObject);
-    query.get(req.object.id, {
-      success: function(meetingObject) {
-        // The object was retrieved successfully.
-        console.log("meetingObject2: " + JSON.stringify(meetingObject));  
+    // Convert Parse.Object to JSON
+    var meeting = req.object.toJSON();
+    //var meetingURL = req.object.MeetingJson.url;
+    //console.log("meetingObject1: " + JSON.stringify(meeting));
 
-        return callback(null, meetingObject);
-        
-      },
-      error: function(object, error) {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
-        response.error("error: " + error);
-        
-      }
-    });
-    
-  };
-  
-  function getMeetingTranscript (meetingObject, callback) { 
+    function getMeetingObject (callback) {
 
-    console.log("\n meetingObject3: " + JSON.stringify(meetingObject));
+        var meetingObject = Parse.Object.extend("Meeting");
+        var query = new Parse.Query(meetingObject);
+        query.get(req.object.id, {
+            success: function(meetingObject) {
+                // The object was retrieved successfully.
+                //console.log("meetingObject2: " + JSON.stringify(meetingObject));
 
-    //console.log("\n Meetingurl: " + JSON.stringify(meetingObject.MeetingJson.url));
-    var meetingFile = meetingObject.get("MeetingJson");
-    console.log("MeetingFile: " + JSON.stringify(meetingFile));
-    console.log("MeetingURL: " + JSON.stringify(meetingFile.url()) );
-    
-    requestURL({
-      url: meetingFile.url(),
-      json: true
-    }, function (error, resp, body) {
+                return callback(null, meetingObject);
 
-      console.log("error: " + error);
-      console.log("response: " + JSON.stringify(resp));
-      console.log("body: " + JSON.stringify(body));
-
-      if (!error && resp.statusCode === 200) {
-              console.log("body: " + JSON.stringify(body)); // Print the json response
-              
-              objectsToIndex = body.IBMjson.results;
-              
-              return callback(null, objectsToIndex);
+            },
+            error: function(object, error) {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error("error: " + error);
 
             }
-          });
+        });
 
-    
-  };
+    };
 
-  function prepIndex (objectsToIndex, callback) { 
+    function createMeetingPost (meetingObject, callback) {
 
-    // Specify Algolia's objectID with the Parse.Object unique ID
-    
-    console.log("objectsToIndex: " + JSON.stringify(objectsToIndex));
+        //console.log("post: " + JSON.stringify(meetingObject.get("post")));
+        if (!meetingObject.get("FullMeetingText") || !meetingObject.get("FullProccessingMeetingURL") || !meetingObject.get("MeetingJson") ) {
 
-    
-    // prepare objects to index from users
-    /*objectsToIndex = objectsToIndex.map(function(object) {
-      // convert to regular key/value JavaScript object
-      //object = JSON.stringify(object);
-      // Specify Algolia's objectID with the Parse.Object unique ID
-      //object = object.alternatives;
+            return callback(null, meetingObject);
 
-      object['ConferenceID'] = req.object.ConferenceID;
-      object['MeetingEvents'] = req.object.MeetingEvents;
-      object['MeetingInfo'] = req.object.MeetingInfo;
-      object['meetingID'] = req.object.objectId;
-      object['FullMeetingURL'] = req.object.FullMeetingURL;
-      
-      console.log("object: " + JSON.stringify(object));
-      
-      //object = JSON.parse(object);
-      
-      return object;
-    });*/
+        }
+        else {
 
-    //console.log("objectID: " + meetingObject.objectId);
-    //console.log("objectID: " + meetingObject.user.objectId);
-    
-    //objectsToIndex = objectsToIndex.results;
-    
-    async.forEach(objectsToIndex, function (meetingUtterance, callback){ 
+            console.log("meetingObjectDirty: " + req.object.dirty("post"));
+            console.log("iNew: " + meetingObject.isNew());
 
-      console.log("meetingUtterance: " + JSON.stringify(meetingUtterance));
+            if (meetingObject.get("MeetingEvents") === "completed" && !meetingObject.isNew()) {
 
-      
-        //meetingUtterance = meetingUtterance.alternatives[0];
-        
-        console.log("meetingUtterance1: "+ JSON.stringify(meetingUtterance)); // print the key
-        //var updatedUtterance = meetingUtterance.toJSON();
-        console.log("ConferenceID: " + JSON.stringify(meeting.ConferenceID));
-        console.log("MeetingObject: " + JSON.stringify(meeting));
-        
-        meetingUtterance['ConferenceID'] = meeting.ConferenceID;
-        meetingUtterance['MeetingEvents'] = meeting.MeetingEvents;
-        meetingUtterance['MeetingInfo'] = meeting.MeetingInfo;
-        meetingUtterance['meetingID'] = meeting.objectId;
-        meetingUtterance['FullMeetingURL'] = meeting.FullMeetingURL;
-        meetingUtterance['FullMeetingText'] = meeting.FullMeetingText;
-        meetingUtterance['objectID'] = meetingUtterance.alternatives[0].objectID;
-        
-        console.log("meetingUtterance2: "+ JSON.stringify(meetingUtterance));
-        
-        // tell async that that particular element of the iterator is done
-        callback(null, meetingUtterance); 
+                //console.log("no post id availble and meeting is completed");
 
-      }, function(err) {
-        console.log('iterating done: ' + JSON.stringify(objectsToIndex));
+                var MeetingPost = Parse.Object.extend("Post");
+                var meetingPost = new MeetingPost();
 
-      });  
-    
-    return callback(null, objectsToIndex);
-    
-  };
-  
-  function addObjectsAlgolia (objectsToIndex, callback) {
+                var postFile_name = "RE8fed007fb1cb025f8c566ee6135c678a_proc.flac";
+                //console.log("postFile_name: " + postFile_name);
+                var postFile_url = meetingObject.get("FullProccessingMeetingURL");
+                //console.log("postFile_url: " + postFile_url);
 
-   console.log("objectToIndex2: "+ JSON.stringify(objectsToIndex)); 
+                var Workspace = new Parse.Object("WorkSpace");
+                Workspace.id = meetingObject.get("workspace");
+                //console.log("workspace ID: "  + JSON.stringify(Workspace.id));
 
-   indexMeetings.saveObjects(objectsToIndex, function(err, content) {
-    if (err) {
-      throw err;
-    }
-    console.log('Parse<>Algolia objects saved');
+                var Project = new Parse.Object("Project");
+                Project.id = meetingObject.get("channel");
+                //console.log("Project ID: "  + JSON.stringify(Project.id));
 
-    return callback(null, objectsToIndex);
+                var User = new Parse.Object("_User");
+                User.id = meetingObject.get("user");
+                //console.log("User ID: "  + JSON.stringify(User.id));
 
-  });
+                //console.log("meetingPost: " + JSON.stringify(meetingPost));
 
- };
+                if (meetingObject.get("workspace")) {meetingPost.set("workspace", Workspace.id);}
+                if (meetingObject.get("channel")) {meetingPost.set("project", Project.id);}
+                if (meetingObject.get("user")) { meetingPost.set("user", User.id);}
+                meetingPost.set("transcript", meetingObject.get("FullMeetingText"));
 
- async.waterfall([ 
-  async.apply(getMeetingObject),
-  async.apply(getMeetingTranscript),
-  async.apply(prepIndex),
-  async.apply(addObjectsAlgolia)
+                if (postFile_name && postFile_url) { meetingPost.set("post_file",
+                    {
+                        "__type": "File",
+                        "name": postFile_name,
+                        "url": postFile_url
+                    }
+                );
+                };
 
-  ], function (err, objectsToIndex) {
-    if (err) {
-      response.error(err);
-    }
+                meetingPost.set("transcript_file", meetingObject.get("MeetingJson"));
 
-    console.log("final meeting: " + JSON.stringify(objectsToIndex));
-    response.success();
-  });
+
+                if (meetingObject.get("post")) {
+                    meetingPost.id = meetingObject.get("post").id;
+                    //console.log("Post: " + JSON.stringify(meetingPost));
+
+                }
+
+                else if (!meetingObject.get("post")) {
+                    meetingPost.set("post_type", '3'); //video post for office hours QNA
+                    meetingPost.set("privacy", '3');
+                    meetingPost.set("post_title", 'Office Hours QnA');
+                    meetingPost.set("questionAnswerEnabled", true);
+                    meetingPost.set("text", meetingObject.get("FullMeetingText"));
+                    meetingPost.set("postNumberOfLines", 3);
+                    meetingPost.set("CommentCount", 0);
+                    meetingPost.set("likesCount", 0);
+                    meetingPost.set("media_duration", meetingObject.get("MeetingDuration"));
+
+                }
+
+                //console.log("meetingPost2: " + JSON.stringify(meetingPost));
+
+
+                meetingPost.save()
+                    .then((meetingPost) => {
+                    // Execute any logic that should take place after the object is saved.
+                    //alert('New object created with objectId: ' + meetingPost.id);
+                    //console.log("meetingPost3: " + JSON.stringify(meetingPost.id));
+
+                    if (!meetingObject.get("post")) {
+                    meetingObject.set("post", meetingPost);
+                    meetingObject.save();
+                }
+
+                return callback(null, meetingObject);
+            }, (error) => {
+                    // Execute any logic that should take place if the save fails.
+                    // error is a Parse.Error with an error code and message.
+                    //alert('Failed to create new object, with error code: ' + error.message);
+                    return callback(null, meetingObject);
+
+                });
+
+
+            }  else {
+
+                //console.log("post id exists or meeting is not completed");
+                return callback(null, meetingObject);
+
+            }
+
+
+
+        }
+
+
+    };
+    function getMeetingTranscript (meetingObject, callback) {
+
+        //if(meetingObject.dirty("MeetingJson")) {
+
+        //console.log("\n meetingObject3: " + JSON.stringify(meetingObject));
+
+        //console.log("\n Meetingurl: " + JSON.stringify(meetingObject.MeetingJson.url));
+        var meetingFile = meetingObject.get("MeetingJson");
+        //console.log("MeetingFile: " + JSON.stringify(meetingFile));
+        //console.log("MeetingURL: " + JSON.stringify(meetingFile.url()) );
+
+        requestURL({
+            url: meetingFile.url(),
+            json: true
+        }, function (error, resp, body) {
+
+            console.log("error: " + error);
+            //console.log("response: " + JSON.stringify(resp));
+            //console.log("body: " + JSON.stringify(body));
+
+            if (!error && resp.statusCode === 200) {
+                //console.log("body: " + JSON.stringify(body)); // Print the json response
+
+                objectsToIndex = body.IBMjson.results;
+
+                return callback(null, objectsToIndex);
+
+            }
+        });
+
+
+        //} else { return callback(null, objectsToIndex);}
+
+
+    };
+
+    function prepIndex (objectsToIndex, callback) {
+
+        // Specify Algolia's objectID with the Parse.Object unique ID
+
+
+
+        async.forEach(objectsToIndex, function (meetingUtterance, callback){
+
+            //console.log("meetingUtterance: " + JSON.stringify(meetingUtterance));
+
+
+            //meetingUtterance = meetingUtterance.alternatives[0];
+
+            //console.log("meetingUtterance1: "+ JSON.stringify(meetingUtterance)); // print the key
+            //var updatedUtterance = meetingUtterance.toJSON();
+            //console.log("ConferenceID: " + JSON.stringify(meeting.ConferenceID));
+            //console.log("MeetingObject: " + JSON.stringify(meeting));
+
+            meetingUtterance['ConferenceID'] = meeting.ConferenceID;
+            meetingUtterance['MeetingEvents'] = meeting.MeetingEvents;
+            meetingUtterance['MeetingInfo'] = meeting.MeetingInfo;
+            meetingUtterance['meetingID'] = meeting.objectId;
+            meetingUtterance['FullMeetingURL'] = meeting.FullMeetingURL;
+            //meetingUtterance['FullMeetingText'] = meeting.FullMeetingText;
+            meetingUtterance['objectID'] = meetingUtterance.alternatives[0].objectID;
+
+            //console.log("meetingUtterance2: "+ JSON.stringify(meetingUtterance));
+
+            // tell async that that particular element of the iterator is done
+            callback(null, meetingUtterance);
+
+        }, function(err) {
+            //console.log('iterating done: ' + JSON.stringify(objectsToIndex));
+
+        });
+
+        return callback(null, objectsToIndex);
+
+    };
+
+    function addObjectsAlgolia (objectsToIndex, callback) {
+
+        //console.log("objectToIndex2: "+ JSON.stringify(objectsToIndex));
+
+        indexMeetings.saveObjects(objectsToIndex, function(err, content) {
+            if (err) {
+                throw err;
+            }
+            console.log('Parse<>Algolia objects saved');
+
+            return callback(null, objectsToIndex);
+
+        });
+
+    };
+
+    async.waterfall([
+        async.apply(getMeetingObject),
+        async.apply(createMeetingPost),
+        async.apply(getMeetingTranscript),
+        async.apply(prepIndex),
+        async.apply(addObjectsAlgolia)
+
+    ], function (err, objectsToIndex) {
+        if (err) {
+            response.error(err);
+        }
+
+        //console.log("final meeting: " + JSON.stringify(objectsToIndex));
+        response.success();
+    });
 
 
 });
 
 
 // Add and Update AlgoliaSearch user object if it's deleted from Parse
-Parse.Cloud.afterSave('_User', function(request) {
+Parse.Cloud.afterSave('_User', function(request, response) {
 
-  // Convert Parse.Object to JSON
-  var objectToSave = request.object.toJSON();
-  
-  // Specify Algolia's objectID with the Parse.Object unique ID
-  objectToSave.objectID = objectToSave.objectId;
-  
-  // Add or update object
-  indexUsers.saveObject(objectToSave, function(err, content) {
-    if (err) {
-      throw err;
-    }
-    console.log('Parse<>Algolia object saved');
-  });
+    var objectToSave = request.object.toJSON();
+
+    var queryUser = new Parse.Query("_User");
+
+    queryUser.equalTo("objectId", objectToSave.objectId);
+
+    queryUser.first({
+        success: function(user) {
+            // Successfully retrieved the object.
+            //console.log("ObjectToSave: " + JSON.stringify(user));
+            //var Workspace = Parse.Object.extend("WorkSpace");
+            //Workspace = workspace;
+
+            var mySkillObject = Parse.Object.extend("Skill");
+            //var skillsRelation = new skillObject.relation("skills");
+            mySkillObject = user.get("mySkills");
+            console.log("Skills: " + JSON.stringify(mySkillObject));
+
+
+            mySkillObject.query().find({
+
+                success: function(skill) {
+
+                    //skill;
+                    //skill.add(workspace);
+
+                    console.log("Skills: " + JSON.stringify(skill));
+
+
+                    // Convert Parse.Object to JSON
+                    user = user.toJSON();
+
+                    user['mySkills'] = skill;
+                    console.log("New User: " + JSON.stringify(user));
+
+                    // Specify Algolia's objectID with the Parse.Object unique ID
+                    user.objectID = user.objectId;
+
+                    // Add or update object
+                    indexUsers.saveObject(user, function(err, content) {
+                        if (err) {
+                            throw err;
+                        }
+                        console.log('Parse<>Algolia object saved');
+                        response.success();
+
+                    });
+                },
+                error: function(error) {
+                    alert("Error: " + error.code + " " + error.message);
+                }
+            });
+
+
+        },
+        error: function(error) {
+            alert("Error: " + error.code + " " + error.message);
+        }
+    });
 });
+
 
 
 // Add and Update AlgoliaSearch project=channel object if it's deleted from Parse
 Parse.Cloud.afterSave('Project', function(request, response) {
 
-  // Convert Parse.Object to JSON
-  var objectToSave = request.object.toJSON();
-  
-  var queryProject = new Parse.Query("Project");
-  queryProject.equalTo("objectId", objectToSave.objectId);
-  queryProject.include( ["user", "workspace", "category"] );
-  //queryProject.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
-  
-  
-  console.log("Request: " + JSON.stringify(request));
-  console.log("objectID: " + objectToSave.objectId);
-  console.log("objectID: " + objectToSave.user.objectId);
-  
-  queryProject.first({
-    success: function(project) {
-      // Successfully retrieved the object.
-      console.log("ObjectToSave: " + JSON.stringify(project));
-      
-      // Convert Parse.Object to JSON
-      project = project.toJSON();
-      
-      // Specify Algolia's objectID with the Parse.Object unique ID
-      project.objectID = project.objectId;
-      
-      // Add or update object
-      indexProject.saveObject(project, function(err, content) {
-        if (err) {
-          throw err;
+    // Convert Parse.Object to JSON
+    var objectToSave = request.object.toJSON();
+
+    var queryProject = new Parse.Query("Project");
+    queryProject.equalTo("objectId", objectToSave.objectId);
+    queryProject.include( ["user", "workspace", "category"] );
+    //queryProject.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
+
+
+    console.log("Request: " + JSON.stringify(request));
+    console.log("objectID: " + objectToSave.objectId);
+    console.log("objectID: " + objectToSave.user.objectId);
+
+    queryProject.first({
+        success: function(project) {
+            // Successfully retrieved the object.
+            console.log("ObjectToSave: " + JSON.stringify(project));
+
+            // Convert Parse.Object to JSON
+            project = project.toJSON();
+
+            // Specify Algolia's objectID with the Parse.Object unique ID
+            project.objectID = project.objectId;
+
+            // Add or update object
+            indexProject.saveObject(project, function(err, content) {
+                if (err) {
+                    throw err;
+                }
+                console.log('Parse<>Algolia object saved');
+                response.success();
+
+            });
+
+        },
+        error: function(error) {
+            alert("Error: " + error.code + " " + error.message);
         }
-        console.log('Parse<>Algolia object saved');
-        response.success(); 
-        
-      });
-      
-    },
-    error: function(error) {
-      alert("Error: " + error.code + " " + error.message);
-    }
-  });
-  
-  
+    });
+
+
 });
+
+
 
 
 // Add and Update AlgoliaSearch user object if it's deleted from Parse
-Parse.Cloud.afterSave('_User', function(request) {
+Parse.Cloud.afterSave('Skill', function(request) {
 
-  // Convert Parse.Object to JSON
-  var objectToSave = request.object.toJSON();
-  
-  // Specify Algolia's objectID with the Parse.Object unique ID
-  objectToSave.objectID = objectToSave.objectId;
-  
-  // Add or update object
-  indexUsers.saveObject(objectToSave, function(err, content) {
-    if (err) {
-      throw err;
-    }
-    console.log('Parse<>Algolia object saved');
-  });
+    // Convert Parse.Object to JSON
+    var objectToSave = request.object.toJSON();
+
+    // Specify Algolia's objectID with the Parse.Object unique ID
+    objectToSave.objectID = objectToSave.objectId;
+
+    // Add or update object
+    indexSkills.saveObject(objectToSave, function(err, content) {
+        if (err) {
+            throw err;
+        }
+        console.log('Parse<>Algolia object saved');
+    });
 });
 
-// Add and Update AlgoliaSearch Workspace object if it's deleted from Parse
-Parse.Cloud.afterSave('WorkSpace', function(request) {
+// Add and Update AlgoliaSearch Workspace object if it's deleted from Parse & create Workspace roles
+Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
-  // Convert Parse.Object to JSON
-  var objectToSave = request.object.toJSON();
-  
-  // Specify Algolia's objectID with the Parse.Object unique ID
-  objectToSave.objectID = objectToSave.objectId;
-  
-  // Add or update object
-  indexWorkspaces.saveObject(objectToSave, function(err, content) {
-    if (err) {
-      throw err;
-    }
-    console.log('Parse<>Algolia object saved');
-  });
+
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
+
+
+    // Convert Parse.Object to JSON
+    //var workspace = request.object;
+
+    var objectToSave = request.object.toJSON();
+
+    var queryWorkspace = new Parse.Query("WorkSpace");
+
+    queryWorkspace.equalTo("objectId", objectToSave.objectId);
+    queryWorkspace.include( ["user"] );
+    //queryProject.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
+
+    //console.log("Request: " + JSON.stringify(request));
+    //console.log("objectID: " + objectToSave.objectId);
+    //console.log("objectID: " + objectToSave.user.objectId);
+
+    //var Workspace = new Parse.Object("WorkSpace");
+
+    queryWorkspace.first({
+        success: function(Workspace) {
+            // Successfully retrieved the object.
+
+
+            //console.log("ObjectToSave: " + JSON.stringify(workspace));
+            var workspace = Parse.Object.extend("WorkSpace");
+            workspace = Workspace;
+
+            function createWorkspaceRoles (callback) {
+
+                var owner = new Parse.Object("_User");
+                owner = workspace.get("user");
+
+                console.log("isNew: " + workspace.get("isNew"));
+
+                if (workspace.get("isNew") === true) {
+
+                    workspace.set("isNew", false);
+
+                    // create roles
+                    var roleACL = new Parse.ACL();
+                    roleACL.setPublicReadAccess(true);
+                    //roleACL.setPublicWriteAccess(true);
+
+                    var followerName = "Follower-" + workspace.id;
+                    //console.log("followerName: " + followerName);
+
+                    var followerRole = new Parse.Role(followerName, roleACL);
+                    followerRole.set("workspace", workspace);
+                    //followerRole["name"] = followerName;
+                    followerRole.set("PermissionBundle", {
+                        "canAddCategory": false,
+                        "canUpdateCategory": false,
+                        "canDeleteCategory": false,
+                        "canAddChanneltoCategory": false,
+                        "canInvitePeopleToWorkspace": false,
+                        "canCreateChannel": false,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": false,
+                        "NumberOfCreatePostAllowed": "0",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "3",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "3",
+                        "canCreateOfficeHoursPost": false,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "0",
+                        "canMentionMembers": false
+                    });
+                    //followerRole.save(null, {useMasterKey: true});
+                    //console.log("followerRole: " + JSON.stringify(followerRole));
+
+                    var memberName = "member-" + workspace.id;
+
+                    var memberRole = new Parse.Role(memberName, roleACL);
+                    memberRole.set("workspace", workspace);
+                    //memberRole.set("name", memberName);
+                    memberRole.set("PermissionBundle", {
+                        "canAddCategory": false,
+                        "canUpdateCategory": false,
+                        "canDeleteCategory": false,
+                        "canAddChanneltoCategory": true,
+                        "canInvitePeopleToWorkspace": false,
+                        "canCreateChannel": true,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": true,
+                        "NumberOfCreatePostAllowed": "unlimited",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                        "canCreateOfficeHoursPost": true,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                        "canMentionMembers": true
+                    });
+                    //memberRole.save(null, {useMasterKey: true});
+
+                    var moderatorName = "moderator-" + workspace.id;
+
+                    var moderatorRole = new Parse.Role(moderatorName, roleACL);
+                    moderatorRole.set("workspace", workspace);
+                    //moderatorRole.set("name", moderatorName);
+                    moderatorRole.set("PermissionBundle", {
+                        "canAddCategory": false,
+                        "canUpdateCategory": false,
+                        "canDeleteCategory": false,
+                        "canAddChanneltoCategory": true,
+                        "canInvitePeopleToWorkspace": false,
+                        "canCreateChannel": true,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": true,
+                        "NumberOfCreatePostAllowed": "unlimited",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                        "canCreateOfficeHoursPost": true,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                        "canMentionMembers": true
+                    });
+                    //moderatorRole.save(null, {useMasterKey: true});
+
+                    var adminName = "admin-" + workspace.id;
+
+                    var adminRole = new Parse.Role(adminName, roleACL);
+                    adminRole.set("workspace", workspace);
+                    //adminRole.set("name", adminName);
+                    adminRole.set("PermissionBundle", {
+                        "canAddCategory": true,
+                        "canUpdateCategory": true,
+                        "canDeleteCategory": true,
+                        "canAddChanneltoCategory": true,
+                        "canInvitePeopleToWorkspace": true,
+                        "canCreateChannel": true,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": true,
+                        "NumberOfCreatePostAllowed": "unlimited",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                        "canCreateOfficeHoursPost": true,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                        "canMentionMembers": true
+                    });
+                    //adminRole.save(null, {useMasterKey: true});
+
+                    var expertName = "expert-" + workspace.id;
+
+                    var expertRole = new Parse.Role(expertName, roleACL);
+                    expertRole.set("workspace", workspace);
+                    //expertRole.set("name", expertName);
+                    expertRole.set("PermissionBundle", {
+                        "canAddCategory": true,
+                        "canUpdateCategory": true,
+                        "canDeleteCategory": true,
+                        "canAddChanneltoCategory": true,
+                        "canInvitePeopleToWorkspace": true,
+                        "canCreateChannel": true,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": true,
+                        "NumberOfCreatePostAllowed": "unlimited",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                        "canCreateOfficeHoursPost": true,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                        "canMentionMembers": true
+                    });
+                    //expertRole.save(null, {useMasterKey: true});
+
+
+                    var ownerName = "owner-" + workspace.id;
+                    var ownerRole = new Parse.Role(ownerName, roleACL);
+                    console.log("ownerRole 1: " + JSON.stringify(ownerRole));
+                    ownerRole.set("workspace", workspace);
+                    //ownerRole.set("name", ownerName);
+                    ownerRole.set("PermissionBundle", {
+                        "canAddCategory": true,
+                        "canUpdateCategory": true,
+                        "canDeleteCategory": true,
+                        "canAddChanneltoCategory": true,
+                        "canInvitePeopleToWorkspace": true,
+                        "canCreateChannel": true,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": true,
+                        "NumberOfCreatePostAllowed": "unlimited",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                        "canCreateOfficeHoursPost": true,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                        "canMentionMembers": true
+                    });
+                    //console.log("ownerRole 2: " + JSON.stringify(ownerRole));
+                    //ownerRole.save(null, {useMasterKey: true});
+                    //console.log("ownerRole 3: " + JSON.stringify(ownerRole));
+
+
+                    Parse.Object.saveAll([ownerRole, expertRole, adminRole, moderatorRole, memberRole, followerRole], {useMasterKey: true}).then((savedRoles) => {
+
+                        //console.log("savedRoles: " + JSON.stringify(savedRoles));
+
+                        var memberrole = savedRoles[4];
+                    //memberrole.getUsers().add(usersToAddToRole);
+                    memberrole.getRoles().add(followerRole);
+                    memberrole.save(null, {useMasterKey: true});
+
+                    var moderatorrole = savedRoles[3];
+                    //memberrole.getUsers().add(usersToAddToRole);
+                    moderatorrole.getRoles().add(memberRole);
+                    moderatorrole.save(null, {useMasterKey: true});
+
+                    var adminrole = savedRoles[2];
+                    //memberrole.getUsers().add(usersToAddToRole);
+                    adminrole.getRoles().add(moderatorRole);
+                    adminrole.save(null, {useMasterKey: true});
+
+                    var expertrole = savedRoles[1];
+                    //memberrole.getUsers().add(usersToAddToRole);
+                    expertrole.getRoles().add(moderatorRole);
+                    expertrole.save(null, {useMasterKey: true});
+
+                    var ownerrole = savedRoles[0];
+                    ownerrole.getUsers().add(owner);
+                    ownerrole.getRoles().add(expertRole);
+                    ownerrole.getRoles().add(adminRole);
+                    ownerrole.save(null, {useMasterKey: true});
+
+                    var userRolesRelation = owner.relation("roles");
+                    userRolesRelation.add(ownerRole); // add owner role to the user roles field.
+                    owner.save(null, {useMasterKey: true});
+
+                    // todo add experts roles here, need to also do both for new or existing
+
+                    return callback (null, savedRoles);
+
+
+                });
+
+
+                } else {return callback (null, workspace);}
+
+
+
+            }
+
+            function addWorkspacesAlgolia (callback) {
+
+                var skillObject = Parse.Object.extend("Skill");
+                //var skillsRelation = new skillObject.relation("skills");
+                skillObject = workspace.get("skills");
+                //console.log("Skills: " + JSON.stringify(skillObject));
+                //console.log("Skill Length:" + skillObject);
+
+                var expertObject = Parse.Object.extend("_User");
+                expertObject = workspace.get("experts");
+                //console.log("Experts: " + JSON.stringify(expertObject));
+
+                // if (skillObject.length===0) {console.log("cool skillObject" + skillObject); return callback (null, workspace);}
+
+                skillObject.query().find({
+
+                    success: function(skill) {
+
+                        //skill;
+                        //skill.add(workspace);
+
+                        //console.log("Skills: " + JSON.stringify(skill));
+
+
+                        // Convert Parse.Object to JSON
+                        workspace = workspace.toJSON();
+
+                        workspace['skills'] = skill;
+                        //console.log("New Workspace: " + JSON.stringify(workspace));
+
+                        // Specify Algolia's objectID with the Parse.Object unique ID
+                        workspace.objectID = workspace.objectId;
+
+                        //return callback(null, Workspace);
+
+                        expertObject.query().find({
+
+                            success: function(user) {
+
+                                //skill;
+                                //skill.add(workspace);
+
+                                //console.log("Experts: " + JSON.stringify(user));
+
+
+                                // Convert Parse.Object to JSON
+                                //workspace = workspace.toJSON();
+
+                                workspace['experts'] = user;
+                                //console.log("New Workspace experts: " + JSON.stringify(workspace));
+
+                                //return callback(null, Workspace);
+
+                                indexWorkspaces.saveObject(workspace, function(err, content) {
+                                    if (err) {
+                                        return callback (err);
+                                    }
+                                    console.log('Parse<>Algolia object saved');
+
+                                    //var finalTime = process.hrtime(time);
+                                    //console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                                    return callback (null, workspace);
+
+                                });
+
+
+                            },
+                            error: function(error) {
+                                alert("Error: " + error.code + " " + error.message);
+                                return callback (error);
+                            }
+                        });
+
+
+                    },
+                    error: function(error) {
+                        alert("Error: " + error.code + " " + error.message);
+                        return callback (error);
+                    }
+                });
+            }
+
+            async.parallel([
+                async.apply(createWorkspaceRoles),
+                async.apply(addWorkspacesAlgolia)
+
+            ], function (err, results) {
+                if (err) {
+                    response.error(err);
+                }
+
+
+                var finalTime = process.hrtime(time);
+                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                response.success();
+                //return callback (null, resultsToMap);
+
+            });
+
+
+
+
+
+
+            //}
+
+          /*function findExperts (Workspace, callback) {
+
+           var expertObject = Parse.Object.extend("_User");
+           expertObject = Workspace.get("experts");
+           console.log("Experts: " + JSON.stringify(expertObject));
+
+           expertObject.query().find({
+
+           success: function(expert) {
+
+           //skill;
+           //skill.add(workspace);
+
+           console.log("Experts: " + JSON.stringify(expert));
+
+
+           // Convert Parse.Object to JSON
+           Workspace = Workspace.toJSON();
+
+           Workspace['experts'] = expert;
+           console.log("New Workspace experts: " + JSON.stringify(Workspace));
+
+           return callback(null, Workspace);
+
+           },
+           error: function(error) {
+           alert("Error: " + error.code + " " + error.message);
+           return callback(error);
+           }
+           });
+
+           }*/
+
+            //function addObjectAlgolia (Workspace, callback) {
+
+            //console.log("objectToIndex2: "+ JSON.stringify(objectsToIndex));
+
+
+
+          /*}
+
+           async.waterfall([
+           async.apply(findSkills),
+           async.apply(findExperts),
+           async.apply(addObjectAlgolia)
+
+           ], function (err) {
+           if (err) {
+           response.error(err);
+           }
+
+           console.log("New Workspace final: " + JSON.stringify());
+
+           var finalTime = process.hrtime(time);
+           console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+           response.success();
+
+           //return callback (null, resultsToMap);
+
+           });*/
+
+
+
+
+        },
+        error: function(error) {
+            alert("Error: " + error.code + " " + error.message);
+            response.error(error);
+        }
+    });
+
+
+
 });
+
+/*// Add and Update AlgoliaSearch Workspace object if it's deleted from Parse & create Workspace roles
+ Parse.Cloud.afterSave('Workspace_follower', function(request, response) {
+
+
+ var NS_PER_SEC = 1e9;
+ const MS_PER_NS = 1e-6;
+ var time = process.hrtime();
+
+
+ // Convert Parse.Object to JSON
+ var workspace_follower = request.object;
+
+ //var objectToSave = request.object.toJSON();
+
+ var queryWorkspaceFollower = new Parse.Query("Workspace_follower");
+
+ queryWorkspaceFollower.equalTo("objectId", workspace_follower.id);
+ queryWorkspaceFollower.include( ["user"] , ["workspace"]);
+ //queryProject.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
+
+ //console.log("Request: " + JSON.stringify(request));
+ //console.log("objectID: " + objectToSave.objectId);
+ //console.log("objectID: " + objectToSave.user.objectId);
+
+ //var Workspace = new Parse.Object("WorkSpace");
+
+ queryWorkspaceFollower.first({
+ success: function(Workspace_follower) {
+ // Successfully retrieved the object.
+
+
+ //console.log("ObjectToSave: " + JSON.stringify(workspace));
+ //var workspace = Parse.Object.extend("Workspace_follower");
+ //workspace = Workspace;
+
+ function createWorkspaceRoles (callback) {
+
+ var follower = new Parse.Object("_User");
+ follower = Workspace_follower.get("user");
+
+ var member = new Parse.Object("_User");
+ member = Workspace_follower.get("user");
+
+ console.log("isNew: " + workspace.get("isNew"));
+
+ if (workspace.get("isNew") === true) {
+
+ workspace.set("isNew", false);
+
+ // create roles
+ var roleACL = new Parse.ACL();
+ roleACL.setPublicReadAccess(true);
+ //roleACL.setPublicWriteAccess(true);
+
+ var followerName = "Follower-" + workspace.id;
+ //console.log("followerName: " + followerName);
+
+ var followerRole = new Parse.Role(followerName, roleACL);
+ followerRole.set("workspace", workspace);
+ //followerRole["name"] = followerName;
+ followerRole.set("PermissionBundle", {
+ "canAddCategory": false,
+ "canUpdateCategory": false,
+ "canDeleteCategory": false,
+ "canAddChanneltoCategory": false,
+ "canInvitePeopleToWorkspace": false,
+ "canCreateChannel": false,
+ "canAddPeopleToChannel": true,
+ "canCreatePost": false,
+ "NumberOfCreatePostAllowed": "0",
+ "canCreateQuestionPost": true,
+ "NumberOfCreateQuestionsPostAllowed": "3",
+ "canAskQuestionOnPost": true,
+ "NumberOfCanAskQuestionOnPostAllowed": "3",
+ "canCreateOfficeHoursPost": false,
+ "NumberOfCanCreateOfficeHoursPostAllowed": "0",
+ "canMentionMembers": false
+ });
+ //followerRole.save(null, {useMasterKey: true});
+ //console.log("followerRole: " + JSON.stringify(followerRole));
+
+ var memberName = "member-" + workspace.id;
+
+ var memberRole = new Parse.Role(memberName, roleACL);
+ memberRole.set("workspace", workspace);
+ //memberRole.set("name", memberName);
+ memberRole.set("PermissionBundle", {
+ "canAddCategory": false,
+ "canUpdateCategory": false,
+ "canDeleteCategory": false,
+ "canAddChanneltoCategory": true,
+ "canInvitePeopleToWorkspace": false,
+ "canCreateChannel": true,
+ "canAddPeopleToChannel": true,
+ "canCreatePost": true,
+ "NumberOfCreatePostAllowed": "unlimited",
+ "canCreateQuestionPost": true,
+ "NumberOfCreateQuestionsPostAllowed": "unlimited",
+ "canAskQuestionOnPost": true,
+ "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+ "canCreateOfficeHoursPost": true,
+ "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+ "canMentionMembers": true
+ });
+ //memberRole.save(null, {useMasterKey: true});
+
+ var moderatorName = "moderator-" + workspace.id;
+
+ var moderatorRole = new Parse.Role(moderatorName, roleACL);
+ moderatorRole.set("workspace", workspace);
+ //moderatorRole.set("name", moderatorName);
+ moderatorRole.set("PermissionBundle", {
+ "canAddCategory": false,
+ "canUpdateCategory": false,
+ "canDeleteCategory": false,
+ "canAddChanneltoCategory": true,
+ "canInvitePeopleToWorkspace": false,
+ "canCreateChannel": true,
+ "canAddPeopleToChannel": true,
+ "canCreatePost": true,
+ "NumberOfCreatePostAllowed": "unlimited",
+ "canCreateQuestionPost": true,
+ "NumberOfCreateQuestionsPostAllowed": "unlimited",
+ "canAskQuestionOnPost": true,
+ "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+ "canCreateOfficeHoursPost": true,
+ "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+ "canMentionMembers": true
+ });
+ //moderatorRole.save(null, {useMasterKey: true});
+
+ var adminName = "admin-" + workspace.id;
+
+ var adminRole = new Parse.Role(adminName, roleACL);
+ adminRole.set("workspace", workspace);
+ //adminRole.set("name", adminName);
+ adminRole.set("PermissionBundle", {
+ "canAddCategory": true,
+ "canUpdateCategory": true,
+ "canDeleteCategory": true,
+ "canAddChanneltoCategory": true,
+ "canInvitePeopleToWorkspace": true,
+ "canCreateChannel": true,
+ "canAddPeopleToChannel": true,
+ "canCreatePost": true,
+ "NumberOfCreatePostAllowed": "unlimited",
+ "canCreateQuestionPost": true,
+ "NumberOfCreateQuestionsPostAllowed": "unlimited",
+ "canAskQuestionOnPost": true,
+ "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+ "canCreateOfficeHoursPost": true,
+ "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+ "canMentionMembers": true
+ });
+ //adminRole.save(null, {useMasterKey: true});
+
+ var expertName = "expert-" + workspace.id;
+
+ var expertRole = new Parse.Role(expertName, roleACL);
+ expertRole.set("workspace", workspace);
+ //expertRole.set("name", expertName);
+ expertRole.set("PermissionBundle", {
+ "canAddCategory": true,
+ "canUpdateCategory": true,
+ "canDeleteCategory": true,
+ "canAddChanneltoCategory": true,
+ "canInvitePeopleToWorkspace": true,
+ "canCreateChannel": true,
+ "canAddPeopleToChannel": true,
+ "canCreatePost": true,
+ "NumberOfCreatePostAllowed": "unlimited",
+ "canCreateQuestionPost": true,
+ "NumberOfCreateQuestionsPostAllowed": "unlimited",
+ "canAskQuestionOnPost": true,
+ "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+ "canCreateOfficeHoursPost": true,
+ "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+ "canMentionMembers": true
+ });
+ //expertRole.save(null, {useMasterKey: true});
+
+
+ var ownerName = "owner-" + workspace.id;
+ var ownerRole = new Parse.Role(ownerName, roleACL);
+ console.log("ownerRole 1: " + JSON.stringify(ownerRole));
+ ownerRole.set("workspace", workspace);
+ //ownerRole.set("name", ownerName);
+ ownerRole.set("PermissionBundle", {
+ "canAddCategory": true,
+ "canUpdateCategory": true,
+ "canDeleteCategory": true,
+ "canAddChanneltoCategory": true,
+ "canInvitePeopleToWorkspace": true,
+ "canCreateChannel": true,
+ "canAddPeopleToChannel": true,
+ "canCreatePost": true,
+ "NumberOfCreatePostAllowed": "unlimited",
+ "canCreateQuestionPost": true,
+ "NumberOfCreateQuestionsPostAllowed": "unlimited",
+ "canAskQuestionOnPost": true,
+ "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+ "canCreateOfficeHoursPost": true,
+ "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+ "canMentionMembers": true
+ });
+ //console.log("ownerRole 2: " + JSON.stringify(ownerRole));
+ //ownerRole.save(null, {useMasterKey: true});
+ //console.log("ownerRole 3: " + JSON.stringify(ownerRole));
+
+
+ Parse.Object.saveAll([ownerRole, expertRole, adminRole, moderatorRole, memberRole, followerRole], {useMasterKey: true}).then((savedRoles) => {
+
+ //console.log("savedRoles: " + JSON.stringify(savedRoles));
+
+ var memberrole = savedRoles[4];
+ //memberrole.getUsers().add(usersToAddToRole);
+ memberrole.getRoles().add(followerRole);
+ memberrole.save(null, {useMasterKey: true});
+
+ var moderatorrole = savedRoles[3];
+ //memberrole.getUsers().add(usersToAddToRole);
+ moderatorrole.getRoles().add(memberRole);
+ moderatorrole.save(null, {useMasterKey: true});
+
+ var adminrole = savedRoles[2];
+ //memberrole.getUsers().add(usersToAddToRole);
+ adminrole.getRoles().add(moderatorRole);
+ adminrole.save(null, {useMasterKey: true});
+
+ var expertrole = savedRoles[1];
+ //memberrole.getUsers().add(usersToAddToRole);
+ expertrole.getRoles().add(moderatorRole);
+ expertrole.save(null, {useMasterKey: true});
+
+ var ownerrole = savedRoles[0];
+ ownerrole.getUsers().add(owner);
+ ownerrole.getRoles().add(expertRole);
+ ownerrole.getRoles().add(adminRole);
+ ownerrole.save(null, {useMasterKey: true});
+
+ var userRolesRelation = owner.relation("roles");
+ userRolesRelation.add(ownerRole); // add owner role to the user roles field.
+ owner.save(null, {useMasterKey: true});
+
+ return callback (null, savedRoles);
+
+
+ });
+
+
+ } else {return callback (null, workspace);}
+
+
+
+ }
+
+ function addWorkspacesAlgolia (callback) {
+
+ var skillObject = Parse.Object.extend("Skill");
+ //var skillsRelation = new skillObject.relation("skills");
+ skillObject = workspace.get("skills");
+ //console.log("Skills: " + JSON.stringify(skillObject));
+ //console.log("Skill Length:" + skillObject);
+
+ var expertObject = Parse.Object.extend("_User");
+ expertObject = workspace.get("experts");
+ //console.log("Experts: " + JSON.stringify(expertObject));
+
+ // if (skillObject.length===0) {console.log("cool skillObject" + skillObject); return callback (null, workspace);}
+
+ skillObject.query().find({
+
+ success: function(skill) {
+
+ //skill;
+ //skill.add(workspace);
+
+ //console.log("Skills: " + JSON.stringify(skill));
+
+
+ // Convert Parse.Object to JSON
+ workspace = workspace.toJSON();
+
+ workspace['skills'] = skill;
+ //console.log("New Workspace: " + JSON.stringify(workspace));
+
+ // Specify Algolia's objectID with the Parse.Object unique ID
+ workspace.objectID = workspace.objectId;
+
+ //return callback(null, Workspace);
+
+ expertObject.query().find({
+
+ success: function(user) {
+
+ //skill;
+ //skill.add(workspace);
+
+ //console.log("Experts: " + JSON.stringify(user));
+
+
+ // Convert Parse.Object to JSON
+ //workspace = workspace.toJSON();
+
+ workspace['experts'] = user;
+ //console.log("New Workspace experts: " + JSON.stringify(workspace));
+
+ //return callback(null, Workspace);
+
+ indexWorkspaces.saveObject(workspace, function(err, content) {
+ if (err) {
+ return callback (err);
+ }
+ console.log('Parse<>Algolia object saved');
+
+ //var finalTime = process.hrtime(time);
+ //console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+ return callback (null, workspace);
+
+ });
+
+
+ },
+ error: function(error) {
+ alert("Error: " + error.code + " " + error.message);
+ return callback (error);
+ }
+ });
+
+
+ },
+ error: function(error) {
+ alert("Error: " + error.code + " " + error.message);
+ return callback (error);
+ }
+ });
+ }
+
+ async.parallel([
+ async.apply(createWorkspaceRoles),
+ async.apply(addWorkspacesAlgolia)
+
+ ], function (err, results) {
+ if (err) {
+ response.error(err);
+ }
+
+
+ var finalTime = process.hrtime(time);
+ console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+ response.success();
+ //return callback (null, resultsToMap);
+
+ });
+
+
+
+
+
+ },
+ error: function(error) {
+ alert("Error: " + error.code + " " + error.message);
+ response.error(error);
+ }
+ });
+
+
+
+ });*/
+
 
 
 
 // Delete AlgoliaSearch post object if it's deleted from Parse
 Parse.Cloud.afterDelete('Post', function(request) {
 
-  // Get Algolia objectID
-  var objectID = request.object.id;
-  
-  // Remove the object from Algolia
-  indexPosts.deleteObject(objectID, function(err, content) {
-    if (err) {
-      throw err;
-    }
-    console.log('Parse<>Algolia object deleted');
-  });
+    // Get Algolia objectID
+    var objectID = request.object.id;
+
+    // Remove the object from Algolia
+    indexPosts.deleteObject(objectID, function(err, content) {
+        if (err) {
+            throw err;
+        }
+        console.log('Parse<>Algolia object deleted');
+    });
 });
 
 // Delete AlgoliaSearch channel=project object if it's deleted from Parse
 Parse.Cloud.afterDelete('Project', function(request) {
 
-  // Get Algolia objectID
-  var objectID = request.object.id;
-  
-  // Remove the object from Algolia
-  indexProject.deleteObject(objectID, function(err, content) {
-    if (err) {
-      throw err;
-    }
-    console.log('Parse<>Algolia object deleted');
-  });
+    // Get Algolia objectID
+    var objectID = request.object.id;
+
+    // Remove the object from Algolia
+    indexProject.deleteObject(objectID, function(err, content) {
+        if (err) {
+            throw err;
+        }
+        console.log('Parse<>Algolia object deleted');
+    });
 });
 
 
 
 // Delete AlgoliaSearch meetings object if it's deleted from Parse
 /*Parse.Cloud.afterDelete('Meeting', function(request, response) {
-  
-  // Get Algolia objectID
-  //var meetingID = request.object.id;
 
-  var objectsToIndex = [];
-  var objectsID = [];
-  
-  function getMeetingObject (callback) {
-    
-    var meetingObject = Parse.Object.extend("Meeting");
-    var query = new Parse.Query(meetingObject);
-    console.log("objectId: " + JSON.stringify(request.object.id));  
-            
-    query.get(request.object.id, {
-      success: function(meetingObject) {
-        // The object was retrieved successfully.
-        console.log("meetingObject2: " + JSON.stringify(meetingObject));  
-            
-        return callback(null, meetingObject);
-        
-      },
-      error: function(object, error) {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
-        response.error("error: " + error);
-        
-      }
-    });
-    
-  };
-  
-  function getMeetingTranscript (meetingObject, callback) { 
-    
-    console.log("req: " + JSON.stringify(request));
-     
-    var meetingFile = meetingObject.get("MeetingJson");
-    console.log("MeetingFile: " + JSON.stringify(meetingFile));
-    console.log("MeetingURL: " + JSON.stringify(meetingFile.url()) );
-    
-    console.log("meetingObject: " + JSON.stringify(meetingObject));
+ // Get Algolia objectID
+ //var meetingID = request.object.id;
 
-    requestURL({
-        url: meetingFile.url(),
-        json: true
-    }, function (error, resp, body) {
-         
-        console.log("error: " + error);
-        console.log("response: " + JSON.stringify(resp));
-        console.log("body: " + JSON.stringify(body));
-        
-        if (!error && resp.statusCode === 200) {
-              console.log("body: " + body); // Print the json response
-              
-              objectsToIndex = body.IBMjson.results;
-              
-              return callback(null, objectsToIndex);
+ var objectsToIndex = [];
+ var objectsID = [];
 
-        }
-    });
-   
-    
-  };
- 
-  // function to get the utterance ID to delete multiple utterances in AlgoliaSearch Meeting Index tied to a given meeting ID
-  function getUtteranceID (objectsToIndex, callback) { 
- 
-    
-    console.log("objectsToIndex: " + JSON.stringify(objectsToIndex));
-        
-    //console.log("objectID: " + meetingObject.objectId);
-    //console.log("objectID: " + meetingObject.user.objectId);
-    
-    //objectsToIndex = objectsToIndex.results;
-    
-    async.forEach(objectsToIndex, function (meetingUtterance, callback){ 
-      
-        //meetingUtterance = meetingUtterance.alternatives;
-        //meetingUtterance['objectID'] = meetingUtterance.alternatives[0].AternativeID;
-        
-        console.log("meetingUtteranceID: "+ JSON.stringify(meetingUtterance.objectID)); // print the key
-        
-        objectsID.push(meetingUtterance.objectID);
-          
-        callback(null, objectsID); 
-    
-    }, function(err, objectsID) {
-        console.log('iterating done: ' + JSON.stringify(objectsToIndex));
-        return objectsID;
-    });  
-    
-    return callback(null, objectsID);
-    
-  };
-  
-  function deleteObjectsAlgolia (objectsID, callback) {
-      
-   console.log("objectToIndex2: "+ JSON.stringify(objectsID)); 
-  
-     // Remove the object from Algolia
-     // todo need to filter and only query the utterances with MeetingID to optimize performance
-    indexMeetings.deleteObjects(objectsID, function(err, content) {
-      if (err) {
-        throw err;
-      }
-      console.log('Parse<>Algolia object deleted: ' + JSON.stringify(content));
-    });
-    
-    return callback(null, objectsID);
-      
-  };
-    
-   async.waterfall([ 
-    async.apply(getMeetingObject),
-    async.apply(getMeetingTranscript),
-    async.apply(getUtteranceID),
-    async.apply(deleteObjectsAlgolia)
-    
-  ], function (err, objectsID) {
-        if (err) {
-            throw err;
-        }
+ function getMeetingObject (callback) {
 
-        console.log("deleted the following meeting utterances: " + JSON.stringify(objectsID));
+ var meetingObject = Parse.Object.extend("Meeting");
+ var query = new Parse.Query(meetingObject);
+ console.log("objectId: " + JSON.stringify(request.object.id));
 
-    });
-  
-  
-  });*/
+ query.get(request.object.id, {
+ success: function(meetingObject) {
+ // The object was retrieved successfully.
+ console.log("meetingObject2: " + JSON.stringify(meetingObject));
+
+ return callback(null, meetingObject);
+
+ },
+ error: function(object, error) {
+ // The object was not retrieved successfully.
+ // error is a Parse.Error with an error code and message.
+ response.error("error: " + error);
+
+ }
+ });
+
+ };
+
+ function getMeetingTranscript (meetingObject, callback) {
+
+ console.log("req: " + JSON.stringify(request));
+
+ var meetingFile = meetingObject.get("MeetingJson");
+ console.log("MeetingFile: " + JSON.stringify(meetingFile));
+ console.log("MeetingURL: " + JSON.stringify(meetingFile.url()) );
+
+ console.log("meetingObject: " + JSON.stringify(meetingObject));
+
+ requestURL({
+ url: meetingFile.url(),
+ json: true
+ }, function (error, resp, body) {
+
+ console.log("error: " + error);
+ console.log("response: " + JSON.stringify(resp));
+ console.log("body: " + JSON.stringify(body));
+
+ if (!error && resp.statusCode === 200) {
+ console.log("body: " + body); // Print the json response
+
+ objectsToIndex = body.IBMjson.results;
+
+ return callback(null, objectsToIndex);
+
+ }
+ });
+
+
+ };
+
+ // function to get the utterance ID to delete multiple utterances in AlgoliaSearch Meeting Index tied to a given meeting ID
+ function getUtteranceID (objectsToIndex, callback) {
+
+
+ console.log("objectsToIndex: " + JSON.stringify(objectsToIndex));
+
+ //console.log("objectID: " + meetingObject.objectId);
+ //console.log("objectID: " + meetingObject.user.objectId);
+
+ //objectsToIndex = objectsToIndex.results;
+
+ async.forEach(objectsToIndex, function (meetingUtterance, callback){
+
+ //meetingUtterance = meetingUtterance.alternatives;
+ //meetingUtterance['objectID'] = meetingUtterance.alternatives[0].AternativeID;
+
+ console.log("meetingUtteranceID: "+ JSON.stringify(meetingUtterance.objectID)); // print the key
+
+ objectsID.push(meetingUtterance.objectID);
+
+ callback(null, objectsID);
+
+ }, function(err, objectsID) {
+ console.log('iterating done: ' + JSON.stringify(objectsToIndex));
+ return objectsID;
+ });
+
+ return callback(null, objectsID);
+
+ };
+
+ function deleteObjectsAlgolia (objectsID, callback) {
+
+ console.log("objectToIndex2: "+ JSON.stringify(objectsID));
+
+ // Remove the object from Algolia
+ // todo need to filter and only query the utterances with MeetingID to optimize performance
+ indexMeetings.deleteObjects(objectsID, function(err, content) {
+ if (err) {
+ throw err;
+ }
+ console.log('Parse<>Algolia object deleted: ' + JSON.stringify(content));
+ });
+
+ return callback(null, objectsID);
+
+ };
+
+ async.waterfall([
+ async.apply(getMeetingObject),
+ async.apply(getMeetingTranscript),
+ async.apply(getUtteranceID),
+ async.apply(deleteObjectsAlgolia)
+
+ ], function (err, objectsID) {
+ if (err) {
+ throw err;
+ }
+
+ console.log("deleted the following meeting utterances: " + JSON.stringify(objectsID));
+
+ });
+
+
+ });*/
 
 // Delete AlgoliaSearch workspace object if it's deleted from Parse
 Parse.Cloud.afterDelete('WorkSpace', function(request) {
 
-  // Get Algolia objectID
-  var objectID = request.object.id;
-  
-  // Remove the object from Algolia
-  indexWorkspaces.deleteObject(objectID, function(err, content) {
-    if (err) {
-      throw err;
-    }
-    console.log('Parse<>Algolia object deleted');
-  });
+    // Get Algolia objectID
+    var objectID = request.object.id;
+
+    // Remove the object from Algolia
+    indexWorkspaces.deleteObject(objectID, function(err, content) {
+        if (err) {
+            throw err;
+        }
+        console.log('Parse<>Algolia object deleted');
+    });
 });
+
+// Delete AlgoliaSearch workspace object if it's deleted from Parse
+Parse.Cloud.afterDelete('Skill', function(request) {
+
+    // Get Algolia objectID
+    var objectID = request.object.id;
+
+    // Remove the object from Algolia
+    indexSkills.deleteObject(objectID, function(err, content) {
+        if (err) {
+            throw err;
+        }
+        console.log('Parse<>Algolia object deleted');
+    });
+});
+
+
 
 
 
 // Delete AlgoliaSearch user object if it's deleted from Parse
 Parse.Cloud.afterDelete('_User', function(request) {
 
-  // Get Algolia objectID
-  var objectID = request.object.id;
-  
-  // Remove the object from Algolia
-  indexUsers.deleteObject(objectID, function(err, content) {
-    if (err) {
-      throw err;
-    }
-    console.log('Parse<>Algolia object deleted');
-  });
+    // Get Algolia objectID
+    var objectID = request.object.id;
+
+    // Remove the object from Algolia
+    indexUsers.deleteObject(objectID, function(err, content) {
+        if (err) {
+            throw err;
+        }
+        console.log('Parse<>Algolia object deleted');
+    });
 });
 
 Parse.Cloud.define("sendEmail", function(request, response) {
-  // Email configuration
-  var transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com', 
-    port: 587,
-    auth: {
-      user: 'testmail.team5@gmail.com',
-      pass: '123team5'
-    }
-    // host: 'smtp.mandrillapp.com', 
-    // port: 587,
-    // secure: false,
-    // auth: {
-    //   user: 'Papr, Inc.',
-    //   pass: 'fCWj2D9rBGfJsaU1RSFU5w'
-    // }
-  });
-  var readHTMLFile = function(path, callback) {
-      fs.readFile(path, {encoding: 'utf-8'}, function (err, html) {
-        if (err) {
-            throw err;
-            callback(err);
+    // Email configuration
+    var transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        auth: {
+            user: 'testmail.team5@gmail.com',
+            pass: '123team5'
         }
-        else {
-            callback(null, html);
-        }
+        // host: 'smtp.mandrillapp.com',
+        // port: 587,
+        // secure: false,
+        // auth: {
+        //   user: 'Papr, Inc.',
+        //   pass: 'fCWj2D9rBGfJsaU1RSFU5w'
+        // }
     });
-  }
-  // var i = 0;
-  let allMail = request.params.emails
-  var counter = require('counter'),
-    count = counter(0, { target: Object.keys(allMail).length - 1, once: true }),
-    i, l = Object.keys(allMail).length - 1;
-  count.on('target', function() {
-    console.log("Total count : ", Object.keys(allMail).length);
-  }).start();
-  var flag = 0;
-  for (key in allMail) {
-      readHTMLFile(__dirname + '/templates/email-template.html', function(err, html) {
-        var template = handlebars.compile(html);
-        var temp = {
-          workspace : request.params.workspaceName,
-          username : request.params.username,
-          workspaceId : request.params.workspaceID,
-          email : request.params.emails[count.value]
-        }
-        var htmlToSend = template(temp);
-        var mailOptions = {
-          from: 'testmail.team5@gmail.com',
-          // from: 'Papr, Inc.', 
-          to : request.params.emails[count.value],
-          subject : 'Papr.ai',
-          html : htmlToSend
-        };
-        transporter.sendMail(mailOptions).then(function(info){
-          console.log("Mail sent ", info.response);
-        }).catch(function(err){
-          console.log(err);
-          response.error(err);
+    var readHTMLFile = function(path, callback) {
+        fs.readFile(path, {encoding: 'utf-8'}, function (err, html) {
+            if (err) {
+                throw err;
+                callback(err);
+            }
+            else {
+                callback(null, html);
+            }
         });
-        count.value += 1;
-        if(Object.keys(allMail).length == count.value){
-          response.success("Mail sent");
-        }
-    });
-  }
+    }
+    // var i = 0;
+    let allMail = request.params.emails
+    var counter = require('counter'),
+        count = counter(0, { target: Object.keys(allMail).length - 1, once: true }),
+        i, l = Object.keys(allMail).length - 1;
+    count.on('target', function() {
+        console.log("Total count : ", Object.keys(allMail).length);
+    }).start();
+    var flag = 0;
+    for (key in allMail) {
+        readHTMLFile(__dirname + '/templates/email-template.html', function(err, html) {
+            var template = handlebars.compile(html);
+            var temp = {
+                workspace : request.params.workspaceName,
+                username : request.params.username,
+                workspaceId : request.params.workspaceID,
+                email : request.params.emails[count.value]
+            }
+            var htmlToSend = template(temp);
+            var mailOptions = {
+                from: 'testmail.team5@gmail.com',
+                // from: 'Papr, Inc.',
+                to : request.params.emails[count.value],
+                subject : 'Papr.ai',
+                html : htmlToSend
+            };
+            transporter.sendMail(mailOptions).then(function(info){
+                console.log("Mail sent ", info.response);
+            }).catch(function(err){
+                console.log(err);
+                response.error(err);
+            });
+            count.value += 1;
+            if(Object.keys(allMail).length == count.value){
+                response.success("Mail sent");
+            }
+        });
+    }
 });
 
 Parse.Cloud.define("sendNotification", function(request, response) {
-  var User = Parse.Object.extend('User');
-  var user = new Parse.Query(User);
-  user.exists("deviceToken");
-  var Notification = Parse.Object.extend('Notification');
-  var query = new Parse.Query(Notification);
-  query.include('userTo.deviceToken');
-  query.matchesQuery("userTo", user);
-  query.notEqualTo('hasSent', true);
-  query.find({
-    success: function(results) {
-      async.each(results, function (result, callback) {
-        var note = new apn.Notification();
-        note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
-        note.title = "Papr.ai",
-        note.body = result.get("message"),
-        note.payload = {
-          'workspace' : result.get("workspace"),
-          'type' : result.get("type"),
-          'post' : result.get("post"),
-          'postQuestionMessage' : result.get("postQuestionMessage"),
-          'postQuestion' : result.get("postQuestion"),
-        };
-        note.topic = "com.bluelabellabs.bl248";
-        apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
-          result.set("hasSent", true);
-          result.save();
-          if((res.sent).length == 1) {
-            console.log("Sent To ", res.sent[0].device);
-          } else{
-            console.log("Error Sending Notification: \nUsername : " + result.get("userTo").get("username") + "\nDevice Token : " + res.failed[0].device + "\nReason : " + res.failed[0].response.reason);
-          }
-        }).catch(err => {
-          console.log(err);
-        });
-        callback(null, result);
-      }, function(err) {
-        if (err){
-          console.log('ERROR', err);
-          response.error(err);
+    var User = Parse.Object.extend('User');
+    var user = new Parse.Query(User);
+    user.exists("deviceToken");
+    var Notification = Parse.Object.extend('Notification');
+    var query = new Parse.Query(Notification);
+    query.include('userTo.deviceToken');
+    query.matchesQuery("userTo", user);
+    query.notEqualTo('hasSent', true);
+    query.find({
+        success: function(results) {
+            async.each(results, function (result, callback) {
+                var note = new apn.Notification();
+                note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
+                note.title = "Papr.ai",
+                    note.body = result.get("message"),
+                    note.payload = {
+                        'workspace' : result.get("workspace"),
+                        'type' : result.get("type"),
+                        'post' : result.get("post"),
+                        'postQuestionMessage' : result.get("postQuestionMessage"),
+                        'postQuestion' : result.get("postQuestion"),
+                    };
+                note.topic = "com.bluelabellabs.bl248";
+                apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
+                    result.set("hasSent", true);
+                result.save();
+                if((res.sent).length == 1) {
+                    console.log("Sent To ", res.sent[0].device);
+                } else{
+                    console.log("Error Sending Notification: \nUsername : " + result.get("userTo").get("username") + "\nDevice Token : " + res.failed[0].device + "\nReason : " + res.failed[0].response.reason);
+                }
+            }).catch(err => {
+                    console.log(err);
+            });
+                callback(null, result);
+            }, function(err) {
+                if (err){
+                    console.log('ERROR', err);
+                    response.error(err);
+                }
+                response.success("Notification sent to all users");
+            });
+        },
+        error: function(e) {
+            console.error(e);
+            response.error(e);
         }
-        response.success("Notification sent to all users");
-      });
-    },
-    error: function(e) {
-      console.error(e);
-      response.error(e);
-    }
-  });
+    });
 });
 
 cron.schedule('*/1 * * * *', () => {
-  console.log("Cron Job Called at : ", new Date());
-  var User = Parse.Object.extend('User');
-  var user = new Parse.Query(User);
-  user.exists("deviceToken");
-  var Notification = Parse.Object.extend('Notification');
-  var query = new Parse.Query(Notification);
-  query.include('userTo.deviceToken');
-  query.matchesQuery("userTo", user);
-  query.notEqualTo('hasSent', true);
-  query.find({
+    console.log("Cron Job Called at : ", new Date());
+var User = Parse.Object.extend('User');
+var user = new Parse.Query(User);
+user.exists("deviceToken");
+var Notification = Parse.Object.extend('Notification');
+var query = new Parse.Query(Notification);
+query.include('userTo.deviceToken');
+query.matchesQuery("userTo", user);
+query.notEqualTo('hasSent', true);
+query.find({
     success: function(results) {
-      async.each(results, function (result, callback) {
-        var note = new apn.Notification();
-        note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
-        note.title = "Papr.ai",
-        note.body = result.get("message"),
-        note.payload = {
-          'workspace' : result.get("workspace"),
-          'type' : result.get("type"),
-          'post' : result.get("post"),
-          'postQuestionMessage' : result.get("postQuestionMessage"),
-          'postQuestion' : result.get("postQuestion"),
-        };
-        note.topic = "com.bluelabellabs.bl248";
-        apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
-          result.set("hasSent", true);
-          result.save();
-          if((res.sent).length == 1) {
-            console.log("Sent To ", res.sent[0].device);
-          } else{
-            console.log("Error Sending Notification: \nUsername : " + result.get("userTo").get("username") + "\nDevice Token : " + res.failed[0].device + "\nReason : " + res.failed[0].response.reason);
-          }
+        async.each(results, function (result, callback) {
+            var note = new apn.Notification();
+            note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
+            note.title = "Papr.ai",
+                note.body = result.get("message"),
+                note.payload = {
+                    'workspace' : result.get("workspace"),
+                    'type' : result.get("type"),
+                    'post' : result.get("post"),
+                    'postQuestionMessage' : result.get("postQuestionMessage"),
+                    'postQuestion' : result.get("postQuestion"),
+                };
+            note.topic = "com.bluelabellabs.bl248";
+            apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
+                result.set("hasSent", true);
+            result.save();
+            if((res.sent).length == 1) {
+                console.log("Sent To ", res.sent[0].device);
+            } else{
+                console.log("Error Sending Notification: \nUsername : " + result.get("userTo").get("username") + "\nDevice Token : " + res.failed[0].device + "\nReason : " + res.failed[0].response.reason);
+            }
         }).catch(err => {
-          console.log(err);
+                console.log(err);
         });
-        callback(null, result);
-      }, function(err) {
-        if (err){
-          console.log('ERROR', err);
-          response.error(err);
-        }
-        response.success("Notification sent to all users");
-      });
+            callback(null, result);
+        }, function(err) {
+            if (err){
+                console.log('ERROR', err);
+                response.error(err);
+            }
+            response.success("Notification sent to all users");
+        });
     },
     error: function(e) {
-      console.error(e);
-      response.error(e);
+        console.error(e);
+        response.error(e);
     }
-  });
+});
 });
 
 Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
-  // let deviceToken = "60e4c51275d60d79b9a73332cd14c9f82e8474176ed19de4a41131a21363ef96"; // Production true
-  // let deviceToken = "7689db229f040ad9e35a59732a5506b7fd27bb5c0b6f151615383ff8c71caddf"; // Production false
-  let deviceToken = request.params.token;
-  let production = request.params.production;
-  if( production ){
+    // let deviceToken = "60e4c51275d60d79b9a73332cd14c9f82e8474176ed19de4a41131a21363ef96"; // Production true
+    // let deviceToken = "7689db229f040ad9e35a59732a5506b7fd27bb5c0b6f151615383ff8c71caddf"; // Production false
+    let deviceToken = request.params.token;
+let production = request.params.production;
+if( production ){
     fileForPushNotification = 'Papr-Distribution-APNS.pem';
     keyFileForPushNotification = 'Key-Distribution.pem';
-  } else {
+} else {
     fileForPushNotification = 'Papr-Development-APNS.pem';
     keyFileForPushNotification = 'Key-Development.pem';
-  }
-  var options = {
+}
+var options = {
     cert: path.resolve(fileForPushNotification),
     key: path.resolve(keyFileForPushNotification),
     passphrase: 'papr@123',
     production: production
-  };
-  var apnProvider = new apn.Provider(options);
-  var note = new apn.Notification();
-  note.expiry = Math.floor(Date.now() / 1000) + 3600; 
-  note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
-  note.title = "Papr.ai";
-  note.body = "test message";
-  note.payload = {'messageFrom': 'John Doe'};
-  note.topic = "com.bluelabellabs.bl248";
-  apnProvider.send(note, deviceToken).then( (result) => {
+};
+var apnProvider = new apn.Provider(options);
+var note = new apn.Notification();
+note.expiry = Math.floor(Date.now() / 1000) + 3600;
+note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
+note.title = "Papr.ai";
+note.body = "test message";
+note.payload = {'messageFrom': 'John Doe'};
+note.topic = "com.bluelabellabs.bl248";
+apnProvider.send(note, deviceToken).then( (result) => {
     if((result.sent).length == 1) {
-      console.log("Sent To ", deviceToken);
-    } else{
-      console.log("Error Sending Notification: \nDevice Token : " + result.failed[0].device + " \nReason : " + result.failed[0].response.reason);
-    }
-    response.success(result);
-  }).catch(err => {
+    console.log("Sent To ", deviceToken);
+} else{
+    console.log("Error Sending Notification: \nDevice Token : " + result.failed[0].device + " \nReason : " + result.failed[0].response.reason);
+}
+response.success(result);
+}).catch(err => {
     console.log(JSON.stringify(err));
-    response.error(JSON.stringify(err))
-  });
+response.error(JSON.stringify(err))
+});
 });
 
-Parse.Cloud.define("liveQueryMessageType", function(request, response) {
-  response.success(request);
-    let query = new Parse.Query('PostQuestionMessage');
-    query.equalTo('type', '2');
-    let subscription = query.subscribe();
-    subscription.on('update', (people) => {
-      response.success(people); // This should output Mengyan
-    });
-});
