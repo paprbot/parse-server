@@ -20,7 +20,7 @@ var indexSkills = client.initIndex('dev_skills');
 const requestPromise = require('request-promise');
 var fs = require('fs');
 
-var im = require('imagemagick');
+// var im = require('imagemagick');
 
 //const sharp = require('sharp');
 
@@ -1374,6 +1374,11 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     var user = req.object;
     var socialProfilePicURL = user.get("socialProfilePicURL");
     var profileImage = user.get("profileimage");
+
+    var userStatus = Parse.Object.extend("Status");
+    var querySKILL = new Parse.Query(querySkill);
+
+
     if (user.dirty("profileimage")) {
 
         user.isDirtyProfileimage = true;
