@@ -1375,9 +1375,6 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     var socialProfilePicURL = user.get("socialProfilePicURL");
     var profileImage = user.get("profileimage");
 
-    var userStatus = Parse.Object.extend("Status");
-    var querySKILL = new Parse.Query(querySkill);
-
 
     if (user.dirty("profileimage")) {
 
@@ -1387,6 +1384,13 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
 
     } else {user.set("isDirtyProfileimage", false);}
+
+    if (user.dirty("isOnline")) {
+        user.isDirtyIsOnline = true;
+
+    } else {user.set("isDirtyIsOnline", false);}
+
+    if (user.isNew()) { user.set("showAvailability", true);}
 
 
     if (user.isNew() && socialProfilePicURL!=null) {
@@ -1411,7 +1415,8 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
             user.set("profileimage", file);
 
-        response.success();
+
+            response.success();
     })
     .catch(console.error);
 
@@ -3374,6 +3379,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
     var queryUser = new Parse.Query("_User");
     queryUser.include( ["currentCompany"] );
 
+
     //queryUser.equalTo("objectId", objectToSave.objectId);
 
     queryUser.get(objectToSave.objectId , {useMasterKey: true})
@@ -3381,14 +3387,13 @@ Parse.Cloud.afterSave('_User', function(request, response) {
         // The object was retrieved successfully.
         //console.log("Result from get " + JSON.stringify(Workspace));
 
-        //console.log("user: " + JSON.stringify(user));
         //console.log("userid: " + JSON.stringify(objectToSave.objectId));
 
         function updateAlgoliaWorkspaceExpertProfileImage (callback) {
 
         //console.log("username: " + JSON.stringify(objectToSave.username));
 
-        if (user.isDirtyProfileimage != true) {
+        if (user.isDirtyProfileimage != true && user.isDirtyIsOnline != true) {
 
 
             return callback (null, user);
