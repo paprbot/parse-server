@@ -1378,7 +1378,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
     if (user.dirty("profileimage")) {
 
-        user.isDirtyProfileimage = true;
+        user.set("isDirtyProfileimage", true);
 
         console.log("Profileimage url: " + JSON.stringify(profileImage.toJSON().url));
 
@@ -1386,7 +1386,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     } else {user.set("isDirtyProfileimage", false);}
 
     if (user.dirty("isOnline")) {
-        user.isDirtyIsOnline = true;
+        user.set("isDirtyIsOnline", true);
 
     } else {user.set("isDirtyIsOnline", false);}
 
@@ -3393,8 +3393,9 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
         //console.log("username: " + JSON.stringify(objectToSave.username));
 
-        if (user.isDirtyProfileimage != true && user.isDirtyIsOnline != true) {
+        if (user.get("isDirtyProfileimage") != true && user.get("isDirtyIsOnline") != true) {
 
+            //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
 
             return callback (null, user);
 
