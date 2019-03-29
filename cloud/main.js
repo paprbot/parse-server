@@ -1307,7 +1307,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                                         var expertrole = role;
 
-                                        //console.log("Role: " + JSON.stringify(role));
+                                        console.log("Role: " + JSON.stringify(role));
 
                                         expertrole.getUsers(null, {useMasterKey: true}).add(experts);
                                         expertrole.save(null, {useMasterKey: true});
@@ -1368,7 +1368,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                             success: function (followers) {
 
-                                //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
+                                console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
 
                                 delete workspaceToSave.skills;
                                 delete workspaceToSave.experts;
@@ -1381,7 +1381,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                                     if (workspaceToSave.type === 'private') {
                                         viewableBy.push(followers[i].toJSON().user.objectId);
-                                        //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
+                                        console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
                                     }
 
 
@@ -1398,7 +1398,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                                 }
 
-                                // console.log("followers: " + JSON.stringify(workspaceToSave.followers));
+                                console.log("followers: " + JSON.stringify(workspaceToSave.followers));
 
                                 return callback(null, workspaceToSave);
 
@@ -1424,7 +1424,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         return cb(err);
                     }
 
-                    //console.log("results length: " + JSON.stringify(results));
+                    console.log("results length: " + JSON.stringify(results));
 
                     if (collection === "WorkSpace") {
 

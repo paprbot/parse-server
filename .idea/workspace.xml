@@ -21,12 +21,10 @@
       <file leaf-file-name="main.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/cloud/main.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="780">
-              <caret line="1476" column="10" lean-forward="false" selection-start-line="1476" selection-start-column="10" selection-end-line="1476" selection-end-column="10" />
+            <state relative-caret-position="3646">
+              <caret line="1444" column="21" lean-forward="true" selection-start-line="1444" selection-start-column="21" selection-end-line="1444" selection-end-column="21" />
               <folding>
                 <element signature="e#38219#39935#0" expanded="false" />
-                <element signature="e#40084#49128#0" expanded="false" />
-                <element signature="e#49403#49793#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -241,12 +239,12 @@
       <updated>1552240234923</updated>
       <workItem from="1552240237164" duration="1870000" />
       <workItem from="1553631128411" duration="10274000" />
-      <workItem from="1553789591768" duration="23447000" />
+      <workItem from="1553789591768" duration="24036000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="35591000" />
+    <option name="totallyTimeSpent" value="36180000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-11" y="0" width="3022" height="1931" extended-state="0" />
@@ -288,8 +286,6 @@
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#38219#39935#0" expanded="false" />
-            <element signature="e#40084#49128#0" expanded="false" />
-            <element signature="e#49403#49793#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -316,8 +312,6 @@
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#38219#39935#0" expanded="false" />
-            <element signature="e#40084#49128#0" expanded="false" />
-            <element signature="e#49403#49793#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -370,12 +364,10 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/cloud/main.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="780">
-          <caret line="1476" column="10" lean-forward="false" selection-start-line="1476" selection-start-column="10" selection-end-line="1476" selection-end-column="10" />
+        <state relative-caret-position="3646">
+          <caret line="1444" column="21" lean-forward="true" selection-start-line="1444" selection-start-column="21" selection-end-line="1444" selection-end-column="21" />
           <folding>
             <element signature="e#38219#39935#0" expanded="false" />
-            <element signature="e#40084#49128#0" expanded="false" />
-            <element signature="e#49403#49793#0" expanded="false" />
           </folding>
         </state>
       </provider>
