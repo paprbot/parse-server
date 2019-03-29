@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/cloud/main.js" description="// Convert Parse.Object to JSON&#10;    var workspace_..." line="3955" />
+    <bookmark url="file://$PROJECT_DIR$/cloud/main.js" description="// Convert Parse.Object to JSON&#10;    var workspace_..." line="3926" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b2df1638-e025-423c-b2c1-d41942d170e9" name="Default" comment="" />
@@ -21,8 +21,8 @@
       <file leaf-file-name="main.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/cloud/main.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3646">
-              <caret line="1444" column="21" lean-forward="true" selection-start-line="1444" selection-start-column="21" selection-end-line="1444" selection-end-column="21" />
+            <state relative-caret-position="330">
+              <caret line="1393" column="20" lean-forward="false" selection-start-line="1393" selection-start-column="20" selection-end-line="1393" selection-end-column="20" />
               <folding>
                 <element signature="e#38219#39935#0" expanded="false" />
               </folding>
@@ -239,12 +239,12 @@
       <updated>1552240234923</updated>
       <workItem from="1552240237164" duration="1870000" />
       <workItem from="1553631128411" duration="10274000" />
-      <workItem from="1553789591768" duration="24036000" />
+      <workItem from="1553789591768" duration="25281000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="36180000" />
+    <option name="totallyTimeSpent" value="37425000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-11" y="0" width="3022" height="1931" extended-state="0" />
@@ -364,8 +364,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/cloud/main.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3646">
-          <caret line="1444" column="21" lean-forward="true" selection-start-line="1444" selection-start-column="21" selection-end-line="1444" selection-end-column="21" />
+        <state relative-caret-position="330">
+          <caret line="1393" column="20" lean-forward="false" selection-start-line="1393" selection-start-column="20" selection-end-line="1393" selection-end-column="20" />
           <folding>
             <element signature="e#38219#39935#0" expanded="false" />
           </folding>

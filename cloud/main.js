@@ -1292,43 +1292,10 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                             success: function (experts) {
 
-                                // Convert Parse.Object to JSON
-                                //workspace = workspace.toJSON();
-                                var User = new Parse.Object("_User");
-                                var queryRole = new Parse.Query(Parse.Role);
 
                                 console.log("\n Experts: " + JSON.stringify(experts));
 
-                                queryRole.equalTo('name', 'expert-' + workspace.id);
-
-                                queryRole.first({
-                                    success: function (role) {
-                                        //console.log("Role when expert is added: " + JSON.stringify(role));
-
-                                        var expertrole = role;
-
-                                        console.log("Role: " + JSON.stringify(role));
-
-                                        expertrole.getUsers(null, {useMasterKey: true}).add(experts);
-                                        expertrole.save(null, {useMasterKey: true});
-                                        var userRolesRelation;
-
-                                        for (var i = 0; i < experts.length; i++) {
-
-                                            userRolesRelation = experts[i].relation("roles");
-                                            userRolesRelation.add(expertrole); // add owner role to the user roles field.
-                                            experts[i].save(null, {useMasterKey: true});
-
-                                        }
-
-                                        return callback(null, experts);
-
-                                    },
-                                    error: function (err) {
-                                        return callback(err);
-                                    }
-
-                                }, {useMasterKey: true});
+                                return callback(null, experts);
 
 
                             },
@@ -1439,7 +1406,11 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         console.log("expertsToSave: " + JSON.stringify(expertsToSave));
                         console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
 
-                        return cb(null, workspaceToSave);
+                        object = workspaceToSave;
+
+                        console.log("object: " + JSON.stringify(object));
+
+                        return cb(null, object);
 
 
                     }
