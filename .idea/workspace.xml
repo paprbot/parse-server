@@ -21,8 +21,8 @@
       <file leaf-file-name="main.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/cloud/main.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="792">
-              <caret line="3767" column="0" lean-forward="true" selection-start-line="3767" selection-start-column="0" selection-end-line="3767" selection-end-column="0" />
+            <state relative-caret-position="1459">
+              <caret line="4903" column="0" lean-forward="true" selection-start-line="4903" selection-start-column="0" selection-end-line="4903" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -62,6 +62,7 @@
       <find>async.</find>
       <find>queryWorkspaceFollower</find>
       <find>indexWorkspaces.s</find>
+      <find>workspaceToSave</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -234,12 +235,12 @@
       <updated>1552240234923</updated>
       <workItem from="1552240237164" duration="1870000" />
       <workItem from="1553631128411" duration="10274000" />
-      <workItem from="1553789591768" duration="13114000" />
+      <workItem from="1553789591768" duration="14321000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="25258000" />
+    <option name="totallyTimeSpent" value="26465000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-11" y="0" width="3022" height="1931" extended-state="0" />
@@ -355,8 +356,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/cloud/main.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="792">
-          <caret line="3767" column="0" lean-forward="true" selection-start-line="3767" selection-start-column="0" selection-end-line="3767" selection-end-column="0" />
+        <state relative-caret-position="1459">
+          <caret line="4903" column="0" lean-forward="true" selection-start-line="4903" selection-start-column="0" selection-end-line="4903" selection-end-column="0" />
           <folding />
         </state>
       </provider>
