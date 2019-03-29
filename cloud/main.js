@@ -3891,7 +3891,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
     queryWorkspace.equalTo("objectId", workspaceToSave.objectId);
     queryWorkspace.include( ["user"] );
-    //queryProject.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
+    queryWorkspace.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image"]);
+
+
 
     //console.log("Workspace Object: " + JSON.stringify(workspace.id));
     //console.log("objectID: " + objectToSave.objectId);
@@ -4178,7 +4180,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                 var User = new Parse.Object("_User");
                 var queryRole = new Parse.Query(Parse.Role);
 
-                console.log("\n Experts: " + JSON.stringify(experts));
+                //console.log("\n Experts: " + JSON.stringify(experts));
 
                 queryRole.equalTo('name', 'expert-' + workspace.id);
 
