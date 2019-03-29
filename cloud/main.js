@@ -1233,342 +1233,247 @@ Parse.Cloud.define("indexCollection", function(request, response) {
     query.find({
         success: function(objectsToIndex) {
 
-                async.map(objectsToIndex, function(object, cb) {
+            async.map(objectsToIndex, function (object, cb) {
 
-                    var workspace = object;
-                    var workspaceToSave = object.toJSON();
+                var workspace = object;
+                var workspaceToSave = object.toJSON();
 
-                    function getSkills (callback) {
+                function getSkills(callback) {
 
-                        if (collection != "WorkSpace") {
+                    if (collection != "WorkSpace") {
 
-                            return callback (null, object);
+                        return callback(null, object);
 
-                        } else {
+                    } else {
 
-                            // todo need to check if skills is dirty, if yes then query to update algolia if not then ignore.
+                        // todo need to check if skills is dirty, if yes then query to update algolia if not then ignore.
 
-                            var skillObject = Parse.Object.extend("Skill");
-                            //var skillsRelation = new skillObject.relation("skills");
-                            skillObject = workspace.get("skills");
-                            //console.log("Skills: " + JSON.stringify(skillObject));
-                            //console.log("Skill Length:" + skillObject);
+                        var skillObject = Parse.Object.extend("Skill");
+                        //var skillsRelation = new skillObject.relation("skills");
+                        skillObject = workspace.get("skills");
+                        //console.log("Skills: " + JSON.stringify(skillObject));
+                        //console.log("Skill Length:" + skillObject);
 
-                            var skillObjectQuery = skillObject.query();
-                            skillObjectQuery.ascending("level");
-                            skillObjectQuery.find({
+                        var skillObjectQuery = skillObject.query();
+                        skillObjectQuery.ascending("level");
+                        skillObjectQuery.find({
 
-                                success: function (skill) {
+                            success: function (skill) {
 
-                                    console.log("Skills: " + JSON.stringify(skill));
+                                console.log("Skills: " + JSON.stringify(skill));
 
-                                    return callback(null, skill);
+                                return callback(null, skill);
 
-                                },
-                                error: function (error) {
-                                    alert("Error: " + error.code + " " + error.message);
-                                    return callback(error);
-                                }
-                            }, {useMasterKey: true});
-                        }
-
+                            },
+                            error: function (error) {
+                                alert("Error: " + error.code + " " + error.message);
+                                return callback(error);
+                            }
+                        }, {useMasterKey: true});
                     }
 
-                    function getExperts (callback) {
+                }
 
-                        if (collection != "WorkSpace") {
+                function getExperts(callback) {
 
-                            return callback (null, object);
+                    if (collection != "WorkSpace") {
 
-                        } else {
+                        return callback(null, object);
 
-                            // todo check if expert is dirty, if no ignore and return callback
+                    } else {
 
-                            var expertObject = Parse.Object.extend("_User");
-                            expertObject = workspace.get("experts");
-                            //console.log("Experts: " + JSON.stringify(expertObject));
+                        // todo check if expert is dirty, if no ignore and return callback
 
-                            expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
+                        var expertObject = Parse.Object.extend("_User");
+                        expertObject = workspace.get("experts");
+                        //console.log("Experts: " + JSON.stringify(expertObject));
 
-                                success: function (experts) {
+                        expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
 
-                                    // Convert Parse.Object to JSON
-                                    //workspace = workspace.toJSON();
-                                    var User = new Parse.Object("_User");
-                                    var queryRole = new Parse.Query(Parse.Role);
+                            success: function (experts) {
 
-                                    console.log("\n Experts: " + JSON.stringify(experts));
+                                // Convert Parse.Object to JSON
+                                //workspace = workspace.toJSON();
+                                var User = new Parse.Object("_User");
+                                var queryRole = new Parse.Query(Parse.Role);
 
-                                    queryRole.equalTo('name', 'expert-' + workspace.id);
+                                console.log("\n Experts: " + JSON.stringify(experts));
 
-                                    queryRole.first({
-                                        success: function (role) {
-                                            //console.log("Role when expert is added: " + JSON.stringify(role));
+                                queryRole.equalTo('name', 'expert-' + workspace.id);
 
-                                            var expertrole = role;
+                                queryRole.first({
+                                    success: function (role) {
+                                        //console.log("Role when expert is added: " + JSON.stringify(role));
 
-                                            //console.log("Role: " + JSON.stringify(role));
+                                        var expertrole = role;
 
-                                            expertrole.getUsers(null, {useMasterKey: true}).add(experts);
-                                            expertrole.save(null, {useMasterKey: true});
-                                            var userRolesRelation;
+                                        //console.log("Role: " + JSON.stringify(role));
 
-                                            for (var i = 0; i < experts.length; i++) {
+                                        expertrole.getUsers(null, {useMasterKey: true}).add(experts);
+                                        expertrole.save(null, {useMasterKey: true});
+                                        var userRolesRelation;
 
-                                                userRolesRelation = experts[i].relation("roles");
-                                                userRolesRelation.add(expertrole); // add owner role to the user roles field.
-                                                experts[i].save(null, {useMasterKey: true});
+                                        for (var i = 0; i < experts.length; i++) {
 
-                                            }
+                                            userRolesRelation = experts[i].relation("roles");
+                                            userRolesRelation.add(expertrole); // add owner role to the user roles field.
+                                            experts[i].save(null, {useMasterKey: true});
 
-                                            return callback(null, experts);
-
-                                        },
-                                        error: function (err) {
-                                            return callback(err);
                                         }
 
-                                    }, {useMasterKey: true});
+                                        return callback(null, experts);
 
-
-                                },
-                                error: function (error) {
-                                    alert("Error: " + error.code + " " + error.message);
-                                    return callback(error);
-                                }
-                            }, {useMasterKey: true});
-
-                        }
-
-                    }
-
-                    function getWorkspaceFollowers (callback) {
-
-                        //todo check for when we should be updating workspace_follower in Algolia Index
-                        // get workspace_followers only in the following scenarios (1) user isFollower or isMember == true (2) workspace admin sent request for a user to join a workspace it's viewable to that user.
-
-                        if (collection != "WorkSpace") {
-
-                            return callback (null, object);
-
-                        } else {
-
-                            var WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-                            var queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
-
-                            let viewableBy = [];
-
-                            queryWorkspaceFollower.equalTo("workspace", workspace);
-
-                            // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
-                            queryWorkspaceFollower.limit(10000);
-                            // queryWorkspaceFollower.include( ["workspace"] );
-
-                            queryWorkspaceFollower.find({
-
-                                success: function (followers) {
-
-                                    //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
-
-                                    delete workspaceToSave.skills;
-                                    delete workspaceToSave.experts;
-
-                                    workspaceToSave.objectID = workspaceToSave.objectId;
-                                    workspaceToSave['followers'] = followers;
-
-
-                                    for (var i = 0; i < followers.length; i++) {
-
-                                        if (workspaceToSave.type === 'private') {
-                                            viewableBy.push(followers[i].toJSON().user.objectId);
-                                            //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
-                                        }
-
-
+                                    },
+                                    error: function (err) {
+                                        return callback(err);
                                     }
+
+                                }, {useMasterKey: true});
+
+
+                            },
+                            error: function (error) {
+                                alert("Error: " + error.code + " " + error.message);
+                                return callback(error);
+                            }
+                        }, {useMasterKey: true});
+
+                    }
+
+                }
+
+                function getWorkspaceFollowers(callback) {
+
+                    //todo check for when we should be updating workspace_follower in Algolia Index
+                    // get workspace_followers only in the following scenarios (1) user isFollower or isMember == true (2) workspace admin sent request for a user to join a workspace it's viewable to that user.
+
+                    if (collection != "WorkSpace") {
+
+                        return callback(null, object);
+
+                    } else {
+
+                        var WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+                        var queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+
+                        let viewableBy = [];
+
+                        queryWorkspaceFollower.equalTo("workspace", workspace);
+
+                        // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
+                        queryWorkspaceFollower.limit(10000);
+                        // queryWorkspaceFollower.include( ["workspace"] );
+
+                        queryWorkspaceFollower.find({
+
+                            success: function (followers) {
+
+                                //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
+
+                                delete workspaceToSave.skills;
+                                delete workspaceToSave.experts;
+
+                                workspaceToSave.objectID = workspaceToSave.objectId;
+                                workspaceToSave['followers'] = followers;
+
+
+                                for (var i = 0; i < followers.length; i++) {
 
                                     if (workspaceToSave.type === 'private') {
-
-                                        workspaceToSave.viewable_by = viewableBy;
-                                        //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
-
-                                    } else if (workspaceToSave.type === 'public') {
-
-                                        workspaceToSave.viewable_by = ['*'];
-
+                                        viewableBy.push(followers[i].toJSON().user.objectId);
+                                        //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
                                     }
 
-                                    // console.log("followers: " + JSON.stringify(workspaceToSave.followers));
 
-                                    return callback(null, workspaceToSave);
-
-                                },
-                                error: function (error) {
-                                    alert("Error: " + error.code + " " + error.message);
-                                    return callback(error);
                                 }
-                            }, {useMasterKey: true});
 
-                        }
+                                if (workspaceToSave.type === 'private') {
 
+                                    workspaceToSave.viewable_by = viewableBy;
+                                    //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
 
-                    }
+                                } else if (workspaceToSave.type === 'public') {
 
+                                    workspaceToSave.viewable_by = ['*'];
 
-                    }
+                                }
 
-                    async.parallel([
-                        async.apply(getSkills),
-                        async.apply(getExperts),
-                        async.apply(getWorkspaceFollowers)
+                                // console.log("followers: " + JSON.stringify(workspaceToSave.followers));
 
-                    ], function (err, results) {
-                        if (err) {
-                            return cb (err);
-                        }
+                                return callback(null, workspaceToSave);
 
-                        //console.log("results length: " + JSON.stringify(results));
-
-                        if (collection === "WorkSpace") {
-
-                            workspaceToSave = results[3];
-                            var skillsToSave = results[1];
-                            var expertsToSave = results[2];
-
-                            workspaceToSave["skills"] = skillsToSave;
-                            workspaceToSave["experts"] = expertsToSave;
-
-                            console.log("skillsToSave: " + JSON.stringify(skillsToSave));
-                            console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-                            console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
-
-                            return cb (null, workspaceToSave);
-
-
+                            },
+                            error: function (error) {
+                                alert("Error: " + error.code + " " + error.message);
+                                return callback(error);
                             }
-                        else {
+                        }, {useMasterKey: true});
 
-                                // convert to regular key/value JavaScript object
-                                object = results[3];
-                                object = object.toJSON();
-                                // Specify Algolia's objectID with the Parse.Object unique ID
-                                object.objectID = object.objectId;
-
-                                return cb (null, object);
-                        }
-
-                    });
-
-                    /*
-                    var skillObject = Parse.Object.extend("Skill");
-                    var expertObject = Parse.Object.extend("_User");
-
-                    //console.log("workspace: " + JSON.stringify(object));
-
-                    skillObject = object.get("skills");
-                    //console.log("Skills Index: " + JSON.stringify(skillObject));
-
-                    expertObject = object.get("experts");
-                    //console.log("Experts: " + JSON.stringify(expertObject));
-
-                    // convert to regular key/value JavaScript object
-                    object = object.toJSON();
-                    // Specify Algolia's objectID with the Parse.Object unique ID
-                    object.objectID = object.objectId;
-
-                    var skillObjectQuery = skillObject.query();
-                    skillObjectQuery.ascending("level");
-                    skillObjectQuery.find({
-
-                        success: function (skill) {
-
-                            //console.log("SKills : "+ JSON.stringify(skill));
+                    }
 
 
-                            object['skills'] = skill;
-                            //console.log("New Workspace: " + JSON.stringify(object));
+                }
 
-                            // Specify Algolia's objectID with the Parse.Object unique ID
-                            //workspace.objectID = workspace.objectId;
+                async.parallel([
+                    async.apply(getSkills),
+                    async.apply(getExperts),
+                    async.apply(getWorkspaceFollowers)
 
-                            expertObject.query().find({
+                ], function (err, results) {
+                    if (err) {
+                        return cb(err);
+                    }
 
-                                success: function(user) {
+                    //console.log("results length: " + JSON.stringify(results));
 
+                    if (collection === "WorkSpace") {
 
-                                    //console.log("Experts: " + JSON.stringify(user));
+                        workspaceToSave = results[3];
+                        var skillsToSave = results[1];
+                        var expertsToSave = results[2];
 
-                                    object['experts']  = user;
-                                    //console.log("New Workspace experts: " + JSON.stringify(object));
+                        workspaceToSave["skills"] = skillsToSave;
+                        workspaceToSave["experts"] = expertsToSave;
 
-                                    let viewableBy = [];
-                                    //experts.map(v => arrayExperts.push(v));
+                        console.log("skillsToSave: " + JSON.stringify(skillsToSave));
+                        console.log("expertsToSave: " + JSON.stringify(expertsToSave));
+                        console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
 
-                                    //experts.forEach(v => arrayExperts.push(v));
-
-                                    for(let i = 0; i < user.length; i++) {
-
-                                        viewableBy.push(user[i].toJSON().objectId);
-                                        console.log("expertID: " + JSON.stringify(user[i].toJSON().objectId));
-                                    }
-
-
-                                    //viewableBy = lodash.map(arrayExperts, lodash.partial(lodash.ary(lodash.pick, 1), lodash, ['objectId']));
-
-                                    //const results = fp.map(fp.pick(['displayName', 'currentCompany', 'profileimage', 'showAvailability', 'isOnline'], arrayExperts);
-
-                                    console.log("viewableBy: " + JSON.stringify(viewableBy));
+                        return cb(null, workspaceToSave);
 
 
-                                    if (object.type === 'public') {
-                                        object.viewable_by = ['*'];
+                    }
+                    else {
 
-                                    } else {
+                        // convert to regular key/value JavaScript object
+                        object = results[3];
+                        object = object.toJSON();
+                        // Specify Algolia's objectID with the Parse.Object unique ID
+                        object.objectID = object.objectId;
 
-                                        object.viewable_by = viewableBy;
-                                    }
+                        return cb(null, object);
+                    }
 
-                                    return cb (null, object);
-
-
-
-                                },
-                                error: function(error) {
-                                    alert("Error: " + error.code + " " + error.message);
-                                    return callback(error);
-                                }
-                            }, {useMasterKey: true});
+                });
 
 
-                        },
-                        error: function(error) {
-                            alert("Error: " + error.code + " " + error.message);
-                            return callback(error);
-                        }
-                    }, {useMasterKey: true});
-
-                    */
-
-
-            }, function(err, objectsToIndex) {
+            }, function (err, objectsToIndex) {
 
                 console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
                 // Add or update new objects
-                indexWorkspaces.partialUpdateObjects(objectsToIndex, true, function(err, content) {
+                indexWorkspaces.partialUpdateObjects(objectsToIndex, true, function (err, content) {
                     if (err) response.error(err);
 
                     console.log("Parse<>Algolia workspace saved from indexCollection function ");
 
                     var finalTime = process.hrtime(time);
-                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                     response.success();
 
                 });
 
             });
-
-
         },
         error: function(err) {
             response.error(err);
