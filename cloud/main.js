@@ -3906,6 +3906,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
         var workspace = Parse.Object.extend("WorkSpace");
     workspace = Workspace;
+    workspaceToSave = Workspace.toJSON();
     //console.log("ObjectToSave: " + JSON.stringify(workspace));
 
     function createWorkspaceRoles (callback) {
@@ -4168,7 +4169,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
         expertObject = workspace.get("experts");
         //console.log("Experts: " + JSON.stringify(expertObject));
 
-        expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage"]).find({
+        expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
 
             success: function(experts) {
 
@@ -4177,7 +4178,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                 var User = new Parse.Object("_User");
                 var queryRole = new Parse.Query(Parse.Role);
 
-                //console.log("\n Experts: " + JSON.stringify(experts));
+                console.log("\n Experts: " + JSON.stringify(experts));
 
                 queryRole.equalTo('name', 'expert-' + workspace.id);
 
@@ -4271,12 +4272,12 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 if (workspaceToSave.type === 'private') {
 
-                    workspaceToSave.viewableBy = viewableBy;
+                    workspaceToSave.viewable_by = viewableBy;
                     //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
 
                 } else if (workspaceToSave.type === 'public') {
 
-                    workspaceToSave.viewableBy = ['*'];
+                    workspaceToSave.viewable_by = ['*'];
 
                 }
 
