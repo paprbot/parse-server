@@ -1399,8 +1399,8 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         var skillsToSave = results[1];
                         var expertsToSave = results[2];
 
-                        workspaceToSave["skills"] = skillsToSave;
-                        workspaceToSave["experts"] = expertsToSave;
+                        workspaceToSave.skills = skillsToSave;
+                        workspaceToSave.experts = expertsToSave;
 
                         console.log("skillsToSave: " + JSON.stringify(skillsToSave));
                         console.log("expertsToSave: " + JSON.stringify(expertsToSave));
