@@ -1479,14 +1479,21 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
         console.log("Profileimage url: " + JSON.stringify(profileImage.toJSON().url));
 
 
-    } else {user.set("isDirtyProfileimage", false);}
+    } else if (!user.dirty("profileimage")) {user.set("isDirtyProfileimage", false);}
 
     if (user.dirty("isOnline")) {
         user.set("isDirtyIsOnline", true);
 
-    } else {user.set("isDirtyIsOnline", false);}
+    } else if (!user.dirty("isOnline")) {user.set("isDirtyIsOnline", false);}
 
-    if (user.isNew()) { user.set("showAvailability", true);}
+    if (user.isNew()) {
+        user.set("isNew", true);
+        user.set("showAvailability", true);
+    } else if (!user.isNew()) {
+
+        user.set("isNew", true);
+    }
+
 
 
     if (user.isNew() && socialProfilePicURL!=null) {
@@ -3492,205 +3499,220 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
         function updateAlgoliaWorkspaceExpertProfileImage (callback) {
 
-        //console.log("username: " + JSON.stringify(objectToSave.username));
+            //console.log("username: " + JSON.stringify(objectToSave.username));
 
-        if (user.get("isDirtyProfileimage") != true && user.get("isDirtyIsOnline") != true) {
+            if (user.get("isDirtyProfileimage") != true && user.get("isDirtyIsOnline") != true) {
 
-            //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
+                //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
 
-            return callback (null, user);
+                return callback (null, user);
 
-        }
+            }
 
-        var WORKSPACE = Parse.Object.extend("WorkSpace");
-        var workspaceQuery = new Parse.Query(WORKSPACE);
-        var User = Parse.Object.extend("_User");
-        var userQuery = new Parse.Query(User);
+            if (user.get("isNew") === true) {
 
-        //userQuery.exists("profileimage");
-        //userQuery.select(["profileimage"]);
-        //console.log("username: " + JSON.stringify(objectToSave.username));
-        //userQuery.equalTo("username", objectToSave.username);
-        userQuery.equalTo("objectId", objectToSave.objectId);
-        //console.log("username: " + JSON.stringify(objectToSave.username));
-        workspaceQuery.matchesQuery("experts", userQuery);
-        workspaceQuery.select(["experts"], ["skills"]);
-        //console.log("imageChanged: " + JSON.stringify(objectToSave.dirty("profileimage")));
+                return callback (null, user);
+            }
 
 
-        workspaceQuery.find({
+            var WORKSPACE = Parse.Object.extend("WorkSpace");
+            var workspaceQuery = new Parse.Query(WORKSPACE);
+            var User = Parse.Object.extend("_User");
+            var userQuery = new Parse.Query(User);
 
-            success: function (workspaces) {
 
-                //console.log("workspaces length: " + JSON.stringify(workspaces.length));
-                //var mappedWORKSPACE = Parse.Object.extend("WorkSpace");
-                //var mappedWorkspace = new Parse.Object(mappedWORKSPACE);
+            userQuery.equalTo("objectId", objectToSave.objectId);
+            //console.log("username: " + JSON.stringify(objectToSave.username));
+            workspaceQuery.matchesQuery("experts", userQuery);
+            workspaceQuery.select(["experts", "user"]);
+            queryWorkspace.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "image"]);
+            //console.log("imageChanged: " + JSON.stringify(objectToSave.dirty("profileimage")));
 
-                /*var partialWorkspaces = async.map(workspaces, function (Workspace, cb) {
+            workspaceQuery.find({useMasterKey: true})
+                .then((objectsToIndex) => {
+                // The object was retrieved successfully.
+                //console.log("Result from get " + JSON.stringify(Workspace));
 
-                 //console.log("Workspace: " + JSON.stringify(Workspace));
+                var workspaces = objectsToIndex;
+                console.log("ObjectToSave length: " + JSON.stringify(workspaces.length));
 
-                 //var mappedWORKSPACE = Parse.Object.extend("WorkSpace");
-                 //var mappedWorkspace = new Parse.Object(mappedWORKSPACE);
+                async.map(objectsToIndex, function (object, cb) {
 
-                 mappedWorkspace = mappedWorkspace.toJSON();
-                 //console.log("mappedWorkspace 1: " + JSON.stringify(mappedWorkspace));
+                    var workspace = object;
+                    var workspaceToSave = object.toJSON();
+                    workspaceToSave.objectID = workspaceToSave.objectId;
 
-                 var expertsArray = [];
-                 //console.log("Workspace ID: " + Workspace.toJSON().objectId);
-                 mappedWorkspace['objectID'] = Workspace.toJSON().objectId;
-                 //console.log("mappedWorkspace 2: " + JSON.stringify(mappedWorkspace));
-                 expertsArray.push(user);
-                 //console.log("expertsArray: " + JSON.stringify(expertsArray));
-                 mappedWorkspace['experts'] = expertsArray;
-                 //console.log("mappedWorkspace 3: " + JSON.stringify(mappedWorkspace));
-
-                 Workspace = mappedWorkspace;
-
-                 cb (null, Workspace);
-
-                 }, function(err)
-                 console.log('iterating done partialWorkspaces');
-                 return callback (err);
-
-                 });*/
-
-                async.map(workspaces, function (workspace, cb){
-
-                    //var workspace = workspaces[i];
-                    var skillObject = Parse.Object.extend("Skill");
-                    //var skillsRelation = new skillObject.relation("skills");
-                    skillObject = workspace.get("skills");
-                    //console.log("Skills: " + JSON.stringify(skillObject));
-                    //console.log("Skill Length:" + skillObject);
+                    delete workspaceToSave.skills;
 
                     var expertObject = Parse.Object.extend("_User");
                     expertObject = workspace.get("experts");
                     //console.log("Experts: " + JSON.stringify(expertObject));
 
-                    // if (skillObject.length===0) {console.log("cool skillObject" + skillObject); return callback (null, workspace);}
-                    var skillObjectQuery = skillObject.query();
-                    skillObjectQuery.ascending("level");
-                    skillObjectQuery.find({
+                    expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
 
-                        success: function(skills) {
+                        success: function (experts) {
 
 
-                            // Convert Parse.Object to JSON
-                            //workspace = workspace.toJSON();
-
-                            let arraySkill = [];
-
-                            skills.forEach(v => arraySkill.push(v));
+                            //console.log("\n Experts: " + JSON.stringify(experts));
 
 
-                            //console.log("skills: " + JSON.stringify(arraySkill));
+                            workspaceToSave["experts"] = experts;
 
-                            workspace.set("objectID", workspace.toJSON().objectId);
-                            var WorkSpace = workspace.toJSON();
-                            WorkSpace.skills =  arraySkill;
-                            //console.log("Updated workspace with skills: " + JSON.stringify(WorkSpace));
+                            object = workspaceToSave;
 
-                            // Specify Algolia's objectID with the Parse.Object unique ID
-                            //workspace.objectID = workspace.objectId;
+                            //console.log("object: " + JSON.stringify(object));
 
-                            //return callback(null, Workspace);
-
-                            expertObject.query().find({
-
-                                success: function(experts) {
-
-                                    // Convert Parse.Object to JSON
-                                    //workspace = workspace.toJSON();
-                                    //var User = new Parse.Object("_User");
-                                    let arrayExperts = [];
-                                    //let viewableBy = [];
-                                    //experts.map(v => arrayExperts.push(v));
-
-                                    //experts.forEach(v => arrayExperts.push(v));
-
-                                    /*for(let i = 0; i < experts.length; i++) {
-
-                                     viewableBy.push(experts[i].toJSON().objectId);
-                                     //console.log("expertID: " + JSON.stringify(experts[i].toJSON().objectId));
-                                     arrayExperts.push(experts[i]);
-                                     }*/
-
-
-                                    //viewableBy = lodash.map(arrayExperts, lodash.partial(lodash.ary(lodash.pick, 1), lodash, ['objectId']));
-
-                                    //const results = fp.map(fp.pick(['displayName', 'currentCompany', 'profileimage', 'showAvailability', 'isOnline'], arrayExperts);
-
-                                    //console.log("viewableBy: " + JSON.stringify(viewableBy));
-
-                                    WorkSpace.experts = arrayExperts;
-                                    //console.log("New Workspace experts: " + JSON.stringify(WorkSpace));
-
-                                    /*if (WorkSpace.type === 'public') {
-                                     WorkSpace.viewable_by = ['*'];
-
-                                     } else {
-
-                                     WorkSpace.viewable_by = viewableBy;
-                                     }*/
-
-                                    //workspace = JSON.parse(WorkSpace);
-                                    // tell async that that particular element of the iterator is done
-                                    return cb(null, WorkSpace);
-
-
-                                },
-                                error: function(error) {
-                                    alert("Error: " + error.code + " " + error.message);
-                                    return callback (error);
-                                }
-                            }, {useMasterKey: true});
+                            return cb(null, object);
 
 
                         },
-                        error: function(error) {
+                        error: function (error) {
                             alert("Error: " + error.code + " " + error.message);
-                            return callback (error);
+                            return cb(error);
                         }
                     }, {useMasterKey: true});
 
 
-                    //console.log("skill:s " + JSON.stringify(skillObjects));
+                }, function (err, objectsToIndex) {
 
+                    //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
-                }, function(err, results) {
+                    // Add or update new objects
+                    indexWorkspaces.partialUpdateObjects(objectsToIndex, true, function (err, content) {
+                        if (err) response.error(err);
 
-                    if (err) return callback (err);
-                    var diff = process.hrtime(time);
-                    console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-                    //console.log("FinalResults: " + JSON.stringify(results));
-                    //response.render('userPosts', results);
-                    //console.log("partialWorkspaces: " + JSON.stringify(results));
+                        console.log("Parse<>Algolia workspace saved from afterSave _User function ");
 
-                    // update Algolia index for Workspaces if user objects changes or got updated
-                    indexWorkspaces.partialUpdateObjects(results, function(err, content) {
-                        if (err) return callback (err);
-
-                        console.log("Parse<>Algolia workspaces with updated user profile images saved: "+ JSON.stringify(content));
-
-                        return callback (null, user);
+                        var finalTime = process.hrtime(time);
+                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                        return callback (null, objectsToIndex);
 
                     });
 
                 });
 
+            }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback (error);
+
+                }, {useMasterKey: true});
 
 
-            },
-            error: function(error) {
-                console.log("Error _User afterSave WorkspaceQuery.find: " + error.code + " " + error.message);
-                //user is not an expert don't update aloglia workspace index
-                return callback (null, user);
-            }
+            /*workspaceQuery.find({
 
-        }, {useMasterKey: true});
+                success: function (workspaces) {
 
 
+                    async.map(workspaces, function (workspace, cb){
+
+                        //var workspace = workspaces[i];
+                        var skillObject = Parse.Object.extend("Skill");
+                        //var skillsRelation = new skillObject.relation("skills");
+                        skillObject = workspace.get("skills");
+                        //console.log("Skills: " + JSON.stringify(skillObject));
+                        //console.log("Skill Length:" + skillObject);
+
+                        var expertObject = Parse.Object.extend("_User");
+                        expertObject = workspace.get("experts");
+                        //console.log("Experts: " + JSON.stringify(expertObject));
+
+                        // if (skillObject.length===0) {console.log("cool skillObject" + skillObject); return callback (null, workspace);}
+                        var skillObjectQuery = skillObject.query();
+                        skillObjectQuery.ascending("level");
+                        skillObjectQuery.find({
+
+                            success: function(skills) {
+
+
+                                // Convert Parse.Object to JSON
+                                //workspace = workspace.toJSON();
+
+                                let arraySkill = [];
+
+                                skills.forEach(v => arraySkill.push(v));
+
+
+                                //console.log("skills: " + JSON.stringify(arraySkill));
+
+                                workspace.set("objectID", workspace.toJSON().objectId);
+                                var WorkSpace = workspace.toJSON();
+                                WorkSpace.skills =  arraySkill;
+                                //console.log("Updated workspace with skills: " + JSON.stringify(WorkSpace));
+
+                                // Specify Algolia's objectID with the Parse.Object unique ID
+                                //workspace.objectID = workspace.objectId;
+
+                                //return callback(null, Workspace);
+
+                                expertObject.query().find({
+
+                                    success: function(experts) {
+
+                                        // Convert Parse.Object to JSON
+                                        //workspace = workspace.toJSON();
+                                        //var User = new Parse.Object("_User");
+                                        let arrayExperts = [];
+
+                                        WorkSpace.experts = arrayExperts;
+                                        //console.log("New Workspace experts: " + JSON.stringify(WorkSpace));
+
+
+                                        //workspace = JSON.parse(WorkSpace);
+                                        // tell async that that particular element of the iterator is done
+                                        return cb(null, WorkSpace);
+
+
+                                    },
+                                    error: function(error) {
+                                        alert("Error: " + error.code + " " + error.message);
+                                        return callback (error);
+                                    }
+                                }, {useMasterKey: true});
+
+
+                            },
+                            error: function(error) {
+                                alert("Error: " + error.code + " " + error.message);
+                                return callback (error);
+                            }
+                        }, {useMasterKey: true});
+
+
+                        //console.log("skill:s " + JSON.stringify(skillObjects));
+
+
+                    }, function(err, results) {
+
+                        if (err) return callback (err);
+                        var diff = process.hrtime(time);
+                        console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+                        //console.log("FinalResults: " + JSON.stringify(results));
+                        //response.render('userPosts', results);
+                        //console.log("partialWorkspaces: " + JSON.stringify(results));
+
+                        // update Algolia index for Workspaces if user objects changes or got updated
+                        indexWorkspaces.partialUpdateObjects(results, function(err, content) {
+                            if (err) return callback (err);
+
+                            console.log("Parse<>Algolia workspaces with updated user profile images saved: "+ JSON.stringify(content));
+
+                            return callback (null, user);
+
+                        });
+
+                    });
+
+
+
+                },
+                error: function(error) {
+                    console.log("Error _User afterSave WorkspaceQuery.find: " + error.code + " " + error.message);
+                    //user is not an expert don't update aloglia workspace index
+                    return callback (null, user);
+                }
+
+            }, {useMasterKey: true}); */
 
 
     }
@@ -3762,7 +3784,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
         // The object was not retrieved successfully.
         // error is a Parse.Error with an error code and message.
         response.error(error);
-    });
+    }, {useMasterKey: true});
 
 
 }, {useMasterKey: true});
