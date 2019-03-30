@@ -1234,7 +1234,6 @@ Parse.Cloud.define("indexCollection", function(request, response) {
         //console.log("Result from get " + JSON.stringify(Workspace));
 
         var workspaces = objectsToIndex;
-        workspacesToSave = workspaces.toJSON();
         console.log("ObjectToSave length: " + JSON.stringify(workspaces.length));
 
         async.map(objectsToIndex, function (object, cb) {
