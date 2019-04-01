@@ -1666,9 +1666,9 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     channel.set("isNew", true);
 
                     // set 0 for countPosts, countFollowers and countMembers
-                    channel.set("countPosts", 0);
-                    channel.set("countFollowers", 0);
-                    channel.set("countMembers", 0);
+                    channel.set("postCount", 0);
+                    channel.set("memberCount", 0);
+                    channel.set("followerCount", 0);
 
                     // by default archive needs to be set to false
                     channel.set("archive", false);
@@ -2031,7 +2031,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
 
                     } else {response.success();}
-                    
+
 
                 }
             },
