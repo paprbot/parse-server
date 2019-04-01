@@ -15,7 +15,7 @@ var Promise = require('promise');
 var indexPosts = client.initIndex('dev_posts');
 var indexUsers = client.initIndex('dev_users');
 var indexMeetings = client.initIndex('dev_meetings');
-var indexProject = client.initIndex('dev_channels');
+var indexChannel = client.initIndex('dev_channels');
 var indexWorkspaces = client.initIndex('dev_workspaces');
 var indexSkills = client.initIndex('dev_skills');
 const requestPromise = require('request-promise');
@@ -65,7 +65,7 @@ Parse.Cloud.define("cloudCodeTest", function(request, response) {
         hit: 10,
         user: "7LW63IRFT6",
         workspace: "SZ8PICViue",
-        project: "all",
+        channel: "all",
         skip: 10
 
     }).then(function(result) {
@@ -89,7 +89,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
     //get request params
     var hit = parseInt(request.params.hit);
     var user = request.params.user;
-    var project = request.params.project;
+    var channel = request.params.channel;
     var workspace = request.params.workspace;
     var skip = parseInt(request.params.skip);
 
@@ -107,26 +107,26 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
     var User = new Parse.Object("_User");
     User.id = user;
 
-    queryPOST.include( ["user", "workspace", "project"] );
-    //queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
+    queryPOST.include( ["user", "workspace", "channel"] );
+    //queryP.doesNotExist("channel.archive", "workspace.archive", "Archive");
 
     queryPOST.equalTo("workspace", Workspace);
 
     // todo get posts that the user is allowed to view
 
     // setup query filter for post
-    //queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]);
+    //queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "channel.name", "channel.type", "channel.postCount", "channel.image", "channel.category", "channel.purpose", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]);
     queryPOST.descending("createdAt");
     queryPOST.limit(hit); // limit to hits
     if (skip) {
         queryPOST.skip(skip);
     }
-    if (project == 'all') {
-        // do nothing, since we want all projects in a workspace
-    } else if (project) {
-        var Project = new Parse.Object("Project");
-        Project.id = project;
-        queryPOST.equalTo("project", Project);
+    if (channel == 'all') {
+        // do nothing, since we want all channels in a workspace
+    } else if (channel) {
+        var Channel = new Parse.Object("Channel");
+        Channel.id = channel;
+        queryPOST.equalTo("channel", Channel);
 
     }
 
@@ -461,15 +461,15 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
     //get request params
     var hit = parseInt(request.params.hit);
     var user = request.params.user;
-    var project = request.params.project;
+    var channel = request.params.channel;
     var workspace = request.params.workspace;
     var skip = parseInt(request.params.skip);
 
     // Setup Parse query
     var queryWorkspaceFollow = Parse.Object.extend("workspace_follower");
     var queryWORKSPACEFOLLOW = new Parse.Query(queryWorkspaceFollow);
-    var queryProjectFollow = Parse.Object.extend("ProjectFollow");
-    var queryPROJECTFOLLOW = new Parse.Query(queryProjectFollow);
+    var queryChannelFollow = Parse.Object.extend("ChannelFollow");
+    var queryCHANNELFOLLOW = new Parse.Query(queryChannelFollow);
     var queryCategory = Parse.Object.extend("Category");
     var queryCATEGORY = new Parse.Query(queryCategory);
 
@@ -477,8 +477,8 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
     var queryWORKSPACE = new Parse.Query("WorkSpace");
     Workspace.id = workspace;
 
-    var Project = new Parse.Object("Project");
-    Project.id = project;
+    var Channel = new Parse.Object("Channel");
+    Channel.id = channel;
 
     var User = new Parse.Object("_User");
     User.id = user;
@@ -490,7 +490,7 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
 
     // todo get posts that the user is allowed to view
     // todo check isMember/isFollower for workspace
-    // question - should we give all projects for all workspaces even if they are not selected? an store in local db?
+    // question - should we give all channels for all workspaces even if they are not selected? an store in local db?
 
     // setup query filter for post
 
@@ -511,7 +511,7 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
         queryWORKSPACEFOLLOW.doesNotExist("archive");
         queryWORKSPACEFOLLOW.equalTo("user", User);
         queryWORKSPACEFOLLOW.equalTo("type", "1");
-        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]);
+        //queryChannelFollow.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]);
         if (!workspace || (workspace === "all")) {
             // do nothing, get all workspaces for the user
         } else {
@@ -539,8 +539,8 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
 
     }
 
-    // function to find queryProjectFollowFind results
-    function queryProjectFollowFind (callback) {
+    // function to find queryChannelFollowFind results
+    function queryChannelFollowFind (callback) {
 
 
         //var NS_PER_SEC = 1e9;
@@ -548,31 +548,31 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
         //var timequerySocialPostFind = process.hrtime();
         //var querySocialPostFindTime;
 
-        queryPROJECTFOLLOW.include("project");
-        queryPROJECTFOLLOW.doesNotExist("archive");
-        queryPROJECTFOLLOW.equalTo("user", User);
-        queryPROJECTFOLLOW.equalTo("type", "1"); // user is either a member of follower of this project
+        queryCHANNELFOLLOW.include("channel");
+        queryCHANNELFOLLOW.doesNotExist("archive");
+        queryCHANNELFOLLOW.equalTo("user", User);
+        queryCHANNELFOLLOW.equalTo("type", "1"); // user is either a member of follower of this channel
 
-        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]);
+        //queryCHANNELFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]);
         if (!workspace || (workspace === "all")) {
-            // do nothing, get all projects for the user
-            //queryPROJECTFOLLOW.matchesQuery("workspace", queryWORKSPACE);
+            // do nothing, get all channels for the user
+            //queryCHANNELFOLLOW.matchesQuery("workspace", queryWORKSPACE);
         } else {
             // only get workspace that the client is asking for
-            queryPROJECTFOLLOW.equalTo("workspace", Workspace);
+            queryCHANNELFOLLOW.equalTo("workspace", Workspace);
 
         }
 
-        if (!project || (project === "all")) {
-            // do nothing, get all projects for the user
+        if (!channel || (channel === "all")) {
+            // do nothing, get all channels for the user
         } else {
-            // only get project that the client is asking for
-            queryPROJECTFOLLOW.equalTo("project", Project);
+            // only get channel that the client is asking for
+            queryCHANNELFOLLOW.equalTo("channel", Channel);
 
         }
 
-        queryPROJECTFOLLOW.find({
-            success: function(projectResults) {
+        queryCHANNELFOLLOW.find({
+            success: function(channelResults) {
                 //console.log("postSocialResults 1: "+JSON.stringify(postSocialResults));
 
                 //console.log("querySocialPostFind: "+ postSocialResults.length);
@@ -580,7 +580,7 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
                 //querySocialPostFindTime = process.hrtime(timequerySocialPostFind);
                 //console.log(`function querySocialPostFindTime took ${(querySocialPostFindTime[0] * NS_PER_SEC + querySocialPostFindTime[1])  * MS_PER_NS} milliseconds`);
 
-                return callback(null, projectResults);
+                return callback(null, channelResults);
             },
             error: function(err) {
                 response.error(err);
@@ -600,7 +600,7 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
         //var querySocialPostFindTime;
 
         //queryCategoryFind.matchesQuery("workspaceID", queryWorkspaceFollow);
-        //queryPROJECTFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]);
+        //queryCHANNELFOLLOW.select(["ACL", "objectId", "workspace.workspace_name", "archive", "name", "type" , "default", "category", "isMember", "isFollower", "user"]);
         if (!workspace || (workspace === "all")) {
             // get all categories in workspaces for the user that he is either following or is a member of
             //var CategoryObject = new Parse.Object(queryCategory);
@@ -616,11 +616,11 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
 
         }
 
-        if (!project || (project === "all")) {
-            // do nothing, get all projects for the user
+        if (!channel || (channel === "all")) {
+            // do nothing, get all channels for the user
         } else {
-            // only get project that the client is asking for
-            queryCATEGORY.equalTo("project", Project);
+            // only get channel that the client is asking for
+            queryCATEGORY.equalTo("channel", Channel);
 
         }
 
@@ -646,7 +646,7 @@ Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
 
     async.parallel([
         async.apply(queryWorkspaceFollowFind),
-        async.apply(queryProjectFollowFind),
+        async.apply(queryChannelFollowFind),
         async.apply(queryCategoryFind)
 
     ], function (err, results) {
@@ -681,7 +681,7 @@ Parse.Cloud.define("QueryPostFeed2", function(request, response) {
     //get request params
     var hit = parseInt(request.params.hit);
     var user = request.params.user;
-    var project = request.params.project;
+    var channel = request.params.channel;
     var workspace = request.params.workspace;
     var skip = parseInt(request.params.skip);
 
@@ -697,26 +697,26 @@ Parse.Cloud.define("QueryPostFeed2", function(request, response) {
     var User = new Parse.Object("_User");
     User.id = user;
 
-    queryP.include( ["user", "workspace", "project", "postSocial.user", "postSocial.isLiked", "postSocial.isBookmarked"] );
-    queryP.doesNotExist("project.archive", "workspace.archive", "Archive");
+    queryP.include( ["user", "workspace", "channel", "postSocial.user", "postSocial.isLiked", "postSocial.isBookmarked"] );
+    queryP.doesNotExist("channel.archive", "workspace.archive", "Archive");
 
     queryP.equalTo("workspace", Workspace);
 
     // todo get posts that the user is allowed to view
 
     // setup query filter for post
-    queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "project.name", "project.type", "project.postCount", "project.image", "project.category", "project.objective", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]);
+    //queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "channel.name", "channel.type", "channel.postCount", "channel.image", "channel.category", "channel.purpose", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]);
     queryP.descending("updatedAt");
     queryP.limit(hit); // limit to hits
     if (skip) {
         queryP.skip(skip);
     }
-    if (project == 'all') {
-        // do nothing, since we want all projects in a workspace
-    } else if (project) {
-        var Project = new Parse.Object("Project");
-        Project.id = project;
-        queryP.equalTo("project", Project);
+    if (channel == 'all') {
+        // do nothing, since we want all channels in a workspace
+    } else if (channel) {
+        var channel = new Parse.Object("channel");
+        Channel.id = channel;
+        queryP.equalTo("channel", Channel);
 
     }
 
@@ -890,16 +890,16 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
     switch (collection) {
         case "Post":
             index = indexPosts;
-            query.include( ["user", "workspace", "project"] );
-            query.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "project.name", "project.type", "project.archive"]);
+            query.include( ["user", "workspace", "channel"] );
+            query.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "channel.name", "channel.type", "channel.archive"]);
 
             break;
         case "_User":
             index = indexUsers;
 
             break;
-        case "Project":
-            index = indexProject;
+        case "Channel":
+            index = indexChannel;
             query.include( ["user", "workspace", "category"] );
 
             break;
@@ -912,7 +912,7 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
 
             break;
         default:
-            response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Project, Meeting");
+            response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Channel, Meeting");
     };
 
     if (search == 'Parse') {
@@ -1193,8 +1193,8 @@ Parse.Cloud.define("indexCollection", function(request, response) {
     switch (collection) {
         case "Post":
             index = indexPosts;
-            query.include( ["user", "workspace", "project"] );
-            //query.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "project.name", "project.type", "project.archive"]);
+            query.include( ["user", "workspace", "channel"] );
+            //query.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "channel.name", "channel.type", "channel.archive"]);
 
             break;
         case "_User":
@@ -1204,8 +1204,8 @@ Parse.Cloud.define("indexCollection", function(request, response) {
             skillsToLearn = "skillsToLearn";
 
             break;
-        case "Project":
-            index = indexProject;
+        case "Channel":
+            index = indexChannel;
             query.include( ["user", "workspace", "category"] );
 
             break;
@@ -1225,7 +1225,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
             break;
         default:
-            response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Project, Meeting");
+            response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Channel, Meeting");
     };
 
     query.find({useMasterKey: true})
@@ -1359,12 +1359,12 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                         if (workspaceToSave.type === 'private') {
 
-                            workspaceToSave.viewable_by = viewableBy;
+                            workspaceToSave._tags= viewableBy;
                             //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
 
                         } else if (workspaceToSave.type === 'public') {
 
-                            workspaceToSave.viewable_by = ['*'];
+                            workspaceToSave._tagsy = ['*'];
 
                         }
 
@@ -1762,8 +1762,8 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     var text = post.get("text");
     var workspace = post.get("workspace");
     //console.log("workspace_post: " + JSON.stringify(workspace));
-    var project = post.get("project");
-    //console.log("project_post: " + JSON.stringify(project));
+    var channel = post.get("channel");
+    //console.log("channel_post: " + JSON.stringify(channel));
 
     var toLowerCase = function(w) { return w.toLowerCase(); };
     //console.log("post: " + JSON.stringify(post));
@@ -1797,14 +1797,14 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             Workspace.save();
 
 
-            if (project) {
-                // add counter for posts to project collection
-                var PROJECT = Parse.Object.extend("Project");
-                var Project = new PROJECT();
-                Project.id = project.id;
+            if (channel) {
+                // add counter for posts to channel collection
+                var CHANNEL = Parse.Object.extend("Channel");
+                var Channel = new CHANNEL();
+                Channel.id = channel.id;
 
-                Project.increment("postCount");
-                Project.save();
+                Channel.increment("postCount");
+                Channel.save();
 
                 return callback(null, post);
 
@@ -2218,6 +2218,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
         console.log("workspaceFollowerName user: " + JSON.stringify(workspaceFollowerName));
 
         workspace_follower.set("name", workspaceFollowerName);
+        workspace_follower.set("archive", false);
 
         queryWorkspaceFollower.equalTo("name", workspaceFollowerName);
 
@@ -2772,51 +2773,51 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
 });
 
-// Run beforeSave functions to count number of project followers and members
-Parse.Cloud.beforeSave('ProjectFollow', function(req, response) {
+// Run beforeSave functions to count number of channel followers and members
+Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
     var NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
     var time = process.hrtime();
 
-    var projectfollow = req.object;
-    var project = projectfollow.get("workspace");
+    var channelfollow = req.object;
+    var channel = channelfollow.get("channel");
 
-    var PROJECTFOLLOW = Parse.Object.extend("ProjectFollow");
-    var ProjectFollow = new PROJECTFOLLOW();
-    ProjectFollow.id = projectfollow.id;
-    var queryProjectFollow = new Parse.Query(PROJECTFOLLOW);
+    var CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
+    var ChannelFollow = new CHANNELFOLLOW();
+    ChannelFollow.id = ChannelFollow.id;
+    var queryChannelFollow = new Parse.Query(CHANNELFOLLOW);
 
-    var PROJECT = Parse.Object.extend("Project");
-    var Project = new PROJECT();
-    Project.id = project.id;
+    var CHANNEL = Parse.Object.extend("Channel");
+    var Channel = new CHANNEL();
+    Channel.id = channel.id;
 
-    //console.log("post: " + JSON.stringify(projectfollow));
+    //console.log("post: " + JSON.stringify(channelfollow));
 
     // if there is a post that got added, then increase counter, else ignoremyObject
-    if (projectfollow.isNew()) {
+    if (channelfollow.isNew()) {
 
         var beforeSave_Time;
 
-        if(projectfollow.get("isFollower") === true && projectfollow.get("isMember") === true) {
-            Project.increment("followerCount");
-            Project.increment("memberCount");
-            Project.save();
+        if(channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+            Channel.increment("followerCount");
+            Channel.increment("memberCount");
+            Channel.save();
             beforeSave_Time = process.hrtime(time);
             console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
             response.success();
-        } else if (projectfollow.get("isFollower") === true && projectfollow.get("isMember") === false) {
-            Project.increment("followerCount");
-            Project.save();
+        } else if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === false) {
+            Channel.increment("followerCount");
+            Channel.save();
             beforeSave_Time = process.hrtime(time);
             console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
             response.success();
 
-        } else if (projectfollow.get("isFollower") === false && projectfollow.get("isMember") === true) {
-            Project.increment("memberCount");
-            Project.save();
+        } else if (channelfollow.get("isFollower") === false && channelfollow.get("isMember") === true) {
+            Channel.increment("memberCount");
+            Channel.save();
             beforeSave_Time = process.hrtime(time);
             console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
@@ -2831,9 +2832,9 @@ Parse.Cloud.beforeSave('ProjectFollow', function(req, response) {
 
         }
 
-    } else if (!projectfollow.isNew() && (projectfollow.dirty("isFollower") || projectfollow.dirty("isMember"))) {
+    } else if (!channelfollow.isNew() && (channelfollow.dirty("isFollower") || channelfollow.dirty("isMember"))) {
 
-        queryProjectFollow.get(ProjectFollow.id, {
+        queryChannelFollow.get(ChannelFollow.id, {
                 success: function(result) {
 
                     console.log("queryWorkspaceFollower: "+JSON.stringify(result));
@@ -2842,21 +2843,21 @@ Parse.Cloud.beforeSave('ProjectFollow', function(req, response) {
                     //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
                     //console.log("results: "+JSON.stringify(results));
 
-                    if (projectfollow.dirty("isFollower")) {
+                    if (channelfollow.dirty("isFollower")) {
 
-                        if (result.get("isFollower") === projectfollow.get("isFollower")) {
+                        if (result.get("isFollower") === channelfollow.get("isFollower")) {
 
                             console.log("user isFollower did not change");
                             // doin't increment or decrement because the user isFollow status did not change
 
-                        } else if ((result.get("isFollower") === false || !result.get("isFollower")) && projectfollow.get("isFollower") === true) {
+                        } else if ((result.get("isFollower") === false || !result.get("isFollower")) && channelfollow.get("isFollower") === true) {
 
-                            Project.increment("followerCount");
+                            Channel.increment("followerCount");
                             //Workspace.save();
 
-                        } else if ((result.get("isFollower") === true) && projectfollow.get("isFollower") === false) {
+                        } else if ((result.get("isFollower") === true) && channelfollow.get("isFollower") === false) {
 
-                            Project.increment("followerCount", -1);
+                            Channel.increment("followerCount", -1);
                             //Workspace.save();
 
                         } else {
@@ -2865,21 +2866,21 @@ Parse.Cloud.beforeSave('ProjectFollow', function(req, response) {
 
                         }
 
-                    } else if (projectfollow.dirty("isMember")) {
+                    } else if (channelfollow.dirty("isMember")) {
 
-                        if (result.get("isMember") === projectfollow.get("isMember")) {
+                        if (result.get("isMember") === channelfollow.get("isMember")) {
 
                             console.log("user isMember did not change");
                             // doin't increment or decrement because the user isFollow status did not change
 
-                        } else if ((result.get("isMember") === false || !result.get("isMember")) && projectfollow.get("isMember") === true) {
+                        } else if ((result.get("isMember") === false || !result.get("isMember")) && channelfollow.get("isMember") === true) {
 
-                            Project.increment("memberCount");
+                            Channel.increment("memberCount");
                             //Workspace.save();
 
-                        } else if ((result.get("isMember") === true) && projectfollow.get("isMember") === false) {
+                        } else if ((result.get("isMember") === true) && channelfollow.get("isMember") === false) {
 
-                            Project.increment("memberCount", -1);
+                            Channel.increment("memberCount", -1);
                             //Workspace.save();
 
                         } else {
@@ -2891,7 +2892,7 @@ Parse.Cloud.beforeSave('ProjectFollow', function(req, response) {
 
                     }
 
-                    Project.save();
+                    Channel.save();
                     beforeSave_Time = process.hrtime(time);
                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
@@ -2900,7 +2901,7 @@ Parse.Cloud.beforeSave('ProjectFollow', function(req, response) {
 
                 },
                 error: function(err) {
-                    response.error("queryProjectFollow Error: "+ err);
+                    response.error("queryChannelFollow Error: "+ err);
                 }
             }
 
@@ -2995,8 +2996,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     //var Post = Parse.Object.extend("Post");
     var queryPost = new Parse.Query("Post");
-    queryPost.include( ["user", "workspace", "project"] );
-    queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
+    queryPost.include( ["user", "workspace", "channel"] );
+    queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
     queryPost.equalTo("objectId", objectToSave.objectId);
 
     //console.log("Request: " + JSON.stringify(request));
@@ -3280,9 +3281,9 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
                 Workspace.id = meetingObject.get("workspace");
                 //console.log("workspace ID: "  + JSON.stringify(Workspace.id));
 
-                var Project = new Parse.Object("Project");
-                Project.id = meetingObject.get("channel");
-                //console.log("Project ID: "  + JSON.stringify(Project.id));
+                var Channel = new Parse.Object("Channel");
+                Channel.id = meetingObject.get("channel");
+                //console.log("Channel ID: "  + JSON.stringify(Channel.id));
 
                 var User = new Parse.Object("_User");
                 User.id = meetingObject.get("user");
@@ -3291,7 +3292,7 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
                 //console.log("meetingPost: " + JSON.stringify(meetingPost));
 
                 if (meetingObject.get("workspace")) {meetingPost.set("workspace", Workspace.id);}
-                if (meetingObject.get("channel")) {meetingPost.set("project", Project.id);}
+                if (meetingObject.get("channel")) {meetingPost.set("channel", Channel.id);}
                 if (meetingObject.get("user")) { meetingPost.set("user", User.id);}
                 meetingPost.set("transcript", meetingObject.get("FullMeetingText"));
 
@@ -3790,35 +3791,35 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
 
 
-// Add and Update AlgoliaSearch project=channel object if it's deleted from Parse
-Parse.Cloud.afterSave('Project', function(request, response) {
+// Add and Update AlgoliaSearch channel object if it's deleted from Parse
+Parse.Cloud.afterSave('Channel', function(request, response) {
 
     // Convert Parse.Object to JSON
     var objectToSave = request.object.toJSON();
 
-    var queryProject = new Parse.Query("Project");
-    queryProject.equalTo("objectId", objectToSave.objectId);
-    queryProject.include( ["user", "workspace", "category"] );
-    //queryProject.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "project.name", "project.type", "project.archive"]);
+    var queryChannel = new Parse.Query("Channel");
+    queryChannel.equalTo("objectId", objectToSave.objectId);
+    queryChannel.include( ["user", "workspace", "category"] );
+    //queryChannel.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive"]);
 
 
     console.log("Request: " + JSON.stringify(request));
     console.log("objectID: " + objectToSave.objectId);
     console.log("objectID: " + objectToSave.user.objectId);
 
-    queryProject.first({
-        success: function(project) {
+    queryChannel.first({
+        success: function(channel) {
             // Successfully retrieved the object.
-            console.log("ObjectToSave: " + JSON.stringify(project));
+            console.log("ObjectToSave: " + JSON.stringify(channel));
 
             // Convert Parse.Object to JSON
-            project = project.toJSON();
+            channel = channel.toJSON();
 
             // Specify Algolia's objectID with the Parse.Object unique ID
-            project.objectID = project.objectId;
+            channel.objectID = channel.objectId;
 
             // Add or update object
-            indexProject.saveObject(project, function(err, content) {
+            indexChannel.saveObject(channel, function(err, content) {
                 if (err) {
                     throw err;
                 }
@@ -3857,107 +3858,6 @@ Parse.Cloud.afterSave('Skill', function(request) {
     });
 });
 
-/*
-
- Parse.Cloud.afterSave('workspace_follower', function(request, response) {
-
- var NS_PER_SEC = 1e9;
- const MS_PER_NS = 1e-6;
- var time = process.hrtime();
-
- // Convert Parse.Object to JSON
- var workspace_follower = request.object;
-
- // Specify Algolia's objectID with the Parse.Object unique ID
- var objectToSave = request.object.toJSON();
-
- //var WORKSPACEFollower = Parse.Object.extend("workspace_follower");
- //var workspaceFollower = new Parse.Object(WORKSPACEFollower);
-
- var queryWorkspaceFollower = new Parse.Query("workspace_follower");
-
- var WORKSPACE = Parse.Object.extend("WorkSpace");
- var workspace = new Parse.Object(WORKSPACE);
-
- workspace = workspace_follower.get("workspace");
-
- console.log("workspace type: " + JSON.stringify(workspace.id));
-
- queryWorkspaceFollower.equalTo("workspace", workspace);
- queryWorkspaceFollower.include( ["workspace"] );
-
- queryWorkspaceFollower.find({
-
- success: function(followers) {
-
- let viewableBy = [];
-
- //console.log("Followers Length: " + JSON.stringify(followers));
- var queryWorkspace = new Parse.Query(WORKSPACE);
-
- queryWorkspace.equalTo("objectId", workspace.id);
- queryWorkspace.select( ["type"] );
-
- queryWorkspace.get(workspace.id , {useMasterKey: true})
- .then((Workspace) => {
-
- workspace = Workspace;
-
- //console.log("workspace: " + JSON.stringify(workspace));
-
- // Convert Parse.Object to JSON
- workspace = workspace.toJSON();
-
- delete workspace.skills;
- delete workspace.experts;
-
- workspace.objectID = workspace.objectId;
- workspace['followers'] = followers;
-
-
- for (var i = 0; i < followers.length; i++) {
-
- if (workspace.type === 'private') {
- viewableBy.push(followers[i].toJSON().user.objectId);
- console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
- }
-
-
- }
-
- if (workspace.type === 'private') {
-
- workspace.viewableBy = viewableBy;
- console.log("workspace 2: " + JSON.stringify(workspace));
-
- }
-
-
- indexWorkspaces.partialUpdateObject(workspace, function(err, content) {
- if (err) response.error();
-
- console.log("Parse<>Algolia workspaces with updated workspace_followers");
-
- var finalTime = process.hrtime(time);
- console.log(`finalTime workspace_follower took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
- response.success();
-
- });
-
- });
- },
- error: function(error) {
- alert("Error: " + error.code + " " + error.message);
- response.error();
- }
- }, {useMasterKey: true});
-
-
-
-
-
- }, {useMasterKey: true});*/
 
 
 
@@ -4363,12 +4263,12 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 if (workspaceToSave.type === 'private') {
 
-                    workspaceToSave.viewable_by = viewableBy;
+                    workspaceToSave._tags= viewableBy;
                     //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
 
                 } else if (workspaceToSave.type === 'public') {
 
-                    workspaceToSave.viewable_by = ['*'];
+                    workspaceToSave._tags = ['*'];
 
                 }
 
@@ -4455,14 +4355,14 @@ Parse.Cloud.afterDelete('Post', function(request) {
     });
 });
 
-// Delete AlgoliaSearch channel=project object if it's deleted from Parse
-Parse.Cloud.afterDelete('Project', function(request) {
+// Delete AlgoliaSearch channel object if it's deleted from Parse
+Parse.Cloud.afterDelete('Channel', function(request) {
 
     // Get Algolia objectID
     var objectID = request.object.id;
 
     // Remove the object from Algolia
-    indexProject.deleteObject(objectID, function(err, content) {
+    indexChannel.deleteObject(objectID, function(err, content) {
         if (err) {
             throw err;
         }
