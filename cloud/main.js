@@ -1619,6 +1619,437 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
 });
 
+// Run beforeSave functions channel
+Parse.Cloud.beforeSave('Channel', function(req, response) {
+
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
+    var channel = req.object;
+
+    var channelACL = new Parse.ACL();
+
+    var owner = new Parse.Object("_User");
+    owner = channel.get("user");
+    var expertRelation = channel.relation("experts");
+
+    var WORKSPACE = new Parse.Object("WORKSPACE");
+    workspace = channel.get("workspace");
+
+    var CHANNEL = new Parse.Object("Channel");
+    var queryChannel = new Parse.Query(CHANNEL);
+
+    if (channel.isNew() ) {
+
+        if(!channel.get("name")) {response.error("Channel name is required.");}
+        if(!channel.get("user")) {response.error("User who is the channel creator is required when creating a new channel");}
+        if(!channel.get("workspace")) {response.error("Workspace is required when creating a new channel");}
+        if(!channel.get("type")) {response.error("Channel type field is required.");}
+
+        queryChannel.equalTo("name", channel.get("name"));
+
+        queryChannel.first({
+            success: function(results) {
+
+                if (results) {
+
+                    // channel is not unique return error
+
+                    response.error("There is already a channel with this name: " + channel.get("name") + ' ' + "please use a channel name that isn't already taken.");
+
+                } else {
+
+                    // todo set the workspace owner as an expert if he is already a workspace expert.
+                    // expertRelation.add(owner);
+
+                    // set isNew to true so we can use this in afterSave Channel if needed.
+                    channel.set("isNew", true);
+
+                    // set 0 for countPosts, countFollowers and countMembers
+                    channel.set("countPosts", 0);
+                    channel.set("countFollowers", 0);
+                    channel.set("countMembers", 0);
+
+                    // by default archive needs to be set to false
+                    channel.set("archive", false);
+
+                    // By default allowMemberPostCreation is set to false
+                    if(!channel.get("allowMemberPostCreation")) {
+                        channel.set("allowMemberPostCreation", false);
+
+                        // todo add role ACL to members to be able to creat posts in this workspace
+
+                    }
+
+                    // If this is a private channel, set ACL for owner to read and write
+                    if(channel.get("type") === 'private') {
+                        channelACL.setPublicReadAccess(false);
+                        channelACL.setPublicWriteAccess(false);
+                        channelACL.setReadAccess(owner, true);
+                        channelACL.setWriteAccess(owner, true);
+                        channel.setACL(channelACL);
+
+                        response.success();
+
+                    } else if (channel.get("type") === 'privateMembers') {
+
+                        // get member role for this workspace
+                        var queryMemberRole = new Parse.Query(Parse.Role);
+                        var memberName = 'member-' + workspace.id;
+
+                        queryMemberRole.equalTo('name', memberName);
+                        queryMemberRole.first({
+                            success: function(memberRole) { // Role Object
+                                console.log("memberRole" + JSON.stringify(memberRole));
+
+                                // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                channelACL.setPublicReadAccess(false);
+                                channelACL.setPublicWriteAccess(false);
+                                channelACL.setReadAccess(memberRole, true);
+                                channelACL.setWriteAccess(memberRole, true);
+                                channel.setACL(channelACL);
+
+                                response.success();
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+
+                    } else if (channel.get("type") === 'privateExperts') {
+
+                        // get member role for this workspace
+                        var queryRole = new Parse.Query(Parse.Role);
+                        var Name = 'expert-' + workspace.id;
+
+                        queryRole.equalTo('name', Name);
+                        queryRole.first({
+                            success: function(Role) { // Role Object
+                                console.log("memberRole" + JSON.stringify(Role));
+
+                                // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                channelACL.setPublicReadAccess(false);
+                                channelACL.setPublicWriteAccess(false);
+                                channelACL.setReadAccess(Role, true);
+                                channelACL.setWriteAccess(Role, true);
+                                channel.setACL(channelACL);
+
+                                response.success();
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+                    } else if (channel.get("type") === 'privateAdmins') {
+
+                        // get member role for this workspace
+                        var queryRole = new Parse.Query(Parse.Role);
+                        var Name = 'admin-' + workspace.id;
+
+                        queryRole.equalTo('name', Name);
+                        queryRole.first({
+                            success: function(Role) { // Role Object
+                                console.log("Role" + JSON.stringify(Role));
+
+                                // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                channelACL.setPublicReadAccess(false);
+                                channelACL.setPublicWriteAccess(false);
+                                channelACL.setReadAccess(Role, true);
+                                channelACL.setWriteAccess(Role, true);
+                                channel.setACL(channelACL);
+
+                                response.success();
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+                    } else if (channel.get("type") === 'privateModerators') {
+
+                        // get member role for this workspace
+                        var queryRole = new Parse.Query(Parse.Role);
+                        var Name = 'moderator-' + workspace.id;
+
+                        queryRole.equalTo('name', Name);
+                        queryRole.first({
+                            success: function(Role) { // Role Object
+                                console.log("Role" + JSON.stringify(Role));
+
+                                // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                channelACL.setPublicReadAccess(false);
+                                channelACL.setPublicWriteAccess(false);
+                                channelACL.setReadAccess(Role, true);
+                                channelACL.setWriteAccess(Role, true);
+                                channel.setACL(channelACL);
+
+                                response.success();
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+                    } else if (channel.get("type") === 'privateOwners') {
+
+                        // get member role for this workspace
+                        var queryRole = new Parse.Query(Parse.Role);
+                        var Name = 'owner-' + workspace.id;
+
+                        queryRole.equalTo('name', Name);
+                        queryRole.first({
+                            success: function(Role) { // Role Object
+                                console.log("Role" + JSON.stringify(Role));
+
+                                // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                channelACL.setPublicReadAccess(false);
+                                channelACL.setPublicWriteAccess(false);
+                                channelACL.setReadAccess(Role, true);
+                                channelACL.setWriteAccess(Role, true);
+                                channel.setACL(channelACL);
+
+                                response.success();
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+                    } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners"|| channel.get("type") != "privateModerators"|| channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
+
+                        response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+                    } else {
+
+                        response.success();
+
+                    }
+
+                }
+            },
+            error: function(err) {
+                response.error("An error occured: " + err);
+
+            }
+        });
+
+
+
+    } else if (!channel.isNew() && channel.dirty("name")) {
+
+        channel.set("isNew", false);
+
+        queryChannel.equalTo("name", channel.get("name"));
+
+        queryChannel.first({
+            success: function(results) {
+
+                if (results) {
+
+                    // channel name is not unique return error
+
+                    response.error(results);
+
+                } else {
+
+
+
+                    // By default allowMemberPostCreation is set to false
+                    if(channel.dirty("allowMemberPostCreation")) {
+
+                        // todo add role ACL to members to be able to creat posts in this workspace
+
+                    }
+
+                    if(channel.dirty("type")) {
+
+                        // If this is a private channel, set ACL for owner to read and write
+                        if(channel.get("type") === 'private') {
+                            channelACL.setPublicReadAccess(false);
+                            channelACL.setPublicWriteAccess(false);
+                            channelACL.setReadAccess(owner, true);
+                            channelACL.setWriteAccess(owner, true);
+                            channel.setACL(channelACL);
+
+                            response.success();
+
+                        } else if (channel.get("type") === 'privateMembers') {
+
+                            // get member role for this workspace
+                            var queryMemberRole = new Parse.Query(Parse.Role);
+                            var memberName = 'member-' + workspace.id;
+
+                            queryMemberRole.equalTo('name', memberName);
+                            queryMemberRole.first({
+                                success: function(memberRole) { // Role Object
+                                    console.log("memberRole" + JSON.stringify(memberRole));
+
+                                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                    channelACL.setPublicReadAccess(false);
+                                    channelACL.setPublicWriteAccess(false);
+                                    channelACL.setReadAccess(memberRole, true);
+                                    channelACL.setWriteAccess(memberRole, true);
+                                    channel.setACL(channelACL);
+
+                                    response.success();
+
+                                },
+                                error: function(error) {
+                                    console.log("Bruh, can't find the Admin role");
+                                    response.error(error);
+                                }
+                            });
+
+
+                        } else if (channel.get("type") === 'privateExperts') {
+
+                            // get member role for this workspace
+                            var queryRole = new Parse.Query(Parse.Role);
+                            var Name = 'expert-' + workspace.id;
+
+                            queryRole.equalTo('name', Name);
+                            queryRole.first({
+                                success: function(Role) { // Role Object
+                                    console.log("memberRole" + JSON.stringify(Role));
+
+                                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                    channelACL.setPublicReadAccess(false);
+                                    channelACL.setPublicWriteAccess(false);
+                                    channelACL.setReadAccess(Role, true);
+                                    channelACL.setWriteAccess(Role, true);
+                                    channel.setACL(channelACL);
+
+                                    response.success();
+
+                                },
+                                error: function(error) {
+                                    console.log("Bruh, can't find the Admin role");
+                                    response.error(error);
+                                }
+                            });
+
+                        } else if (channel.get("type") === 'privateAdmins') {
+
+                            // get member role for this workspace
+                            var queryRole = new Parse.Query(Parse.Role);
+                            var Name = 'admin-' + workspace.id;
+
+                            queryRole.equalTo('name', Name);
+                            queryRole.first({
+                                success: function(Role) { // Role Object
+                                    console.log("Role" + JSON.stringify(Role));
+
+                                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                    channelACL.setPublicReadAccess(false);
+                                    channelACL.setPublicWriteAccess(false);
+                                    channelACL.setReadAccess(Role, true);
+                                    channelACL.setWriteAccess(Role, true);
+                                    channel.setACL(channelACL);
+
+                                    response.success();
+
+                                },
+                                error: function(error) {
+                                    console.log("Bruh, can't find the Admin role");
+                                    response.error(error);
+                                }
+                            });
+
+                        } else if (channel.get("type") === 'privateModerators') {
+
+                            // get member role for this workspace
+                            var queryRole = new Parse.Query(Parse.Role);
+                            var Name = 'moderator-' + workspace.id;
+
+                            queryRole.equalTo('name', Name);
+                            queryRole.first({
+                                success: function(Role) { // Role Object
+                                    console.log("Role" + JSON.stringify(Role));
+
+                                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                    channelACL.setPublicReadAccess(false);
+                                    channelACL.setPublicWriteAccess(false);
+                                    channelACL.setReadAccess(Role, true);
+                                    channelACL.setWriteAccess(Role, true);
+                                    channel.setACL(channelACL);
+
+                                    response.success();
+
+                                },
+                                error: function(error) {
+                                    console.log("Bruh, can't find the Admin role");
+                                    response.error(error);
+                                }
+                            });
+
+                        } else if (channel.get("type") === 'privateOwners') {
+
+                            // get member role for this workspace
+                            var queryRole = new Parse.Query(Parse.Role);
+                            var Name = 'owner-' + workspace.id;
+
+                            queryRole.equalTo('name', Name);
+                            queryRole.first({
+                                success: function(Role) { // Role Object
+                                    console.log("Role" + JSON.stringify(Role));
+
+                                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                    channelACL.setPublicReadAccess(false);
+                                    channelACL.setPublicWriteAccess(false);
+                                    channelACL.setReadAccess(Role, true);
+                                    channelACL.setWriteAccess(Role, true);
+                                    channel.setACL(channelACL);
+
+                                    response.success();
+
+                                },
+                                error: function(error) {
+                                    console.log("Bruh, can't find the Admin role");
+                                    response.error(error);
+                                }
+                            });
+
+                        } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners"|| channel.get("type") != "privateModerators"|| channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
+
+                            response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+                        } else {
+
+                            response.success();
+
+                        }
+
+
+                    } else {response.success();}
+                    
+
+                }
+            },
+            error: function(err) {
+                response.error("An error occured: " + err);
+
+            }
+        });
+
+    } else if (!workspace.isNew()) {
+
+        workspace.set("isNew", false);
+        response.success();
+
+    } else {response.success();}
+
+});
+
 // Run beforeSave functions for Skills to validate data and prevent duplicate entries.
 Parse.Cloud.beforeSave('Skill', function(req, response) {
 
