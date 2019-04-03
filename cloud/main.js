@@ -1670,223 +1670,223 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                 // set isNew to true so we can use this in afterSave Channel if needed.
                 channel.set("isNew", true);
 
-                // set channel to not be default if user didn't specify it
-                if(!channel.get("default")) {channel.set("default", false)};
+        // set channel to not be default if user didn't specify it
+        if(!channel.get("default")) {channel.set("default", false)};
 
-                // set 0 for countPosts, countFollowers and countMembers
-                channel.set("postCount", 0);
-                channel.set("memberCount", 0);
-                channel.set("followerCount", 0);
+        // set 0 for countPosts, countFollowers and countMembers
+        channel.set("postCount", 0);
+        channel.set("memberCount", 0);
+        channel.set("followerCount", 0);
 
-                // by default archive needs to be set to false
-                channel.set("archive", false);
+        // by default archive needs to be set to false
+        channel.set("archive", false);
 
-                // By default allowMemberPostCreation is set to false
-                if(!channel.get("allowMemberPostCreation")) {
-                    channel.set("allowMemberPostCreation", false);
+        // By default allowMemberPostCreation is set to false
+        if(!channel.get("allowMemberPostCreation")) {
+            channel.set("allowMemberPostCreation", false);
 
-                    // todo add role ACL to members to be able to create posts in this workspace
+            // todo add role ACL to members to be able to create posts in this workspace
 
-                }
+        }
 
-                // If this is a private channel, set ACL for owner to read and write
-                if(channel.get("type") === 'private') {
+        // If this is a private channel, set ACL for owner to read and write
+        if(channel.get("type") === 'private') {
+            channelACL.setPublicReadAccess(false);
+            channelACL.setPublicWriteAccess(false);
+            channelACL.setReadAccess(owner, true);
+            channelACL.setWriteAccess(owner, true);
+            channel.setACL(channelACL);
+
+            var finalTime = process.hrtime(time);
+            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            response.success();
+
+        } else if (channel.get("type") === 'privateMembers') {
+
+            // get member role for this workspace
+            var queryMemberRole = new Parse.Query(Parse.Role);
+            var memberName = 'member-' + workspace.id;
+
+            queryMemberRole.equalTo('name', memberName);
+            queryMemberRole.first({
+                success: function(memberRole) { // Role Object
+                    console.log("memberRole" + JSON.stringify(memberRole));
+
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
                     channelACL.setPublicReadAccess(false);
                     channelACL.setPublicWriteAccess(false);
-                    channelACL.setReadAccess(owner, true);
-                    channelACL.setWriteAccess(owner, true);
+                    channelACL.setReadAccess(memberRole, true);
+                    channelACL.setWriteAccess(memberRole, true);
                     channel.setACL(channelACL);
 
                     var finalTime = process.hrtime(time);
                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                     response.success();
 
-                } else if (channel.get("type") === 'privateMembers') {
-
-                    // get member role for this workspace
-                    var queryMemberRole = new Parse.Query(Parse.Role);
-                    var memberName = 'member-' + workspace.id;
-
-                    queryMemberRole.equalTo('name', memberName);
-                    queryMemberRole.first({
-                        success: function(memberRole) { // Role Object
-                            console.log("memberRole" + JSON.stringify(memberRole));
-
-                            // private workspace, but this is a channel that is accessible to all members of this private workspace
-                            channelACL.setPublicReadAccess(false);
-                            channelACL.setPublicWriteAccess(false);
-                            channelACL.setReadAccess(memberRole, true);
-                            channelACL.setWriteAccess(memberRole, true);
-                            channel.setACL(channelACL);
-
-                            var finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                            response.success();
-
-                        },
-                        error: function(error) {
-                            console.log("Bruh, can't find the Admin role");
-
-                            var finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                            response.error(error);
-                        }
-                    });
-
-
-                } else if (channel.get("type") === 'privateExperts') {
-
-                    // get member role for this workspace
-                    var queryRole = new Parse.Query(Parse.Role);
-                    var Name = 'expert-' + workspace.id;
-
-                    queryRole.equalTo('name', Name);
-                    queryRole.first({
-                        success: function(Role) { // Role Object
-                            console.log("memberRole" + JSON.stringify(Role));
-
-                            // private workspace, but this is a channel that is accessible to all members of this private workspace
-                            channelACL.setPublicReadAccess(false);
-                            channelACL.setPublicWriteAccess(false);
-                            channelACL.setReadAccess(Role, true);
-                            channelACL.setWriteAccess(Role, true);
-                            channel.setACL(channelACL);
-
-                            var finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                            response.success();
-
-                        },
-                        error: function(error) {
-                            console.log("Bruh, can't find the Admin role");
-
-                            var finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                            response.error(error);
-                        }
-                    });
-
-                } else if (channel.get("type") === 'privateAdmins') {
-
-                    // get member role for this workspace
-                    var queryRole = new Parse.Query(Parse.Role);
-                    var Name = 'admin-' + workspace.id;
-
-                    queryRole.equalTo('name', Name);
-                    queryRole.first({
-                        success: function(Role) { // Role Object
-                            console.log("Role" + JSON.stringify(Role));
-
-                            // private workspace, but this is a channel that is accessible to all members of this private workspace
-                            channelACL.setPublicReadAccess(false);
-                            channelACL.setPublicWriteAccess(false);
-                            channelACL.setReadAccess(Role, true);
-                            channelACL.setWriteAccess(Role, true);
-                            channel.setACL(channelACL);
-
-                            var finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                            response.success();
-
-                        },
-                        error: function(error) {
-                            console.log("Bruh, can't find the Admin role");
-
-                            var finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                            response.error(error);
-                        }
-                    });
-
-                } else if (channel.get("type") === 'privateModerators') {
-
-                    // get member role for this workspace
-                    var queryRole = new Parse.Query(Parse.Role);
-                    var Name = 'moderator-' + workspace.id;
-
-                    queryRole.equalTo('name', Name);
-                    queryRole.first({
-                        success: function(Role) { // Role Object
-                            console.log("Role" + JSON.stringify(Role));
-
-                            // private workspace, but this is a channel that is accessible to all members of this private workspace
-                            channelACL.setPublicReadAccess(false);
-                            channelACL.setPublicWriteAccess(false);
-                            channelACL.setReadAccess(Role, true);
-                            channelACL.setWriteAccess(Role, true);
-                            channel.setACL(channelACL);
-
-                            var finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                            response.success();
-
-                        },
-                        error: function(error) {
-                            console.log("Bruh, can't find the Admin role");
-
-                            var finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                            response.error(error);
-                        }
-                    });
-
-                } else if (channel.get("type") === 'privateOwners') {
-
-                    // get member role for this workspace
-                    var queryRole = new Parse.Query(Parse.Role);
-                    var Name = 'owner-' + workspace.id;
-
-                    queryRole.equalTo('name', Name);
-                    queryRole.first({
-                        success: function(Role) { // Role Object
-                            console.log("Role" + JSON.stringify(Role));
-
-                            // private workspace, but this is a channel that is accessible to all members of this private workspace
-                            channelACL.setPublicReadAccess(false);
-                            channelACL.setPublicWriteAccess(false);
-                            channelACL.setReadAccess(Role, true);
-                            channelACL.setWriteAccess(Role, true);
-                            channel.setACL(channelACL);
-
-                            var finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                            response.success();
-
-                        },
-                        error: function(error) {
-                            console.log("Bruh, can't find the Admin role");
-
-                            var finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                            response.error(error);
-                        }
-                    });
-
-                } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners"|| channel.get("type") != "privateModerators"|| channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
+                },
+                error: function(error) {
+                    console.log("Bruh, can't find the Admin role");
 
                     var finalTime = process.hrtime(time);
                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                    response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
-                } else {
+                    response.error(error);
+                }
+            });
+
+
+        } else if (channel.get("type") === 'privateExperts') {
+
+            // get member role for this workspace
+            var queryRole = new Parse.Query(Parse.Role);
+            var Name = 'expert-' + workspace.id;
+
+            queryRole.equalTo('name', Name);
+            queryRole.first({
+                success: function(Role) { // Role Object
+                    console.log("memberRole" + JSON.stringify(Role));
+
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.success();
+
+                },
+                error: function(error) {
+                    console.log("Bruh, can't find the Admin role");
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.error(error);
+                }
+            });
+
+        } else if (channel.get("type") === 'privateAdmins') {
+
+            // get member role for this workspace
+            var queryRole = new Parse.Query(Parse.Role);
+            var Name = 'admin-' + workspace.id;
+
+            queryRole.equalTo('name', Name);
+            queryRole.first({
+                success: function(Role) { // Role Object
+                    console.log("Role" + JSON.stringify(Role));
+
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
 
                     var finalTime = process.hrtime(time);
                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
                     response.success();
 
+                },
+                error: function(error) {
+                    console.log("Bruh, can't find the Admin role");
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.error(error);
                 }
+            });
 
-            }
+        } else if (channel.get("type") === 'privateModerators') {
+
+            // get member role for this workspace
+            var queryRole = new Parse.Query(Parse.Role);
+            var Name = 'moderator-' + workspace.id;
+
+            queryRole.equalTo('name', Name);
+            queryRole.first({
+                success: function(Role) { // Role Object
+                    console.log("Role" + JSON.stringify(Role));
+
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                    response.success();
+
+                },
+                error: function(error) {
+                    console.log("Bruh, can't find the Admin role");
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.error(error);
+                }
+            });
+
+        } else if (channel.get("type") === 'privateOwners') {
+
+            // get member role for this workspace
+            var queryRole = new Parse.Query(Parse.Role);
+            var Name = 'owner-' + workspace.id;
+
+            queryRole.equalTo('name', Name);
+            queryRole.first({
+                success: function(Role) { // Role Object
+                    console.log("Role" + JSON.stringify(Role));
+
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                    response.success();
+
+                },
+                error: function(error) {
+                    console.log("Bruh, can't find the Admin role");
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.error(error);
+                }
+            });
+
+        } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners"|| channel.get("type") != "privateModerators"|| channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
+
+            var finalTime = process.hrtime(time);
+            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+        } else {
+
+            var finalTime = process.hrtime(time);
+            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();
+
+        }
+
+    }
 
 
-        }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {useMasterKey: true});
+    }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {useMasterKey: true});
 
 
 
@@ -1911,178 +1911,175 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                 // By default allowMemberPostCreation is set to false
                 if(channel.dirty("allowMemberPostCreation")) {
 
-                    // todo add role ACL to members to be able to creat posts in this workspace
+            // todo add role ACL to members to be able to creat posts in this workspace
 
-                }
+        }
 
-                if(channel.dirty("type")) {
+        if(channel.dirty("type")) {
 
-                    // If this is a private channel, set ACL for owner to read and write
-                    if(channel.get("type") === 'private') {
+            // If this is a private channel, set ACL for owner to read and write
+            if(channel.get("type") === 'private') {
+                channelACL.setPublicReadAccess(false);
+                channelACL.setPublicWriteAccess(false);
+                channelACL.setReadAccess(owner, true);
+                channelACL.setWriteAccess(owner, true);
+                channel.setACL(channelACL);
+
+                response.success();
+
+            } else if (channel.get("type") === 'privateMembers') {
+
+                // get member role for this workspace
+                var queryMemberRole = new Parse.Query(Parse.Role);
+                var memberName = 'member-' + workspace.id;
+
+                queryMemberRole.equalTo('name', memberName);
+                queryMemberRole.first({
+                    success: function(memberRole) { // Role Object
+                        console.log("memberRole" + JSON.stringify(memberRole));
+
+                        // private workspace, but this is a channel that is accessible to all members of this private workspace
                         channelACL.setPublicReadAccess(false);
                         channelACL.setPublicWriteAccess(false);
-                        channelACL.setReadAccess(owner, true);
-                        channelACL.setWriteAccess(owner, true);
+                        channelACL.setReadAccess(memberRole, true);
+                        channelACL.setWriteAccess(memberRole, true);
                         channel.setACL(channelACL);
 
                         response.success();
 
-                    } else if (channel.get("type") === 'privateMembers') {
-
-                        // get member role for this workspace
-                        var queryMemberRole = new Parse.Query(Parse.Role);
-                        var memberName = 'member-' + workspace.id;
-
-                        queryMemberRole.equalTo('name', memberName);
-                        queryMemberRole.first({
-                            success: function(memberRole) { // Role Object
-                                console.log("memberRole" + JSON.stringify(memberRole));
-
-                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                channelACL.setPublicReadAccess(false);
-                                channelACL.setPublicWriteAccess(false);
-                                channelACL.setReadAccess(memberRole, true);
-                                channelACL.setWriteAccess(memberRole, true);
-                                channel.setACL(channelACL);
-
-                                response.success();
-
-                            },
-                            error: function(error) {
-                                console.log("Bruh, can't find the Admin role");
-                                response.error(error);
-                            }
-                        });
+                    },
+                    error: function(error) {
+                        console.log("Bruh, can't find the Admin role");
+                        response.error(error);
+                    }
+                });
 
 
-                    } else if (channel.get("type") === 'privateExperts') {
+            } else if (channel.get("type") === 'privateExperts') {
 
-                        // get member role for this workspace
-                        var queryRole = new Parse.Query(Parse.Role);
-                        var Name = 'expert-' + workspace.id;
+                // get member role for this workspace
+                var queryRole = new Parse.Query(Parse.Role);
+                var Name = 'expert-' + workspace.id;
 
-                        queryRole.equalTo('name', Name);
-                        queryRole.first({
-                            success: function(Role) { // Role Object
-                                console.log("memberRole" + JSON.stringify(Role));
+                queryRole.equalTo('name', Name);
+                queryRole.first({
+                    success: function(Role) { // Role Object
+                        console.log("memberRole" + JSON.stringify(Role));
 
-                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                channelACL.setPublicReadAccess(false);
-                                channelACL.setPublicWriteAccess(false);
-                                channelACL.setReadAccess(Role, true);
-                                channelACL.setWriteAccess(Role, true);
-                                channel.setACL(channelACL);
-
-                                response.success();
-
-                            },
-                            error: function(error) {
-                                console.log("Bruh, can't find the Admin role");
-                                response.error(error);
-                            }
-                        });
-
-                    } else if (channel.get("type") === 'privateAdmins') {
-
-                        // get member role for this workspace
-                        var queryRole = new Parse.Query(Parse.Role);
-                        var Name = 'admin-' + workspace.id;
-
-                        queryRole.equalTo('name', Name);
-                        queryRole.first({
-                            success: function(Role) { // Role Object
-                                console.log("Role" + JSON.stringify(Role));
-
-                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                channelACL.setPublicReadAccess(false);
-                                channelACL.setPublicWriteAccess(false);
-                                channelACL.setReadAccess(Role, true);
-                                channelACL.setWriteAccess(Role, true);
-                                channel.setACL(channelACL);
-
-                                response.success();
-
-                            },
-                            error: function(error) {
-                                console.log("Bruh, can't find the Admin role");
-                                response.error(error);
-                            }
-                        });
-
-                    } else if (channel.get("type") === 'privateModerators') {
-
-                        // get member role for this workspace
-                        var queryRole = new Parse.Query(Parse.Role);
-                        var Name = 'moderator-' + workspace.id;
-
-                        queryRole.equalTo('name', Name);
-                        queryRole.first({
-                            success: function(Role) { // Role Object
-                                console.log("Role" + JSON.stringify(Role));
-
-                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                channelACL.setPublicReadAccess(false);
-                                channelACL.setPublicWriteAccess(false);
-                                channelACL.setReadAccess(Role, true);
-                                channelACL.setWriteAccess(Role, true);
-                                channel.setACL(channelACL);
-
-                                response.success();
-
-                            },
-                            error: function(error) {
-                                console.log("Bruh, can't find the Admin role");
-                                response.error(error);
-                            }
-                        });
-
-                    } else if (channel.get("type") === 'privateOwners') {
-
-                        // get member role for this workspace
-                        var queryRole = new Parse.Query(Parse.Role);
-                        var Name = 'owner-' + workspace.id;
-
-                        queryRole.equalTo('name', Name);
-                        queryRole.first({
-                            success: function(Role) { // Role Object
-                                console.log("Role" + JSON.stringify(Role));
-
-                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                channelACL.setPublicReadAccess(false);
-                                channelACL.setPublicWriteAccess(false);
-                                channelACL.setReadAccess(Role, true);
-                                channelACL.setWriteAccess(Role, true);
-                                channel.setACL(channelACL);
-
-                                response.success();
-
-                            },
-                            error: function(error) {
-                                console.log("Bruh, can't find the Admin role");
-                                response.error(error);
-                            }
-                        });
-
-                    } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners"|| channel.get("type") != "privateModerators"|| channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
-
-                        response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
-                    } else {
+                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                        channelACL.setPublicReadAccess(false);
+                        channelACL.setPublicWriteAccess(false);
+                        channelACL.setReadAccess(Role, true);
+                        channelACL.setWriteAccess(Role, true);
+                        channel.setACL(channelACL);
 
                         response.success();
 
+                    },
+                    error: function(error) {
+                        console.log("Bruh, can't find the Admin role");
+                        response.error(error);
                     }
+                });
 
+            } else if (channel.get("type") === 'privateAdmins') {
 
-                } else {response.success();}
+                // get member role for this workspace
+                var queryRole = new Parse.Query(Parse.Role);
+                var Name = 'admin-' + workspace.id;
 
+                queryRole.equalTo('name', Name);
+                queryRole.first({
+                    success: function(Role) { // Role Object
+                        console.log("Role" + JSON.stringify(Role));
+
+                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                        channelACL.setPublicReadAccess(false);
+                        channelACL.setPublicWriteAccess(false);
+                        channelACL.setReadAccess(Role, true);
+                        channelACL.setWriteAccess(Role, true);
+                        channel.setACL(channelACL);
+
+                        response.success();
+
+                    },
+                    error: function(error) {
+                        console.log("Bruh, can't find the Admin role");
+                        response.error(error);
+                    }
+                });
+
+            } else if (channel.get("type") === 'privateModerators') {
+
+                // get member role for this workspace
+                var queryRole = new Parse.Query(Parse.Role);
+                var Name = 'moderator-' + workspace.id;
+
+                queryRole.equalTo('name', Name);
+                queryRole.first({
+                    success: function(Role) { // Role Object
+                        console.log("Role" + JSON.stringify(Role));
+
+                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                        channelACL.setPublicReadAccess(false);
+                        channelACL.setPublicWriteAccess(false);
+                        channelACL.setReadAccess(Role, true);
+                        channelACL.setWriteAccess(Role, true);
+                        channel.setACL(channelACL);
+
+                        response.success();
+
+                    },
+                    error: function(error) {
+                        console.log("Bruh, can't find the Admin role");
+                        response.error(error);
+                    }
+                });
+
+            } else if (channel.get("type") === 'privateOwners') {
+
+                // get member role for this workspace
+                var queryRole = new Parse.Query(Parse.Role);
+                var Name = 'owner-' + workspace.id;
+
+                queryRole.equalTo('name', Name);
+                queryRole.first({
+                    success: function(Role) { // Role Object
+                        console.log("Role" + JSON.stringify(Role));
+
+                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                        channelACL.setPublicReadAccess(false);
+                        channelACL.setPublicWriteAccess(false);
+                        channelACL.setReadAccess(Role, true);
+                        channelACL.setWriteAccess(Role, true);
+                        channel.setACL(channelACL);
+
+                        response.success();
+
+                    },
+                    error: function(error) {
+                        console.log("Bruh, can't find the Admin role");
+                        response.error(error);
+                    }
+                });
+
+            } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners"|| channel.get("type") != "privateModerators"|| channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
+
+                response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+            } else {
+
+                response.success();
 
             }
 
 
-        }
+        } else {response.success();}
 
 
-        }, (error) => {
+    }
+
+
+    }, (error) => {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
             response.error(error);
@@ -2863,8 +2860,6 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                     }
 
 
-
-
                 }
 
 
@@ -2879,58 +2874,102 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
     } else if (!workspace_follower.isNew() && (workspace_follower.dirty("isFollower") || workspace_follower.dirty("isMember"))) {
 
-        //console.log(WorkspaceFollower.id);
-        queryWorkspaceFollower.get(WorkspaceFollower.id, {
-                success: function(result) {
 
-                    //console.log("old isFollower: "+JSON.stringify(result.get("isFollower")) + " New isFollower: " + JSON.stringify(workspace_follower.get("isFollower")) + " isFollower.dirty: "+JSON.stringify(workspace_follower.dirty("isFollower")));
-                    //console.log("old isMember: "+JSON.stringify(result.get("isMember")) + " New isMember: " + JSON.stringify(workspace_follower.get("isMember")) + " isMember.dirty: "+JSON.stringify(workspace_follower.dirty("isMember")));
+        queryWorkspaceFollower.get(WorkspaceFollower.id, {useMasterKey: true})
+            .then((result) => {
+            // The object was retrieved successfully.
 
-                    //queryPTime = process.hrtime(timequeryPostFind);
-                    //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+            console.log("channelfollow result from query: "+JSON.stringify(result));
 
-                    if (workspace_follower.dirty("isFollower")) {
+            //console.log("old isFollower: "+JSON.stringify(result.get("isFollower")) + " New isFollower: " + JSON.stringify(workspace_follower.get("isFollower")) + " isFollower.dirty: "+JSON.stringify(workspace_follower.dirty("isFollower")));
+            //console.log("old isMember: "+JSON.stringify(result.get("isMember")) + " New isMember: " + JSON.stringify(workspace_follower.get("isMember")) + " isMember.dirty: "+JSON.stringify(workspace_follower.dirty("isMember")));
 
-                        if (result.get("isFollower") === workspace_follower.get("isFollower")) {
+            //queryPTime = process.hrtime(timequeryPostFind);
+            //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
 
-                            console.log("user isFollower did not change");
-                            // doin't increment or decrement because the user isFollow status did not change
+            if (workspace_follower.dirty("isFollower")) {
 
-                        } else if ((result.get("isFollower")  === false || !result.get("isFollower") ) && workspace_follower.get("isFollower") === true) {
+                if (result.get("isFollower") === workspace_follower.get("isFollower")) {
 
-                            Workspace.increment("followerCount");
-                            console.log("increment Follower");
-                            //Workspace.save();
+                    console.log("user isFollower did not change");
+                    // doin't increment or decrement because the user isFollow status did not change
 
-                            queryfollowerRole.equalTo('name', followerName);
-                            queryfollowerRole.first({
-                                success: function(followerRole) { // Role Object
-                                    //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+                } else if ((result.get("isFollower")  === false || !result.get("isFollower") ) && workspace_follower.get("isFollower") === true) {
 
-                                    followerRole.getUsers().add(user);
-                                    followerRole.save(null, {useMasterKey: true});
+                    Workspace.increment("followerCount");
+                    console.log("increment Follower");
+                    //Workspace.save();
 
-                                    var userRolesRelation = user.relation("roles");
-                                    userRolesRelation.add(followerRole);
-                                    user.save(null, {useMasterKey: true});
+                    queryfollowerRole.equalTo('name', followerName);
+                    queryfollowerRole.first({
+                        success: function(followerRole) { // Role Object
+                            //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
 
-                                },
-                                error: function(error) {
-                                    console.log("Bruh, can't find the Admin role");
-                                    response.error(error);
-                                }
-                            });
+                            followerRole.getUsers().add(user);
+                            followerRole.save(null, {useMasterKey: true});
 
-                        } else if ((result.get("isFollower")  === true) && workspace_follower.get("isFollower") === false) {
+                            var userRolesRelation = user.relation("roles");
+                            userRolesRelation.add(followerRole);
+                            user.save(null, {useMasterKey: true});
+
+                        },
+                        error: function(error) {
+                            console.log("Bruh, can't find the Admin role");
+                            response.error(error);
+                        }
+                    });
+
+                } else if ((result.get("isFollower")  === true) && workspace_follower.get("isFollower") === false) {
 
 
-                            if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === false) && result.get("isMember")  === false) {
+                    if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === false) && result.get("isMember")  === false) {
 
-                                // not a member so remove user as follower of that workspace
-                                Workspace.increment("followerCount", -1);
-                                console.log("decrement Follower");
-                                //Workspace.save();
+                        // not a member so remove user as follower of that workspace
+                        Workspace.increment("followerCount", -1);
+                        console.log("decrement Follower");
+                        //Workspace.save();
 
+                        queryfollowerRole.equalTo('name', followerName);
+                        queryfollowerRole.first({
+                            success: function(followerRole) { // Role Object
+                                //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                followerRole.getUsers().remove(user);
+                                followerRole.save(null, {useMasterKey: true});
+
+                                var userRolesRelation = user.relation("roles");
+                                userRolesRelation.remove(followerRole);
+                                user.save(null, {useMasterKey: true});
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+
+                    } else if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === false) && result.get("isMember")  === true) {
+
+                        // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
+                        workspace_follower.set("isMember", false);
+                        Workspace.increment("followerCount", -1);
+                        //Workspace.increment("memberCount", -1);
+                        console.log("decrement Member & Follower");
+
+                        // now remove both member and follower roles since the user is leaving the workspace and un-following it.
+                        queryMemberRole.equalTo('name', memberName);
+                        queryMemberRole.first({
+                            success: function(memberRole) { // Role Object
+                                //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                memberRole.getUsers().remove(user);
+                                memberRole.save(null, {useMasterKey: true});
+
+                                var userRolesRelation = user.relation("roles");
+                                userRolesRelation.remove(memberRole);
+
+                                // now add follower since a member is by default a follower
                                 queryfollowerRole.equalTo('name', followerName);
                                 queryfollowerRole.first({
                                     success: function(followerRole) { // Role Object
@@ -2950,243 +2989,94 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     }
                                 });
 
-
-                            } else if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === false) && result.get("isMember")  === true) {
-
-                                // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
-                                workspace_follower.set("isMember", false);
-                                Workspace.increment("followerCount", -1);
-                                //Workspace.increment("memberCount", -1);
-                                console.log("decrement Member & Follower");
-
-                                // now remove both member and follower roles since the user is leaving the workspace and un-following it.
-                                queryMemberRole.equalTo('name', memberName);
-                                queryMemberRole.first({
-                                    success: function(memberRole) { // Role Object
-                                        //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
-
-                                        memberRole.getUsers().remove(user);
-                                        memberRole.save(null, {useMasterKey: true});
-
-                                        var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.remove(memberRole);
-
-                                        // now add follower since a member is by default a follower
-                                        queryfollowerRole.equalTo('name', followerName);
-                                        queryfollowerRole.first({
-                                            success: function(followerRole) { // Role Object
-                                                //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
-
-                                                followerRole.getUsers().remove(user);
-                                                followerRole.save(null, {useMasterKey: true});
-
-                                                var userRolesRelation = user.relation("roles");
-                                                userRolesRelation.remove(followerRole);
-                                                user.save(null, {useMasterKey: true});
-
-                                            },
-                                            error: function(error) {
-                                                console.log("Bruh, can't find the Admin role");
-                                                response.error(error);
-                                            }
-                                        });
-
-                                    },
-                                    error: function(error) {
-                                        console.log("Bruh, can't find the Admin role");
-                                        response.error(error);
-                                    }
-                                });
-
-
-                            } else if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === true) && result.get("isMember")  === false) {
-
-                                // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
-                                workspace_follower.set("isMember", false);
-                                Workspace.increment("followerCount", -1);
-                                //Workspace.increment("memberCount", -1);
-                                console.log("decrement Member & Follower");
-
-                                // now remove both member and follower roles since the user is leaving the workspace and un-following it.
-                                queryMemberRole.equalTo('name', memberName);
-                                queryMemberRole.first({
-                                    success: function(memberRole) { // Role Object
-                                        //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
-
-                                        memberRole.getUsers().remove(user);
-                                        memberRole.save(null, {useMasterKey: true});
-
-                                        var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.remove(memberRole);
-
-                                        // now add follower since a member is by default a follower
-                                        queryfollowerRole.equalTo('name', followerName);
-                                        queryfollowerRole.first({
-                                            success: function(followerRole) { // Role Object
-                                                //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
-
-                                                followerRole.getUsers().remove(user);
-                                                followerRole.save(null, {useMasterKey: true});
-
-                                                var userRolesRelation = user.relation("roles");
-                                                userRolesRelation.remove(followerRole);
-                                                user.save(null, {useMasterKey: true});
-
-                                            },
-                                            error: function(error) {
-                                                console.log("Bruh, can't find the Admin role");
-                                                response.error(error);
-                                            }
-                                        });
-
-                                    },
-                                    error: function(error) {
-                                        console.log("Bruh, can't find the Admin role");
-                                        response.error(error);
-                                    }
-                                });
-
-
-                            } else if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === true) && result.get("isMember")  === true) {
-
-                                // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
-                                workspace_follower.set("isMember", false);
-                                Workspace.increment("followerCount", -1);
-                                //Workspace.increment("memberCount", -1);
-                                console.log("decrement Member & Follower");
-
-                                // now remove both member and follower roles since the user is leaving the workspace and un-following it.
-                                queryMemberRole.equalTo('name', memberName);
-                                queryMemberRole.first({
-                                    success: function(memberRole) { // Role Object
-                                        //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
-
-                                        memberRole.getUsers().remove(user);
-                                        memberRole.save(null, {useMasterKey: true});
-
-                                        var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.remove(memberRole);
-
-                                        // now add follower since a member is by default a follower
-                                        queryfollowerRole.equalTo('name', followerName);
-                                        queryfollowerRole.first({
-                                            success: function(followerRole) { // Role Object
-                                                //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
-
-                                                followerRole.getUsers().remove(user);
-                                                followerRole.save(null, {useMasterKey: true});
-
-                                                var userRolesRelation = user.relation("roles");
-                                                userRolesRelation.remove(followerRole);
-                                                user.save(null, {useMasterKey: true});
-
-                                            },
-                                            error: function(error) {
-                                                console.log("Bruh, can't find the Admin role");
-                                                response.error(error);
-                                            }
-                                        });
-
-                                    },
-                                    error: function(error) {
-                                        console.log("Bruh, can't find the Admin role");
-                                        response.error(error);
-                                    }
-                                });
-
-
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
                             }
+                        });
 
 
+                    } else if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === true) && result.get("isMember")  === false) {
 
-                        } else {
+                        // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
+                        workspace_follower.set("isMember", false);
+                        Workspace.increment("followerCount", -1);
+                        //Workspace.increment("memberCount", -1);
+                        console.log("decrement Member & Follower");
 
-                            console.log("do nothing Follower");
-                            // do nothing
+                        // now remove both member and follower roles since the user is leaving the workspace and un-following it.
+                        queryMemberRole.equalTo('name', memberName);
+                        queryMemberRole.first({
+                            success: function(memberRole) { // Role Object
+                                //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
 
-                        }
+                                memberRole.getUsers().remove(user);
+                                memberRole.save(null, {useMasterKey: true});
 
-                    }
+                                var userRolesRelation = user.relation("roles");
+                                userRolesRelation.remove(memberRole);
 
-                    if (workspace_follower.dirty("isMember")) {
+                                // now add follower since a member is by default a follower
+                                queryfollowerRole.equalTo('name', followerName);
+                                queryfollowerRole.first({
+                                    success: function(followerRole) { // Role Object
+                                        //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
 
-                        if (result.get("isMember")  === workspace_follower.get("isMember")) {
-
-                            console.log("user isMember did not change");
-                            // doin't increment or decrement because the user isFollow status did not change
-
-                        } else if ((result.get("isMember") === false || !result.get("isMember")) && workspace_follower.get("isMember") === true) {
-
-                            if ((!workspace_follower.get("isFollower") || workspace_follower.get("isFollower") === false) && result.get("isFollower") === false) {
-
-                                // since user was not a follower, but is now a member make him also a follower
-
-                                Workspace.increment("memberCount");
-                                Workspace.increment("followerCount");
-                                console.log("increment Follower & Member");
-                                //Workspace.save();
-
-                                // now add both member and follower roles since the user is leaving the workspace and un-following it.
-                                queryMemberRole.equalTo('name', memberName);
-                                queryMemberRole.first({
-                                    success: function(memberRole) { // Role Object
-                                        //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
-
-                                        memberRole.getUsers().add(user);
-                                        memberRole.save(null, {useMasterKey: true});
+                                        followerRole.getUsers().remove(user);
+                                        followerRole.save(null, {useMasterKey: true});
 
                                         var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.add(memberRole);
-
-                                        // now add follower since a member is by default a follower
-                                        queryfollowerRole.equalTo('name', followerName);
-                                        queryfollowerRole.first({
-                                            success: function(followerRole) { // Role Object
-                                                //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
-
-                                                followerRole.getUsers().add(user);
-                                                followerRole.save(null, {useMasterKey: true});
-
-                                                var userRolesRelation = user.relation("roles");
-                                                userRolesRelation.add(followerRole);
-                                                user.save(null, {useMasterKey: true});
-
-                                            },
-                                            error: function(error) {
-                                                console.log("Bruh, can't find the Admin role");
-                                                response.error(error);
-                                            }
-                                        });
-
-                                    },
-                                    error: function(error) {
-                                        console.log("Bruh, can't find the Admin role");
-                                        response.error(error);
-                                    }
-                                });
-
-
-                            } else {
-
-                                // since user is already follower, make him only a member
-
-                                Workspace.increment("memberCount");
-                                console.log("increment  Member");
-                                //Workspace.save();
-
-                                // now add both member and follower roles since the user is leaving the workspace and un-following it.
-                                queryMemberRole.equalTo('name', memberName);
-                                queryMemberRole.first({
-                                    success: function(memberRole) { // Role Object
-                                        //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
-
-                                        memberRole.getUsers().add(user);
-                                        memberRole.save(null, {useMasterKey: true});
-
-                                        var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.add(memberRole);
+                                        userRolesRelation.remove(followerRole);
                                         user.save(null, {useMasterKey: true});
 
+                                    },
+                                    error: function(error) {
+                                        console.log("Bruh, can't find the Admin role");
+                                        response.error(error);
+                                    }
+                                });
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+
+                    } else if ((!workspace_follower.get("isMember") || workspace_follower.get("isMember") === true) && result.get("isMember")  === true) {
+
+                        // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
+                        workspace_follower.set("isMember", false);
+                        Workspace.increment("followerCount", -1);
+                        //Workspace.increment("memberCount", -1);
+                        console.log("decrement Member & Follower");
+
+                        // now remove both member and follower roles since the user is leaving the workspace and un-following it.
+                        queryMemberRole.equalTo('name', memberName);
+                        queryMemberRole.first({
+                            success: function(memberRole) { // Role Object
+                                //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                memberRole.getUsers().remove(user);
+                                memberRole.save(null, {useMasterKey: true});
+
+                                var userRolesRelation = user.relation("roles");
+                                userRolesRelation.remove(memberRole);
+
+                                // now add follower since a member is by default a follower
+                                queryfollowerRole.equalTo('name', followerName);
+                                queryfollowerRole.first({
+                                    success: function(followerRole) { // Role Object
+                                        //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                        followerRole.getUsers().remove(user);
+                                        followerRole.save(null, {useMasterKey: true});
+
+                                        var userRolesRelation = user.relation("roles");
+                                        userRolesRelation.remove(followerRole);
+                                        user.save(null, {useMasterKey: true});
 
                                     },
                                     error: function(error) {
@@ -3195,63 +3085,169 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     }
                                 });
 
-
-
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
                             }
-
-
-
-                        } else if ((result.get("isMember") === true) && workspace_follower.get("isMember") === false) {
-
-                            Workspace.increment("memberCount", -1);
-                            console.log("decrement Member");
-                            //Workspace.save();
-
-                            queryMemberRole.equalTo('name', memberName);
-                            queryMemberRole.first({
-                                success: function(memberRole) { // Role Object
-                                    //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
-
-                                    memberRole.getUsers().remove(user);
-                                    memberRole.save(null, {useMasterKey: true});
-
-                                    var userRolesRelation = user.relation("roles");
-                                    userRolesRelation.remove(memberRole);
-                                    user.save(null, {useMasterKey: true});
-
-                                },
-                                error: function(error) {
-                                    console.log("Bruh, can't find the Admin role");
-                                    response.error(error);
-                                }
-                            });
-
-                        } else {
-
-                            console.log("do nothing Member");
-                            // do nothing
-
-                        }
+                        });
 
 
                     }
 
-                    console.log("Workspace: "+JSON.stringify(Workspace));
-                    Workspace.save(null, {useMasterKey: true});
-                    beforeSave_Time = process.hrtime(time);
-                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-                    response.success();
 
 
-                },
-                error: function(object, error){
-                    response.error("queryWorkspaceFollower Error: "+ JSON.stringify(error));
+                } else {
+
+                    console.log("do nothing Follower");
+                    // do nothing
+
                 }
+
             }
 
+            if (workspace_follower.dirty("isMember")) {
 
-        );
+                if (result.get("isMember")  === workspace_follower.get("isMember")) {
+
+                    console.log("user isMember did not change");
+                    // doin't increment or decrement because the user isFollow status did not change
+
+                } else if ((result.get("isMember") === false || !result.get("isMember")) && workspace_follower.get("isMember") === true) {
+
+                    if ((!workspace_follower.get("isFollower") || workspace_follower.get("isFollower") === false) && result.get("isFollower") === false) {
+
+                        // since user was not a follower, but is now a member make him also a follower
+
+                        Workspace.increment("memberCount");
+                        Workspace.increment("followerCount");
+                        console.log("increment Follower & Member");
+                        //Workspace.save();
+
+                        // now add both member and follower roles since the user is leaving the workspace and un-following it.
+                        queryMemberRole.equalTo('name', memberName);
+                        queryMemberRole.first({
+                            success: function(memberRole) { // Role Object
+                                //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                memberRole.getUsers().add(user);
+                                memberRole.save(null, {useMasterKey: true});
+
+                                var userRolesRelation = user.relation("roles");
+                                userRolesRelation.add(memberRole);
+
+                                // now add follower since a member is by default a follower
+                                queryfollowerRole.equalTo('name', followerName);
+                                queryfollowerRole.first({
+                                    success: function(followerRole) { // Role Object
+                                        //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                                        followerRole.getUsers().add(user);
+                                        followerRole.save(null, {useMasterKey: true});
+
+                                        var userRolesRelation = user.relation("roles");
+                                        userRolesRelation.add(followerRole);
+                                        user.save(null, {useMasterKey: true});
+
+                                    },
+                                    error: function(error) {
+                                        console.log("Bruh, can't find the Admin role");
+                                        response.error(error);
+                                    }
+                                });
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+
+                    } else {
+
+                        // since user is already follower, make him only a member
+
+                        Workspace.increment("memberCount");
+                        console.log("increment  Member");
+                        //Workspace.save();
+
+                        // now add both member and follower roles since the user is leaving the workspace and un-following it.
+                        queryMemberRole.equalTo('name', memberName);
+                        queryMemberRole.first({
+                            success: function(memberRole) { // Role Object
+                                //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                                memberRole.getUsers().add(user);
+                                memberRole.save(null, {useMasterKey: true});
+
+                                var userRolesRelation = user.relation("roles");
+                                userRolesRelation.add(memberRole);
+                                user.save(null, {useMasterKey: true});
+
+
+                            },
+                            error: function(error) {
+                                console.log("Bruh, can't find the Admin role");
+                                response.error(error);
+                            }
+                        });
+
+
+
+                    }
+
+
+
+                } else if ((result.get("isMember") === true) && workspace_follower.get("isMember") === false) {
+
+                    Workspace.increment("memberCount", -1);
+                    console.log("decrement Member");
+                    //Workspace.save();
+
+                    queryMemberRole.equalTo('name', memberName);
+                    queryMemberRole.first({
+                        success: function(memberRole) { // Role Object
+                            //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                            memberRole.getUsers().remove(user);
+                            memberRole.save(null, {useMasterKey: true});
+
+                            var userRolesRelation = user.relation("roles");
+                            userRolesRelation.remove(memberRole);
+                            user.save(null, {useMasterKey: true});
+
+                        },
+                        error: function(error) {
+                            console.log("Bruh, can't find the Admin role");
+                            response.error(error);
+                        }
+                    });
+
+                } else {
+
+                    console.log("do nothing Member");
+                    // do nothing
+
+                }
+
+
+            }
+
+            console.log("Workspace: "+JSON.stringify(Workspace));
+            Workspace.save(null, {useMasterKey: true});
+            beforeSave_Time = process.hrtime(time);
+            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();
+
+
+        }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {useMasterKey: true});
+
 
     }   else {
 
@@ -3277,16 +3273,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
     var channel = channelfollow.get("channel");
     console.log("channel: " + JSON.stringify(channel));
 
-    var CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
-    var ChannelFollow = new CHANNELFOLLOW();
-    ChannelFollow.id = ChannelFollow.id;
-    var queryChannelFollow = new Parse.Query(CHANNELFOLLOW);
-
-    var CHANNEL = Parse.Object.extend("Channel");
-    var Channel = new CHANNEL();
-    Channel.id = channel.id;
-    console.log("Channel: " + JSON.stringify(Channel));
-
+    var queryChannelFollow = new Parse.Query("ChannelFollow");
+    var queryChannel = new Parse.Query("Channel");
 
     //console.log("post: " + JSON.stringify(channelfollow));
 
@@ -3315,7 +3303,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                 channelfollow.set("name", channelFollowName);
                 console.log("channel.getACL(): " + JSON.stringify(channel.getACL()));
-                channelfollow.setACL(channel.getACL());
+
+                // set correct ACL for channelFollow
+                var channelFollowACL = new Parse.ACL();
+                channelFollowACL.setPublicReadAccess(true);
+                channelFollowACL.setPublicWriteAccess(false);
+                channelFollowACL.setReadAccess(channelfollow.get("user"), true);
+                channelFollowACL.setWriteAccess(channelfollow.get("user"), true);
+                channelfollow.setACL(channelFollowACL);
+
                 if(!channelfollow.get("channel")) {response.error("Channel is required.");}
                 if(!channelfollow.get("user")) {response.error("User who is the channel creator is required when creating a new channel");}
                 if(!channelfollow.get("workspace")) {response.error("Workspace is required when creating a new channel");}
@@ -3324,121 +3320,200 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
 
                 if(channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                    Channel.increment("followerCount");
-                    Channel.increment("memberCount");
-                    Channel.save();
+                    channel.increment("followerCount");
+                    channel.increment("memberCount");
+                    channel.save();
                     beforeSave_Time = process.hrtime(time);
                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
                     response.success();
-                } else if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === false) {
-                    Channel.increment("followerCount");
-                    Channel.save();
+                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                    channel.increment("followerCount");
+                    channel.save();
                     beforeSave_Time = process.hrtime(time);
                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
                     response.success();
 
-                } else if (channelfollow.get("isFollower") === false && channelfollow.get("isMember") === true) {
-                    Channel.increment("memberCount");
-                    Channel.save();
+                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                    // a member is by default always a follower.
+                    channel.increment("memberCount");
+                    channel.increment("followerCount");
+                    channelfollow.set("isFollower", true);
+                    channel.save();
                     beforeSave_Time = process.hrtime(time);
                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
                     response.success();
+
+                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                    response.error("Please set isFollower:true or isMember:true since one if required.");
 
                 } else {
 
-                    beforeSave_Time = process.hrtime(time);
-                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+                beforeSave_Time = process.hrtime(time);
+                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
-                    response.success();
+                response.success();
+
+                }
+
+
+        }
+
+
+    }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {useMasterKey: true});
+
+
+    } else if (!channelfollow.isNew() && (channelfollow.dirty("isFollower") || channelfollow.dirty("isMember"))) {
+
+        console.log("channelfollow.id: " + JSON.stringify(channelfollow.id));
+
+        queryChannelFollow.get(channelfollow.id, {useMasterKey: true})
+            .then((result) => {
+            // The object was retrieved successfully.
+
+            console.log("channelfollow result from query: "+JSON.stringify(result));
+
+            //console.log("old isFollower: "+JSON.stringify(result.get("isFollower")) + " New isFollower: " + JSON.stringify(workspace_follower.get("isFollower")) + " isFollower.dirty: "+JSON.stringify(workspace_follower.dirty("isFollower")));
+            //console.log("old isMember: "+JSON.stringify(result.get("isMember")) + " New isMember: " + JSON.stringify(workspace_follower.get("isMember")) + " isMember.dirty: "+JSON.stringify(workspace_follower.dirty("isMember")));
+
+            //queryPTime = process.hrtime(timequeryPostFind);
+            //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+
+            if (channelfollow.dirty("isFollower")) {
+
+                if (result.get("isFollower") === channelfollow.get("isFollower")) {
+
+                    console.log("user isFollower did not change");
+                    // don't increment or decrement because the user isFollow status did not change
+
+                } else if ((result.get("isFollower")  === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
+
+                    channel.increment("followerCount");
+                    console.log("increment Follower");
+                    //Workspace.save();
+
+
+                } else if ((result.get("isFollower")  === true) && channelfollow.get("isFollower") === false) {
+
+                    if(channelfollow.get("isSelected") === true) {channelfollow.set("isSelected", false);}
+
+
+
+                    if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === false) && result.get("isMember")  === false) {
+
+
+                        // not a member so remove user as follower of that channel
+                        channel.increment("followerCount", -1);
+                        console.log("decrement Follower");
+                        //Workspace.save();
+
+
+                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === false) && result.get("isMember")  === true) {
+
+
+                        // since the user was a member, and wants to un-follow this channel we will remove him
+                        channelfollow.set("isMember", false);
+                        channel.increment("followerCount", -1);
+                        //Workspace.increment("memberCount", -1);
+                        console.log("decrement Member & Follower");
+
+
+                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === true) && result.get("isMember")  === false) {
+
+
+                        // since the user set isFollow: false, even if he also passes isMember = true we assume the user wants to unfollow so we remove them.
+                        channelfollow.set("isMember", false);
+                        channel.increment("followerCount", -1);
+                        console.log("decrement Follower");
+
+
+                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === true) && result.get("isMember")  === true) {
+
+                        // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
+                        workspace_follower.set("isMember", false);
+                        Workspace.increment("followerCount", -1);
+                        //Workspace.increment("memberCount", -1);
+                        console.log("decrement Follower");
+
+                    }
+
+
+                } else {
+
+                    console.log("do nothing Follower");
+                    // do nothing
+
+                }
+
+            }
+
+            if (channelfollow.dirty("isMember")) {
+
+                if (result.get("isMember")  === channelfollow.get("isMember")) {
+
+                    console.log("user isMember did not change");
+                    // doin't increment or decrement because the user isFollow status did not change
+
+                } else if ((result.get("isMember") === false || !result.get("isMember")) && channelfollow.get("isMember") === true) {
+
+                    if ((!channelfollow.get("isFollower") || channelfollow.get("isFollower") === false) && result.get("isFollower") === false) {
+
+                        // since user was not a follower, but is now a member make him also a follower
+
+                        channel.increment("memberCount");
+                        channel.increment("followerCount");
+                        console.log("increment Follower & Member");
+                        //Workspace.save();
+
+                    } else {
+
+                        // since user is already follower, make him only a member
+
+                        channel.increment("memberCount");
+                        console.log("increment  Member");
+                        //Workspace.save();
+
+                    }
+
+
+                } else if ((result.get("isMember") === true) && channelfollow.get("isMember") === false) {
+
+                    channel.increment("memberCount", -1);
+                    console.log("decrement Member");
+                    //Workspace.save();
+
+
+                } else {
+
+                    console.log("do nothing Member");
+                    // do nothing
 
                 }
 
 
             }
 
+            console.log("channel: "+JSON.stringify(channel));
+            channel.save(null, {useMasterKey: true});
+            beforeSave_Time = process.hrtime(time);
+            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+            response.success();
+
+
 
         }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
             }, {useMasterKey: true});
 
-
-    } else if (!channelfollow.isNew() && (channelfollow.dirty("isFollower") || channelfollow.dirty("isMember"))) {
-
-        queryChannelFollow.get(ChannelFollow.id, {
-                success: function(result) {
-
-                    console.log("queryWorkspaceFollower: "+JSON.stringify(result));
-
-                    //queryPTime = process.hrtime(timequeryPostFind);
-                    //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
-                    //console.log("results: "+JSON.stringify(results));
-
-                    if (channelfollow.dirty("isFollower")) {
-
-                        if (result.get("isFollower") === channelfollow.get("isFollower")) {
-
-                            console.log("user isFollower did not change");
-                            // doin't increment or decrement because the user isFollow status did not change
-
-                        } else if ((result.get("isFollower") === false || !result.get("isFollower")) && channelfollow.get("isFollower") === true) {
-
-                            Channel.increment("followerCount");
-                            //Workspace.save();
-
-                        } else if ((result.get("isFollower") === true) && channelfollow.get("isFollower") === false) {
-
-                            Channel.increment("followerCount", -1);
-                            //Workspace.save();
-
-                        } else {
-
-                            // do nothing
-
-                        }
-
-                    } else if (channelfollow.dirty("isMember")) {
-
-                        if (result.get("isMember") === channelfollow.get("isMember")) {
-
-                            console.log("user isMember did not change");
-                            // doin't increment or decrement because the user isFollow status did not change
-
-                        } else if ((result.get("isMember") === false || !result.get("isMember")) && channelfollow.get("isMember") === true) {
-
-                            Channel.increment("memberCount");
-                            //Workspace.save();
-
-                        } else if ((result.get("isMember") === true) && channelfollow.get("isMember") === false) {
-
-                            Channel.increment("memberCount", -1);
-                            //Workspace.save();
-
-                        } else {
-
-                            console.log("do nothing Member");
-                            // do nothing
-
-                        }
-
-                    }
-
-                    Channel.save(null,{useMasterKey: true});
-                    beforeSave_Time = process.hrtime(time);
-                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-                    response.success();
-
-
-                },
-                error: function(err) {
-                    response.error("queryChannelFollow Error: "+ err);
-                }
-        }, {useMasterKey: true});
 
     }   else {
 
@@ -4369,7 +4444,14 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
             channelFollow.set("channel", channel);
             channelFollow.set("notificationCount", 0);
             channelFollow.set("isSelected", false);
-            channelFollow.setACL(channel.getACL());
+
+            // set correct ACL for channelFollow
+            var channelFollowACL = new Parse.ACL();
+            channelFollowACL.setPublicReadAccess(true);
+            channelFollowACL.setPublicWriteAccess(false);
+            channelFollowACL.setReadAccess(channel.get("user"), true);
+            channelFollowACL.setWriteAccess(channel.get("user"), true);
+            channelFollow.setACL(channelFollowACL);
 
             // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
             channelFollow.set("isMember", true);
