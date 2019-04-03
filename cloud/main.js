@@ -4290,7 +4290,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     var objectToSave = request.object.toJSON();
 
     var queryChannel = new Parse.Query("Channel");
-    queryChannel.equalTo("objectId", objectToSave.objectId);
+    // queryChannel.equalTo("objectId", objectToSave.objectId);
     queryChannel.include( ["user", "workspace", "category"] );
     //queryChannel.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive"]);
 
@@ -4298,94 +4298,95 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     console.log("objectID: " + objectToSave.objectId);
     console.log("objectID: " + objectToSave.user.objectId);
 
-    queryChannel.first({
-        success: function(channel) {
-            // Successfully retrieved the object.
-            console.log("ObjectToSave: " + JSON.stringify(channel));
+    queryChannel.get(objectToSave.objectId , {useMasterKey: true})
+        .then((Channel) => {
+        // The object was retrieved successfully.
+        //console.log("Result from get " + JSON.stringify(Workspace));
 
+        var channel = Parse.Object.extend("Channel");
+    channel = Channel;
+    channelToSave = Channel.toJSON();
+    console.log("ObjectToSave: " + JSON.stringify(channel));
 
-            function createOwnerChannelFollow (callback) {
+    function createOwnerChannelFollow (callback) {
 
-                if (!channel.get("isNew")) {
+        if (!channel.get("isNew")) {
 
-                    return callback (null, channel);
-                } else {
+            return callback (null, channel);
+        } else {
 
-                    // channel is new so let's add a channelfollow row for the channel creator so he can see the channel
-                    var CHANNELFOLLOW = Parse.Object.Extend("ChannelFollow");
-                    var channelFollow = new Parse.Object(CHANNELFOLLOW);
+            // channel is new so let's add a channelfollow row for the channel creator so he can see the channel
+            var CHANNELFOLLOW = Parse.Object.Extend("ChannelFollow");
+            var channelFollow = new Parse.Object(CHANNELFOLLOW);
 
-                    var channelACL = channel.getACL();
+            var channelACL = channel.getACL();
 
-                    channelFollow.set("archive", false);
-                    channelFollow.set("type", channel.get("type"));
-                    channelFollow.set("user", channel.get("user"));
-                    channelFollow.set("workspace", channel.get("workspace"));
-                    channelFollow.set("channel", channel);
-                    channelFollow.set("notificationCount", 0);
-                    channelFollow.setACL(channelACL);
+            channelFollow.set("archive", false);
+            channelFollow.set("type", channel.get("type"));
+            channelFollow.set("user", channel.get("user"));
+            channelFollow.set("workspace", channel.get("workspace"));
+            channelFollow.set("channel", channel);
+            channelFollow.set("notificationCount", 0);
+            channelFollow.setACL(channelACL);
 
-                    // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
-                    channelFollow.set("isMember", true);
-                    channelFollow.set("isFollower", false);
+            // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
+            channelFollow.set("isMember", true);
+            channelFollow.set("isFollower", false);
 
-                    channelFollow.save(null, {useMasterKey: true});
+            channelFollow.save(null, {useMasterKey: true});
 
-                    return callback(null, channelFollow);
+            return callback(null, channelFollow);
 
-                }
-
-            }
-
-            function addChannelsToAlgolia (callback) {
-
-                // Convert Parse.Object to JSON
-                channel = channel.toJSON();
-
-                // Specify Algolia's objectID with the Parse.Object unique ID
-                channel.objectID = channel.objectId;
-
-                // Add or update object
-                indexChannel.saveObject(channel, function(err, content) {
-                    if (err) {
-                        return error(err);
-                    }
-                    console.log('Parse<>Algolia object saved');
-                    return callback(null, channel);
-
-                });
-
-
-            }
-
-
-            async.parallel([
-                async.apply(createOwnerChannelFollow),
-                async.apply(addChannelsToAlgolia)
-
-            ], function (err, results) {
-                if (err) {
-
-                    var finalTime = process.hrtime(time);
-                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                    response.error(err);
-                }
-
-                //console.log("results length: " + JSON.stringify(results));
-
-                var finalTime = process.hrtime(time);
-                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                response.success(results);
-
-
-            });
-
-        },
-        error: function(error) {
-            alert("Error: " + error.code + " " + error.message);
         }
-    }, {useMasterKey: true});
 
+    }
+
+    function addChannelsToAlgolia (callback) {
+
+        // Specify Algolia's objectID with the Parse.Object unique ID
+        channelToSave.objectID = channelToSave.objectId;
+
+        // Add or update object
+        indexChannel.saveObject(channelToSave, function(err, content) {
+            if (err) {
+                return error(err);
+            }
+            console.log('Parse<>Algolia object saved');
+            return callback(null, channelToSave);
+
+        });
+
+
+    }
+
+
+    async.parallel([
+        async.apply(createOwnerChannelFollow),
+        async.apply(addChannelsToAlgolia)
+
+    ], function (err, results) {
+        if (err) {
+
+            var finalTime = process.hrtime(time);
+            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            response.error(err);
+        }
+
+        //console.log("results length: " + JSON.stringify(results));
+
+        var finalTime = process.hrtime(time);
+        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+        response.success(results);
+
+
+    });
+
+}, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+        response.error(error);
+    }, {useMasterKey: true});
 
 
 }, {useMasterKey: true});
