@@ -1639,6 +1639,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
     var CHANNEL = new Parse.Object("Channel");
     var queryChannel = new Parse.Query(CHANNEL);
 
+    console.log("channel.isNew: " + channel.isNew());
+
     if (channel.isNew() ) {
 
         if(!channel.get("name")) {response.error("Channel name is required.");}
@@ -2083,9 +2085,9 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
             }
         });
 
-    } else if (!workspace.isNew()) {
+    } else if (!channel.isNew()) {
 
-        workspace.set("isNew", false);
+        channel.set("isNew", false);
 
         var finalTime = process.hrtime(time);
         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
@@ -3270,6 +3272,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
     var channelfollow = req.object;
     var channel = channelfollow.get("channel");
+    console.log("channel: " + JSON.stringify(channel));
 
     var CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
     var ChannelFollow = new CHANNELFOLLOW();
@@ -3279,6 +3282,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
     var CHANNEL = Parse.Object.extend("Channel");
     var Channel = new CHANNEL();
     Channel.id = channel.id;
+    console.log("Channel: " + JSON.stringify(Channel));
+
 
     //console.log("post: " + JSON.stringify(channelfollow));
 
@@ -3287,43 +3292,79 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
         var beforeSave_Time;
 
-        var channelFollowName = channelfollow.get("user").id + "-" + channelfollow.get("workspace").id;
-        console.log("workspaceFollowerName user: " + JSON.stringify(channelFollowName));
+        var channelFollowName = channelfollow.get("user").id + "-" + channelfollow.get("workspace").id + "-" + channelfollow.get("channel").id;
+        console.log("channelFollowName user: " + JSON.stringify(channelFollowName));
 
-        channelfollow.set("name", channelFollowName);
+        queryChannelFollow.equalTo("name", channelFollowName);
 
-        if(channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-            Channel.increment("followerCount");
-            Channel.increment("memberCount");
-            Channel.save();
-            beforeSave_Time = process.hrtime(time);
-            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+        // check to make sure that the workspace_follower for a user - workspace is unique
+        queryWorkspaceFollower.first({
+            success: function(results) {
 
-            response.success();
-        } else if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === false) {
-            Channel.increment("followerCount");
-            Channel.save();
-            beforeSave_Time = process.hrtime(time);
-            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+                if (results) {
 
-            response.success();
+                    //channelfollow already exists in db, return an error because it needs to be unique
 
-        } else if (channelfollow.get("isFollower") === false && channelfollow.get("isMember") === true) {
-            Channel.increment("memberCount");
-            Channel.save();
-            beforeSave_Time = process.hrtime(time);
-            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+                    response.error(results);
 
-            response.success();
+                } else {
 
-        } else {
+                    channelfollow.set("name", channelFollowName);
+                    channelfollow.set("type", channel.get("type"));
+                    channelfollow.setACL(channel.getACL());
+                    if(!channelfollow.get("channel")) {response.error("Channel is required.");}
+                    if(!channelfollow.get("user")) {response.error("User who is the channel creator is required when creating a new channel");}
+                    if(!channelfollow.get("workspace")) {response.error("Workspace is required when creating a new channel");}
+                    if(!channelfollow.get("archive")) {channelfollow.set("archive", false);}
+                    if(!channelfollow.get("notificationCounter")) {channelfollow.set("notificationCounter", false);}
 
-            beforeSave_Time = process.hrtime(time);
-            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
-            response.success();
+                    if(channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                        Channel.increment("followerCount");
+                        Channel.increment("memberCount");
+                        Channel.save();
+                        beforeSave_Time = process.hrtime(time);
+                        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
-        }
+                        response.success();
+                    } else if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === false) {
+                        Channel.increment("followerCount");
+                        Channel.save();
+                        beforeSave_Time = process.hrtime(time);
+                        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+                    } else if (channelfollow.get("isFollower") === false && channelfollow.get("isMember") === true) {
+                        Channel.increment("memberCount");
+                        Channel.save();
+                        beforeSave_Time = process.hrtime(time);
+                        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+                    } else {
+
+                        beforeSave_Time = process.hrtime(time);
+                        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+                    }
+
+
+                }
+
+
+            },
+            error: function(err) {
+                response.error("An error occured: " + err);
+
+            }
+        });
+
+
+
 
     } else if (!channelfollow.isNew() && (channelfollow.dirty("isFollower") || channelfollow.dirty("isMember"))) {
 
@@ -4302,9 +4343,9 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     var CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
     var channelFollow = new Parse.Object("ChannelFollow");
 
-    //console.log("Request: " + JSON.stringify(request));
-    //console.log("objectID: " + objectToSave.objectId);
-    //console.log("objectID: " + objectToSave.user.objectId);
+    console.log("Request: " + JSON.stringify(request));
+    console.log("objectID: " + objectToSave.objectId);
+    console.log("objectID: " + objectToSave.user.objectId);
 
     queryChannel.get(objectToSave.objectId , {useMasterKey: true})
         .then((channel) => {
