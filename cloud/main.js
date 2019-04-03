@@ -3287,6 +3287,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
         var beforeSave_Time;
 
+        var channelFollowName = channelfollow.get("user").id + "-" + channelfollow.get("workspace").id;
+        console.log("workspaceFollowerName user: " + JSON.stringify(channelFollowName));
+
+        channelfollow.set("name", channelFollowName);
+
         if(channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
             Channel.increment("followerCount");
             Channel.increment("memberCount");
@@ -4279,7 +4284,6 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
 
 
-// Add and Update AlgoliaSearch channel object if it's deleted from Parse
 Parse.Cloud.afterSave('Channel', function(request, response) {
 
     var NS_PER_SEC = 1e9;
@@ -4294,36 +4298,30 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     queryChannel.include( ["user", "workspace", "category"] );
     //queryChannel.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive"]);
 
+    // channel is new so let's add a channelfollow row for the channel creator so he can see the channel
+    var CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
+    var channelFollow = new Parse.Object("ChannelFollow");
+
     //console.log("Request: " + JSON.stringify(request));
     //console.log("objectID: " + objectToSave.objectId);
     //console.log("objectID: " + objectToSave.user.objectId);
 
     queryChannel.get(objectToSave.objectId , {useMasterKey: true})
-        .then((Channel) => {
+        .then((channel) => {
         // The object was retrieved successfully.
         //console.log("Result from get " + JSON.stringify(Workspace));
 
-        var channel = Parse.Object.extend("Channel");
-    channel = Channel;
-    channelToSave = Channel.toJSON();
-    //console.log("ObjectToSave: " + JSON.stringify(channel));
+        var channelToSave = channel.toJSON();
 
     function createOwnerChannelFollow (callback) {
 
         console.log("channel isNew: " + channel.get("isNew"));
+        console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
-        if (!channel.get("isNew")) {
+        if (channel.get("isNew") === true) {
 
-            return callback (null, channel);
-        } else {
 
-            // channel is new so let's add a channelfollow row for the channel creator so he can see the channel
-            var CHANNELFOLLOW = Parse.Object.Extend("ChannelFollow");
-            var channelFollow = new Parse.Object(CHANNELFOLLOW);
-
-            var channelACL = channel.getACL();
-
-            console.log("channelACL: " + JSON.stringify(channelACL));
+            console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
             channelFollow.set("archive", false);
             channelFollow.set("type", channel.get("type"));
@@ -4331,7 +4329,8 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
             channelFollow.set("workspace", channel.get("workspace"));
             channelFollow.set("channel", channel);
             channelFollow.set("notificationCount", 0);
-            channelFollow.setACL(channelACL);
+            channelFollow.set("isSelected", false);
+            channelFollow.setACL(channel.getACL());
 
             // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
             channelFollow.set("isMember", true);
@@ -4343,7 +4342,9 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 
             return callback(null, channelFollow);
 
-        }
+
+        } else {return callback (null, channel);}
+
 
     }
 
