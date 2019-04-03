@@ -3298,7 +3298,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
         queryChannelFollow.equalTo("name", channelFollowName);
 
         // check to make sure that the workspace_follower for a user - workspace is unique
-        queryWorkspaceFollower.first({
+        queryChannelFollow.first({
             success: function(results) {
 
                 if (results) {
