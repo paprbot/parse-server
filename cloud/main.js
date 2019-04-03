@@ -1654,7 +1654,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                 if (results) {
 
                     // channel is not unique return error
-
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                     response.error("There is already a channel with this name: " + channel.get("name") + ' ' + "please use a channel name that isn't already taken.");
 
                 } else {
@@ -1664,6 +1665,9 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                     // set isNew to true so we can use this in afterSave Channel if needed.
                     channel.set("isNew", true);
+
+                    // set channel to not be default if user didn't specify it
+                    if(!channel.get("default")) {channel.set("default", false)};
 
                     // set 0 for countPosts, countFollowers and countMembers
                     channel.set("postCount", 0);
@@ -1689,6 +1693,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         channelACL.setWriteAccess(owner, true);
                         channel.setACL(channelACL);
 
+                        var finalTime = process.hrtime(time);
+                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                         response.success();
 
                     } else if (channel.get("type") === 'privateMembers') {
@@ -1709,11 +1715,16 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 channelACL.setWriteAccess(memberRole, true);
                                 channel.setACL(channelACL);
 
+                                var finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                                 response.success();
 
                             },
                             error: function(error) {
                                 console.log("Bruh, can't find the Admin role");
+
+                                var finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                                 response.error(error);
                             }
                         });
@@ -1737,11 +1748,16 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 channelACL.setWriteAccess(Role, true);
                                 channel.setACL(channelACL);
 
+                                var finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                                 response.success();
 
                             },
                             error: function(error) {
                                 console.log("Bruh, can't find the Admin role");
+
+                                var finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                                 response.error(error);
                             }
                         });
@@ -1764,11 +1780,17 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 channelACL.setWriteAccess(Role, true);
                                 channel.setACL(channelACL);
 
+                                var finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
                                 response.success();
 
                             },
                             error: function(error) {
                                 console.log("Bruh, can't find the Admin role");
+
+                                var finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                                 response.error(error);
                             }
                         });
@@ -1791,11 +1813,17 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 channelACL.setWriteAccess(Role, true);
                                 channel.setACL(channelACL);
 
+                                var finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
                                 response.success();
 
                             },
                             error: function(error) {
                                 console.log("Bruh, can't find the Admin role");
+
+                                var finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                                 response.error(error);
                             }
                         });
@@ -1818,19 +1846,30 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 channelACL.setWriteAccess(Role, true);
                                 channel.setACL(channelACL);
 
+                                var finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
                                 response.success();
 
                             },
                             error: function(error) {
                                 console.log("Bruh, can't find the Admin role");
+
+                                var finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                                 response.error(error);
                             }
                         });
 
                     } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners"|| channel.get("type") != "privateModerators"|| channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
 
+                        var finalTime = process.hrtime(time);
+                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                         response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
                     } else {
+
+                        var finalTime = process.hrtime(time);
+                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
                         response.success();
 
@@ -1839,6 +1878,9 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                 }
             },
             error: function(err) {
+
+                var finalTime = process.hrtime(time);
+                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                 response.error("An error occured: " + err);
 
             }
@@ -2044,9 +2086,18 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
     } else if (!workspace.isNew()) {
 
         workspace.set("isNew", false);
+
+        var finalTime = process.hrtime(time);
+        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
         response.success();
 
-    } else {response.success();}
+    } else {
+        if(!channel.get("isNew")) { channel.set("isNew", false); }
+
+        var finalTime = process.hrtime(time);
+        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+        response.success();
+    }
 
 });
 
@@ -2650,6 +2701,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
         workspace_follower.set("name", workspaceFollowerName);
         workspace_follower.set("archive", false);
+        if(!workspace_follower.get("isMemberRequestedByWorkspaceAdmin")) {workspace_follower.set("isMemberRequestedByWorkspaceAdmin", false);}
+        if(!workspace_follower.get("isMemberRequestedByUser")) {workspace_follower.set("isMemberRequestedByUser", false);}
+        if(!workspace_follower.get("isSelected")) {workspace_follower.set("isSelected", false);}
+        if(!workspace_follower.get("isNotified")) {workspace_follower.set("isNotified", false);}
+        if(!workspace_follower.get("isUnRead")) {workspace_follower.set("isUnRead", false);}
+
 
         queryWorkspaceFollower.equalTo("name", workspaceFollowerName);
 
@@ -3323,7 +3380,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                     }
 
-                    Channel.save();
+                    Channel.save(null,{useMasterKey: true});
                     beforeSave_Time = process.hrtime(time);
                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
@@ -4225,6 +4282,10 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 // Add and Update AlgoliaSearch channel object if it's deleted from Parse
 Parse.Cloud.afterSave('Channel', function(request, response) {
 
+    var NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
+
     // Convert Parse.Object to JSON
     var objectToSave = request.object.toJSON();
 
@@ -4232,7 +4293,6 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     queryChannel.equalTo("objectId", objectToSave.objectId);
     queryChannel.include( ["user", "workspace", "category"] );
     //queryChannel.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive"]);
-
 
     console.log("Request: " + JSON.stringify(request));
     console.log("objectID: " + objectToSave.objectId);
@@ -4243,19 +4303,80 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
             // Successfully retrieved the object.
             console.log("ObjectToSave: " + JSON.stringify(channel));
 
-            // Convert Parse.Object to JSON
-            channel = channel.toJSON();
 
-            // Specify Algolia's objectID with the Parse.Object unique ID
-            channel.objectID = channel.objectId;
+            function createOwnerChannelFollow (callback) {
 
-            // Add or update object
-            indexChannel.saveObject(channel, function(err, content) {
-                if (err) {
-                    throw err;
+                if (!channel.get("isNew")) {
+
+                    return callback (null, channel);
+                } else {
+
+                    // channel is new so let's add a channelfollow row for the channel creator so he can see the channel
+                    var CHANNELFOLLOW = Parse.Object.Extend("ChannelFollow");
+                    var channelFollow = new Parse.Object(CHANNELFOLLOW);
+
+                    var channelACL = channel.getACL();
+
+                    channelFollow.set("archive", false);
+                    channelFollow.set("type", channel.get("type"));
+                    channelFollow.set("user", channel.get("user"));
+                    channelFollow.set("workspace", channel.get("workspace"));
+                    channelFollow.set("channel", channel);
+                    channelFollow.set("notificationCount", 0);
+                    channelFollow.setACL(channelACL);
+
+                    // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
+                    channelFollow.set("isMember", true);
+                    channelFollow.set("isFollower", false);
+
+                    channelFollow.save(null, {useMasterKey: true});
+
+                    return callback(null, channelFollow);
+
                 }
-                console.log('Parse<>Algolia object saved');
-                response.success();
+
+            }
+
+            function addChannelsToAlgolia (callback) {
+
+                // Convert Parse.Object to JSON
+                channel = channel.toJSON();
+
+                // Specify Algolia's objectID with the Parse.Object unique ID
+                channel.objectID = channel.objectId;
+
+                // Add or update object
+                indexChannel.saveObject(channel, function(err, content) {
+                    if (err) {
+                        return error(err);
+                    }
+                    console.log('Parse<>Algolia object saved');
+                    return callback(null, channel);
+
+                });
+
+
+            }
+
+
+            async.parallel([
+                async.apply(createOwnerChannelFollow),
+                async.apply(addChannelsToAlgolia)
+
+            ], function (err, results) {
+                if (err) {
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.error(err);
+                }
+
+                //console.log("results length: " + JSON.stringify(results));
+
+                var finalTime = process.hrtime(time);
+                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                response.success(results);
+
 
             });
 
@@ -4263,10 +4384,11 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
         error: function(error) {
             alert("Error: " + error.code + " " + error.message);
         }
-    });
+    }, {useMasterKey: true});
 
 
-});
+
+}, {useMasterKey: true});
 
 
 
@@ -4947,6 +5069,52 @@ Parse.Cloud.afterDelete('WorkSpace', function(request) {
         }
         console.log('Parse<>Algolia object deleted');
     });
+});
+
+// Update followers list in Workspace after deleting workspace_follower row
+Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
+
+    // Get workspace
+    var workspace = request.object.get("workspace");
+
+    // get isFollower and isMember
+    var isFollower = request.object.get("isFollower");
+    var isMember = request.object.get("isMember");
+
+    // remove this user as a follower or member of that workspace
+    if(isFollower === true && isMember === true) {
+
+        workspace.increment("followerCount", -1);
+        workspace.increment("memberCount", -1);
+        workspace.save(null, {useMasterKey: true});
+        response.success();
+
+    } else if (isFollower === true && (isMember === false || !isMember)) {
+
+        workspace.increment("followerCount", -1);
+        workspace.save(null, {useMasterKey: true});
+        response.success();
+
+
+    } else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
+
+        // do nothing since this user should not be a follower or member for that workspace
+        response.success();
+
+
+    } else if (isFollower === true && (isMember === false || !isMember)) {
+
+        // this case should never exist since a member is always also a follower
+        workspace.increment("memberCount", -1);
+        workspace.save(null, {useMasterKey: true});
+        response.success();
+    } else {
+
+        // do nothing
+        response.success();
+    }
+
+
 });
 
 // Delete AlgoliaSearch workspace object if it's deleted from Parse
