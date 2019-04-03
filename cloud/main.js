@@ -4294,9 +4294,9 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     queryChannel.include( ["user", "workspace", "category"] );
     //queryChannel.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive"]);
 
-    console.log("Request: " + JSON.stringify(request));
-    console.log("objectID: " + objectToSave.objectId);
-    console.log("objectID: " + objectToSave.user.objectId);
+    //console.log("Request: " + JSON.stringify(request));
+    //console.log("objectID: " + objectToSave.objectId);
+    //console.log("objectID: " + objectToSave.user.objectId);
 
     queryChannel.get(objectToSave.objectId , {useMasterKey: true})
         .then((Channel) => {
@@ -4306,9 +4306,11 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
         var channel = Parse.Object.extend("Channel");
     channel = Channel;
     channelToSave = Channel.toJSON();
-    console.log("ObjectToSave: " + JSON.stringify(channel));
+    //console.log("ObjectToSave: " + JSON.stringify(channel));
 
     function createOwnerChannelFollow (callback) {
+
+        console.log("channel isNew: " + channel.get("isNew"));
 
         if (!channel.get("isNew")) {
 
@@ -4320,6 +4322,8 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
             var channelFollow = new Parse.Object(CHANNELFOLLOW);
 
             var channelACL = channel.getACL();
+
+            console.log("channelACL: " + JSON.stringify(channelACL));
 
             channelFollow.set("archive", false);
             channelFollow.set("type", channel.get("type"));
@@ -4333,6 +4337,8 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
             channelFollow.set("isMember", true);
             channelFollow.set("isFollower", false);
 
+            console.log("channelFollow: " + JSON.stringify(channelFollow));
+
             channelFollow.save(null, {useMasterKey: true});
 
             return callback(null, channelFollow);
@@ -4344,14 +4350,14 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     function addChannelsToAlgolia (callback) {
 
         // Specify Algolia's objectID with the Parse.Object unique ID
-        channelToSave.objectID = channelToSave.objectId;
+        channelToSave.objectID = channel.id;
 
         // Add or update object
         indexChannel.saveObject(channelToSave, function(err, content) {
             if (err) {
                 return error(err);
             }
-            console.log('Parse<>Algolia object saved');
+            console.log('Parse<>Algolia channel object saved');
             return callback(null, channelToSave);
 
         });
