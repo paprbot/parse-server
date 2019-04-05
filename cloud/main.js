@@ -1641,7 +1641,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
     console.log("channel.isNew: " + channel.isNew());
 
-    if (channel.isNew() ) {
+    if (channel.isNew() === true) {
 
         console.log("channel isNew: " + channel.isNew());
 
@@ -2114,7 +2114,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
     } else if (!channel.isNew() && !channel.dirty("name")) {
 
         channel.set("isNew", false);
-        Console.log("Channel is New and name didn't change");
+        console.log("Channel is New and name didn't change");
 
         // By default allowMemberPostCreation is set to false
         if(channel.dirty("allowMemberPostCreation")) {
