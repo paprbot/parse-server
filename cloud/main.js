@@ -3540,14 +3540,14 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                     if (!channelfollow.get("notificationCount")) { channelfollow.set("notificationCount", 0); }
 
                     queryChannel.get(channel.id, {useMasterKey: true})
-                        .then((channelObject) = > {
+                        .then((channelObject) => {
                         // The object was retrieved successfully.
 
                             let user = channelfollow.get("user");
                             //var queryRole = new Parse.Query(Parse.Role);
 
                             channel = channelObject;
-                            console.log("channel: " + JSON.stringify(channel));
+                            console.log("channelType: " + JSON.stringify(channel.get("type")));
 
                             channelfollow.set("name", channelFollowName);
                             console.log("channel.getACL(): " + JSON.stringify(channel.getACL()));
@@ -3714,14 +3714,14 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             } else if (channel.get("type") === 'privateOwners') {
 
                                 // get owner role for this workspace
-                                var ownerName = new Parse.Role();
+                                var ownerRole = new Parse.Role();
                                 var ownerName = 'expert-' + channelfollow.get("workspace").id;
-                                ownerName.set("name", ownerName);
+                                ownerRole.set("name", ownerName);
 
                                 // set correct ACL for channelFollow
                                 channelFollowACL.setPublicReadAccess(false);
                                 channelFollowACL.setPublicWriteAccess(false);
-                                channelFollowACL.setReadAccess(ownerName, true);
+                                channelFollowACL.setReadAccess(ownerRole, true);
                                 channelFollowACL.setWriteAccess(user, true);
                                 channelfollow.setACL(channelFollowACL);
 
@@ -3745,6 +3745,14 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         // error is a Parse.Error with an error code and message.
                                         response.error(error);
                                     }, { useMasterKey: true });*/
+
+
+                            } else if (channel.get("type") === "public") {
+
+                                // do nothing, since ACL will be public read/write by default
+                                channelFollowACL.setPublicReadAccess(true);
+                                channelFollowACL.setPublicWriteAccess(true);
+                                channelfollow.setACL(channelFollowACL);
 
 
                             } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners" || channel.get("type") != "privateModerators" || channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
