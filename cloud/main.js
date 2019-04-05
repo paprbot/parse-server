@@ -1629,15 +1629,15 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
     var channelACL = new Parse.ACL();
 
-    var owner = new Parse.Object("_User");
-    owner = channel.get("user");
+    //var owner = new Parse.Object("_User");
+    var owner = channel.get("user");
     var expertRelation = channel.relation("experts");
 
-    var WORKSPACE = new Parse.Object("WORKSPACE");
-    workspace = channel.get("workspace");
+    //var WORKSPACE = new Parse.Object("WORKSPACE");
+    var workspace = channel.get("workspace");
 
-    var CHANNEL = new Parse.Object("Channel");
-    var queryChannel = new Parse.Query(CHANNEL);
+    //var CHANNEL = new Parse.Object("Channel");
+    var queryChannel = new Parse.Query("Channel");
 
     console.log("channel.isNew: " + channel.isNew());
 
@@ -3562,7 +3562,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             channelfollow.set("name", channelFollowName);
                             console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
 
-                            var channelACL = new Parse.ACL();
+                            var channelACL = Channel.getACL();
                             var channelFollowACL = new Parse.ACL();
 
                             // If this is a private channel, set ACL for owner to read and write
