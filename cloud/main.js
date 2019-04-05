@@ -3546,21 +3546,21 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             let user = channelfollow.get("user");
                             //var queryRole = new Parse.Query(Parse.Role);
 
-                            channel = channelObject;
-                            console.log("channelType: " + JSON.stringify(channel.get("type")));
+                            var Channel = channelObject;
+                            console.log("channelType: " + JSON.stringify(Channel.get("type")));
 
                             channelfollow.set("name", channelFollowName);
-                            console.log("channel.getACL(): " + JSON.stringify(channel.getACL()));
+                            console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
 
                             var channelACL = new Parse.ACL();
                             var channelFollowACL = new Parse.ACL();
 
                             // If this is a private channel, set ACL for owner to read and write
-                            if (channel.get("type") === 'private') {
+                            if (Channel.get("type") === 'private') {
                                 channelACL.setReadAccess(user, true);
                                 channelACL.setWriteAccess(user, true);
-                                channel.setACL(channelACL);
-                                channel.save(null, {userMasterKey: true});
+                                Channel.setACL(channelACL);
+                                Channel.save(null, {userMasterKey: true});
 
                                 // set correct ACL for channelFollow
                                 channelFollowACL.setPublicReadAccess(false);
@@ -3569,7 +3569,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setWriteAccess(user, true);
                                 channelfollow.setACL(channelFollowACL);
 
-                            } else if (channel.get("type") === 'privateMembers') {
+                            } else if (Channel.get("type") === 'privateMembers') {
 
                                 // get member role for this workspace
                                 //var queryMemberRole = new Parse.Query(Parse.Role);
@@ -3604,7 +3604,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     }, { useMasterKey: true });*/
 
 
-                            } else if (channel.get("type") === 'privateExperts') {
+                            } else if (Channel.get("type") === 'privateExperts') {
 
                                 // get expert role for this workspace
                                 var expertRole = new Parse.Role();
@@ -3639,7 +3639,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     response.error(error);
                                 }, { useMasterKey: true });*/
 
-                            } else if (channel.get("type") === 'privateAdmins') {
+                            } else if (Channel.get("type") === 'privateAdmins') {
 
                                 // get admin role for this workspace
                                 var adminRole = new Parse.Role();
@@ -3675,7 +3675,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     }, { useMasterKey: true });*/
 
 
-                            } else if (channel.get("type") === 'privateModerators') {
+                            } else if (Channel.get("type") === 'privateModerators') {
 
                                 // get moderator role for this workspace
                                 var moderatorRole = new Parse.Role();
@@ -3711,7 +3711,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     }, { useMasterKey: true });*/
 
 
-                            } else if (channel.get("type") === 'privateOwners') {
+                            } else if (Channel.get("type") === 'privateOwners') {
 
                                 // get owner role for this workspace
                                 var ownerRole = new Parse.Role();
@@ -3747,7 +3747,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     }, { useMasterKey: true });*/
 
 
-                            } else if (channel.get("type") === "public") {
+                            } else if (Channel.get("type") === "public") {
 
                                 // do nothing, since ACL will be public read/write by default
                                 channelFollowACL.setPublicReadAccess(true);
@@ -3755,7 +3755,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelfollow.setACL(channelFollowACL);
 
 
-                            } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners" || channel.get("type") != "privateModerators" || channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
+                            } else if (Channel.get("type") != "private" || Channel.get("type") != "public" || Channel.get("type") != "privateOwners" || Channel.get("type") != "privateModerators" || Channel.get("type") != "privateAdmins" || Channel.get("type") != "privateExperts" || Channel.get("type") != "privateMembers") {
 
                                 var finalTime = process.hrtime(time);
                                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
@@ -3768,16 +3768,16 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
 
                             if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                channel.increment("followerCount");
-                                channel.increment("memberCount");
-                                channel.save();
+                                Channel.increment("followerCount");
+                                Channel.increment("memberCount");
+                                Channel.save();
                                 beforeSave_Time = process.hrtime(time);
                                 console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
                                 response.success();
                             } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                channel.increment("followerCount");
-                                channel.save();
+                                Channel.increment("followerCount");
+                                Channel.save();
                                 beforeSave_Time = process.hrtime(time);
                                 console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3785,10 +3785,10 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                             } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                 // a member is by default always a follower.
-                                channel.increment("memberCount");
-                                channel.increment("followerCount");
+                                Channel.increment("memberCount");
+                                Channel.increment("followerCount");
                                 channelfollow.set("isFollower", true);
-                                channel.save();
+                                Channel.save();
                                 beforeSave_Time = process.hrtime(time);
                                 console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
