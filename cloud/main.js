@@ -3567,17 +3567,63 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                             // If this is a private channel, set ACL for owner to read and write
                             if (Channel.get("type") === 'private') {
+
+                                var adminRolePrivate = new Parse.Role();
+                                var adminNamePrivate = 'admin-' + channelfollow.get("workspace").id;
+                                adminRolePrivate.set("name", adminNamePrivate);
+
                                 channelACL.setReadAccess(user, true);
                                 channelACL.setWriteAccess(user, true);
                                 Channel.setACL(channelACL);
-                                Channel.save(null, {userMasterKey: true});
 
                                 // set correct ACL for channelFollow
                                 channelFollowACL.setPublicReadAccess(false);
                                 channelFollowACL.setPublicWriteAccess(false);
                                 channelFollowACL.setReadAccess(user, true);
                                 channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(adminRolePrivate, true);
+                                channelFollowACL.setWriteAccess(adminRolePrivate, true);
                                 channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    Channel.increment("followerCount");
+                                    Channel.increment("memberCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    Channel.increment("followerCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    Channel.increment("memberCount");
+                                    Channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
 
                             } else if (Channel.get("type") === 'privateMembers') {
 
@@ -3593,6 +3639,46 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setReadAccess(memberRole, true);
                                 channelFollowACL.setWriteAccess(user, true);
                                 channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    Channel.increment("followerCount");
+                                    Channel.increment("memberCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    Channel.increment("followerCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    Channel.increment("memberCount");
+                                    Channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
 
                                 /*queryMemberRole.equalTo('name', memberName);
                                 queryMemberRole.first({useMasterKey: true})
@@ -3628,6 +3714,46 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setWriteAccess(user, true);
                                 channelfollow.setACL(channelFollowACL);
 
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    Channel.increment("followerCount");
+                                    Channel.increment("memberCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    Channel.increment("followerCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    Channel.increment("memberCount");
+                                    Channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
+
                                 /*queryRole.equalTo('name', Name);
                                 queryRole.first({useMasterKey: true})
                                     .then((Role) = > {
@@ -3662,6 +3788,46 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setReadAccess(adminRole, true);
                                 channelFollowACL.setWriteAccess(user, true);
                                 channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    Channel.increment("followerCount");
+                                    Channel.increment("memberCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    Channel.increment("followerCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    Channel.increment("memberCount");
+                                    Channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
 
                                 /*queryRole.equalTo('name', Name);
                                 queryRole.first({useMasterKey: true})
@@ -3699,6 +3865,46 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setWriteAccess(user, true);
                                 channelfollow.setACL(channelFollowACL);
 
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    Channel.increment("followerCount");
+                                    Channel.increment("memberCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    Channel.increment("followerCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    Channel.increment("memberCount");
+                                    Channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
+
                                 /*queryRole.equalTo('name', Name);
                                 queryRole.first({useMasterKey: true})
                                     .then((Role) = > {
@@ -3735,6 +3941,46 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setWriteAccess(user, true);
                                 channelfollow.setACL(channelFollowACL);
 
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    Channel.increment("followerCount");
+                                    Channel.increment("memberCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    Channel.increment("followerCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    Channel.increment("memberCount");
+                                    Channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
+
                                 /*queryRole.equalTo('name', Name);
                                 queryRole.first({useMasterKey: true})
                                     .then((Role) = > {
@@ -3764,57 +4010,52 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setPublicWriteAccess(true);
                                 channelfollow.setACL(channelFollowACL);
 
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    Channel.increment("followerCount");
+                                    Channel.increment("memberCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    Channel.increment("followerCount");
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    Channel.increment("memberCount");
+                                    Channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    Channel.save(null, {userMasterKey: true});
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
+
 
                             } else if (Channel.get("type") != "private" || Channel.get("type") != "public" || Channel.get("type") != "privateOwners" || Channel.get("type") != "privateModerators" || Channel.get("type") != "privateAdmins" || Channel.get("type") != "privateExperts" || Channel.get("type") != "privateMembers") {
 
                                 var finalTime = process.hrtime(time);
                                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                 response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
-                            } else {
-
-                                // do nothing
-
-                            }
-
-
-                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                Channel.increment("followerCount");
-                                Channel.increment("memberCount");
-                                Channel.save();
-                                beforeSave_Time = process.hrtime(time);
-                                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                response.success();
-                            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                Channel.increment("followerCount");
-                                Channel.save();
-                                beforeSave_Time = process.hrtime(time);
-                                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                response.success();
-
-                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                // a member is by default always a follower.
-                                Channel.increment("memberCount");
-                                Channel.increment("followerCount");
-                                channelfollow.set("isFollower", true);
-                                Channel.save();
-                                beforeSave_Time = process.hrtime(time);
-                                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                response.success();
-
-                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                            } else {
-
-                                beforeSave_Time = process.hrtime(time);
-                                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                response.success();
-
                             }
 
                         }, (error) => {
@@ -4867,7 +5108,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     var objectToSave = request.object.toJSON();
 
     var queryChannel = new Parse.Query("Channel");
-    queryChannel.equalTo("objectId", objectToSave.objectId);
+    //queryChannel.equalTo("objectId", request.object.id);
     queryChannel.include( ["user", "workspace", "category"] );
     //queryChannel.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive"]);
 
@@ -4879,100 +5120,100 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     console.log("objectID: " + objectToSave.objectId);
     console.log("objectID: " + objectToSave.user.objectId);
 
-    queryChannel.first({useMasterKey: true})
+    queryChannel.get(request.object.id, {useMasterKey: true})
         .then((channel) => {
-        // The object was retrieved successfully.
-        console.log("Result from get channel" + JSON.stringify(channel));
+            // The object was retrieved successfully.
+            console.log("Result from get channel" + JSON.stringify(channel));
 
-        var channelToSave = channel.toJSON();
+            var channelToSave = channel.toJSON();
 
-        function createOwnerChannelFollow (callback) {
+            function createOwnerChannelFollow (callback) {
 
-            console.log("channel isNew: " + channel.get("isNew"));
-            console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+                console.log("channel isNew: " + channel.get("isNew"));
+                console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
 
-            if (channel.get("isNew") === true) {
-
-
-                console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
-
-                channelFollow.set("archive", false);
-                channelFollow.set("user", channel.get("user"));
-                channelFollow.set("workspace", channel.get("workspace"));
-                channelFollow.set("channel", channel);
-                channelFollow.set("notificationCount", 0);
-                channelFollow.set("isSelected", false);
-
-                // set correct ACL for channelFollow
-                var channelFollowACL = new Parse.ACL();
-                channelFollowACL.setPublicReadAccess(false);
-                channelFollowACL.setPublicWriteAccess(false);
-                channelFollowACL.setReadAccess(channel.get("user"), true);
-                channelFollowACL.setWriteAccess(channel.get("user"), true);
-                channelFollow.setACL(channelFollowACL);
-
-                // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
-                channelFollow.set("isMember", true);
-                channelFollow.set("isFollower", true);
-
-                console.log("channelFollow: " + JSON.stringify(channelFollow));
-
-                channelFollow.save(null, {useMasterKey: true});
-
-                return callback(null, channelFollow);
+                if (channel.get("isNew") === true) {
 
 
-            } else {return callback (null, channel);}
+                    console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+
+                    channelFollow.set("archive", false);
+                    channelFollow.set("user", channel.get("user"));
+                    channelFollow.set("workspace", channel.get("workspace"));
+                    channelFollow.set("channel", channel);
+                    channelFollow.set("notificationCount", 0);
+                    channelFollow.set("isSelected", false);
+
+                    // set correct ACL for channelFollow
+                    var channelFollowACL = new Parse.ACL();
+                    channelFollowACL.setPublicReadAccess(false);
+                    channelFollowACL.setPublicWriteAccess(false);
+                    channelFollowACL.setReadAccess(channel.get("user"), true);
+                    channelFollowACL.setWriteAccess(channel.get("user"), true);
+                    channelFollow.setACL(channelFollowACL);
+
+                    // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
+                    channelFollow.set("isMember", true);
+                    channelFollow.set("isFollower", true);
+
+                    console.log("channelFollow: " + JSON.stringify(channelFollow));
+
+                    channelFollow.save(null, {useMasterKey: true});
+
+                    return callback(null, channelFollow);
 
 
-        }
+                } else {return callback (null, channel);}
 
-        function addChannelsToAlgolia (callback) {
 
-            // Specify Algolia's objectID with the Parse.Object unique ID
-            channelToSave.objectID = channel.id;
+            }
 
-            // Add or update object
-            indexChannel.saveObject(channelToSave, function(err, content) {
+            function addChannelsToAlgolia (callback) {
+
+                // Specify Algolia's objectID with the Parse.Object unique ID
+                channelToSave.objectID = channel.id;
+
+                // Add or update object
+                indexChannel.saveObject(channelToSave, function(err, content) {
+                    if (err) {
+                        return error(err);
+                    }
+                    console.log('Parse<>Algolia channel object saved');
+                    return callback(null, channelToSave);
+
+                });
+
+
+            }
+
+
+            async.parallel([
+                async.apply(createOwnerChannelFollow),
+                async.apply(addChannelsToAlgolia)
+
+            ], function (err, results) {
                 if (err) {
-                    return error(err);
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.error(err);
                 }
-                console.log('Parse<>Algolia channel object saved');
-                return callback(null, channelToSave);
 
-            });
-
-
-        }
-
-
-        async.parallel([
-            async.apply(createOwnerChannelFollow),
-            async.apply(addChannelsToAlgolia)
-
-        ], function (err, results) {
-            if (err) {
+                //console.log("results length: " + JSON.stringify(results));
 
                 var finalTime = process.hrtime(time);
                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                response.error(err);
-            }
+                response.success(results);
 
-            //console.log("results length: " + JSON.stringify(results));
 
-            var finalTime = process.hrtime(time);
+            });
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
             console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-            response.success(results);
-
-
-        });
-
-}, (error) => {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
-        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-        response.error(error);
-    }, {useMasterKey: true});
+            response.error(error);
+        }, {useMasterKey: true});
 
 
 }, {useMasterKey: true});
