@@ -3553,11 +3553,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                         userMasterKey: true,
                         sessionToken: req.user.getSessionToken()
 
-                         });
-                        .then((channelObject) => {
+                         }).then((channelObject) => {
                         // The object was retrieved successfully.
 
                             let user = channelfollow.get("user");
+                            let ownerChannel = Channel.get("user");
                             //var queryRole = new Parse.Query(Parse.Role);
 
                             var Channel = channelObject;
@@ -3578,8 +3578,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 channelACL.setReadAccess(user, true);
                                 channelACL.setWriteAccess(user, true);
-                                channelACL.setReadAccess(Channel.get("user"), true);
-                                channelACL.setWriteAccess(Channel.get("user"), true);
                                 Channel.setACL(channelACL);
 
                                 // set correct ACL for channelFollow
@@ -3587,6 +3585,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setPublicWriteAccess(false);
                                 channelFollowACL.setReadAccess(user, true);
                                 channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerChannel, true);
+                                channelFollowACL.setWriteAccess(ownerChannel, true);
+                                channelfollow.set(channelFollowACL);
 
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
                                     Channel.increment("followerCount");
@@ -3655,7 +3656,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setPublicReadAccess(false);
                                 channelFollowACL.setPublicWriteAccess(false);
                                 channelFollowACL.setReadAccess(memberRole, true);
+                                channelFollowACL.setReadAccess(memberRole, false);
+                                channelFollowACL.setReadAccess(user, true);
                                 channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerChannel, true);
+                                channelFollowACL.setWriteAccess(ownerChannel, true);
                                 channelfollow.setACL(channelFollowACL);
 
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
@@ -3744,7 +3749,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setPublicReadAccess(false);
                                 channelFollowACL.setPublicWriteAccess(false);
                                 channelFollowACL.setReadAccess(expertRole, true);
+                                channelFollowACL.setReadAccess(expertRole, false);
+                                channelFollowACL.setReadAccess(user, true);
                                 channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerChannel, true);
+                                channelFollowACL.setWriteAccess(ownerChannel, true);
                                 channelfollow.setACL(channelFollowACL);
 
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
@@ -3834,7 +3843,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setPublicReadAccess(false);
                                 channelFollowACL.setPublicWriteAccess(false);
                                 channelFollowACL.setReadAccess(adminRole, true);
+                                channelFollowACL.setReadAccess(adminRole, false);
+                                channelFollowACL.setReadAccess(user, true);
                                 channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerChannel, true);
+                                channelFollowACL.setWriteAccess(ownerChannel, true);
                                 channelfollow.setACL(channelFollowACL);
 
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
@@ -3925,7 +3938,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setPublicReadAccess(false);
                                 channelFollowACL.setPublicWriteAccess(false);
                                 channelFollowACL.setReadAccess(moderatorRole, true);
+                                channelFollowACL.setReadAccess(moderatorRole, false);
+                                channelFollowACL.setReadAccess(user, true);
                                 channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerChannel, true);
+                                channelFollowACL.setWriteAccess(ownerChannel, true);
                                 channelfollow.setACL(channelFollowACL);
 
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
@@ -4016,7 +4033,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setPublicReadAccess(false);
                                 channelFollowACL.setPublicWriteAccess(false);
                                 channelFollowACL.setReadAccess(ownerRole, true);
+                                channelFollowACL.setReadAccess(ownerRole, false);
+                                channelFollowACL.setReadAccess(user, true);
                                 channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerChannel, true);
+                                channelFollowACL.setWriteAccess(ownerChannel, true);
                                 channelfollow.setACL(channelFollowACL);
 
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
@@ -4098,9 +4119,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                             } else if (Channel.get("type") === "public") {
 
-                                // do nothing, since ACL will be public read/write by default
+                                // set correct ACL for channelFollow
                                 channelFollowACL.setPublicReadAccess(true);
-                                channelFollowACL.setPublicWriteAccess(true);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(ownerChannel, true);
+                                channelFollowACL.setWriteAccess(ownerChannel, true);
                                 channelfollow.setACL(channelFollowACL);
 
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
