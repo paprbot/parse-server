@@ -1641,7 +1641,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
     console.log("channel.isNew: " + channel.isNew());
 
-    if (channel.isNew() === true) {
+    if (channel.isNew() ) {
 
         console.log("channel isNew: " + channel.isNew());
 
@@ -2114,7 +2114,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
     } else if (!channel.isNew() && !channel.dirty("name")) {
 
         channel.set("isNew", false);
-        console.log("Channel is New and name didn't change");
+        console.log("Channel is not new and name didn't change: " + JSON.stringify(channel));
+
 
         // By default allowMemberPostCreation is set to false
         if(channel.dirty("allowMemberPostCreation")) {
@@ -2133,7 +2134,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                 channelACL.setWriteAccess(owner, true);
                 channel.setACL(channelACL);
 
-                console.log("channel update, type changed.");
+                console.log("channel update, type changed, private.");
 
                 // todo need to add each member and follower of this channel to the channel ACL so they can access this private channel
                 // todo send a notification to members and followers that now this channel is private
@@ -4866,7 +4867,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     var objectToSave = request.object.toJSON();
 
     var queryChannel = new Parse.Query("Channel");
-    // queryChannel.equalTo("objectId", objectToSave.objectId);
+    queryChannel.equalTo("objectId", objectToSave.objectId);
     queryChannel.include( ["user", "workspace", "category"] );
     //queryChannel.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive"]);
 
@@ -4878,93 +4879,93 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     console.log("objectID: " + objectToSave.objectId);
     console.log("objectID: " + objectToSave.user.objectId);
 
-    queryChannel.get(objectToSave.objectId , {useMasterKey: true})
+    queryChannel.first({useMasterKey: true})
         .then((channel) => {
         // The object was retrieved successfully.
-        //console.log("Result from get " + JSON.stringify(Workspace));
+        console.log("Result from get channel" + JSON.stringify(channel));
 
         var channelToSave = channel.toJSON();
 
-    function createOwnerChannelFollow (callback) {
+        function createOwnerChannelFollow (callback) {
 
-        console.log("channel isNew: " + channel.get("isNew"));
-        console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
-
-        if (channel.get("isNew") === true) {
-
-
+            console.log("channel isNew: " + channel.get("isNew"));
             console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
-            channelFollow.set("archive", false);
-            channelFollow.set("user", channel.get("user"));
-            channelFollow.set("workspace", channel.get("workspace"));
-            channelFollow.set("channel", channel);
-            channelFollow.set("notificationCount", 0);
-            channelFollow.set("isSelected", false);
-
-            // set correct ACL for channelFollow
-            var channelFollowACL = new Parse.ACL();
-            channelFollowACL.setPublicReadAccess(false);
-            channelFollowACL.setPublicWriteAccess(false);
-            channelFollowACL.setReadAccess(channel.get("user"), true);
-            channelFollowACL.setWriteAccess(channel.get("user"), true);
-            channelFollow.setACL(channelFollowACL);
-
-            // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
-            channelFollow.set("isMember", true);
-            channelFollow.set("isFollower", true);
-
-            console.log("channelFollow: " + JSON.stringify(channelFollow));
-
-            channelFollow.save(null, {useMasterKey: true});
-
-            return callback(null, channelFollow);
+            if (channel.get("isNew") === true) {
 
 
-        } else {return callback (null, channel);}
+                console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+
+                channelFollow.set("archive", false);
+                channelFollow.set("user", channel.get("user"));
+                channelFollow.set("workspace", channel.get("workspace"));
+                channelFollow.set("channel", channel);
+                channelFollow.set("notificationCount", 0);
+                channelFollow.set("isSelected", false);
+
+                // set correct ACL for channelFollow
+                var channelFollowACL = new Parse.ACL();
+                channelFollowACL.setPublicReadAccess(false);
+                channelFollowACL.setPublicWriteAccess(false);
+                channelFollowACL.setReadAccess(channel.get("user"), true);
+                channelFollowACL.setWriteAccess(channel.get("user"), true);
+                channelFollow.setACL(channelFollowACL);
+
+                // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
+                channelFollow.set("isMember", true);
+                channelFollow.set("isFollower", true);
+
+                console.log("channelFollow: " + JSON.stringify(channelFollow));
+
+                channelFollow.save(null, {useMasterKey: true});
+
+                return callback(null, channelFollow);
 
 
-    }
+            } else {return callback (null, channel);}
 
-    function addChannelsToAlgolia (callback) {
 
-        // Specify Algolia's objectID with the Parse.Object unique ID
-        channelToSave.objectID = channel.id;
+        }
 
-        // Add or update object
-        indexChannel.saveObject(channelToSave, function(err, content) {
+        function addChannelsToAlgolia (callback) {
+
+            // Specify Algolia's objectID with the Parse.Object unique ID
+            channelToSave.objectID = channel.id;
+
+            // Add or update object
+            indexChannel.saveObject(channelToSave, function(err, content) {
+                if (err) {
+                    return error(err);
+                }
+                console.log('Parse<>Algolia channel object saved');
+                return callback(null, channelToSave);
+
+            });
+
+
+        }
+
+
+        async.parallel([
+            async.apply(createOwnerChannelFollow),
+            async.apply(addChannelsToAlgolia)
+
+        ], function (err, results) {
             if (err) {
-                return error(err);
+
+                var finalTime = process.hrtime(time);
+                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                response.error(err);
             }
-            console.log('Parse<>Algolia channel object saved');
-            return callback(null, channelToSave);
 
-        });
-
-
-    }
-
-
-    async.parallel([
-        async.apply(createOwnerChannelFollow),
-        async.apply(addChannelsToAlgolia)
-
-    ], function (err, results) {
-        if (err) {
+            //console.log("results length: " + JSON.stringify(results));
 
             var finalTime = process.hrtime(time);
             console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-            response.error(err);
-        }
-
-        //console.log("results length: " + JSON.stringify(results));
-
-        var finalTime = process.hrtime(time);
-        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-        response.success(results);
+            response.success(results);
 
 
-    });
+        });
 
 }, (error) => {
         // The object was not retrieved successfully.
