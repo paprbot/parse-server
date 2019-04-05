@@ -1627,7 +1627,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
     var time = process.hrtime();
     var channel = req.object;
 
-    var channelACL = new Parse.ACL();
+    var channelACL = channel.getACL();
 
     //var owner = new Parse.Object("_User");
     var owner = channel.get("user");
@@ -1641,7 +1641,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
     console.log("channel.isNew: " + channel.isNew());
 
-    if (channel.isNew() ) {
+    if (channel.isNew()) {
 
         console.log("channel isNew: " + channel.isNew());
 
@@ -2111,7 +2111,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     response.error(error);
                 }, {useMasterKey: true});
 
-    } else if (!channel.isNew() && !channel.dirty("name")) {
+    }
+    else if (!channel.isNew() && !channel.dirty("name")) {
 
         channel.set("isNew", false);
         console.log("Channel is not new and name didn't change: " + JSON.stringify(channel));
@@ -2311,9 +2312,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
             }
 
 
-        }
-
-        else { console.log("channel change, type is not updated."); response.success();}
+        } else { console.log("channel change, type is not updated."); response.success();}
 
 
     } else {
@@ -3549,7 +3548,12 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                     if (!channelfollow.get("archive")) { channelfollow.set("archive", false); }
                     if (!channelfollow.get("notificationCount")) { channelfollow.set("notificationCount", 0); }
 
-                    queryChannel.get(channel.id, {useMasterKey: true})
+                    queryChannel.get(channel.id, {
+
+                        userMasterKey: true,
+                        sessionToken: req.user.getSessionToken()
+
+                         });
                         .then((channelObject) => {
                         // The object was retrieved successfully.
 
@@ -3574,6 +3578,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 channelACL.setReadAccess(user, true);
                                 channelACL.setWriteAccess(user, true);
+                                channelACL.setReadAccess(Channel.get("user"), true);
+                                channelACL.setWriteAccess(Channel.get("user"), true);
                                 Channel.setACL(channelACL);
 
                                 // set correct ACL for channelFollow
@@ -3581,21 +3587,28 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelFollowACL.setPublicWriteAccess(false);
                                 channelFollowACL.setReadAccess(user, true);
                                 channelFollowACL.setWriteAccess(user, true);
-                                channelFollowACL.setReadAccess(adminRolePrivate, true);
-                                channelFollowACL.setWriteAccess(adminRolePrivate, true);
-                                channelfollow.setACL(channelFollowACL);
 
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
                                     Channel.increment("followerCount");
                                     Channel.increment("memberCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
                                     response.success();
                                 } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                     Channel.increment("followerCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3606,7 +3619,12 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     Channel.increment("memberCount");
                                     Channel.increment("followerCount");
                                     channelfollow.set("isFollower", true);
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3643,14 +3661,24 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
                                     Channel.increment("followerCount");
                                     Channel.increment("memberCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
                                     response.success();
                                 } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                     Channel.increment("followerCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3661,7 +3689,12 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     Channel.increment("memberCount");
                                     Channel.increment("followerCount");
                                     channelfollow.set("isFollower", true);
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3717,14 +3750,24 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
                                     Channel.increment("followerCount");
                                     Channel.increment("memberCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
                                     response.success();
                                 } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                     Channel.increment("followerCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3735,7 +3778,12 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     Channel.increment("memberCount");
                                     Channel.increment("followerCount");
                                     channelfollow.set("isFollower", true);
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3792,14 +3840,24 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
                                     Channel.increment("followerCount");
                                     Channel.increment("memberCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
                                     response.success();
                                 } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                     Channel.increment("followerCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3810,7 +3868,12 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     Channel.increment("memberCount");
                                     Channel.increment("followerCount");
                                     channelfollow.set("isFollower", true);
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3868,14 +3931,24 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
                                     Channel.increment("followerCount");
                                     Channel.increment("memberCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
                                     response.success();
                                 } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                     Channel.increment("followerCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3886,7 +3959,12 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     Channel.increment("memberCount");
                                     Channel.increment("followerCount");
                                     channelfollow.set("isFollower", true);
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3944,14 +4022,24 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
                                     Channel.increment("followerCount");
                                     Channel.increment("memberCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
                                     response.success();
                                 } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                     Channel.increment("followerCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -3962,7 +4050,12 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     Channel.increment("memberCount");
                                     Channel.increment("followerCount");
                                     channelfollow.set("isFollower", true);
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -4013,14 +4106,24 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
                                     Channel.increment("followerCount");
                                     Channel.increment("memberCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
                                     response.success();
                                 } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                     Channel.increment("followerCount");
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -4031,7 +4134,12 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     Channel.increment("memberCount");
                                     Channel.increment("followerCount");
                                     channelfollow.set("isFollower", true);
-                                    Channel.save(null, {userMasterKey: true});
+                                    Channel.save(null,  {
+
+                                        userMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
