@@ -1643,6 +1643,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
     if (channel.isNew() ) {
 
+        console.log("channel isNew: " + channel.isNew());
+
         if(!channel.get("name")) {response.error("Channel name is required.");}
         if(!channel.get("user")) {response.error("User who is the channel creator is required when creating a new channel");}
         if(!channel.get("workspace")) {response.error("Workspace is required when creating a new channel");}
@@ -1886,9 +1888,11 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
 
 
-    } else if (!channel.isNew() && channel.dirty("name")) {
+    }
+    else if (!channel.isNew() && channel.dirty("name")) {
 
         channel.set("isNew", false);
+        console.log("Channel is New, and name updated");
 
         queryChannel.equalTo("workspace", channel.get("workspace"));
         queryChannel.equalTo("name", channel.get("name"));
@@ -2110,11 +2114,12 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
     } else if (!channel.isNew() && !channel.dirty("name")) {
 
         channel.set("isNew", false);
+        Console.log("Channel is New and name didn't change");
 
         // By default allowMemberPostCreation is set to false
         if(channel.dirty("allowMemberPostCreation")) {
 
-            // todo add role ACL to members to be able to creat posts in this workspace
+            // todo add role ACL to members to be able to create posts in this workspace
 
         }
 
@@ -2127,6 +2132,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                 channelACL.setReadAccess(owner, true);
                 channelACL.setWriteAccess(owner, true);
                 channel.setACL(channelACL);
+
+                console.log("channel update, type changed.");
 
                 // todo need to add each member and follower of this channel to the channel ACL so they can access this private channel
                 // todo send a notification to members and followers that now this channel is private
@@ -2303,7 +2310,9 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
             }
 
 
-        } else {response.success();}
+        }
+
+        else { console.log("channel change, type is not updated."); response.success();}
 
 
     } else {
