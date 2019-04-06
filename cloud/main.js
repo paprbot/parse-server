@@ -1862,7 +1862,21 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             response.error(error);
                         }, {useMasterKey: true});
 
-                } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners"|| channel.get("type") != "privateModerators"|| channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
+                } else if (channel.get("type") === 'public') {
+
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(true);
+                    channelACL.setPublicWriteAccess(true);
+                    channelACL.setReadAccess(owner, true);
+                    channelACL.setWriteAccess(owner, true);
+                    channel.setACL(channelACL);
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.success();
+
+
+                }  else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners"|| channel.get("type") != "privateModerators"|| channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
 
                     var finalTime = process.hrtime(time);
                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
@@ -2100,6 +2114,20 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 response.error(error);
                             }, {useMasterKey: true});
 
+                    } else if (channel.get("type") === 'public') {
+
+                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                        channelACL.setPublicReadAccess(true);
+                        channelACL.setPublicWriteAccess(true);
+                        channelACL.setReadAccess(owner, true);
+                        channelACL.setWriteAccess(owner, true);
+                        channel.setACL(channelACL);
+
+                        var finalTime = process.hrtime(time);
+                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                        response.success();
+
+
                     } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners"|| channel.get("type") != "privateModerators"|| channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
 
                         response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
@@ -2317,6 +2345,20 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         // error is a Parse.Error with an error code and message.
                         response.error(error);
                     }, {useMasterKey: true});
+
+            } else if (channel.get("type") === 'public') {
+
+                // private workspace, but this is a channel that is accessible to all members of this private workspace
+                channelACL.setPublicReadAccess(true);
+                channelACL.setPublicWriteAccess(true);
+                channelACL.setReadAccess(owner, true);
+                channelACL.setWriteAccess(owner, true);
+                channel.setACL(channelACL);
+
+                var finalTime = process.hrtime(time);
+                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                response.success();
+
 
             } else if (channel.get("type") != "private" || channel.get("type") != "public" || channel.get("type") != "privateOwners"|| channel.get("type") != "privateModerators"|| channel.get("type") != "privateAdmins" || channel.get("type") != "privateExperts" || channel.get("type") != "privateMembers") {
 
@@ -3584,7 +3626,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
 
                             var channelACL = Channel.getACL();
-                            var channelFollowACLPrivate = channelfollow.getACL();
+                            var channelFollowACLPrivate = channelACL;
                             var channelFollowACL = new Parse.ACL();
 
                             // If this is a private channel, set ACL for owner to read and write
@@ -4222,9 +4264,12 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                 }, {useMasterKey: true});
 
 
-    } else if (!channelfollow.isNew() && (channelfollow.dirty("isFollower") || channelfollow.dirty("isMember"))) {
+    }
+    else if (!channelfollow.isNew() && (channelfollow.dirty("isFollower") || channelfollow.dirty("isMember"))) {
 
         console.log("channelfollow.id: " + JSON.stringify(channelfollow.id));
+
+        // todo remove or add ACL for followers or members wo leave and join a private channel only applies to private channels.
 
         queryChannelFollow.get(channelfollow.id, {useMasterKey: true})
             .then((result) => {
@@ -5649,6 +5694,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
 
     }
+
 
 
     function getSkills (callback) {
