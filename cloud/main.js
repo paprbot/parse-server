@@ -1629,6 +1629,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
     var channelACL = new Parse.ACL();
 
+    if (!req.user.getSessionToken()) {response.error("beforeSave Channel Session token: X-Parse-Session-Token is required");}
+
     //var owner = new Parse.Object("_User");
     var owner = channel.get("user");
     var expertRelation = channel.relation("experts");
@@ -2074,14 +2076,14 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                     // private workspace, but this is a channel that is accessible to all members of this private workspace
                     channelACL.setPublicReadAccess(false);
-                channelACL.setPublicWriteAccess(false);
-                channelACL.setReadAccess(Role, true);
-                channelACL.setWriteAccess(Role, true);
-                channelACL.setReadAccess(owner, true);
-                channelACL.setWriteAccess(owner, true);
-                channel.setACL(channelACL);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channelACL.setReadAccess(owner, true);
+                    channelACL.setWriteAccess(owner, true);
+                    channel.setACL(channelACL);
 
-                response.success();
+                    response.success();
 
 
             }, (error) => {
@@ -3582,6 +3584,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
     var channel = channelfollow.get("channel");
     console.log("channel: " + JSON.stringify(channel));
 
+    if (!req.user.getSessionToken()) {response.error("beforeSave ChannelFollow Session token: X-Parse-Session-Token is required");}
+
+
     var queryChannelFollow = new Parse.Query("ChannelFollow");
     var queryChannel = new Parse.Query("Channel");
 
@@ -3596,9 +3601,16 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
         console.log("channelFollowName user: " + JSON.stringify(channelFollowName));
 
         queryChannelFollow.equalTo("name", channelFollowName);
+        queryChannelFollow.include( ["user", "workspace", "channel"] );
+
 
         // check to make sure that the workspace_follower for a user - workspace is unique
-        queryChannelFollow.first({useMasterKey: true})
+        queryChannelFollow.first({
+
+            userMasterKey: true,
+            sessionToken: req.user.getSessionToken()
+
+        })
             .then((results) => {
             // The object was retrieved successfully.
 
@@ -3611,667 +3623,667 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
             } else {
 
                 if (!channelfollow.get("channel")) {response.error("Channel is required.");}
-        if (!channelfollow.get("user")) { response.error("User who is the channel creator is required when creating a new channel"); }
-        if (!channelfollow.get("workspace")) {response.error("Workspace is required when creating a new channel"); }
-        if (!channelfollow.get("archive")) { channelfollow.set("archive", false); }
-        if (!channelfollow.get("notificationCount")) { channelfollow.set("notificationCount", 0); }
+                if (!channelfollow.get("user")) { response.error("User who is the channel creator is required when creating a new channel"); }
+                if (!channelfollow.get("workspace")) {response.error("Workspace is required when creating a new channel"); }
+                if (!channelfollow.get("archive")) { channelfollow.set("archive", false); }
+                if (!channelfollow.get("notificationCount")) { channelfollow.set("notificationCount", 0); }
 
-        queryChannel.get(channel.id, {
-
-            userMasterKey: true,
-            sessionToken: req.user.getSessionToken()
-
-        }).then((channelObject) => {
-            // The object was retrieved successfully.
-
-            let user = channelfollow.get("user");
-
-        //var queryRole = new Parse.Query(Parse.Role);
-
-        var Channel = channelObject;
-        let ownerChannel = Channel.get("user");
-        console.log("channelType: " + JSON.stringify(Channel.get("type")));
-
-        channelfollow.set("name", channelFollowName);
-        console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
-
-        var channelACL = Channel.getACL();
-        var channelFollowACLPrivate = channelACL;
-        var channelFollowACL = new Parse.ACL();
-
-        // If this is a private channel, set ACL for owner to read and write
-        if (Channel.get("type") === 'private') {
-
-            var adminRolePrivate = new Parse.Role();
-            var adminNamePrivate = 'admin-' + channelfollow.get("workspace").id;
-            adminRolePrivate.set("name", adminNamePrivate);
-
-            channelACL.setReadAccess(user, true);
-            channelACL.setWriteAccess(user, true);
-            Channel.setACL(channelACL);
-
-            // set correct ACL for channelFollow
-            //channelFollowACL.setPublicReadAccess(false);
-            //channelFollowACL.setPublicWriteAccess(false);
-            channelFollowACLPrivate.setReadAccess(user, true);
-            channelFollowACLPrivate.setWriteAccess(user, true);
-            //channelFollowACL.setReadAccess(ownerChannel, true);
-            //channelFollowACL.setWriteAccess(ownerChannel, true);
-            channelfollow.setACL(channelFollowACLPrivate);
-
-            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                Channel.increment("followerCount");
-                Channel.increment("memberCount");
-                Channel.save(null,  {
+                queryChannel.get(channel.id, {
 
                     userMasterKey: true,
                     sessionToken: req.user.getSessionToken()
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                }).then((channelObject) => {
+                    // The object was retrieved successfully.
 
-                response.success();
-            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                Channel.increment("followerCount");
-                Channel.save(null,  {
+                    let user = channelfollow.get("user");
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                    //var queryRole = new Parse.Query(Parse.Role);
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                    var Channel = channelObject;
+                    let ownerChannel = Channel.get("user");
+                    console.log("channelType: " + JSON.stringify(Channel.get("type")));
 
-                response.success();
+                    channelfollow.set("name", channelFollowName);
+                    console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                // a member is by default always a follower.
-                Channel.increment("memberCount");
-                Channel.increment("followerCount");
-                channelfollow.set("isFollower", true);
-                Channel.save(null,  {
+                    var channelACL = Channel.getACL();
+                    var channelFollowACLPrivate = channelACL;
+                    var channelFollowACL = new Parse.ACL();
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                    // If this is a private channel, set ACL for owner to read and write
+                    if (Channel.get("type") === 'private') {
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                        var adminRolePrivate = new Parse.Role();
+                        var adminNamePrivate = 'admin-' + channelfollow.get("workspace").id;
+                        adminRolePrivate.set("name", adminNamePrivate);
 
-                response.success();
+                        channelACL.setReadAccess(user, true);
+                        channelACL.setWriteAccess(user, true);
+                        Channel.setACL(channelACL);
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                        // set correct ACL for channelFollow
+                        //channelFollowACL.setPublicReadAccess(false);
+                        //channelFollowACL.setPublicWriteAccess(false);
+                        channelFollowACLPrivate.setReadAccess(user, true);
+                        channelFollowACLPrivate.setWriteAccess(user, true);
+                        //channelFollowACL.setReadAccess(ownerChannel, true);
+                        //channelFollowACL.setWriteAccess(ownerChannel, true);
+                        channelfollow.setACL(channelFollowACLPrivate);
 
-                response.error("Please set isFollower:true or isMember:true since one if required.");
+                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                            Channel.increment("followerCount");
+                            Channel.increment("memberCount");
+                            Channel.save(null,  {
 
-            } else {
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                response.success();
+                            response.success();
+                        } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                            Channel.increment("followerCount");
+                            Channel.save(null,  {
 
-            }
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-        } else if (Channel.get("type") === 'privateMembers') {
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-            // get member role for this workspace
-            //var queryMemberRole = new Parse.Query(Parse.Role);
-            var memberRole = new Parse.Role();
-            var memberName = 'member-' + channelfollow.get("workspace").id;
-            memberRole.set("name", memberName);
+                            response.success();
 
-            // set correct ACL for channelFollow
-            channelFollowACL.setPublicReadAccess(false);
-            channelFollowACL.setPublicWriteAccess(false);
-            channelFollowACL.setReadAccess(memberRole, true);
-            channelFollowACL.setWriteAccess(memberRole, false);
-            channelFollowACL.setReadAccess(user, true);
-            channelFollowACL.setWriteAccess(user, true);
-            channelFollowACL.setReadAccess(ownerChannel, true);
-            channelFollowACL.setWriteAccess(ownerChannel, true);
-            channelfollow.setACL(channelFollowACL);
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                            // a member is by default always a follower.
+                            Channel.increment("memberCount");
+                            Channel.increment("followerCount");
+                            channelfollow.set("isFollower", true);
+                            Channel.save(null,  {
 
-            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                Channel.increment("followerCount");
-                Channel.increment("memberCount");
-                Channel.save(null,  {
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                            response.success();
 
-                response.success();
-            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                Channel.increment("followerCount");
-                Channel.save(null,  {
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                            response.error("Please set isFollower:true or isMember:true since one if required.");
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                        } else {
 
-                response.success();
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                // a member is by default always a follower.
-                Channel.increment("memberCount");
-                Channel.increment("followerCount");
-                channelfollow.set("isFollower", true);
-                Channel.save(null,  {
+                            response.success();
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                        }
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                    } else if (Channel.get("type") === 'privateMembers') {
 
-                response.success();
+                        // get member role for this workspace
+                        //var queryMemberRole = new Parse.Query(Parse.Role);
+                        var memberRole = new Parse.Role();
+                        var memberName = 'member-' + channelfollow.get("workspace").id;
+                        memberRole.set("name", memberName);
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                        // set correct ACL for channelFollow
+                        channelFollowACL.setPublicReadAccess(false);
+                        channelFollowACL.setPublicWriteAccess(false);
+                        channelFollowACL.setReadAccess(memberRole, true);
+                        channelFollowACL.setWriteAccess(memberRole, false);
+                        channelFollowACL.setReadAccess(user, true);
+                        channelFollowACL.setWriteAccess(user, true);
+                        channelFollowACL.setReadAccess(ownerChannel, true);
+                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                        channelfollow.setACL(channelFollowACL);
 
-                response.error("Please set isFollower:true or isMember:true since one if required.");
+                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                            Channel.increment("followerCount");
+                            Channel.increment("memberCount");
+                            Channel.save(null,  {
 
-            } else {
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                response.success();
+                            response.success();
+                        } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                            Channel.increment("followerCount");
+                            Channel.save(null,  {
 
-            }
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-            /*queryMemberRole.equalTo('name', memberName);
-             queryMemberRole.first({useMasterKey: true})
-             .then((memberRole) = > {
-             // The object was retrieved successfully.
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-             // set correct ACL for channelFollow
-             channelFollowACL.setPublicReadAccess(false);
-             channelFollowACL.setPublicWriteAccess(false);
-             channelFollowACL.setReadAccess(memberRole, true);
-             channelFollowACL.setWriteAccess(user, true);
-             channelfollow.setACL(channelFollowACL);
+                            response.success();
+
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                            // a member is by default always a follower.
+                            Channel.increment("memberCount");
+                            Channel.increment("followerCount");
+                            channelfollow.set("isFollower", true);
+                            Channel.save(null,  {
 
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-             },(error) => {
-             // The object was not retrieved successfully.
-             // error is a Parse.Error with an error code and message.
-             response.error(error);
-             }, { useMasterKey: true });*/
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
+                            response.success();
 
-        } else if (Channel.get("type") === 'privateExperts') {
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
-            // get expert role for this workspace
-            var expertRole = new Parse.Role();
-            var expertName = 'expert-' + channelfollow.get("workspace").id;
-            expertRole.set("name", expertName);
+                            response.error("Please set isFollower:true or isMember:true since one if required.");
 
-            // set correct ACL for channelFollow
-            channelFollowACL.setPublicReadAccess(false);
-            channelFollowACL.setPublicWriteAccess(false);
-            channelFollowACL.setReadAccess(expertRole, true);
-            channelFollowACL.setWriteAccess(expertRole, false);
-            channelFollowACL.setReadAccess(user, true);
-            channelFollowACL.setWriteAccess(user, true);
-            channelFollowACL.setReadAccess(ownerChannel, true);
-            channelFollowACL.setWriteAccess(ownerChannel, true);
-            channelfollow.setACL(channelFollowACL);
+                        } else {
 
-            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                Channel.increment("followerCount");
-                Channel.increment("memberCount");
-                Channel.save(null,  {
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                            response.success();
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                        }
 
-                response.success();
-            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                Channel.increment("followerCount");
-                Channel.save(null,  {
+                        /*queryMemberRole.equalTo('name', memberName);
+                         queryMemberRole.first({useMasterKey: true})
+                         .then((memberRole) = > {
+                         // The object was retrieved successfully.
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                         // set correct ACL for channelFollow
+                         channelFollowACL.setPublicReadAccess(false);
+                         channelFollowACL.setPublicWriteAccess(false);
+                         channelFollowACL.setReadAccess(memberRole, true);
+                         channelFollowACL.setWriteAccess(user, true);
+                         channelfollow.setACL(channelFollowACL);
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                response.success();
+                         },(error) => {
+                         // The object was not retrieved successfully.
+                         // error is a Parse.Error with an error code and message.
+                         response.error(error);
+                         }, { useMasterKey: true });*/
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                // a member is by default always a follower.
-                Channel.increment("memberCount");
-                Channel.increment("followerCount");
-                channelfollow.set("isFollower", true);
-                Channel.save(null,  {
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                    } else if (Channel.get("type") === 'privateExperts') {
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                        // get expert role for this workspace
+                        var expertRole = new Parse.Role();
+                        var expertName = 'expert-' + channelfollow.get("workspace").id;
+                        expertRole.set("name", expertName);
 
-                response.success();
+                        // set correct ACL for channelFollow
+                        channelFollowACL.setPublicReadAccess(false);
+                        channelFollowACL.setPublicWriteAccess(false);
+                        channelFollowACL.setReadAccess(expertRole, true);
+                        channelFollowACL.setWriteAccess(expertRole, false);
+                        channelFollowACL.setReadAccess(user, true);
+                        channelFollowACL.setWriteAccess(user, true);
+                        channelFollowACL.setReadAccess(ownerChannel, true);
+                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                        channelfollow.setACL(channelFollowACL);
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                            Channel.increment("followerCount");
+                            Channel.increment("memberCount");
+                            Channel.save(null,  {
 
-                response.error("Please set isFollower:true or isMember:true since one if required.");
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-            } else {
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                            response.success();
+                        } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                            Channel.increment("followerCount");
+                            Channel.save(null,  {
 
-                response.success();
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-            }
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-            /*queryRole.equalTo('name', Name);
-             queryRole.first({useMasterKey: true})
-             .then((Role) = > {
-             // The object was retrieved successfully.
+                            response.success();
 
-             console.log("Role" + JSON.stringify(Role));
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                            // a member is by default always a follower.
+                            Channel.increment("memberCount");
+                            Channel.increment("followerCount");
+                            channelfollow.set("isFollower", true);
+                            Channel.save(null,  {
 
-             // set correct ACL for channelFollow
-             channelFollowACL.setPublicReadAccess(false);
-             channelFollowACL.setPublicWriteAccess(false);
-             channelFollowACL.setReadAccess(Role, true);
-             channelFollowACL.setWriteAccess(user, true);
-             channelfollow.setACL(channelFollowACL);
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-             },(error) => {
-             // The object was not retrieved successfully.
-             // error is a Parse.Error with an error code and message.
-             response.error(error);
-             }, { useMasterKey: true });*/
+                            response.success();
 
-        } else if (Channel.get("type") === 'privateAdmins') {
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
-            // get admin role for this workspace
-            var adminRole = new Parse.Role();
-            var adminName = 'expert-' + channelfollow.get("workspace").id;
-            adminRole.set("name", adminName);
+                            response.error("Please set isFollower:true or isMember:true since one if required.");
 
-            // set correct ACL for channelFollow
-            channelFollowACL.setPublicReadAccess(false);
-            channelFollowACL.setPublicWriteAccess(false);
-            channelFollowACL.setReadAccess(adminRole, true);
-            channelFollowACL.setWriteAccess(adminRole, false);
-            channelFollowACL.setReadAccess(user, true);
-            channelFollowACL.setWriteAccess(user, true);
-            channelFollowACL.setReadAccess(ownerChannel, true);
-            channelFollowACL.setWriteAccess(ownerChannel, true);
-            channelfollow.setACL(channelFollowACL);
+                        } else {
 
-            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                Channel.increment("followerCount");
-                Channel.increment("memberCount");
-                Channel.save(null,  {
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                            response.success();
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                        }
 
-                response.success();
-            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                Channel.increment("followerCount");
-                Channel.save(null,  {
+                        /*queryRole.equalTo('name', Name);
+                         queryRole.first({useMasterKey: true})
+                         .then((Role) = > {
+                         // The object was retrieved successfully.
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                         console.log("Role" + JSON.stringify(Role));
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                         // set correct ACL for channelFollow
+                         channelFollowACL.setPublicReadAccess(false);
+                         channelFollowACL.setPublicWriteAccess(false);
+                         channelFollowACL.setReadAccess(Role, true);
+                         channelFollowACL.setWriteAccess(user, true);
+                         channelfollow.setACL(channelFollowACL);
 
-                response.success();
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                // a member is by default always a follower.
-                Channel.increment("memberCount");
-                Channel.increment("followerCount");
-                channelfollow.set("isFollower", true);
-                Channel.save(null,  {
+                         },(error) => {
+                         // The object was not retrieved successfully.
+                         // error is a Parse.Error with an error code and message.
+                         response.error(error);
+                         }, { useMasterKey: true });*/
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                    } else if (Channel.get("type") === 'privateAdmins') {
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                        // get admin role for this workspace
+                        var adminRole = new Parse.Role();
+                        var adminName = 'expert-' + channelfollow.get("workspace").id;
+                        adminRole.set("name", adminName);
 
-                response.success();
+                        // set correct ACL for channelFollow
+                        channelFollowACL.setPublicReadAccess(false);
+                        channelFollowACL.setPublicWriteAccess(false);
+                        channelFollowACL.setReadAccess(adminRole, true);
+                        channelFollowACL.setWriteAccess(adminRole, false);
+                        channelFollowACL.setReadAccess(user, true);
+                        channelFollowACL.setWriteAccess(user, true);
+                        channelFollowACL.setReadAccess(ownerChannel, true);
+                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                        channelfollow.setACL(channelFollowACL);
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                            Channel.increment("followerCount");
+                            Channel.increment("memberCount");
+                            Channel.save(null,  {
 
-                response.error("Please set isFollower:true or isMember:true since one if required.");
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-            } else {
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                            response.success();
+                        } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                            Channel.increment("followerCount");
+                            Channel.save(null,  {
 
-                response.success();
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-            }
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-            /*queryRole.equalTo('name', Name);
-             queryRole.first({useMasterKey: true})
-             .then((Role) = > {
-             // The object was retrieved successfully.
+                            response.success();
 
-             console.log("Role" + JSON.stringify(Role));
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                            // a member is by default always a follower.
+                            Channel.increment("memberCount");
+                            Channel.increment("followerCount");
+                            channelfollow.set("isFollower", true);
+                            Channel.save(null,  {
 
-             // set correct ACL for channelFollow
-             channelFollowACL.setPublicReadAccess(false);
-             channelFollowACL.setPublicWriteAccess(false);
-             channelFollowACL.setReadAccess(Role, true);
-             channelFollowACL.setWriteAccess(user, true);
-             channelfollow.setACL(channelFollowACL);
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-             },(error) => {
-             // The object was not retrieved successfully.
-             // error is a Parse.Error with an error code and message.
-             response.error(error);
-             }, { useMasterKey: true });*/
+                            response.success();
 
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
-        } else if (Channel.get("type") === 'privateModerators') {
+                            response.error("Please set isFollower:true or isMember:true since one if required.");
 
-            // get moderator role for this workspace
-            var moderatorRole = new Parse.Role();
-            var moderatorName = 'expert-' + channelfollow.get("workspace").id;
-            moderatorRole.set("name", moderatorName);
+                        } else {
 
-            // set correct ACL for channelFollow
-            channelFollowACL.setPublicReadAccess(false);
-            channelFollowACL.setPublicWriteAccess(false);
-            channelFollowACL.setReadAccess(moderatorRole, true);
-            channelFollowACL.setWriteAccess(moderatorRole, false);
-            channelFollowACL.setReadAccess(user, true);
-            channelFollowACL.setWriteAccess(user, true);
-            channelFollowACL.setReadAccess(ownerChannel, true);
-            channelFollowACL.setWriteAccess(ownerChannel, true);
-            channelfollow.setACL(channelFollowACL);
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                Channel.increment("followerCount");
-                Channel.increment("memberCount");
-                Channel.save(null,  {
+                            response.success();
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                        }
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                        /*queryRole.equalTo('name', Name);
+                         queryRole.first({useMasterKey: true})
+                         .then((Role) = > {
+                         // The object was retrieved successfully.
 
-                response.success();
-            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                Channel.increment("followerCount");
-                Channel.save(null,  {
+                         console.log("Role" + JSON.stringify(Role));
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                         // set correct ACL for channelFollow
+                         channelFollowACL.setPublicReadAccess(false);
+                         channelFollowACL.setPublicWriteAccess(false);
+                         channelFollowACL.setReadAccess(Role, true);
+                         channelFollowACL.setWriteAccess(user, true);
+                         channelfollow.setACL(channelFollowACL);
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                response.success();
+                         },(error) => {
+                         // The object was not retrieved successfully.
+                         // error is a Parse.Error with an error code and message.
+                         response.error(error);
+                         }, { useMasterKey: true });*/
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                // a member is by default always a follower.
-                Channel.increment("memberCount");
-                Channel.increment("followerCount");
-                channelfollow.set("isFollower", true);
-                Channel.save(null,  {
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                    } else if (Channel.get("type") === 'privateModerators') {
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                        // get moderator role for this workspace
+                        var moderatorRole = new Parse.Role();
+                        var moderatorName = 'expert-' + channelfollow.get("workspace").id;
+                        moderatorRole.set("name", moderatorName);
 
-                response.success();
+                        // set correct ACL for channelFollow
+                        channelFollowACL.setPublicReadAccess(false);
+                        channelFollowACL.setPublicWriteAccess(false);
+                        channelFollowACL.setReadAccess(moderatorRole, true);
+                        channelFollowACL.setWriteAccess(moderatorRole, false);
+                        channelFollowACL.setReadAccess(user, true);
+                        channelFollowACL.setWriteAccess(user, true);
+                        channelFollowACL.setReadAccess(ownerChannel, true);
+                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                        channelfollow.setACL(channelFollowACL);
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                            Channel.increment("followerCount");
+                            Channel.increment("memberCount");
+                            Channel.save(null,  {
 
-                response.error("Please set isFollower:true or isMember:true since one if required.");
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-            } else {
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                            response.success();
+                        } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                            Channel.increment("followerCount");
+                            Channel.save(null,  {
 
-                response.success();
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-            }
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-            /*queryRole.equalTo('name', Name);
-             queryRole.first({useMasterKey: true})
-             .then((Role) = > {
-             // The object was retrieved successfully.
+                            response.success();
 
-             console.log("Role" + JSON.stringify(Role));
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                            // a member is by default always a follower.
+                            Channel.increment("memberCount");
+                            Channel.increment("followerCount");
+                            channelfollow.set("isFollower", true);
+                            Channel.save(null,  {
 
-             // set correct ACL for channelFollow
-             channelFollowACL.setPublicReadAccess(false);
-             channelFollowACL.setPublicWriteAccess(false);
-             channelFollowACL.setReadAccess(Role, true);
-             channelFollowACL.setWriteAccess(user, true);
-             channelfollow.setACL(channelFollowACL);
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-             },(error) => {
-             // The object was not retrieved successfully.
-             // error is a Parse.Error with an error code and message.
-             response.error(error);
-             }, { useMasterKey: true });*/
+                            response.success();
 
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
-        } else if (Channel.get("type") === 'privateOwners') {
+                            response.error("Please set isFollower:true or isMember:true since one if required.");
 
-            // get owner role for this workspace
-            var ownerRole = new Parse.Role();
-            var ownerName = 'expert-' + channelfollow.get("workspace").id;
-            ownerRole.set("name", ownerName);
+                        } else {
 
-            // set correct ACL for channelFollow
-            channelFollowACL.setPublicReadAccess(false);
-            channelFollowACL.setPublicWriteAccess(false);
-            channelFollowACL.setReadAccess(ownerRole, true);
-            channelFollowACL.setWriteAccess(ownerRole, false);
-            channelFollowACL.setReadAccess(user, true);
-            channelFollowACL.setWriteAccess(user, true);
-            channelFollowACL.setReadAccess(ownerChannel, true);
-            channelFollowACL.setWriteAccess(ownerChannel, true);
-            channelfollow.setACL(channelFollowACL);
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                Channel.increment("followerCount");
-                Channel.increment("memberCount");
-                Channel.save(null,  {
+                            response.success();
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                        }
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                        /*queryRole.equalTo('name', Name);
+                         queryRole.first({useMasterKey: true})
+                         .then((Role) = > {
+                         // The object was retrieved successfully.
 
-                response.success();
-            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                Channel.increment("followerCount");
-                Channel.save(null,  {
+                         console.log("Role" + JSON.stringify(Role));
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                         // set correct ACL for channelFollow
+                         channelFollowACL.setPublicReadAccess(false);
+                         channelFollowACL.setPublicWriteAccess(false);
+                         channelFollowACL.setReadAccess(Role, true);
+                         channelFollowACL.setWriteAccess(user, true);
+                         channelfollow.setACL(channelFollowACL);
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                response.success();
+                         },(error) => {
+                         // The object was not retrieved successfully.
+                         // error is a Parse.Error with an error code and message.
+                         response.error(error);
+                         }, { useMasterKey: true });*/
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                // a member is by default always a follower.
-                Channel.increment("memberCount");
-                Channel.increment("followerCount");
-                channelfollow.set("isFollower", true);
-                Channel.save(null,  {
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                    } else if (Channel.get("type") === 'privateOwners') {
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                        // get owner role for this workspace
+                        var ownerRole = new Parse.Role();
+                        var ownerName = 'expert-' + channelfollow.get("workspace").id;
+                        ownerRole.set("name", ownerName);
 
-                response.success();
+                        // set correct ACL for channelFollow
+                        channelFollowACL.setPublicReadAccess(false);
+                        channelFollowACL.setPublicWriteAccess(false);
+                        channelFollowACL.setReadAccess(ownerRole, true);
+                        channelFollowACL.setWriteAccess(ownerRole, false);
+                        channelFollowACL.setReadAccess(user, true);
+                        channelFollowACL.setWriteAccess(user, true);
+                        channelFollowACL.setReadAccess(ownerChannel, true);
+                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                        channelfollow.setACL(channelFollowACL);
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                            Channel.increment("followerCount");
+                            Channel.increment("memberCount");
+                            Channel.save(null,  {
 
-                response.error("Please set isFollower:true or isMember:true since one if required.");
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-            } else {
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                            response.success();
+                        } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                            Channel.increment("followerCount");
+                            Channel.save(null,  {
 
-                response.success();
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-            }
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-            /*queryRole.equalTo('name', Name);
-             queryRole.first({useMasterKey: true})
-             .then((Role) = > {
-             // The object was retrieved successfully.
+                            response.success();
 
-             console.log("Role" + JSON.stringify(Role));
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                            // a member is by default always a follower.
+                            Channel.increment("memberCount");
+                            Channel.increment("followerCount");
+                            channelfollow.set("isFollower", true);
+                            Channel.save(null,  {
 
-             // set correct ACL for channelFollow
-             channelFollowACL.setPublicReadAccess(false);
-             channelFollowACL.setPublicWriteAccess(false);
-             channelFollowACL.setReadAccess(Role, true);
-             channelFollowACL.setWriteAccess(user, true);
-             channelfollow.setACL(channelFollowACL);
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-             },(error) => {
-             // The object was not retrieved successfully.
-             // error is a Parse.Error with an error code and message.
-             response.error(error);
-             }, { useMasterKey: true });*/
+                            response.success();
 
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
-        } else if (Channel.get("type") === "public") {
+                            response.error("Please set isFollower:true or isMember:true since one if required.");
 
-            // do nothing, since ACL will be public read/write by default
-            channelFollowACL.setPublicReadAccess(true);
-            channelFollowACL.setPublicWriteAccess(false);
-            channelFollowACL.setReadAccess(ownerChannel, true);
-            channelFollowACL.setWriteAccess(ownerChannel, true);
-            channelFollowACL.setReadAccess(user, true);
-            channelFollowACL.setWriteAccess(user, true);
-            channelfollow.setACL(channelFollowACL);
+                        } else {
 
-            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                Channel.increment("followerCount");
-                Channel.increment("memberCount");
-                Channel.save(null,  {
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                            response.success();
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                        }
 
-                response.success();
-            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                Channel.increment("followerCount");
-                Channel.save(null,  {
+                        /*queryRole.equalTo('name', Name);
+                         queryRole.first({useMasterKey: true})
+                         .then((Role) = > {
+                         // The object was retrieved successfully.
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                         console.log("Role" + JSON.stringify(Role));
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                         // set correct ACL for channelFollow
+                         channelFollowACL.setPublicReadAccess(false);
+                         channelFollowACL.setPublicWriteAccess(false);
+                         channelFollowACL.setReadAccess(Role, true);
+                         channelFollowACL.setWriteAccess(user, true);
+                         channelfollow.setACL(channelFollowACL);
 
-                response.success();
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                // a member is by default always a follower.
-                Channel.increment("memberCount");
-                Channel.increment("followerCount");
-                channelfollow.set("isFollower", true);
-                Channel.save(null,  {
+                         },(error) => {
+                         // The object was not retrieved successfully.
+                         // error is a Parse.Error with an error code and message.
+                         response.error(error);
+                         }, { useMasterKey: true });*/
 
-                    userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
 
-                });
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                    } else if (Channel.get("type") === "public") {
 
-                response.success();
+                        // do nothing, since ACL will be public read/write by default
+                        channelFollowACL.setPublicReadAccess(true);
+                        channelFollowACL.setPublicWriteAccess(false);
+                        channelFollowACL.setReadAccess(ownerChannel, true);
+                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                        channelFollowACL.setReadAccess(user, true);
+                        channelFollowACL.setWriteAccess(user, true);
+                        channelfollow.setACL(channelFollowACL);
 
-            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                            Channel.increment("followerCount");
+                            Channel.increment("memberCount");
+                            Channel.save(null,  {
 
-                response.error("Please set isFollower:true or isMember:true since one if required.");
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-            } else {
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                beforeSave_Time = process.hrtime(time);
-                console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                            response.success();
+                        } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                            Channel.increment("followerCount");
+                            Channel.save(null,  {
 
-                response.success();
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-            }
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
+                            response.success();
 
-        } else if (channel.get("type") != 'private' || channel.get("type") != 'public' || channel.get("type") != 'privateOwners'|| channel.get("type") != 'privateModerators'|| channel.get("type") != 'privateAdmins' || channel.get("type") != 'privateExperts' || channel.get("type") != 'privateMembers') {
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                            // a member is by default always a follower.
+                            Channel.increment("memberCount");
+                            Channel.increment("followerCount");
+                            channelfollow.set("isFollower", true);
+                            Channel.save(null,  {
 
-            var finalTime = process.hrtime(time);
-            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-            response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
-        }
+                                userMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
 
-    }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, { useMasterKey: true }); }
+                            });
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-    }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {useMasterKey: true});
+                            response.success();
+
+                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                            response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                        } else {
+
+                            beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+                        }
+
+
+                    } else if (channel.get("type") != 'private' || channel.get("type") != 'public' || channel.get("type") != 'privateOwners'|| channel.get("type") != 'privateModerators'|| channel.get("type") != 'privateAdmins' || channel.get("type") != 'privateExperts' || channel.get("type") != 'privateMembers') {
+
+                        var finalTime = process.hrtime(time);
+                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                        response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+                    }
+
+                }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, { useMasterKey: true }); }
+
+            }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {useMasterKey: true});
 
 
     }
@@ -4281,136 +4293,264 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
         // todo remove or add ACL for followers or members wo leave and join a private channel only applies to private channels.
 
+        queryChannelFollow.include( ["user", "workspace", "channel"] );
         queryChannelFollow.get(channelfollow.id, {useMasterKey: true})
             .then((result) => {
             // The object was retrieved successfully.
 
             console.log("channelfollow result from query: "+JSON.stringify(result));
 
-        //console.log("old isFollower: "+JSON.stringify(result.get("isFollower")) + " New isFollower: " + JSON.stringify(workspace_follower.get("isFollower")) + " isFollower.dirty: "+JSON.stringify(workspace_follower.dirty("isFollower")));
-        //console.log("old isMember: "+JSON.stringify(result.get("isMember")) + " New isMember: " + JSON.stringify(workspace_follower.get("isMember")) + " isMember.dirty: "+JSON.stringify(workspace_follower.dirty("isMember")));
+            //console.log("old isFollower: "+JSON.stringify(result.get("isFollower")) + " New isFollower: " + JSON.stringify(workspace_follower.get("isFollower")) + " isFollower.dirty: "+JSON.stringify(workspace_follower.dirty("isFollower")));
+            //console.log("old isMember: "+JSON.stringify(result.get("isMember")) + " New isMember: " + JSON.stringify(workspace_follower.get("isMember")) + " isMember.dirty: "+JSON.stringify(workspace_follower.dirty("isMember")));
 
-        //queryPTime = process.hrtime(timequeryPostFind);
-        //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+            //queryPTime = process.hrtime(timequeryPostFind);
+            //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
 
-        if (channelfollow.dirty("isFollower")) {
+            var Channel = result.get("channel");
+            var channelACL = Channel.getACL();
+            var channelFollowACLPrivate = result.getACL();
+            var user = result.get("user");
 
-            if (result.get("isFollower") === channelfollow.get("isFollower")) {
+            if (channelfollow.dirty("isFollower")) {
 
-                console.log("user isFollower did not change");
-                // don't increment or decrement because the user isFollow status did not change
+                if (result.get("isFollower") === channelfollow.get("isFollower")) {
 
-            } else if ((result.get("isFollower")  === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
+                    console.log("user isFollower did not change");
+                    // don't increment or decrement because the user isFollow status did not change
 
-                channel.increment("followerCount");
-                console.log("increment Follower");
-                //Workspace.save();
+                } else if ((result.get("isFollower")  === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
 
+                    Channel.increment("followerCount");
+                    console.log("increment Follower");
 
-            } else if ((result.get("isFollower")  === true) && channelfollow.get("isFollower") === false) {
+                    if (Channel.get("type") === 'private') {
 
-                if(channelfollow.get("isSelected") === true) {channelfollow.set("isSelected", false);}
+                        // if channel is private add user ACL so he/she has access to the private channel or channelfollow
 
+                        channelACL.setReadAccess(user, true);
+                        channelACL.setWriteAccess(user, true);
+                        Channel.setACL(channelACL);
 
-                if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === false) && result.get("isMember")  === false) {
+                        // set correct ACL for channelFollow
+                        //channelFollowACL.setPublicReadAccess(false);
+                        //channelFollowACL.setPublicWriteAccess(false);
+                        channelFollowACLPrivate.setReadAccess(user, true);
+                        channelFollowACLPrivate.setWriteAccess(user, true);
+                        //channelFollowACL.setReadAccess(ownerChannel, true);
+                        //channelFollowACL.setWriteAccess(ownerChannel, true);
+                        channelfollow.setACL(channelFollowACLPrivate);
 
-
-                    // not a member so remove user as follower of that channel
-                    channel.increment("followerCount", -1);
-                    console.log("decrement Follower");
-                    //Workspace.save();
-
-
-                } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === false) && result.get("isMember")  === true) {
-
-
-                    // since the user was a member, and wants to un-follow this channel we will remove him
-                    channelfollow.set("isMember", false);
-                    channel.increment("followerCount", -1);
-                    //Workspace.increment("memberCount", -1);
-                    console.log("decrement Member & Follower");
-
-
-                } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === true) && result.get("isMember")  === false) {
+                    }
 
 
-                    // since the user set isFollow: false, even if he also passes isMember = true we assume the user wants to unfollow so we remove them.
-                    channelfollow.set("isMember", false);
-                    channel.increment("followerCount", -1);
-                    console.log("decrement Follower");
+                } else if ((result.get("isFollower")  === true) && channelfollow.get("isFollower") === false) {
+
+                    if(channelfollow.get("isSelected") === true) {channelfollow.set("isSelected", false);}
 
 
-                } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === true) && result.get("isMember")  === true) {
-
-                    // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
-                    workspace_follower.set("isMember", false);
-                    Workspace.increment("followerCount", -1);
-                    //Workspace.increment("memberCount", -1);
-                    console.log("decrement Follower");
-
-                }
+                    if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === false) && result.get("isMember")  === false) {
 
 
-            } else {
+                        // not a member so remove user as follower of that channel
+                        Channel.increment("followerCount", -1);
+                        console.log("decrement Follower");
 
-                console.log("do nothing Follower");
-                // do nothing
+                        if (Channel.get("type") === 'private') {
 
-            }
+                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                            // user will need to be added again by channel owner since it's a private channel
 
-        }
+                            channelACL.setReadAccess(user, false);
+                            channelACL.setWriteAccess(user, false);
+                            Channel.setACL(channelACL);
 
-        if (channelfollow.dirty("isMember")) {
+                            // set correct ACL for channelFollow
+                            //channelFollowACL.setPublicReadAccess(false);
+                            //channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACLPrivate.setReadAccess(user, false);
+                            channelFollowACLPrivate.setWriteAccess(user, false);
+                            //channelFollowACL.setReadAccess(ownerChannel, true);
+                            //channelFollowACL.setWriteAccess(ownerChannel, true);
+                            channelfollow.setACL(channelFollowACLPrivate);
 
-            if (result.get("isMember")  === channelfollow.get("isMember")) {
+                        }
 
-                console.log("user isMember did not change");
-                // doin't increment or decrement because the user isFollow status did not change
 
-            } else if ((result.get("isMember") === false || !result.get("isMember")) && channelfollow.get("isMember") === true) {
+                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === false) && result.get("isMember")  === true) {
 
-                if ((!channelfollow.get("isFollower") || channelfollow.get("isFollower") === false) && result.get("isFollower") === false) {
 
-                    // since user was not a follower, but is now a member make him also a follower
+                        // since the user was a member, and wants to un-follow this channel we will remove him
+                        channelfollow.set("isMember", false);
+                        Channel.increment("followerCount", -1);
+                        //console.log("decrement Follower");
 
-                    channel.increment("memberCount");
-                    channel.increment("followerCount");
-                    console.log("increment Follower & Member");
-                    //Workspace.save();
+                        if (Channel.get("type") === 'private') {
+
+                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                            // user will need to be added again by channel owner since it's a private channel
+
+                            channelACL.setReadAccess(user, false);
+                            channelACL.setWriteAccess(user, false);
+                            Channel.setACL(channelACL);
+
+                            // set correct ACL for channelFollow
+                            //channelFollowACL.setPublicReadAccess(false);
+                            //channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACLPrivate.setReadAccess(user, false);
+                            channelFollowACLPrivate.setWriteAccess(user, false);
+                            //channelFollowACL.setReadAccess(ownerChannel, true);
+                            //channelFollowACL.setWriteAccess(ownerChannel, true);
+                            channelfollow.setACL(channelFollowACLPrivate);
+
+                        }
+
+
+
+
+                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === true) && result.get("isMember")  === false) {
+
+
+                        // since the user set isFollow: false, even if he also passes isMember = true we assume the user wants to unfollow so we remove them.
+                        channelfollow.set("isMember", false);
+                        Channel.increment("followerCount", -1);
+                        //console.log("decrement Follower");
+
+                        if (Channel.get("type") === 'private') {
+
+                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                            // user will need to be added again by channel owner since it's a private channel
+
+                            channelACL.setReadAccess(user, false);
+                            channelACL.setWriteAccess(user, false);
+                            Channel.setACL(channelACL);
+
+                            // set correct ACL for channelFollow
+                            //channelFollowACL.setPublicReadAccess(false);
+                            //channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACLPrivate.setReadAccess(user, false);
+                            channelFollowACLPrivate.setWriteAccess(user, false);
+                            //channelFollowACL.setReadAccess(ownerChannel, true);
+                            //channelFollowACL.setWriteAccess(ownerChannel, true);
+                            channelfollow.setACL(channelFollowACLPrivate);
+
+                        }
+
+
+                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === true) && result.get("isMember")  === true) {
+
+                        // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
+                        channelfollow.set("isMember", false);
+                        Channel.increment("followerCount", -1);
+                        //Workspace.increment("memberCount", -1);
+                        console.log("decrement Follower");
+
+                        if (Channel.get("type") === 'private') {
+
+                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                            // user will need to be added again by channel owner since it's a private channel
+
+                            channelACL.setReadAccess(user, false);
+                            channelACL.setWriteAccess(user, false);
+                            Channel.setACL(channelACL);
+
+                            // set correct ACL for channelFollow
+                            //channelFollowACL.setPublicReadAccess(false);
+                            //channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACLPrivate.setReadAccess(user, false);
+                            channelFollowACLPrivate.setWriteAccess(user, false);
+                            //channelFollowACL.setReadAccess(ownerChannel, true);
+                            //channelFollowACL.setWriteAccess(ownerChannel, true);
+                            channelfollow.setACL(channelFollowACLPrivate);
+
+                        }
+
+                    }
+
 
                 } else {
 
-                    // since user is already follower, make him only a member
+                    console.log("do nothing Follower");
+                    // do nothing
 
-                    channel.increment("memberCount");
-                    console.log("increment  Member");
+                }
+
+            }
+
+            if (channelfollow.dirty("isMember")) {
+
+                if (result.get("isMember")  === channelfollow.get("isMember")) {
+
+                    console.log("user isMember did not change");
+                    // doin't increment or decrement because the user isFollow status did not change
+
+                } else if ((result.get("isMember") === false || !result.get("isMember")) && channelfollow.get("isMember") === true) {
+
+                    if ((!channelfollow.get("isFollower") || channelfollow.get("isFollower") === false) && (result.get("isFollower") === false || !result.get("isFollower"))) {
+
+                        // since user was not a follower, but is now a member make him also a follower
+
+                        Channel.increment("memberCount");
+                        Channel.increment("followerCount");
+                        channelfollow.set("isFollower", true);
+                        console.log("increment Follower & Member");
+
+                        if (Channel.get("type") === 'private') {
+
+                            // if channel is private add user ACL so he/she has access to the private channel or channelfollow
+
+                            channelACL.setReadAccess(user, true);
+                            channelACL.setWriteAccess(user, true);
+                            Channel.setACL(channelACL);
+
+                            // set correct ACL for channelFollow
+                            //channelFollowACL.setPublicReadAccess(false);
+                            //channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACLPrivate.setReadAccess(user, true);
+                            channelFollowACLPrivate.setWriteAccess(user, true);
+                            //channelFollowACL.setReadAccess(ownerChannel, true);
+                            //channelFollowACL.setWriteAccess(ownerChannel, true);
+                            channelfollow.setACL(channelFollowACLPrivate);
+
+                        }
+
+                    } else {
+
+                        // since user is already follower, make him only a member
+
+                        Channel.increment("memberCount");
+                        console.log("increment  Member");
+                        //Workspace.save();
+
+                    }
+
+
+                } else if ((result.get("isMember") === true) && channelfollow.get("isMember") === false) {
+
+                    Channel.increment("memberCount", -1);
+                    console.log("decrement Member");
                     //Workspace.save();
+
+
+                } else {
+
+                    console.log("do nothing Member");
+                    // do nothing
 
                 }
 
 
-            } else if ((result.get("isMember") === true) && channelfollow.get("isMember") === false) {
-
-                channel.increment("memberCount", -1);
-                console.log("decrement Member");
-                //Workspace.save();
-
-
-            } else {
-
-                console.log("do nothing Member");
-                // do nothing
-
             }
 
+            //console.log("channel: "+JSON.stringify(Channel));
+            Channel.save(null, {
 
-        }
+                userMasterKey: true,
+                sessionToken: req.user.getSessionToken()
 
-        console.log("channel: "+JSON.stringify(channel));
-        channel.save(null, {useMasterKey: true});
-        beforeSave_Time = process.hrtime(time);
-        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-        response.success();
+            });
+            beforeSave_Time = process.hrtime(time);
+            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+            response.success();
 
 
 
@@ -5313,6 +5453,8 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     // Convert Parse.Object to JSON
     var objectToSave = request.object.toJSON();
 
+    if (!request.user.getSessionToken()) {response.error("afterSave Channel Session token: X-Parse-Session-Token is required");}
+
     var queryChannel = new Parse.Query("Channel");
     //queryChannel.equalTo("objectId", request.object.id);
     queryChannel.include( ["user", "workspace", "category"] );
@@ -5364,7 +5506,12 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 
             //console.log("channelFollow: " + JSON.stringify(channelFollow));
 
-            channelFollow.save(null, {useMasterKey: true});
+            channelFollow.save(null, {
+
+                    userMasterKey: true,
+                    sessionToken: request.user.getSessionToken()
+
+                });
 
             return callback(null, channelFollow);
 
@@ -6137,7 +6284,7 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
         response.success();
 
 
-    } else if (isFollower === true && (isMember === false || !isMember)) {
+    } else if (isMember === true && (isFollower === false || !isFollower)) {
 
         // this case should never exist since a member is always also a follower
         workspace.increment("memberCount", -1);
@@ -6155,10 +6302,12 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 // Update followers list in Channel after deleting workspace_follower row
 Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
-    // todo remove ACL for users who unfollow or are not members anymore
 
     // Get workspace
     var channel = request.object.get("channel");
+    console.log("channel afterDelete: " + JSON.stringify(channel));
+
+    if (!request.user.getSessionToken()) {response.error("beforeSave ChannelFollow Session token: X-Parse-Session-Token is required");}
 
     // get isFollower and isMember
     var isFollower = request.object.get("isFollower");
@@ -6169,13 +6318,41 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
         channel.increment("followerCount", -1);
         channel.increment("memberCount", -1);
-        channel.save(null, {useMasterKey: true});
+        if (channel.get("type") === 'private') {
+
+            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
+
+            channelACL.setReadAccess(user, false);
+            channelACL.setWriteAccess(user, false);
+            Channel.setACL(channelACL);
+
+        }
+        channel.save(null, {
+
+            userMasterKey: true,
+            sessionToken: request.user.getSessionToken()
+
+        });
         response.success();
 
     } else if (isFollower === true && (isMember === false || !isMember)) {
 
         channel.increment("followerCount", -1);
-        channel.save(null, {useMasterKey: true});
+        if (channel.get("type") === 'private') {
+
+            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
+
+            channelACL.setReadAccess(user, false);
+            channelACL.setWriteAccess(user, false);
+            Channel.setACL(channelACL);
+
+        }
+        channel.save(null, {
+
+            userMasterKey: true,
+            sessionToken: request.user.getSessionToken()
+
+        });
         response.success();
 
 
@@ -6185,11 +6362,25 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
         response.success();
 
 
-    } else if (isFollower === true && (isMember === false || !isMember)) {
+    } else if (isMember === true && (isFollower === false || !isFollower)) {
 
         // this case should never exist since a member is always also a follower
         channel.increment("memberCount", -1);
-        channel.save(null, {useMasterKey: true});
+        if (channel.get("type") === 'private') {
+
+            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
+
+            channelACL.setReadAccess(user, false);
+            channelACL.setWriteAccess(user, false);
+            Channel.setACL(channelACL);
+
+        }
+        channel.save(null, {
+
+            userMasterKey: true,
+            sessionToken: request.user.getSessionToken()
+
+        });
         response.success();
     } else {
 
