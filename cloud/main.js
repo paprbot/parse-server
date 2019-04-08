@@ -1364,7 +1364,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                         } else if (workspaceToSave.type === 'public') {
 
-                            workspaceToSave._tagsy = ['*'];
+                            workspaceToSave._tags = ['*'];
 
                         }
 
@@ -3638,11 +3638,13 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                     let user = channelfollow.get("user");
 
-                    //var queryRole = new Parse.Query(Parse.Role);
+                    var userRole = user.get("roles");
+                    console.log("userRole: " + JSON.stringify(userRole));
 
                     var Channel = channelObject;
                     let ownerChannel = Channel.get("user");
                     console.log("channelType: " + JSON.stringify(Channel.get("type")));
+
 
                     channelfollow.set("name", channelFollowName);
                     console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
@@ -5604,6 +5606,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
     const MS_PER_NS = 1e-6;
     var time = process.hrtime();
 
+    if (!request.user.getSessionToken()) {response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");}
+
+
     // Convert Parse.Object to JSON
     var workspace = request.object;
 
@@ -5611,6 +5616,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
     var WORKSPACE = Parse.Object.extend("WorkSpace");
     var queryWorkspace = new Parse.Query(WORKSPACE);
+
+    var owner = new Parse.Object("_User");
+    owner = workspace.get("user");
 
     queryWorkspace.equalTo("objectId", workspaceToSave.objectId);
     queryWorkspace.include( ["user"] );
@@ -5622,7 +5630,12 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
     //var Workspace = new Parse.Object("WorkSpace");
 
-    queryWorkspace.get(workspace.id , {useMasterKey: true})
+    queryWorkspace.get(workspace.id , {
+
+        userMasterKey: true,
+        sessionToken: request.user.getSessionToken()
+
+    })
         .then((Workspace) => {
         // The object was retrieved successfully.
         //console.log("Result from get " + JSON.stringify(Workspace));
@@ -5633,9 +5646,6 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
     //console.log("ObjectToSave: " + JSON.stringify(workspace));
 
     function createWorkspaceRoles (callback) {
-
-        var owner = new Parse.Object("_User");
-        owner = workspace.get("user");
 
         console.log("isNew: " + workspace.get("isNew"));
 
@@ -5852,8 +5862,6 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
     }
 
-
-
     function getSkills (callback) {
 
         // todo need to check if skills is dirty, if yes then query to update algolia if not then ignore.
@@ -6019,11 +6027,45 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
     }
 
+    function createGeneralChannel (callback) {
+
+        if (workspace.get("isNew") === true) {
+
+            var CHANNEL = Parse.Object.extend("Channel");
+            var Channel = new Parse.Object(CHANNEL);
+
+            Channel.set("name", "general");
+            Channel.set("default", true);
+            Channel.set("type", "public");
+            Channel.set("purpose", "Community wide announcements and general questions");
+            Channel.set("allowMemberPostCreation", false);
+            Channel.set("workspace", workspace);
+            Channel.set("user", owner);
+            Channel.save(null, {
+
+                    userMasterKey: true,
+                    sessionToken: request.user.getSessionToken()
+
+                }
+            );
+
+            return callback (null, Channel);
+
+
+        } else {
+
+            return callback (null, workspace);
+        }
+
+
+    }
+
     async.parallel([
         async.apply(createWorkspaceRoles),
         async.apply(getSkills),
         async.apply(getExperts),
-        async.apply(getWorkspaceFollowers)
+        async.apply(getWorkspaceFollowers),
+        async.apply(createGeneralChannel)
 
     ], function (err, results) {
         if (err) {
