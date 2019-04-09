@@ -5676,6 +5676,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
         var WORKSPACE = Parse.Object.extend("WorkSpace");
         var queryWorkspace = new Parse.Query(WORKSPACE);
 
+        var WORKSPACE_FOLLOW = Parse.Object.extend("workspace_follower");
+        var workspaceFollower = new Parse.Object(WORKSPACE_FOLLOW);
+
         var owner = new Parse.Object("_User");
         owner = workspace.get("user");
 
@@ -6121,6 +6124,53 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
             }
 
+            function createOwnerWorkspaceFollower (callback) {
+
+                //console.log("channel isNew: " + channel.get("isNew"));
+                //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
+
+                if (channel.get("isNew") === true) {
+
+
+                    //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+
+                    workspaceFollower.set("archive", false);
+                    workspaceFollower.set("user", workspace.get("user"));
+                    workspaceFollower.set("workspace", workspace.get("workspace"));
+                    workspaceFollower.set("notificationCount", 0);
+                    workspaceFollower.set("isSelected", false);
+
+                    // set correct ACL for channelFollow
+                    var workspaceFollowACL = new Parse.ACL();
+                    workspaceFollowACL.setPublicReadAccess(false);
+                    workspaceFollowACL.setPublicWriteAccess(false);
+                    workspaceFollowACL.setReadAccess(workspace.get("user"), true);
+                    workspaceFollowACL.setWriteAccess(workspace.get("user"), true);
+                    workspaceFollower.setACL(workspaceFollowACL);
+
+                    // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
+                    workspaceFollower.set("isMember", true);
+                    workspaceFollower.set("isFollower", true);
+                    workspaceFollower.set("isMemberRequestedByWorkspaceAdmin", false);
+                    workspaceFollower.set("isMemberRequestedByUser", false);
+
+                    //console.log("channelFollow: " + JSON.stringify(channelFollow));
+
+                    workspaceFollower.save(null, {
+
+                        userMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
+
+                    });
+
+                    return callback(null, workspaceFollower);
+
+
+                } else {return callback (null, channel);}
+
+
+            }
+
             function createGeneralChannel (callback) {
 
                 if (workspace.get("isNew") === true) {
@@ -6159,7 +6209,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                 async.apply(getSkills),
                 async.apply(getExperts),
                 async.apply(getWorkspaceFollowers),
-                async.apply(createGeneralChannel)
+                async.apply(createGeneralChannel),
+                async.apply(createOwnerWorkspaceFollower)
 
             ], function (err, results) {
                 if (err) {
