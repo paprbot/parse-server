@@ -2589,7 +2589,12 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             //var Post = Parse.Object.extend("Post");
             //var queryWorkspace = new Parse.Query(Workspace);
             Workspace.increment("postCount");
-            Workspace.save();
+            Workspace.save(null, {
+
+                userMasterKey: true,
+                sessionToken: request.user.getSessionToken()
+
+            });
 
 
             if (channel) {
@@ -2599,7 +2604,12 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
                 Channel.id = channel.id;
 
                 Channel.increment("postCount");
-                Channel.save();
+                Channel.save({
+
+                    userMasterKey: true,
+                    sessionToken: request.user.getSessionToken()
+
+                });
 
                 return callback(null, post);
 
@@ -3694,12 +3704,52 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                     let user = channelfollow.get("user");
 
-                    var userRole = user.get("roles");
-                    console.log("userRole: " + JSON.stringify(userRole));
-
                     var Channel = channelObject;
                     let ownerChannel = Channel.get("user");
                     console.log("channelType: " + JSON.stringify(Channel.get("type")));
+
+
+                    //var userRole = user.get("roles");
+                    var userRoleRelation = user.relation("roles");
+                    var expertChannelRelation = Channel.relation("experts");
+                    console.log("userRole: " + JSON.stringify(userRoleRelation));
+                    console.log("userRole 2:" + JSON.stringify(user.getRoles()));
+
+                    var expertRoleName = "expert-" + channelfollow.get("workspace").id;
+
+                    var userRoleRelationQuery = userRoleRelation.query();
+                    userRoleRelationQuery.equalTo("name", expertRoleName);
+                    userRoleRelationQuery.first({
+
+                        userMasterKey: true,
+                        sessionToken: req.user.getSessionToken()
+
+                    }).then((results) => {
+                        // The object was retrieved successfully.
+
+                        if (results) {
+
+                            // expert role exists, add as channel expert
+                            console.log("channelExpert: " + JSON.stringify(results));
+
+                            expertChannelRelation.add(user);
+                            Channel.save(null, {
+
+                                    userMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                }
+                            );
+
+
+                        } else {
+                            // no role exists don't add experts to channel
+                        }
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, { useMasterKey: true });
 
 
                     channelfollow.set("name", channelFollowName);
@@ -6460,13 +6510,23 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 
         workspace.increment("followerCount", -1);
         workspace.increment("memberCount", -1);
-        workspace.save(null, {useMasterKey: true});
+        workspace.save(null, {
+
+            userMasterKey: true,
+            sessionToken: request.user.getSessionToken()
+
+        });
         response.success();
 
     } else if (isFollower === true && (isMember === false || !isMember)) {
 
         workspace.increment("followerCount", -1);
-        workspace.save(null, {useMasterKey: true});
+        workspace.save(null, {
+
+            userMasterKey: true,
+            sessionToken: request.user.getSessionToken()
+
+        });
         response.success();
 
 
@@ -6480,7 +6540,12 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 
         // this case should never exist since a member is always also a follower
         workspace.increment("memberCount", -1);
-        workspace.save(null, {useMasterKey: true});
+        workspace.save(null, {
+
+            userMasterKey: true,
+            sessionToken: request.user.getSessionToken()
+
+        });
         response.success();
     } else {
 
