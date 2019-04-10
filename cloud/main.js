@@ -144,6 +144,50 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
     // function to do two queries in parallel async
     //function queryParallel (callback) {
 
+    function getChannelInformation (callback) {
+
+        if (channel == 'all') {
+            // do nothing, since we want all channels in a workspace
+
+            Workspace.get(Workspace.id, {
+
+                userMasterKey: true,
+                sessionToken: request.user.getSessionToken()
+
+            }).then((workspace) => {
+
+                console.log("channelAllExperts: " + JSON.stringify(workspace));
+
+                return callback (null, workspace);
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
+            }, { useMasterKey: true });
+
+        } else if (channel) {
+
+            Channel.get(Channel.id, {
+
+                userMasterKey: true,
+                sessionToken: request.user.getSessionToken()
+
+            }).then((channel) => {
+
+                console.log("channelExperts: " + JSON.stringify(channel));
+
+                return callback (null, channel);
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
+            }, { useMasterKey: true });
+        }
+
+    }
+
     function getChannelExperts (callback) {
 
         if (channel == 'all') {
@@ -252,6 +296,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
     }
 
     async.parallel([
+        async.apply(getChannelInformation),
         async.apply(getChannelExperts),
         async.apply(queryPostFind),
         async.apply(querySocialPostFind)
