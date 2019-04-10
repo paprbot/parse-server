@@ -123,12 +123,18 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
     }
     if (channel == 'all') {
         // do nothing, since we want all channels in a workspace
+        var expertWorkspaceRelation = Workspace.relation("experts");
+        var expertWorkspaceRelationQuery = expertWorkspaceRelation.query();
+
     } else if (channel) {
         var Channel = new Parse.Object("Channel");
         Channel.id = channel;
         queryPOST.equalTo("channel", Channel);
 
-    }
+        var expertChannelRelation = Channel.relation("experts");
+        var expertChannelRelationQuery = expertChannelRelation.query();
+
+    } else {response.error("channel id is or all is required.");}
 
     //var beforeQuery = process.hrtime(time);
     //console.log(`before query took ${(beforeQuery[0] * NS_PER_SEC + beforeQuery[1])  * MS_PER_NS} milliseconds`);
@@ -138,6 +144,49 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
     // function to do two queries in parallel async
     //function queryParallel (callback) {
 
+    function getChannelExperts (callback) {
+
+        if (channel == 'all') {
+            // do nothing, since we want all channels in a workspace
+
+            expertWorkspaceRelationQuery.find({
+
+                userMasterKey: true,
+                sessionToken: request.user.getSessionToken()
+
+            }).then((experts) => {
+
+                console.log("channelAllExperts: " + JSON.stringify(experts));
+
+                return callback (null, experts);
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
+            }, { useMasterKey: true });
+
+        } else if (channel) {
+
+            expertChannelRelationQuery.find({
+
+                userMasterKey: true,
+                sessionToken: request.user.getSessionToken()
+
+            }).then((experts) => {
+
+                console.log("channelExperts: " + JSON.stringify(experts));
+
+                return callback (null, experts);
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
+            }, { useMasterKey: true });
+        }
+
+    }
 
     //function to find queryP results
     function queryPostFind (callback) {
@@ -203,6 +252,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
     }
 
     async.parallel([
+        async.apply(getChannelExperts),
         async.apply(queryPostFind),
         async.apply(querySocialPostFind)
 
@@ -3680,6 +3730,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
     var channel = channelfollow.get("channel");
     //console.log("channel: " + JSON.stringify(channel));
 
+
+
     if (!req.user.getSessionToken()) {
         response.error("beforeSave ChannelFollow Session token: X-Parse-Session-Token is required");
 
@@ -6902,6 +6954,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
         var isMember = request.object.get("isMember");
         let user = channel.get("user");
         let Channel = channel;
+        let channelACL = Channel.getACL();
 
 
         var userRoleRelation = user.relation("roles");
@@ -7019,7 +7072,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                 Channel.save(null, {
 
                         userMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
+                        sessionToken: request.user.getSessionToken()
 
                     }
                 );
@@ -7034,7 +7087,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                 Channel.save(null, {
 
                     userMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                    sessionToken: request.user.getSessionToken()
 
                 });
             }
