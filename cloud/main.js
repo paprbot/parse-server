@@ -149,7 +149,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
         if (channel == 'all') {
             // do nothing, since we want all channels in a workspace
 
-            Workspace.get(Workspace.id, {
+            Workspace.fetch(Workspace.id, {
 
                 userMasterKey: true,
                 sessionToken: request.user.getSessionToken()
@@ -168,7 +168,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
 
         } else if (channel) {
 
-            Channel.get(Channel.id, {
+            Channel.fetch(Channel.id, {
 
                 userMasterKey: true,
                 sessionToken: request.user.getSessionToken()
