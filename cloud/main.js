@@ -1684,7 +1684,8 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                     owner.fetch(owner.id, {
 
-                        userMasterKey: true
+                        userMasterKey: true,
+                        sessionToken: req.user.getSessionToken()
 
                     }).then((expert) => {
 
@@ -1709,7 +1710,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                         if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
 
                         //expertArray.push(expertOwner);
-                        workspace.addUnique("expertArray", expertOwner);
+                        workspace.addUnique("expertsArray", expertOwner);
 
                         let finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
@@ -1721,7 +1722,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                         // The object was not retrieved successfully.
                         // error is a Parse.Error with an error code and message.
                         response.error(error);
-                    }, { useMasterKey: true });
+                    }, {
+
+                        userMasterKey: true,
+                        sessionToken: req.user.getSessionToken()
+
+                    });
 
                     //console.log("request: " + JSON.stringify(req));
 
@@ -1733,7 +1739,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                 // The object was not retrieved successfully.
                 // error is a Parse.Error with an error code and message.
                 response.error(error);
-            }, { useMasterKey: true });
+            }, {
+
+                userMasterKey: true,
+                sessionToken: req.user.getSessionToken()
+
+            });
 
 
         } else if (!workspace.isNew() && workspace.dirty("workspace_url")) {
@@ -1769,13 +1780,14 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                             for (var i = 0; i < workspaceExpertObjects.length; i++) {
 
                                 let workspaceExpertObject = new Parse.Object("_User");
-                                workspaceExpertObject = workspaceExpertObjects[i];
+                                workspaceExpertObject.set("objectId", workspaceExpertObjects[i].objectId);
 
                                 console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
                                 workspaceExpertObject.fetch(workspaceExpertObject.id, {
 
-                                    userMasterKey: true
+                                    userMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
 
                                 }).then((expert) => {
 
@@ -1800,13 +1812,18 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                                     if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
 
                                     //expertArray.push(expertOwner);
-                                    workspace.addUnique("expertArray", expertOwner);
+                                    workspace.addUnique("expertsArray", expertOwner);
 
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
                                     response.error(error);
-                                }, { useMasterKey: true });
+                                }, {
+
+                                    userMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
 
                             }
 
@@ -1819,13 +1836,14 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                             for (var i = 0; i < workspaceExpertObjects.length; i++) {
 
                                 let workspaceExpertObject = new Parse.Object("_User");
-                                workspaceExpertObject = workspaceExpertObjects[i];
+                                workspaceExpertObject.set("objectId", workspaceExpertObjects[i].objectId);
 
                                 console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
                                 workspaceExpertObject.fetch(workspaceExpertObject.id, {
 
-                                    userMasterKey: true
+                                    userMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
 
                                 }).then((expert) => {
 
@@ -1850,13 +1868,18 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                                     if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
 
                                     //expertArray.push(expertOwner);
-                                    workspace.remove("expertArray", expertOwner);
+                                    workspace.remove("expertsArray", expertOwner);
 
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
                                     response.error(error);
-                                }, { useMasterKey: true });
+                                }, {
+
+                                    userMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
 
                             }
 
@@ -1887,7 +1910,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                 // The object was not retrieved successfully.
                 // error is a Parse.Error with an error code and message.
                 response.error(error);
-            }, { useMasterKey: true });
+            }, {
+
+                userMasterKey: true,
+                sessionToken: req.user.getSessionToken()
+
+            });
 
 
         } else if (!workspace.isNew() && !workspace.dirty("workspace_url")) {
@@ -1904,21 +1932,23 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                     // add expert to expertsArray
 
-                    for (var i = 0; i < workspaceExpertObjects.length; i++) {
+                    async.map(workspaceExpertObjects, function (object, cb) {
 
                         let workspaceExpertObject = new Parse.Object("_User");
-                        workspaceExpertObject = workspaceExpertObjects[i];
+                        workspaceExpertObject.set("objectId", object.objectId);
 
                         console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
                         workspaceExpertObject.fetch(workspaceExpertObject.id, {
 
-                            userMasterKey: true
+                            userMasterKey: true,
+                            sessionToken: req.user.getSessionToken()
 
                         }).then((expert) => {
 
-                            // console.log("expertOwner: " + JSON.stringify(expert));
+                            console.log("expertOwner: " + JSON.stringify(expert));
                             let expertOwner = expert.toJSON();
+                            console.log("expertOwner.completedProfileSignup: " + JSON.stringify(expertOwner.completedProfileSignup));
                             if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
                             if (expertOwner.isTyping) {delete expertOwner.isTyping;}
                             if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
@@ -1937,16 +1967,43 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                             if (expertOwner.isNew) {delete expertOwner.isNew;}
                             if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
 
+                            console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                            object = expertOwner;
                             //expertArray.push(expertOwner);
-                            workspace.addUnique("expertArray", expertOwner);
+
+                            return cb (null, object);
 
                         }, (error) => {
                             // The object was not retrieved successfully.
                             // error is a Parse.Error with an error code and message.
                             response.error(error);
-                        }, { useMasterKey: true });
+                        }, {
 
-                    }
+                            userMasterKey: true,
+                            sessionToken: req.user.getSessionToken()
+
+                        });
+
+                    }, function (err, workspaceExpertObjects) {
+
+                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                        if (err) {response.error(err);} else {
+
+                            workspace.set("expertsArray", expertArray);
+                            console.log("workspace 2: " + JSON.stringify(workspace));
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+
+                        }
+
+                    });
+
 
 
 
@@ -1957,13 +2014,14 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     for (var i = 0; i < workspaceExpertObjects.length; i++) {
 
                         let workspaceExpertObject = new Parse.Object("_User");
-                        workspaceExpertObject = workspaceExpertObjects[i];
+                        workspaceExpertObject.set("objectId", workspaceExpertObjects[i].objectId);
 
                         console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
                         workspaceExpertObject.fetch(workspaceExpertObject.id, {
 
-                            userMasterKey: true
+                            userMasterKey: true,
+                            sessionToken: req.user.getSessionToken()
 
                         }).then((expert) => {
 
@@ -1988,13 +2046,18 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                             if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
 
                             //expertArray.push(expertOwner);
-                            workspace.remove("expertArray", expertOwner);
+                            workspace.remove("expertsArray", expertOwner);
 
                         }, (error) => {
                             // The object was not retrieved successfully.
                             // error is a Parse.Error with an error code and message.
                             response.error(error);
-                        }, { useMasterKey: true });
+                        }, {
+
+                            userMasterKey: true,
+                            sessionToken: req.user.getSessionToken()
+
+                        });
 
                     }
 
