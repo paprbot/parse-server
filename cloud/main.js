@@ -1991,7 +1991,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                         if (err) {response.error(err);} else {
 
-                            workspace.set("expertsArray", expertArray);
+                            workspace.set("expertsArray", workspaceExpertObjects);
                             console.log("workspace 2: " + JSON.stringify(workspace));
 
                             let finalTime = process.hrtime(time);
