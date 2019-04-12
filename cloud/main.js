@@ -1777,10 +1777,10 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                             // add expert to expertsArray
 
-                            for (var i = 0; i < workspaceExpertObjects.length; i++) {
+                            async.map(workspaceExpertObjects, function (object, cb) {
 
                                 let workspaceExpertObject = new Parse.Object("_User");
-                                workspaceExpertObject.set("objectId", workspaceExpertObjects[i].objectId);
+                                workspaceExpertObject.set("objectId", object.objectId);
 
                                 console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
@@ -1791,8 +1791,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                                 }).then((expert) => {
 
-                                    // console.log("expertOwner: " + JSON.stringify(expert));
+                                    console.log("expertOwner: " + JSON.stringify(expert));
                                     let expertOwner = expert.toJSON();
+                                    console.log("expertOwner.completedProfileSignup: " + JSON.stringify(expertOwner.completedProfileSignup));
                                     if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
                                     if (expertOwner.isTyping) {delete expertOwner.isTyping;}
                                     if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
@@ -1811,8 +1812,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                                     if (expertOwner.isNew) {delete expertOwner.isNew;}
                                     if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
 
+                                    console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                                    object = expertOwner;
                                     //expertArray.push(expertOwner);
-                                    workspace.addUnique("expertsArray", expertOwner);
+
+                                    return cb (null, object);
 
                                 }, (error) => {
                                     // The object was not retrieved successfully.
@@ -1825,7 +1830,24 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                                 });
 
-                            }
+                            }, function (err, workspaceExpertObjects) {
+
+                                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                                if (err) {response.error(err);} else {
+
+                                    workspace.set("expertsArray", workspaceExpertObjects);
+                                    console.log("workspace 2: " + JSON.stringify(workspace));
+
+                                    let finalTime = process.hrtime(time);
+                                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+
+                                }
+
+                            });
 
 
 
@@ -1833,10 +1855,10 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                             // remove expert from expertsArray
 
-                            for (var i = 0; i < workspaceExpertObjects.length; i++) {
+                            async.map(workspaceExpertObjects, function (object, cb) {
 
                                 let workspaceExpertObject = new Parse.Object("_User");
-                                workspaceExpertObject.set("objectId", workspaceExpertObjects[i].objectId);
+                                workspaceExpertObject.set("objectId", object.objectId);
 
                                 console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
@@ -1847,8 +1869,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                                 }).then((expert) => {
 
-                                    // console.log("expertOwner: " + JSON.stringify(expert));
+                                    console.log("expertOwner: " + JSON.stringify(expert));
                                     let expertOwner = expert.toJSON();
+                                    console.log("expertOwner.completedProfileSignup: " + JSON.stringify(expertOwner.completedProfileSignup));
                                     if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
                                     if (expertOwner.isTyping) {delete expertOwner.isTyping;}
                                     if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
@@ -1867,8 +1890,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                                     if (expertOwner.isNew) {delete expertOwner.isNew;}
                                     if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
 
+                                    console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                                    object = expertOwner;
                                     //expertArray.push(expertOwner);
-                                    workspace.remove("expertsArray", expertOwner);
+
+                                    return cb (null, object);
 
                                 }, (error) => {
                                     // The object was not retrieved successfully.
@@ -1881,12 +1908,36 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                                 });
 
-                            }
+                            }, function (err, workspaceExpertObjects) {
+
+                                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                                if (err) {response.error(err);} else {
+
+                                    //workspace.set("expertsArray", workspaceExpertObjects);
+                                    workspace.remove("expertsArray", workspaceExpertObjects);
+                                    console.log("workspace 2: " + JSON.stringify(workspace));
+
+                                    let finalTime = process.hrtime(time);
+                                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+
+                                }
+
+                            });
+
 
 
                         } else {
 
                             // do nothing to expertArray
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                            response.success();
                         }
 
 
@@ -1895,12 +1946,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     } else {
 
                         workspace.set("isDirtyExperts", false);
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                        response.success();
                     }
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                    response.success();
 
 
         }
@@ -2011,10 +2062,10 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                     // remove expert from expertsArray
 
-                    for (var i = 0; i < workspaceExpertObjects.length; i++) {
+                    async.map(workspaceExpertObjects, function (object, cb) {
 
                         let workspaceExpertObject = new Parse.Object("_User");
-                        workspaceExpertObject.set("objectId", workspaceExpertObjects[i].objectId);
+                        workspaceExpertObject.set("objectId", object.objectId);
 
                         console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
@@ -2025,8 +2076,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                         }).then((expert) => {
 
-                            // console.log("expertOwner: " + JSON.stringify(expert));
+                            console.log("expertOwner: " + JSON.stringify(expert));
                             let expertOwner = expert.toJSON();
+                            console.log("expertOwner.completedProfileSignup: " + JSON.stringify(expertOwner.completedProfileSignup));
                             if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
                             if (expertOwner.isTyping) {delete expertOwner.isTyping;}
                             if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
@@ -2045,8 +2097,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                             if (expertOwner.isNew) {delete expertOwner.isNew;}
                             if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
 
+                            console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                            object = expertOwner;
                             //expertArray.push(expertOwner);
-                            workspace.remove("expertsArray", expertOwner);
+
+                            return cb (null, object);
 
                         }, (error) => {
                             // The object was not retrieved successfully.
@@ -2059,12 +2115,35 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                         });
 
-                    }
+                    }, function (err, workspaceExpertObjects) {
+
+                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                        if (err) {response.error(err);} else {
+
+                            //workspace.set("expertsArray", workspaceExpertObjects);
+                            workspace.remove("expertsArray", workspaceExpertObjects);
+                            console.log("workspace 2: " + JSON.stringify(workspace));
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+
+                        }
+
+                    });
 
 
                 } else {
 
                     // do nothing to expertArray
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                    response.success();
                 }
 
 
@@ -2073,14 +2152,23 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
             } else {
 
                 workspace.set("isDirtyExperts", false);
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                response.success();
             }
+
+
+        } else {
+
 
             let finalTime = process.hrtime(time);
             console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
             response.success();
 
-        } else {response.success();}
+        }
 
 
     }
