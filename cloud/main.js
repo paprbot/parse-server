@@ -1635,9 +1635,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
     var owner = new Parse.Object("_User");
     owner = workspace.get("user");
 
-    let workspaceExpertObjects = req.object.toJSON().experts.__op.objects;
+    let workspaceExpertObjects = req.object.toJSON().experts.objects;
 
-    Let exp__op = req.object.toJSON().experts.__op;
+    let exp__op = req.object.toJSON().experts.__op;
 
     console.log("request: " + JSON.stringify(req));
     console.log("workspaceExperts__op: " + JSON.stringify(workspaceExpertObjects));
@@ -1768,7 +1768,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                             for (var i = 0; i < workspaceExpertObjects.length; i++) {
 
-                                workspaceExpertObjects[i].fetch(workspaceExpertObjects[i].objectId, {
+                                let workspaceExpertObject = new Parse.Object("_User");
+                                workspaceExpertObject = workspaceExpertObjects[i];
+
+                                console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                                workspaceExpertObject.fetch(workspaceExpertObject.id, {
 
                                     userMasterKey: true
 
@@ -1813,7 +1818,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                             for (var i = 0; i < workspaceExpertObjects.length; i++) {
 
-                                workspaceExpertObjects[i].fetch(workspaceExpertObjects[i].objectId, {
+                                let workspaceExpertObject = new Parse.Object("_User");
+                                workspaceExpertObject = workspaceExpertObjects[i];
+
+                                console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                                workspaceExpertObject.fetch(workspaceExpertObject.id, {
 
                                     userMasterKey: true
 
@@ -1896,7 +1906,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                     for (var i = 0; i < workspaceExpertObjects.length; i++) {
 
-                        workspaceExpertObjects[i].fetch(workspaceExpertObjects[i].objectId, {
+                        let workspaceExpertObject = new Parse.Object("_User");
+                        workspaceExpertObject = workspaceExpertObjects[i];
+
+                        console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                        workspaceExpertObject.fetch(workspaceExpertObject.id, {
 
                             userMasterKey: true
 
@@ -1941,7 +1956,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                     for (var i = 0; i < workspaceExpertObjects.length; i++) {
 
-                        workspaceExpertObjects[i].fetch(workspaceExpertObjects[i].objectId, {
+                        let workspaceExpertObject = new Parse.Object("_User");
+                        workspaceExpertObject = workspaceExpertObjects[i];
+
+                        console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                        workspaceExpertObject.fetch(workspaceExpertObject.id, {
 
                             userMasterKey: true
 
