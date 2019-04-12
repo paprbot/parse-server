@@ -92,6 +92,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
     var channel = request.params.channel;
     var workspace = request.params.workspace;
     var skip = parseInt(request.params.skip);
+    var page = parseInt(request.params.page);
 
     // Setup Parse query
     var queryPost = Parse.Object.extend("Post");
@@ -118,7 +119,8 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
     //queryP.select(["user.fullname", "user.profileimage.url" ,"ACL", "media_duration", "postImage", "post_File", "audioWave", "imageRatio", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "workspace.image", "workspace.objective", "workspace.mission", "workspace.postCount", "channel.name", "channel.type", "channel.postCount", "channel.image", "channel.category", "channel.purpose", "BookmarkedBy", "isLikedBy", "isBookmarked", "isLiked", "followerCount", "memberCount"]);
     queryPOST.descending("createdAt");
     queryPOST.limit(hit); // limit to hits
-    if (skip) {
+    if (page) {
+        skip = page * hit;
         queryPOST.skip(skip);
     }
     if (channel == 'all') {
@@ -1625,13 +1627,23 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 // Run beforeSave functions workspace
 Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
-    /*var NS_PER_SEC = 1e9;
-     const MS_PER_NS = 1e-6;
-     var time = process.hrtime();*/
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
     var workspace = req.object;
     var owner = new Parse.Object("_User");
     owner = workspace.get("user");
+
+    let workspaceExpertObjects = req.object.toJSON().experts.__op.objects;
+
+    Let exp__op = req.object.toJSON().experts.__op;
+
+    console.log("request: " + JSON.stringify(req));
+    console.log("workspaceExperts__op: " + JSON.stringify(workspaceExpertObjects));
+
     var expertRelation = workspace.relation("experts");
+    let expertArray = [];
 
     if (
 
@@ -1668,14 +1680,53 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     // set the workspace owner as an expert
                     expertRelation.add(owner);
 
-            workspace.set("isNew", true);
+                    workspace.set("isNew", true);
 
-            //console.log("request: " + JSON.stringify(req));
+                    owner.fetch(owner.id, {
 
-            response.success();
+                        userMasterKey: true
+
+                    }).then((expert) => {
+
+                        // console.log("expertOwner: " + JSON.stringify(expert));
+                        let expertOwner = expert.toJSON();
+                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                        if (expertOwner.user_location) {delete expertOwner.user_location;}
+                        if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                        if (expertOwner.authData) {delete expertOwner.authData;}
+                        if (expertOwner.username) {delete expertOwner.username;}
+                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                        if (expertOwner.passion) {delete expertOwner.passion;}
+                        if (expertOwner.identities) {delete expertOwner.identities;}
+                        if (expertOwner.email) {delete expertOwner.email;}
+                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                        if (expertOwner.website) {delete expertOwner.website;}
+                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                        //expertArray.push(expertOwner);
+                        workspace.addUnique("expertArray", expertOwner);
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
 
-        }
+                        response.success();
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, { useMasterKey: true });
+
+                    //console.log("request: " + JSON.stringify(req));
+
+
+                }
 
 
         }, (error) => {
@@ -1707,6 +1758,115 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                 } else {
 
+                    if (workspace.dirty("experts") === true) {
+
+                        workspace.set("isDirtyExperts", true);
+
+                        if (exp__op === "AddRelation") {
+
+                            // add expert to expertsArray
+
+                            for (var i = 0; i < workspaceExpertObjects.length; i++) {
+
+                                workspaceExpertObjects[i].fetch(workspaceExpertObjects[i].objectId, {
+
+                                    userMasterKey: true
+
+                                }).then((expert) => {
+
+                                    // console.log("expertOwner: " + JSON.stringify(expert));
+                                    let expertOwner = expert.toJSON();
+                                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                    if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                    if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                    if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                    if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                                    if (expertOwner.authData) {delete expertOwner.authData;}
+                                    if (expertOwner.username) {delete expertOwner.username;}
+                                    if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                    if (expertOwner.passion) {delete expertOwner.passion;}
+                                    if (expertOwner.identities) {delete expertOwner.identities;}
+                                    if (expertOwner.email) {delete expertOwner.email;}
+                                    if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                                    if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                    if (expertOwner.website) {delete expertOwner.website;}
+                                    if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                                    //expertArray.push(expertOwner);
+                                    workspace.addUnique("expertArray", expertOwner);
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    response.error(error);
+                                }, { useMasterKey: true });
+
+                            }
+
+
+
+                        } else if (exp__op === "RemoveRelation") {
+
+                            // remove expert from expertsArray
+
+                            for (var i = 0; i < workspaceExpertObjects.length; i++) {
+
+                                workspaceExpertObjects[i].fetch(workspaceExpertObjects[i].objectId, {
+
+                                    userMasterKey: true
+
+                                }).then((expert) => {
+
+                                    // console.log("expertOwner: " + JSON.stringify(expert));
+                                    let expertOwner = expert.toJSON();
+                                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                    if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                    if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                    if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                    if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                                    if (expertOwner.authData) {delete expertOwner.authData;}
+                                    if (expertOwner.username) {delete expertOwner.username;}
+                                    if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                    if (expertOwner.passion) {delete expertOwner.passion;}
+                                    if (expertOwner.identities) {delete expertOwner.identities;}
+                                    if (expertOwner.email) {delete expertOwner.email;}
+                                    if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                                    if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                    if (expertOwner.website) {delete expertOwner.website;}
+                                    if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                                    //expertArray.push(expertOwner);
+                                    workspace.remove("expertArray", expertOwner);
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    response.error(error);
+                                }, { useMasterKey: true });
+
+                            }
+
+
+                        } else {
+
+                            // do nothing to expertArray
+                        }
+
+
+
+
+                    } else {
+
+                        workspace.set("isDirtyExperts", false);
+                    }
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
                     response.success();
 
 
@@ -1720,9 +1880,121 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
             }, { useMasterKey: true });
 
 
-        } else if (!workspace.isNew()) {
+        } else if (!workspace.isNew() && !workspace.dirty("workspace_url")) {
 
             workspace.set("isNew", false);
+
+            console.log("workspace.dirty: " + workspace.dirty("experts"));
+
+            if (workspace.dirty("experts") === true) {
+
+                workspace.set("isDirtyExperts", true);
+
+                if (exp__op === "AddRelation") {
+
+                    // add expert to expertsArray
+
+                    for (var i = 0; i < workspaceExpertObjects.length; i++) {
+
+                        workspaceExpertObjects[i].fetch(workspaceExpertObjects[i].objectId, {
+
+                            userMasterKey: true
+
+                        }).then((expert) => {
+
+                            // console.log("expertOwner: " + JSON.stringify(expert));
+                            let expertOwner = expert.toJSON();
+                            if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                            if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                            if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                            if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                            if (expertOwner.user_location) {delete expertOwner.user_location;}
+                            if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                            if (expertOwner.authData) {delete expertOwner.authData;}
+                            if (expertOwner.username) {delete expertOwner.username;}
+                            if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                            if (expertOwner.passion) {delete expertOwner.passion;}
+                            if (expertOwner.identities) {delete expertOwner.identities;}
+                            if (expertOwner.email) {delete expertOwner.email;}
+                            if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                            if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                            if (expertOwner.website) {delete expertOwner.website;}
+                            if (expertOwner.isNew) {delete expertOwner.isNew;}
+                            if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                            //expertArray.push(expertOwner);
+                            workspace.addUnique("expertArray", expertOwner);
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            response.error(error);
+                        }, { useMasterKey: true });
+
+                    }
+
+
+
+                } else if (exp__op === "RemoveRelation") {
+
+                    // remove expert from expertsArray
+
+                    for (var i = 0; i < workspaceExpertObjects.length; i++) {
+
+                        workspaceExpertObjects[i].fetch(workspaceExpertObjects[i].objectId, {
+
+                            userMasterKey: true
+
+                        }).then((expert) => {
+
+                            // console.log("expertOwner: " + JSON.stringify(expert));
+                            let expertOwner = expert.toJSON();
+                            if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                            if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                            if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                            if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                            if (expertOwner.user_location) {delete expertOwner.user_location;}
+                            if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                            if (expertOwner.authData) {delete expertOwner.authData;}
+                            if (expertOwner.username) {delete expertOwner.username;}
+                            if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                            if (expertOwner.passion) {delete expertOwner.passion;}
+                            if (expertOwner.identities) {delete expertOwner.identities;}
+                            if (expertOwner.email) {delete expertOwner.email;}
+                            if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                            if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                            if (expertOwner.website) {delete expertOwner.website;}
+                            if (expertOwner.isNew) {delete expertOwner.isNew;}
+                            if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                            //expertArray.push(expertOwner);
+                            workspace.remove("expertArray", expertOwner);
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            response.error(error);
+                        }, { useMasterKey: true });
+
+                    }
+
+
+                } else {
+
+                    // do nothing to expertArray
+                }
+
+
+
+
+            } else {
+
+                workspace.set("isDirtyExperts", false);
+            }
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
             response.success();
 
         } else {response.success();}
@@ -1793,9 +2065,6 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                 } else {
 
                     //console.log("nice no channel with this name, create it!");
-
-                    // todo set the workspace owner as an expert if he is already a workspace expert.
-                    // expertRelation.add(owner);
 
                     // set isNew to true so we can use this in afterSave Channel if needed.
                     channel.set("isNew", true);
@@ -6470,6 +6739,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 var expertObject = Parse.Object.extend("_User");
                 expertObject = workspace.get("experts");
+                let expertsArray = [];
+
                 //console.log("Experts: " + JSON.stringify(expertObject));
 
                 expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
