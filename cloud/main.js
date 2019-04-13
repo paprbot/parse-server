@@ -2042,7 +2042,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                         if (err) {response.error(err);} else {
 
-                            workspace.set("expertsArray", workspaceExpertObjects);
+                            workspace.AddUnique("expertsArray", workspaceExpertObjects[0]);
                             console.log("workspace 2: " + JSON.stringify(workspace));
 
                             let finalTime = process.hrtime(time);
@@ -2062,7 +2062,26 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                     // remove expert from expertsArray
 
-                    async.map(workspaceExpertObjects, function (object, cb) {
+                    // remove expert from expertsArray
+                    let workspaceExpertObject = new Parse.Object("_User");
+                    workspaceExpertObject.set("objectId", workspaceExpertObjects[0].objectId);
+                    console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject.id));
+                    //workspace.set("expertsArray", []);
+                    workspace.remove("expertsArray", workspaceExpertObject.id);
+                    /*workspace.save(null, {
+
+                     userMasterKey: true,
+                     sessionToken: req.user.getSessionToken()
+
+                     });*/
+                    console.log("workspace: " + JSON.stringify(workspace));
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                    response.success();
+
+                    /*async.map(workspaceExpertObjects, function (object, cb) {
 
                         let workspaceExpertObject = new Parse.Object("_User");
                         workspaceExpertObject.set("objectId", object.objectId);
@@ -2133,7 +2152,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                         }
 
-                    });
+                    });*/
 
 
                 } else {
@@ -6885,22 +6904,27 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 var skillObjectQuery = skillObject.query();
                 skillObjectQuery.ascending("level");
+
                 skillObjectQuery.find({
 
-                    success: function(skill) {
+                    userMasterKey: true,
+                    sessionToken: request.user.getSessionToken()
 
-                        //console.log("Skills: " + JSON.stringify(skill));
-
+                }).then((skill) => {
 
                         return callback (null, skill);
 
-                    },
-                    error: function(error) {
-                        alert("Error: " + error.code + " " + error.message);
-                        return callback (error);
-                    }
-                }, {useMasterKey: true});
 
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback (null, error);
+                    }, {
+
+                        userMasterKey: true,
+                        sessionToken: req.user.getSessionToken()
+
+                    });
 
             }
 
@@ -6916,53 +6940,83 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
 
-                    success: function(experts) {
+                    userMasterKey: true,
+                    sessionToken: request.user.getSessionToken()
 
-                        // Convert Parse.Object to JSON
-                        //workspace = workspace.toJSON();
-                        var User = new Parse.Object("_User");
-                        var queryRole = new Parse.Query(Parse.Role);
+                }).then((experts) => {
 
-                        //console.log("\n Experts: " + JSON.stringify(experts));
+                    // Convert Parse.Object to JSON
+                    //workspace = workspace.toJSON();
+                    var User = new Parse.Object("_User");
+                    var queryRole = new Parse.Query(Parse.Role);
 
-                        queryRole.equalTo('name', 'expert-' + workspace.id);
+                    //console.log("\n Experts: " + JSON.stringify(experts));
 
-                        queryRole.first({
-                            success: function(role) {
-                                //console.log("Role when expert is added: " + JSON.stringify(role));
+                    queryRole.equalTo('name', 'expert-' + workspace.id);
 
-                                var expertrole = role;
+                    queryRole.first({
 
-                                //console.log("Role: " + JSON.stringify(role));
+                        userMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
 
-                                expertrole.getUsers(null, {useMasterKey: true}).add(experts);
-                                expertrole.save(null, {useMasterKey: true});
-                                var userRolesRelation;
+                    }).then((role) => {
 
-                                for (var i = 0; i < experts.length; i++) {
+                        var expertrole = role;
 
-                                    userRolesRelation = experts[i].relation("roles");
-                                    userRolesRelation.add(expertrole); // add owner role to the user roles field.
-                                    experts[i].save(null, {useMasterKey: true});
+                        //console.log("Role: " + JSON.stringify(role));
 
-                                }
+                        expertrole.getUsers(null, {
 
-                                return callback (null, experts);
+                            userMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
-                            },
-                            error: function(err) {
-                                return callback (err);
-                            }
+                        }).add(experts);
+                        expertrole.save(null, {
 
-                        }, {useMasterKey: true});
+                            userMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
+
+                        });
+                        var userRolesRelation;
+
+                        for (var i = 0; i < experts.length; i++) {
+
+                            userRolesRelation = experts[i].relation("roles");
+                            userRolesRelation.add(expertrole); // add owner role to the user roles field.
+                            experts[i].save(null, {
+
+                                userMasterKey: true,
+                                sessionToken: request.user.getSessionToken()
+
+                            });
+
+                        }
+
+                        return callback (null, experts);
 
 
-                    },
-                    error: function(error) {
-                        alert("Error: " + error.code + " " + error.message);
-                        return callback (error);
-                    }
-                }, {useMasterKey: true});
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback (null, error);
+                    }, {
+
+                        userMasterKey: true,
+                        sessionToken: req.user.getSessionToken()
+
+                    });
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback (null, error);
+                }, {
+
+                    userMasterKey: true,
+                    sessionToken: req.user.getSessionToken()
+
+                });
 
             }
 
@@ -6994,48 +7048,56 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 queryWorkspaceFollower.find({
 
-                    success: function(followers) {
+                    userMasterKey: true,
+                    sessionToken: request.user.getSessionToken()
 
-                        //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
+                }).then((followers) => {
 
-                        delete workspaceToSave.skills;
-                        delete workspaceToSave.experts;
+                    //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
 
-                        workspaceToSave.objectID = workspaceToSave.objectId;
-                        workspaceToSave['followers'] = followers;
+                    delete workspaceToSave.skills;
+                    delete workspaceToSave.experts;
 
-
-                        for (var i = 0; i < followers.length; i++) {
-
-                            if (workspaceToSave.type === 'private') {
-                                viewableBy.push(followers[i].toJSON().user.objectId);
-                                //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
-                            }
+                    workspaceToSave.objectID = workspaceToSave.objectId;
+                    workspaceToSave['followers'] = followers;
 
 
-                        }
+                    for (var i = 0; i < followers.length; i++) {
 
                         if (workspaceToSave.type === 'private') {
-
-                            workspaceToSave._tags= viewableBy;
-                            //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
-
-                        } else if (workspaceToSave.type === 'public') {
-
-                            workspaceToSave._tags = ['*'];
-
+                            viewableBy.push(followers[i].toJSON().user.objectId);
+                            //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
                         }
 
-                        // console.log("followers: " + JSON.stringify(workspaceToSave.followers));
 
-                        return callback (null, workspaceToSave);
-
-                    },
-                    error: function(error) {
-                        alert("Error: " + error.code + " " + error.message);
-                        return callback (error);
                     }
-                }, {useMasterKey: true});
+
+                    if (workspaceToSave.type === 'private') {
+
+                        workspaceToSave._tags= viewableBy;
+                        //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
+
+                    } else if (workspaceToSave.type === 'public') {
+
+                        workspaceToSave._tags = ['*'];
+
+                    }
+
+                    // console.log("followers: " + JSON.stringify(workspaceToSave.followers));
+
+                    return callback (null, workspaceToSave);
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback (null, error);
+                }, {
+
+                    userMasterKey: true,
+                    sessionToken: req.user.getSessionToken()
+
+                });
 
 
             }
@@ -7143,11 +7205,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                 workspaceToSave["experts"] = expertsToSave;
 
                 //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
-
                 //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-
                 //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
-
 
                 indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
                     if (err) response.error(err);
@@ -7167,9 +7226,12 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
                     response.error(error);
-                }, {useMasterKey: true});
+                }, {
 
+                userMasterKey: true,
+                sessionToken: request.user.getSessionToken()
 
+            });
 
 
     }
