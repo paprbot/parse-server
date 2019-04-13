@@ -1983,78 +1983,111 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                     // add expert to expertsArray
 
-                    async.map(workspaceExpertObjects, function (object, cb) {
+                    queryWorkspace.get(workspace.id, {
 
-                        let workspaceExpertObject = new Parse.Object("_User");
-                        workspaceExpertObject.set("objectId", object.objectId);
+                        userMasterKey: true,
+                        sessionToken: req.user.getSessionToken()
 
-                        console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+                    }).then((result) => {
+                        // The object was retrieved successfully.
 
-                        workspaceExpertObject.fetch(workspaceExpertObject.id, {
+                        if (result) {
 
-                            userMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
+                            async.map(workspaceExpertObjects, function (object, cb) {
 
-                        }).then((expert) => {
+                                let workspaceExpertObject = new Parse.Object("_User");
+                                workspaceExpertObject.set("objectId", object.objectId);
 
-                            console.log("expertOwner: " + JSON.stringify(expert));
-                            let expertOwner = expert.toJSON();
-                            console.log("expertOwner.completedProfileSignup: " + JSON.stringify(expertOwner.completedProfileSignup));
-                            if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                            if (expertOwner.isTyping) {delete expertOwner.isTyping;}
-                            if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                            if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
-                            if (expertOwner.user_location) {delete expertOwner.user_location;}
-                            if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
-                            if (expertOwner.authData) {delete expertOwner.authData;}
-                            if (expertOwner.username) {delete expertOwner.username;}
-                            if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
-                            if (expertOwner.passion) {delete expertOwner.passion;}
-                            if (expertOwner.identities) {delete expertOwner.identities;}
-                            if (expertOwner.email) {delete expertOwner.email;}
-                            if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
-                            if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
-                            if (expertOwner.website) {delete expertOwner.website;}
-                            if (expertOwner.isNew) {delete expertOwner.isNew;}
-                            if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                                console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
-                            console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+                                workspaceExpertObject.fetch(workspaceExpertObject.id, {
 
-                            object = expertOwner;
-                            //expertArray.push(expertOwner);
+                                    userMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
 
-                            return cb (null, object);
+                                }).then((expert) => {
 
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            response.error(error);
-                        }, {
+                                    console.log("expertOwner: " + JSON.stringify(expert));
+                                    let expertOwner = expert.toJSON();
+                                    console.log("expertOwner.completedProfileSignup: " + JSON.stringify(expertOwner.completedProfileSignup));
+                                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                    if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                    if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                    if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                    if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                                    if (expertOwner.authData) {delete expertOwner.authData;}
+                                    if (expertOwner.username) {delete expertOwner.username;}
+                                    if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                    if (expertOwner.passion) {delete expertOwner.passion;}
+                                    if (expertOwner.identities) {delete expertOwner.identities;}
+                                    if (expertOwner.email) {delete expertOwner.email;}
+                                    if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                                    if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                    if (expertOwner.website) {delete expertOwner.website;}
+                                    if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
 
-                            userMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
+                                    console.log("expertOwner 2: " + JSON.stringify(expertOwner));
 
-                        });
+                                    object = expertOwner;
+                                    //expertArray.push(expertOwner);
 
-                    }, function (err, workspaceExpertObjects) {
+                                    return cb (null, object);
 
-                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    response.error(error);
+                                }, {
 
-                        if (err) {response.error(err);} else {
+                                    userMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
 
-                            workspace.AddUnique("expertsArray", workspaceExpertObjects[0]);
-                            console.log("workspace 2: " + JSON.stringify(workspace));
+                                });
 
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                            }, function (err, workspaceExpertObjects) {
 
-                            response.success();
+                                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                                if (err) {response.error(err);} else {
+
+                                    expertArray = result.get("expertsArray");
+                                    console.log("expertArray: " + JSON.stringify(expertArray));
+
+                                    result.AddUnique("expertsArray", workspaceExpertObjects[0]);
+                                    console.log("result expertsArray: " + JSON.stringify(result.get("expertsArray")));
+
+                                    workspace.set("expertsArray", result.get("expertsArray"));
+                                    console.log("workspace 2: " + JSON.stringify(workspace));
 
 
+                                    let finalTime = process.hrtime(time);
+                                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+
+                                }
+
+                            });
+
+
+
+                        } else {
+
+                            response.error("can't find the workspace, beforeSave Wokrspace");
                         }
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        userMasterKey: true,
+                        sessionToken: req.user.getSessionToken()
 
                     });
-
 
 
 
