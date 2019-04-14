@@ -7579,6 +7579,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                     // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
                     expertChannelRelation.remove(user);
+                    Channel.remove("expertsArray", user);
 
                     if (channel.get("type") === 'private') {
 
@@ -7604,6 +7605,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                     // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
                     expertChannelRelation.remove(user);
+                    Channel.remove("expertsArray", user);
 
                     if (channel.get("type") === 'private') {
 
@@ -7636,6 +7638,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                     // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
                     expertChannelRelation.remove(user);
+                    Channel.remove("expertsArray", user);
 
                     if (channel.get("type") === 'private') {
 
