@@ -4297,8 +4297,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                 useMasterKey: true,
                 sessionToken: req.user.getSessionToken()
 
-            })
-                .then((results) => {
+            }).then((results) => {
                     // The object was retrieved successfully.
 
                     if (results) {
@@ -4353,6 +4352,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     //console.log("channelExpert: " + JSON.stringify(results));
 
                                     expertChannelRelation.add(user);
+                                    Channel.addUnique("expertsArray", user);
                                     Channel.save(null, {
 
                                             useMasterKey: true,
@@ -4369,7 +4369,12 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // The object was not retrieved successfully.
                                 // error is a Parse.Error with an error code and message.
                                 response.error(error);
-                            }, { useMasterKey: true });
+                            }, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
 
 
                             channelfollow.set("name", channelFollowName);
@@ -5073,6 +5078,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                     // add this user as channel expert since he/she is a workspace expert and followed this channel
                                     expertChannelRelation.add(user);
+                                    Channel.addUnique("expertsArray", user);
 
                                     if (Channel.get("type") === 'private') {
 
@@ -5108,6 +5114,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
+                                        Channel.remove("expertsArray", user);
 
                                         if (Channel.get("type") === 'private') {
 
@@ -5140,6 +5147,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
+                                        Channel.remove("expertsArray", user);
 
                                         if (Channel.get("type") === 'private') {
 
@@ -5174,6 +5182,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
+                                        Channel.remove("expertsArray", user);
 
                                         if (Channel.get("type") === 'private') {
 
@@ -5206,6 +5215,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
+                                        Channel.remove("expertsArray", user);
 
                                         if (Channel.get("type") === 'private') {
 
@@ -5259,6 +5269,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         // add this user as channel expert since he/she is a workspace expert and followed or joined this channel
                                         expertChannelRelation.add(user);
+                                        Channel.addUnique("expertsArray", user);
 
                                         if (Channel.get("type") === 'private') {
 
