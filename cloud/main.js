@@ -4004,6 +4004,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 //Workspace.increment("memberCount", -1);
                                 console.log("decrement Member & Follower");
 
+                                // todo set isSelected for this workspace to false, select another default workspace and send channelfollow for selected workspace
+
                                 // now remove both member and follower roles since the user is leaving the workspace and un-following it.
                                 queryMemberRole.equalTo('name', memberName);
                                 queryMemberRole.first({useMasterKey: true})
@@ -4367,6 +4369,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                             let user = channelfollow.get("user");
 
+
                             var Channel = channelObject;
                             let ownerChannel = Channel.get("user");
                             //console.log("channelType: " + JSON.stringify(Channel.get("type")));
@@ -4395,14 +4398,30 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     //console.log("channelExpert: " + JSON.stringify(results));
 
                                     expertChannelRelation.add(user);
-                                    Channel.addUnique("expertsArray", user);
-                                    Channel.save(null, {
 
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                    user.fetch(user.id, {
 
-                                        }
-                                    );
+                                        useMasterKey: true,
+                                        sessionToken: request.user.getSessionToken()
+
+                                    }).then((User) => {
+
+                                        Channel.addUnique("expertsArray", User);
+                                        Channel.save(null, {
+
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+
+                                            }
+                                        );
+
+
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        response.error(error);
+                                    }, { useMasterKey: true });
 
 
                                 } else {
