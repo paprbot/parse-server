@@ -2240,14 +2240,14 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
     if (!req.user) {
 
-        response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+        response.error("afterSave Channel Session token: X-Parse-Session-Token is required");
 
     } else if (req.user) {
 
         if (!req.user.getSessionToken()) {
 
 
-            response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+            response.error("afterSave Channel Session token: X-Parse-Session-Token is required");
 
         } else {
 
@@ -4408,7 +4408,26 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         console.log("User: " + JSON.stringify(User));
 
-                                        Channel.addUnique("expertsArray", User.toJSON());
+                                        let expertOwner = User.toJSON();
+                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                        if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                                        if (expertOwner.authData) {delete expertOwner.authData;}
+                                        if (expertOwner.username) {delete expertOwner.username;}
+                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.passion) {delete expertOwner.passion;}
+                                        if (expertOwner.identities) {delete expertOwner.identities;}
+                                        if (expertOwner.email) {delete expertOwner.email;}
+                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.website) {delete expertOwner.website;}
+                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                                        Channel.addUnique("expertsArray", expertOwner);
                                         Channel.save(null, {
 
                                                 //useMasterKey: true,
@@ -5164,7 +5183,27 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                     // add this user as channel expert since he/she is a workspace expert and followed this channel
                                     expertChannelRelation.add(user);
-                                    Channel.addUnique("expertsArray", user.toJSON());
+
+                                    let expertOwner = User.toJSON();
+                                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                    if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                    if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                    if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                    if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                                    if (expertOwner.authData) {delete expertOwner.authData;}
+                                    if (expertOwner.username) {delete expertOwner.username;}
+                                    if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                    if (expertOwner.passion) {delete expertOwner.passion;}
+                                    if (expertOwner.identities) {delete expertOwner.identities;}
+                                    if (expertOwner.email) {delete expertOwner.email;}
+                                    if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                                    if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                    if (expertOwner.website) {delete expertOwner.website;}
+                                    if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                                    Channel.addUnique("expertsArray", expertOwner);
 
                                     if (Channel.get("type") === 'private') {
 
@@ -5202,7 +5241,27 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
-                                        Channel.remove("expertsArray", user.toJSON());
+
+                                        let expertOwner = User.toJSON();
+                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                        if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                                        if (expertOwner.authData) {delete expertOwner.authData;}
+                                        if (expertOwner.username) {delete expertOwner.username;}
+                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.passion) {delete expertOwner.passion;}
+                                        if (expertOwner.identities) {delete expertOwner.identities;}
+                                        if (expertOwner.email) {delete expertOwner.email;}
+                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.website) {delete expertOwner.website;}
+                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                                        Channel.remove("expertsArray", expertOwner);
 
                                         if (Channel.get("type") === 'private') {
 
@@ -5235,7 +5294,27 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
-                                        Channel.remove("expertsArray", user.toJSON());
+
+                                        let expertOwner = User.toJSON();
+                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                        if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                                        if (expertOwner.authData) {delete expertOwner.authData;}
+                                        if (expertOwner.username) {delete expertOwner.username;}
+                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.passion) {delete expertOwner.passion;}
+                                        if (expertOwner.identities) {delete expertOwner.identities;}
+                                        if (expertOwner.email) {delete expertOwner.email;}
+                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.website) {delete expertOwner.website;}
+                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                                        Channel.remove("expertsArray", expertOwner);
 
                                         if (Channel.get("type") === 'private') {
 
@@ -5268,7 +5347,27 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
-                                        Channel.remove("expertsArray", user.toJSON());
+
+                                        let expertOwner = User.toJSON();
+                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                        if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                                        if (expertOwner.authData) {delete expertOwner.authData;}
+                                        if (expertOwner.username) {delete expertOwner.username;}
+                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.passion) {delete expertOwner.passion;}
+                                        if (expertOwner.identities) {delete expertOwner.identities;}
+                                        if (expertOwner.email) {delete expertOwner.email;}
+                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.website) {delete expertOwner.website;}
+                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                                        Channel.remove("expertsArray", expertOwner);
 
                                         if (Channel.get("type") === 'private') {
 
@@ -5301,7 +5400,27 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
-                                        Channel.remove("expertsArray", user.toJSON());
+
+                                        let expertOwner = User.toJSON();
+                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                        if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                                        if (expertOwner.authData) {delete expertOwner.authData;}
+                                        if (expertOwner.username) {delete expertOwner.username;}
+                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.passion) {delete expertOwner.passion;}
+                                        if (expertOwner.identities) {delete expertOwner.identities;}
+                                        if (expertOwner.email) {delete expertOwner.email;}
+                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.website) {delete expertOwner.website;}
+                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                                        Channel.remove("expertsArray", expertOwner);
 
                                         if (Channel.get("type") === 'private') {
 
@@ -5355,7 +5474,27 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         // add this user as channel expert since he/she is a workspace expert and followed or joined this channel
                                         expertChannelRelation.add(user);
-                                        Channel.addUnique("expertsArray", user.toJSON());
+
+                                        let expertOwner = User.toJSON();
+                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                        if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                                        if (expertOwner.authData) {delete expertOwner.authData;}
+                                        if (expertOwner.username) {delete expertOwner.username;}
+                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.passion) {delete expertOwner.passion;}
+                                        if (expertOwner.identities) {delete expertOwner.identities;}
+                                        if (expertOwner.email) {delete expertOwner.email;}
+                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.website) {delete expertOwner.website;}
+                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                                        Channel.addUnique("expertsArray", expertOwner);
 
                                         if (Channel.get("type") === 'private') {
 
@@ -7699,7 +7838,27 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                     // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
                     expertChannelRelation.remove(user);
-                    Channel.remove("expertsArray", user.toJSON());
+
+                    let expertOwner = User.toJSON();
+                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                    if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                    if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                    if (expertOwner.user_location) {delete expertOwner.user_location;}
+                    if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                    if (expertOwner.authData) {delete expertOwner.authData;}
+                    if (expertOwner.username) {delete expertOwner.username;}
+                    if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                    if (expertOwner.passion) {delete expertOwner.passion;}
+                    if (expertOwner.identities) {delete expertOwner.identities;}
+                    if (expertOwner.email) {delete expertOwner.email;}
+                    if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                    if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                    if (expertOwner.website) {delete expertOwner.website;}
+                    if (expertOwner.isNew) {delete expertOwner.isNew;}
+                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                    Channel.remove("expertsArray", expertOwner);
 
                     if (channel.get("type") === 'private') {
 
@@ -7725,7 +7884,27 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                     // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
                     expertChannelRelation.remove(user);
-                    Channel.remove("expertsArray", user.toJSON());
+
+                    let expertOwner = User.toJSON();
+                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                    if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                    if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                    if (expertOwner.user_location) {delete expertOwner.user_location;}
+                    if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                    if (expertOwner.authData) {delete expertOwner.authData;}
+                    if (expertOwner.username) {delete expertOwner.username;}
+                    if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                    if (expertOwner.passion) {delete expertOwner.passion;}
+                    if (expertOwner.identities) {delete expertOwner.identities;}
+                    if (expertOwner.email) {delete expertOwner.email;}
+                    if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                    if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                    if (expertOwner.website) {delete expertOwner.website;}
+                    if (expertOwner.isNew) {delete expertOwner.isNew;}
+                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                    Channel.remove("expertsArray", expertOwner);
 
                     if (channel.get("type") === 'private') {
 
@@ -7758,7 +7937,27 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                     // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
                     expertChannelRelation.remove(user);
-                    Channel.remove("expertsArray", user.toJSON());
+
+                    let expertOwner = User.toJSON();
+                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                    if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                    if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                    if (expertOwner.user_location) {delete expertOwner.user_location;}
+                    if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
+                    if (expertOwner.authData) {delete expertOwner.authData;}
+                    if (expertOwner.username) {delete expertOwner.username;}
+                    if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                    if (expertOwner.passion) {delete expertOwner.passion;}
+                    if (expertOwner.identities) {delete expertOwner.identities;}
+                    if (expertOwner.email) {delete expertOwner.email;}
+                    if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
+                    if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                    if (expertOwner.website) {delete expertOwner.website;}
+                    if (expertOwner.isNew) {delete expertOwner.isNew;}
+                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+
+                    Channel.remove("expertsArray", expertOwner);
 
                     if (channel.get("type") === 'private') {
 
