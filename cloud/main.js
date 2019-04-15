@@ -5734,7 +5734,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 Channel = results[1];
                                 Channel.set("expertsArray", results[0]);
 
-                                console.log("Channel async.Parallel: " + JSON.stringify(Channel));
+                                console.log("Channel async.Parallels: " + JSON.stringify(Channel));
 
                                 Channel.save(null, {
 
