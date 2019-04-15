@@ -7887,7 +7887,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                     let expertOwner = User.toJSON();
                     if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                    if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                    if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
                     if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
                     if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
                     if (expertOwner.user_location) {delete expertOwner.user_location;}
