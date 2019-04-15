@@ -4493,6 +4493,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }).then((ChannelFollowIsSelected) => {
                                     // The object was retrieved successfully.
 
+
+
                                     channelfollow.set("name", channelFollowName);
                                     //console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
 
@@ -4526,13 +4528,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                            if (ChannelFollowIsSelected) {
+
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
+
 
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
@@ -4546,6 +4554,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             }).then((workspaceFollow) => {
                                                 // The object was retrieved successfully.
+
+                                                console.log("workspaceFollow: " + JSON.stringify(workspaceFollow));
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
 
@@ -4570,13 +4580,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
 
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
@@ -4615,13 +4629,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
 
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
@@ -4691,13 +4709,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
 
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
@@ -4734,13 +4756,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -4779,13 +4805,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -4869,13 +4899,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -4910,13 +4944,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("followerCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -4954,13 +4992,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -5044,13 +5086,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -5085,13 +5131,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("followerCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -5129,13 +5179,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -5221,13 +5275,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -5263,13 +5321,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -5307,13 +5369,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -5398,13 +5464,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -5483,13 +5553,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -5568,13 +5642,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -5609,13 +5687,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("followerCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
@@ -5653,13 +5735,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             // add selected ChannelFollow as pointer to workspace_follower
                                             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
                                             queryWorkspaceFollow.equalTo("user", user);
