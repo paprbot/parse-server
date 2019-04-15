@@ -4558,6 +4558,14 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 console.log("workspaceFollow: " + JSON.stringify(workspaceFollow));
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -4606,6 +4614,14 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -4655,6 +4671,14 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -4736,6 +4760,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
 
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
+
                                                 return callback (null, Channel);
 
 
@@ -4781,6 +4814,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -4830,6 +4872,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -4925,6 +4976,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
 
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
+
                                                 return callback (null, Channel);
 
 
@@ -4969,6 +5029,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -5017,6 +5086,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -5112,6 +5190,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
 
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
+
                                                 return callback (null, Channel);
 
 
@@ -5156,6 +5243,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -5204,6 +5300,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -5301,6 +5406,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
 
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
+
                                                 return callback (null, Channel);
 
 
@@ -5346,6 +5460,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -5394,6 +5517,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -5490,6 +5622,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
 
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
+
                                                 return callback (null, Channel);
 
 
@@ -5530,6 +5671,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -5578,6 +5728,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -5668,6 +5827,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
 
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
+
                                                 return callback (null, Channel);
 
 
@@ -5712,6 +5880,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
@@ -5760,6 +5937,15 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 // The object was retrieved successfully.
 
                                                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+
+                                                workspaceFollow.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+
+                                                    }
+
+                                                );
 
                                                 return callback (null, Channel);
 
