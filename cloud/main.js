@@ -4410,22 +4410,28 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         let expertOwner = User.toJSON();
                                         if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
                                         if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
                                         if (expertOwner.user_location) {delete expertOwner.user_location;}
                                         if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
                                         if (expertOwner.authData) {delete expertOwner.authData;}
                                         if (expertOwner.username) {delete expertOwner.username;}
-                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
                                         if (expertOwner.passion) {delete expertOwner.passion;}
                                         if (expertOwner.identities) {delete expertOwner.identities;}
                                         if (expertOwner.email) {delete expertOwner.email;}
-                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
-                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
                                         if (expertOwner.website) {delete expertOwner.website;}
-                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
                                         if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.updatedAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                                        if (expertOwner.roles) {delete expertOwner.roles;}
+
 
                                         Channel.addUnique("expertsArray", expertOwner);
                                         Channel.save(null, {
@@ -5184,24 +5190,29 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     // add this user as channel expert since he/she is a workspace expert and followed this channel
                                     expertChannelRelation.add(user);
 
-                                    let expertOwner = User.toJSON();
+                                    let expertOwner = user.toJSON();
                                     if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                    if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                    if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
                                     if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                    if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                    if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
                                     if (expertOwner.user_location) {delete expertOwner.user_location;}
                                     if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
                                     if (expertOwner.authData) {delete expertOwner.authData;}
                                     if (expertOwner.username) {delete expertOwner.username;}
-                                    if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                    if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
                                     if (expertOwner.passion) {delete expertOwner.passion;}
                                     if (expertOwner.identities) {delete expertOwner.identities;}
                                     if (expertOwner.email) {delete expertOwner.email;}
-                                    if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
-                                    if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                    if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                                    if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
                                     if (expertOwner.website) {delete expertOwner.website;}
-                                    if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                    if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
                                     if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                                    if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                                    if (expertOwner.updatedAt) {delete expertOwner.createdAt;}
+                                    if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                                    if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                                    if (expertOwner.roles) {delete expertOwner.roles;}
 
                                     Channel.addUnique("expertsArray", expertOwner);
 
@@ -5242,24 +5253,29 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
 
-                                        let expertOwner = User.toJSON();
+                                        let expertOwner = user.toJSON();
                                         if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
                                         if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
                                         if (expertOwner.user_location) {delete expertOwner.user_location;}
                                         if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
                                         if (expertOwner.authData) {delete expertOwner.authData;}
                                         if (expertOwner.username) {delete expertOwner.username;}
-                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
                                         if (expertOwner.passion) {delete expertOwner.passion;}
                                         if (expertOwner.identities) {delete expertOwner.identities;}
                                         if (expertOwner.email) {delete expertOwner.email;}
-                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
-                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
                                         if (expertOwner.website) {delete expertOwner.website;}
-                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
                                         if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.updatedAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                                        if (expertOwner.roles) {delete expertOwner.roles;}
 
                                         Channel.remove("expertsArray", expertOwner);
 
@@ -5295,24 +5311,29 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
 
-                                        let expertOwner = User.toJSON();
+                                        let expertOwner = user.toJSON();
                                         if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
                                         if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
                                         if (expertOwner.user_location) {delete expertOwner.user_location;}
                                         if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
                                         if (expertOwner.authData) {delete expertOwner.authData;}
                                         if (expertOwner.username) {delete expertOwner.username;}
-                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
                                         if (expertOwner.passion) {delete expertOwner.passion;}
                                         if (expertOwner.identities) {delete expertOwner.identities;}
                                         if (expertOwner.email) {delete expertOwner.email;}
-                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
-                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
                                         if (expertOwner.website) {delete expertOwner.website;}
-                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
                                         if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.updatedAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                                        if (expertOwner.roles) {delete expertOwner.roles;}
 
                                         Channel.remove("expertsArray", expertOwner);
 
@@ -5348,24 +5369,29 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
 
-                                        let expertOwner = User.toJSON();
+                                        let expertOwner = user.toJSON();
                                         if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
                                         if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
                                         if (expertOwner.user_location) {delete expertOwner.user_location;}
                                         if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
                                         if (expertOwner.authData) {delete expertOwner.authData;}
                                         if (expertOwner.username) {delete expertOwner.username;}
-                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
                                         if (expertOwner.passion) {delete expertOwner.passion;}
                                         if (expertOwner.identities) {delete expertOwner.identities;}
                                         if (expertOwner.email) {delete expertOwner.email;}
-                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
-                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
                                         if (expertOwner.website) {delete expertOwner.website;}
-                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
                                         if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.updatedAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                                        if (expertOwner.roles) {delete expertOwner.roles;}
 
                                         Channel.remove("expertsArray", expertOwner);
 
@@ -5401,24 +5427,29 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
                                         expertChannelRelation.remove(user);
 
-                                        let expertOwner = User.toJSON();
+                                        let expertOwner = user.toJSON();
                                         if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
                                         if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
                                         if (expertOwner.user_location) {delete expertOwner.user_location;}
                                         if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
                                         if (expertOwner.authData) {delete expertOwner.authData;}
                                         if (expertOwner.username) {delete expertOwner.username;}
-                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
                                         if (expertOwner.passion) {delete expertOwner.passion;}
                                         if (expertOwner.identities) {delete expertOwner.identities;}
                                         if (expertOwner.email) {delete expertOwner.email;}
-                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
-                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
                                         if (expertOwner.website) {delete expertOwner.website;}
-                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
                                         if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.updatedAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                                        if (expertOwner.roles) {delete expertOwner.roles;}
 
                                         Channel.remove("expertsArray", expertOwner);
 
@@ -5475,24 +5506,29 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         // add this user as channel expert since he/she is a workspace expert and followed or joined this channel
                                         expertChannelRelation.add(user);
 
-                                        let expertOwner = User.toJSON();
+                                        let expertOwner = user.toJSON();
                                         if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                        if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
                                         if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                        if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
                                         if (expertOwner.user_location) {delete expertOwner.user_location;}
                                         if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
                                         if (expertOwner.authData) {delete expertOwner.authData;}
                                         if (expertOwner.username) {delete expertOwner.username;}
-                                        if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
                                         if (expertOwner.passion) {delete expertOwner.passion;}
                                         if (expertOwner.identities) {delete expertOwner.identities;}
                                         if (expertOwner.email) {delete expertOwner.email;}
-                                        if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
-                                        if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
                                         if (expertOwner.website) {delete expertOwner.website;}
-                                        if (expertOwner.isNew) {delete expertOwner.isNew;}
+                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
                                         if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.updatedAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                                        if (expertOwner.roles) {delete expertOwner.roles;}
 
                                         Channel.addUnique("expertsArray", expertOwner);
 
@@ -7791,7 +7827,6 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
 
-    // Get workspace
     var channel = request.object.get("channel");
     console.log("channel afterDelete: " + JSON.stringify(channel));
 
@@ -7839,24 +7874,29 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                     // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
                     expertChannelRelation.remove(user);
 
-                    let expertOwner = User.toJSON();
+                    let expertOwner = user.toJSON();
                     if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                    if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                    if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
                     if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                    if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                    if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
                     if (expertOwner.user_location) {delete expertOwner.user_location;}
                     if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
                     if (expertOwner.authData) {delete expertOwner.authData;}
                     if (expertOwner.username) {delete expertOwner.username;}
-                    if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                    if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
                     if (expertOwner.passion) {delete expertOwner.passion;}
                     if (expertOwner.identities) {delete expertOwner.identities;}
                     if (expertOwner.email) {delete expertOwner.email;}
-                    if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
-                    if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                    if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                    if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
                     if (expertOwner.website) {delete expertOwner.website;}
-                    if (expertOwner.isNew) {delete expertOwner.isNew;}
+                    if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
                     if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                    if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                    if (expertOwner.updatedAt) {delete expertOwner.createdAt;}
+                    if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                    if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                    if (expertOwner.roles) {delete expertOwner.roles;}
 
                     Channel.remove("expertsArray", expertOwner);
 
@@ -7938,24 +7978,29 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                     // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
                     expertChannelRelation.remove(user);
 
-                    let expertOwner = User.toJSON();
+                    let expertOwner = user.toJSON();
                     if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                    if (expertOwner.isTyping) {delete expertOwner.isTyping;}
+                    if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
                     if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                    if (expertOwner.emailVerified) {delete expertOwner.emailVerified;}
+                    if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
                     if (expertOwner.user_location) {delete expertOwner.user_location;}
                     if (expertOwner.linkedInURL) {delete expertOwner.linkedInURL;}
                     if (expertOwner.authData) {delete expertOwner.authData;}
                     if (expertOwner.username) {delete expertOwner.username;}
-                    if (expertOwner.completedProfileSignup) {delete expertOwner.completedProfileSignup;}
+                    if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
                     if (expertOwner.passion) {delete expertOwner.passion;}
                     if (expertOwner.identities) {delete expertOwner.identities;}
                     if (expertOwner.email) {delete expertOwner.email;}
-                    if (expertOwner.isDirtyProfileimage) {delete expertOwner.isDirtyProfileimage;}
-                    if (expertOwner.isDirtyIsOnline) {delete expertOwner.isDirtyIsOnline;}
+                    if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                    if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
                     if (expertOwner.website) {delete expertOwner.website;}
-                    if (expertOwner.isNew) {delete expertOwner.isNew;}
+                    if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
                     if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                    if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                    if (expertOwner.updatedAt) {delete expertOwner.createdAt;}
+                    if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                    if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                    if (expertOwner.roles) {delete expertOwner.roles;}
 
                     Channel.remove("expertsArray", expertOwner);
 
