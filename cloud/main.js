@@ -4445,7 +4445,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 }
                                             );*/
 
-                                            return callback (null, Channel.get("expertsArray"));
+                                            return callback (null, Channel);
 
 
 
@@ -4459,7 +4459,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     } else {
                                         // no role exists don't add experts to channel
 
-                                        return callback (null, Channel.get("expertsArray"));
+                                        return callback (null, Channel);
                                     }
                                 }, (error) => {
                                     // The object was not retrieved successfully.
@@ -5818,7 +5818,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }
 
                                 Channel = results[1];
-                                Channel.set("expertsArray", results[0]);
+                                Channel.set("expertsArray", results[0].get("expertsArray"));
 
                                 console.log("Channel async.Parallels: " + JSON.stringify(Channel));
 
