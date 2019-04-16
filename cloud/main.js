@@ -8091,9 +8091,9 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 // Update followers list in Channel after deleting workspace_follower row
 Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
-
-    var channel = request.object.get("channel");
-    console.log("channel afterDelete: " + JSON.stringify(channel));
+    var channelfollow = request.object;
+    var CHANNEL = request.object.get("channel");
+    console.log("channel afterDelete: " + JSON.stringify(CHANNEL));
 
     if (!request.user.getSessionToken()) {
 
@@ -8101,235 +8101,318 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
     } else {
 
-        // get isFollower and isMember
-        var isFollower = request.object.get("isFollower");
-        var isMember = request.object.get("isMember");
-        let user = channel.get("user");
-        let Channel = channel;
-        let channelACL = Channel.getACL();
-
-
-        var userRoleRelation = user.relation("roles");
-        var expertChannelRelation = Channel.relation("experts");
-        //console.log("userRole: " + JSON.stringify(userRoleRelation));
-
-        var expertRoleName = "expert-" + Channel.get("workspace").id;
-
-        var userRoleRelationQuery = userRoleRelation.query();
-        userRoleRelationQuery.equalTo("name", expertRoleName);
-        userRoleRelationQuery.first({
+        CHANNEL.fetch(CHANNEL.toJSON().objectId, {
 
             useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
+            sessionToken: req.user.getSessionToken()
 
-        }).then((results) => {
+        }).then((channel) => {
             // The object was retrieved successfully.
 
-            if (results) {
+            // get isFollower and isMember
+            var isFollower = channelfollow.get("isFollower");
+            var isMember = channelfollow.get("isMember");
+            let user = channelfollow.get("user");
+            let Channel = channel;
+            let channelACL = Channel.getACL();
 
-                // expert role exists, add as channel expert
-                //console.log("channelExpert: " + JSON.stringify(results));
 
-                // remove this user as a follower or member of that workspace
-                if(isFollower === true && isMember === true) {
+            var userRoleRelation = user.relation("roles");
+            var expertChannelRelation = Channel.relation("experts");
+            //console.log("userRole: " + JSON.stringify(userRoleRelation));
 
-                    channel.increment("followerCount", -1);
-                    channel.increment("memberCount", -1);
+            var expertRoleName = "expert-" + Channel.get("workspace").id;
 
-                    // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
-                    expertChannelRelation.remove(user);
+            var userRoleRelationQuery = userRoleRelation.query();
+            userRoleRelationQuery.equalTo("name", expertRoleName);
+            userRoleRelationQuery.first({
 
-                    let expertOwner = user.toJSON();
-                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                    if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                    if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                    if (expertOwner.user_location) {delete expertOwner.user_location;}
-                    if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                    if (expertOwner.authData) {delete expertOwner.authData;}
-                    if (expertOwner.username) {delete expertOwner.username;}
-                    if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                    if (expertOwner.passion) {delete expertOwner.passion;}
-                    if (expertOwner.identities) {delete expertOwner.identities;}
-                    if (expertOwner.email) {delete expertOwner.email;}
-                    if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                    if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                    if (expertOwner.website) {delete expertOwner.website;}
-                    if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                    if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                    if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                    if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                    if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                    if (expertOwner.roles) {delete expertOwner.roles;}
+                useMasterKey: true,
+                sessionToken: request.user.getSessionToken()
 
-                    Channel.remove("expertsArray", expertOwner);
+            }).then((results) => {
+                // The object was retrieved successfully.
 
-                    if (channel.get("type") === 'private') {
+                if (results) {
 
-                        // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
+                    // expert role exists, add as channel expert
+                    //console.log("channelExpert: " + JSON.stringify(results));
 
-                        channelACL.setReadAccess(user, false);
-                        channelACL.setWriteAccess(user, false);
-                        Channel.setACL(channelACL);
+                    // remove this user as a follower or member of that workspace
+                    if(isFollower === true && isMember === true) {
 
-                    }
-                    channel.save(null, {
+                        channel.increment("followerCount", -1);
+                        channel.increment("memberCount", -1);
 
-                        //useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                        // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
+                        expertChannelRelation.remove(user);
 
-                    });
-                    response.success();
+                        let expertOwner = user.toJSON();
+                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
+                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
+                        if (expertOwner.user_location) {delete expertOwner.user_location;}
+                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
+                        if (expertOwner.authData) {delete expertOwner.authData;}
+                        if (expertOwner.username) {delete expertOwner.username;}
+                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
+                        if (expertOwner.passion) {delete expertOwner.passion;}
+                        if (expertOwner.identities) {delete expertOwner.identities;}
+                        if (expertOwner.email) {delete expertOwner.email;}
+                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
+                        if (expertOwner.website) {delete expertOwner.website;}
+                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
+                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
+                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                        if (expertOwner.roles) {delete expertOwner.roles;}
 
-                }
-                else if (isFollower === true && (isMember === false || !isMember)) {
+                        Channel.remove("expertsArray", expertOwner);
 
-                    channel.increment("followerCount", -1);
+                        if (channel.get("type") === 'private') {
 
-                    // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
-                    expertChannelRelation.remove(user);
+                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
 
-                    let expertOwner = user.toJSON();
-                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                    if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                    if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                    if (expertOwner.user_location) {delete expertOwner.user_location;}
-                    if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                    if (expertOwner.authData) {delete expertOwner.authData;}
-                    if (expertOwner.username) {delete expertOwner.username;}
-                    if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                    if (expertOwner.passion) {delete expertOwner.passion;}
-                    if (expertOwner.identities) {delete expertOwner.identities;}
-                    if (expertOwner.email) {delete expertOwner.email;}
-                    if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                    if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                    if (expertOwner.website) {delete expertOwner.website;}
-                    if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                    if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                    if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                    if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                    if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                    if (expertOwner.roles) {delete expertOwner.roles;}
+                            channelACL.setReadAccess(user, false);
+                            channelACL.setWriteAccess(user, false);
+                            Channel.setACL(channelACL);
 
-                    Channel.remove("expertsArray", expertOwner);
+                        }
+                        channel.save(null, {
 
-                    if (channel.get("type") === 'private') {
+                            //useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
-                        // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
-
-                        channelACL.setReadAccess(user, false);
-                        channelACL.setWriteAccess(user, false);
-                        Channel.setACL(channelACL);
+                        });
+                        response.success();
 
                     }
-                    channel.save(null, {
+                    else if (isFollower === true && (isMember === false || !isMember)) {
 
-                        //useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                        channel.increment("followerCount", -1);
 
-                    });
-                    response.success();
+                        // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
+                        expertChannelRelation.remove(user);
+
+                        let expertOwner = user.toJSON();
+                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
+                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
+                        if (expertOwner.user_location) {delete expertOwner.user_location;}
+                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
+                        if (expertOwner.authData) {delete expertOwner.authData;}
+                        if (expertOwner.username) {delete expertOwner.username;}
+                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
+                        if (expertOwner.passion) {delete expertOwner.passion;}
+                        if (expertOwner.identities) {delete expertOwner.identities;}
+                        if (expertOwner.email) {delete expertOwner.email;}
+                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
+                        if (expertOwner.website) {delete expertOwner.website;}
+                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
+                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
+                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                        if (expertOwner.roles) {delete expertOwner.roles;}
+
+                        Channel.remove("expertsArray", expertOwner);
+
+                        if (channel.get("type") === 'private') {
+
+                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
+
+                            channelACL.setReadAccess(user, false);
+                            channelACL.setWriteAccess(user, false);
+                            Channel.setACL(channelACL);
+
+                        }
+                        channel.save(null, {
+
+                            //useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
+
+                        });
+                        response.success();
 
 
-                } else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
+                    } else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
 
-                    // do nothing since this user should not be a follower or member for that workspace
-                    response.success();
+                        // do nothing since this user should not be a follower or member for that workspace
+                        response.success();
 
 
-                } else if (isMember === true && (isFollower === false || !isFollower)) {
+                    } else if (isMember === true && (isFollower === false || !isFollower)) {
 
-                    // this case should never exist since a member is always also a follower
-                    channel.increment("memberCount", -1);
+                        // this case should never exist since a member is always also a follower
+                        channel.increment("memberCount", -1);
 
-                    // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
-                    expertChannelRelation.remove(user);
+                        // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
+                        expertChannelRelation.remove(user);
 
-                    let expertOwner = user.toJSON();
-                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                    if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                    if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                    if (expertOwner.user_location) {delete expertOwner.user_location;}
-                    if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                    if (expertOwner.authData) {delete expertOwner.authData;}
-                    if (expertOwner.username) {delete expertOwner.username;}
-                    if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                    if (expertOwner.passion) {delete expertOwner.passion;}
-                    if (expertOwner.identities) {delete expertOwner.identities;}
-                    if (expertOwner.email) {delete expertOwner.email;}
-                    if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                    if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                    if (expertOwner.website) {delete expertOwner.website;}
-                    if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                    if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                    if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                    if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                    if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                    if (expertOwner.roles) {delete expertOwner.roles;}
+                        let expertOwner = user.toJSON();
+                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
+                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
+                        if (expertOwner.user_location) {delete expertOwner.user_location;}
+                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
+                        if (expertOwner.authData) {delete expertOwner.authData;}
+                        if (expertOwner.username) {delete expertOwner.username;}
+                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
+                        if (expertOwner.passion) {delete expertOwner.passion;}
+                        if (expertOwner.identities) {delete expertOwner.identities;}
+                        if (expertOwner.email) {delete expertOwner.email;}
+                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
+                        if (expertOwner.website) {delete expertOwner.website;}
+                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
+                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
+                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                        if (expertOwner.roles) {delete expertOwner.roles;}
 
-                    Channel.remove("expertsArray", expertOwner);
+                        Channel.remove("expertsArray", expertOwner);
 
-                    if (channel.get("type") === 'private') {
+                        if (channel.get("type") === 'private') {
 
-                        // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
+                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
 
-                        channelACL.setReadAccess(user, false);
-                        channelACL.setWriteAccess(user, false);
-                        Channel.setACL(channelACL);
+                            channelACL.setReadAccess(user, false);
+                            channelACL.setWriteAccess(user, false);
+                            Channel.setACL(channelACL);
 
+                        }
+                        channel.save(null, {
+
+                            //useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
+
+                        });
+                        response.success();
+                    } else {
+
+                        // do nothing
+                        response.success();
                     }
-                    channel.save(null, {
 
-                        //useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
 
-                    });
-                    response.success();
+
+
                 } else {
+                    // no role exists don't add or remove experts from channel
 
-                    // do nothing
-                    response.success();
-                }
+                    // remove this user as a follower or member of that workspace
+                    if(isFollower === true && isMember === true) {
 
+                        channel.increment("followerCount", -1);
+                        channel.increment("memberCount", -1);
 
-                //console.log("channel: "+JSON.stringify(Channel));
+                        if (channel.get("type") === 'private') {
 
-                Channel.save(null, {
+                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
 
-                        //useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                            channelACL.setReadAccess(user, false);
+                            channelACL.setWriteAccess(user, false);
+                            Channel.setACL(channelACL);
+
+                        }
+                        channel.save(null, {
+
+                            //useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
+
+                        });
+                        response.success();
 
                     }
-                );
+                    else if (isFollower === true && (isMember === false || !isMember)) {
+
+                        channel.increment("followerCount", -1);
 
 
-            } else {
-                // no role exists don't add or remove experts from channel
+                        if (channel.get("type") === 'private') {
+
+                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
+
+                            channelACL.setReadAccess(user, false);
+                            channelACL.setWriteAccess(user, false);
+                            Channel.setACL(channelACL);
+
+                        }
+                        channel.save(null, {
+
+                            //useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
+
+                        });
+                        response.success();
+
+
+                    } else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
+
+                        // do nothing since this user should not be a follower or member for that workspace
+                        response.success();
+
+
+                    } else if (isMember === true && (isFollower === false || !isFollower)) {
+
+                        // this case should never exist since a member is always also a follower
+                        channel.increment("memberCount", -1);
+
+
+                        if (channel.get("type") === 'private') {
+
+                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
+
+                            channelACL.setReadAccess(user, false);
+                            channelACL.setWriteAccess(user, false);
+                            Channel.setACL(channelACL);
+
+                        }
+                        channel.save(null, {
+
+                            //useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
+
+                        });
+                        response.success();
+                    } else {
+
+                        // do nothing
+                        response.success();
+                    }
+                 }
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, { useMasterKey: true });
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                console.log("userRoleRelationQuery no result");
+                response.error(error);
+            }, {
+
+                useMasterKey: true,
+                sessionToken: request.user.getSessionToken()
+
+            });
 
 
 
-                //console.log("channel: "+JSON.stringify(Channel));
-                Channel.save(null, {
+        }
 
-                    //useMasterKey: true,
-                    sessionToken: request.user.getSessionToken()
-
-                });
-            }
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, { useMasterKey: true });
-
-
-
-    }
 
 
 }, {useMasterKey: true});
