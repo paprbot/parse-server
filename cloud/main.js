@@ -4530,9 +4530,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isSelected", true);
 
 
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4551,9 +4551,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4574,9 +4574,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4626,9 +4626,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4645,9 +4645,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4666,9 +4666,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4733,9 +4733,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4750,9 +4750,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("followerCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4770,9 +4770,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4836,9 +4836,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4853,9 +4853,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("followerCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4873,9 +4873,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4941,9 +4941,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4959,9 +4959,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -4979,9 +4979,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -5046,9 +5046,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -5064,12 +5064,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             ChannelFollowIsSelected("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
+                                                ChannelFollowIsSelected.set("isSelected", false);
+                                                ChannelFollowIsSelected.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    }
+                                                );
+
+                                            }
                                             return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
@@ -5079,9 +5084,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -5140,9 +5145,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -5157,9 +5162,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("followerCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -5177,9 +5182,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
+                                            if (ChannelFollowIsSelected.get("isSelected")) {
 
-                                                ChannelFollowIsSelected("isSelected", false);
+                                                ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
 
                                                         //useMasterKey: true,
@@ -8103,8 +8108,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
         CHANNEL.fetch(CHANNEL.toJSON().objectId, {
 
-            useMasterKey: true,
-            sessionToken: req.user.getSessionToken()
+            //useMasterKey: true,
+            sessionToken: request.user.getSessionToken()
 
         }).then((channel) => {
             // The object was retrieved successfully.
@@ -8395,16 +8400,20 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
                     response.error(error);
-                }, { useMasterKey: true });
+                }, {
+                    //useMasterKey: true,
+                    sessionToken: request.user.getSessionToken()
+
+            });
 
             }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                console.log("userRoleRelationQuery no result");
-                response.error(error);
+                // No Channel, maybe was delete so ignore removing the channel experts and updating follower/member count for channel
+
+                response.success();
+
             }, {
 
-                useMasterKey: true,
+                //useMasterKey: true,
                 sessionToken: request.user.getSessionToken()
 
             });
