@@ -7762,7 +7762,55 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                     });
 
-                } else {return callback (null, channelfollow);}
+                } else if (channelfollow.toJSON().isSelected === false) {
+
+                    // add selected ChannelFollow as pointer to workspace_follower
+                    let queryWorkspaceFollow = new Parse.Query("workspace_follower");
+                    queryWorkspaceFollow.equalTo("user", user);
+                    queryWorkspaceFollow.equalTo("workspace", workspace);
+
+                    queryWorkspaceFollow.first({
+
+                        useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
+
+                    }).then((workspaceFollow) => {
+                        // The object was retrieved successfully.
+
+                        workspaceFollow.set("isSelectedChannelFollow", null);
+                        workspaceFollow.save(null, {
+
+                                //useMasterKey: true,
+                                sessionToken: request.user.getSessionToken()
+
+                            }
+
+                        );
+
+                        return callback (null, channelfollow);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        //console.log("channelfollowisSelected not found");
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
+
+                    });
+
+
+                } else {
+
+
+
+                    return callback (null, channelfollow);
+
+
+                }
 
 
                 }
