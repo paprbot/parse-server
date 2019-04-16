@@ -2283,7 +2283,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                 }
 
                 var nameWorkspaceID = channel.get("name") + '-' + channel.get("workspace").id;
-                //channel.set("nameWorkspaceID", nameWorkspaceID);
+                channel.set("nameWorkspaceID", nameWorkspaceID);
                 //console.log("nameWorkspaceID: " + nameWorkspaceID);
 
                 queryChannel.equalTo("nameWorkspaceID", nameWorkspaceID);
@@ -4529,6 +4529,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
 
+
                                             if (ChannelFollowIsSelected) {
 
                                                 ChannelFollowIsSelected("isSelected", false);
@@ -4541,46 +4542,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             }
 
-
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                console.log("workspaceFollow: " + JSON.stringify(workspaceFollow));
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                //console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
 
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
@@ -7676,6 +7637,111 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
 }, {useMasterKey: true});
 
+
+Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    var time = process.hrtime();
+
+    // Convert Parse.Object to JSON
+    let channelfollow = request.object;
+
+    let user = channelfollow.get("user");
+    let workspace = channelfollow.get("workspace");
+
+    console.log("afterSave ChannelFollow: " + JSON.stringify(channelfollow));
+
+    if (!request.user) {
+
+        response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+
+    } else if (request.user) {
+
+        if (!request.user.getSessionToken()) {
+
+            response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+
+        } else {
+
+
+            function addIsSelectedChannelFollowPointerWorkspaceFollow (callback) {
+
+                if (channelfollow.toJSON().isSelected === true) {
+
+                    // add selected ChannelFollow as pointer to workspace_follower
+                    let queryWorkspaceFollow = new Parse.Query("workspace_follower");
+                    queryWorkspaceFollow.equalTo("user", user);
+                    queryWorkspaceFollow.equalTo("workspace", workspace);
+
+                    queryWorkspaceFollow.first({
+
+                        useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
+
+                    }).then((workspaceFollow) => {
+                        // The object was retrieved successfully.
+
+                        workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+                        workspaceFollow.save(null, {
+
+                                //useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }
+
+                        );
+
+                        return callback (null, channelfollow);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        //console.log("channelfollowisSelected not found");
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true,
+                        sessionToken: req.user.getSessionToken()
+
+                    });
+
+                } else {return callback (null, channelfollow);}
+
+
+                }
+
+
+                async.parallel([
+                    async.apply(addIsSelectedChannelFollowPointerWorkspaceFollow)
+                   // async.apply(addChannelsToAlgolia)
+
+                ], function (err, results) {
+                    if (err) {
+
+                        var finalTime = process.hrtime(time);
+                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                        response.error(err);
+                    }
+
+                    //console.log("results length: " + JSON.stringify(results));
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.success(results);
+
+
+                });
+
+
+
+        }
+    }
+
+
+
+}, {useMasterKey: true});
 
 
 Parse.Cloud.afterSave('Channel', function(request, response) {
