@@ -4753,7 +4753,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             Channel.increment("followerCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected)) {
+                                            if (ChannelFollowIsSelected) {
 
                                                 ChannelFollowIsSelected.set("isSelected", false);
                                                 ChannelFollowIsSelected.save(null, {
