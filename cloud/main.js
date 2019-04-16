@@ -5338,6 +5338,393 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             // expert role exists, add as channel expert
                             console.log("channelExpert: " + JSON.stringify(results));
 
+                            if (channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+
+                                if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
+
+                                    Channel.increment("followerCount");
+                                    console.log("increment Follower");
+
+                                    // add this user as channel expert since he/she is a workspace expert and followed this channel
+                                    expertChannelRelation.add(user);
+
+                                    let expertOwner = user.toJSON();
+                                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                    if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
+                                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                    if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
+                                    if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                    if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
+                                    if (expertOwner.authData) {delete expertOwner.authData;}
+                                    if (expertOwner.username) {delete expertOwner.username;}
+                                    if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
+                                    if (expertOwner.passion) {delete expertOwner.passion;}
+                                    if (expertOwner.identities) {delete expertOwner.identities;}
+                                    if (expertOwner.email) {delete expertOwner.email;}
+                                    if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                                    if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
+                                    if (expertOwner.website) {delete expertOwner.website;}
+                                    if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
+                                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                                    if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                                    if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
+                                    if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                                    if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                                    if (expertOwner.roles) {delete expertOwner.roles;}
+
+                                    Channel.addUnique("expertsArray", expertOwner);
+
+                                    if (Channel.get("type") === 'private') {
+
+                                        // if channel is private add user ACL so he/she has access to the private channel or channelfollow
+
+                                        channelACL.setReadAccess(user, true);
+                                        channelACL.setWriteAccess(user, true);
+                                        Channel.setACL(channelACL);
+
+                                        // set correct ACL for channelFollow
+                                        //channelFollowACL.setPublicReadAccess(false);
+                                        //channelFollowACL.setPublicWriteAccess(false);
+                                        channelFollowACLPrivate.setReadAccess(user, true);
+                                        channelFollowACLPrivate.setWriteAccess(user, true);
+                                        //channelFollowACL.setReadAccess(ownerChannel, true);
+                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelfollow.setACL(channelFollowACLPrivate);
+
+                                    }
+
+                                    // if isFollower === false then isMember has to also be false. but we will check anyway
+                                    if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                        // user isFollow is true  && user isMember also true so make the user both a follower and member
+                                        Channel.increment("memberCount");
+                                        console.log("increment  Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user isFollow is true but user is not a member, make user only follower
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                    } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user can't be a follower and not a member, keep him a member, sand make him a follower
+                                        channelfollow.set("isMember", true);
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                        // user can't be a member if he wasn't already a follower this really can't happen
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    }
+
+                                }
+                                else if (result.get("isFollower") === true && channelfollow.get("isFollower") === false) {
+
+                                    // User was a follower but now is not a follower
+                                    if (channelfollow.get("isSelected") === true) {
+                                        channelfollow.set("isSelected", false);
+                                    }
+
+                                    // remove user as follower of that channel
+                                    Channel.increment("followerCount", -1);
+                                    console.log("decrement Follower");
+
+                                    // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
+                                    expertChannelRelation.remove(user);
+
+                                    let expertOwner = user.toJSON();
+                                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                    if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
+                                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                    if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
+                                    if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                    if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
+                                    if (expertOwner.authData) {delete expertOwner.authData;}
+                                    if (expertOwner.username) {delete expertOwner.username;}
+                                    if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
+                                    if (expertOwner.passion) {delete expertOwner.passion;}
+                                    if (expertOwner.identities) {delete expertOwner.identities;}
+                                    if (expertOwner.email) {delete expertOwner.email;}
+                                    if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                                    if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
+                                    if (expertOwner.website) {delete expertOwner.website;}
+                                    if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
+                                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                                    if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                                    if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
+                                    if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                                    if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                                    if (expertOwner.roles) {delete expertOwner.roles;}
+
+                                    Channel.remove("expertsArray", expertOwner);
+
+                                    if (Channel.get("type") === 'private') {
+
+                                        // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                        // user will need to be added again by channel owner since it's a private channel
+
+                                        channelACL.setReadAccess(user, false);
+                                        channelACL.setWriteAccess(user, false);
+                                        Channel.setACL(channelACL);
+
+                                        // set correct ACL for channelFollow
+                                        //channelFollowACL.setPublicReadAccess(false);
+                                        //channelFollowACL.setPublicWriteAccess(false);
+                                        channelFollowACLPrivate.setReadAccess(user, false);
+                                        channelFollowACLPrivate.setWriteAccess(user, false);
+                                        //channelFollowACL.setReadAccess(ownerChannel, true);
+                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelfollow.setACL(channelFollowACLPrivate);
+
+                                    }
+
+
+                                    if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                        // user want's to stay as member but remove as follower, can't happen. remove him as member and follower
+                                        channelfollow.set("isMember", false);
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user is not a member, was a follower and now wants to un-follow
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user was a follower and member and now wants to both un-follow and not be a member anymore
+                                        Channel.increment("memberCount", -1);
+                                        console.log("decrement Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                        // user can't stay a member since he is un-following this workspace so make him not a member
+                                        channelfollow.set("isMember", false);
+                                        Channel.increment("memberCount", -1);
+                                        console.log("decrement Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    }
+
+                                }  else if (result.get("isFollower") === true && channelfollow.get("isFollower") === true) {
+
+                                    // User was a follower and wants to stay a follower
+                                    if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                        // user wants to be a member now
+                                        Channel.increment("memberCount");
+                                        console.log("increment  Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+
+                                    } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // do nothing since isMember and isFollower did not change
+
+                                        response.success();
+
+                                    } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user want's to stay as a follower but removed as member
+                                        Channel.increment("memberCount", -1);
+                                        console.log("decrement Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                        // do nothing since isMember and isFollower did not change
+
+                                        response.success();
+
+                                    }
+
+                                }  else if ((!result.get("isFollower") || result.get("isFollower") === false) && channelfollow.get("isFollower") === false) {
+
+                                    // User wasn't a follower but now wants to be a member so make him also a follower
+                                    if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                        // user can't be a member unless isFollower === true
+                                        channelfollow.set("isFollower", true);
+
+                                        Channel.increment("followerCount");
+                                        console.log("increment Follower");
+
+                                        // add this user as channel expert since he/she is a workspace expert and followed this channel
+                                        expertChannelRelation.add(user);
+
+                                        let expertOwner = user.toJSON();
+                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
+                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
+                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
+                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
+                                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
+                                        if (expertOwner.authData) {delete expertOwner.authData;}
+                                        if (expertOwner.username) {delete expertOwner.username;}
+                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
+                                        if (expertOwner.passion) {delete expertOwner.passion;}
+                                        if (expertOwner.identities) {delete expertOwner.identities;}
+                                        if (expertOwner.email) {delete expertOwner.email;}
+                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
+                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
+                                        if (expertOwner.website) {delete expertOwner.website;}
+                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
+                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
+                                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
+                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
+                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
+                                        if (expertOwner.roles) {delete expertOwner.roles;}
+
+                                        Channel.addUnique("expertsArray", expertOwner);
+
+                                        if (Channel.get("type") === 'private') {
+
+                                            // if channel is private add user ACL so he/she has access to the private channel or channelfollow
+
+                                            channelACL.setReadAccess(user, true);
+                                            channelACL.setWriteAccess(user, true);
+                                            Channel.setACL(channelACL);
+
+                                            // set correct ACL for channelFollow
+                                            //channelFollowACL.setPublicReadAccess(false);
+                                            //channelFollowACL.setPublicWriteAccess(false);
+                                            channelFollowACLPrivate.setReadAccess(user, true);
+                                            channelFollowACLPrivate.setWriteAccess(user, true);
+                                            //channelFollowACL.setReadAccess(ownerChannel, true);
+                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                            channelfollow.setACL(channelFollowACLPrivate);
+
+                                        }
+
+                                        // user wants to be a member now
+                                        Channel.increment("memberCount");
+                                        console.log("increment  Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+
+                                    } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // do nothing since isMember and isFollower did not change
+                                        response.success();
+
+
+                                    } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
+
+
+                                        response.success();
+
+                                    } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                        // do nothing since isMember and isFollower did not change
+                                        response.success();
+
+
+                                    }
+
+                                }
+
+
+
+                            }
+                            else if (channelfollow.dirty("isFollower") && !channelfollow.dirty("isMember")) {
+
+                                response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                            }
+                            else if (!channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+
+                                response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                            }
+                            else {
+
+                                // isMember and isFollower not updated, return success.
+                                response.success();
+                            }
+
+                            /*
+
                             if (channelfollow.dirty("isFollower")) {
 
                                 if (result.get("isFollower") === channelfollow.get("isFollower")) {
@@ -5345,7 +5732,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     console.log("user isFollower did not change");
                                     // don't increment or decrement because the user isFollow status did not change
 
-                                } else if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
+                                }
+                                else if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
 
                                     Channel.increment("followerCount");
                                     console.log("increment Follower");
@@ -5399,7 +5787,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     }
 
 
-                                } else if ((result.get("isFollower") === true) && channelfollow.get("isFollower") === false) {
+                                }
+                                else if ((result.get("isFollower") === true) && channelfollow.get("isFollower") === false) {
 
                                     if (channelfollow.get("isSelected") === true) {
                                         channelfollow.set("isSelected", false);
@@ -5750,12 +6139,314 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 //useMasterKey: true,
                                 sessionToken: req.user.getSessionToken()
-                            });
+                            });*/
 
 
                         } else {
                             // no role exists don't add or remove experts from channel
 
+                            if (channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+
+                                if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
+
+                                    Channel.increment("followerCount");
+                                    console.log("increment Follower");
+
+
+                                    if (Channel.get("type") === 'private') {
+
+                                        // if channel is private add user ACL so he/she has access to the private channel or channelfollow
+
+                                        channelACL.setReadAccess(user, true);
+                                        channelACL.setWriteAccess(user, true);
+                                        Channel.setACL(channelACL);
+
+                                        // set correct ACL for channelFollow
+                                        //channelFollowACL.setPublicReadAccess(false);
+                                        //channelFollowACL.setPublicWriteAccess(false);
+                                        channelFollowACLPrivate.setReadAccess(user, true);
+                                        channelFollowACLPrivate.setWriteAccess(user, true);
+                                        //channelFollowACL.setReadAccess(ownerChannel, true);
+                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelfollow.setACL(channelFollowACLPrivate);
+
+                                    }
+
+                                    // if isFollower === false then isMember has to also be false. but we will check anyway
+                                    if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                        // user isFollow is true  && user isMember also true so make the user both a follower and member
+                                        Channel.increment("memberCount");
+                                        console.log("increment  Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user isFollow is true but user is not a member, make user only follower
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                    } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user can't be a follower and not a member, keep him a member, sand make him a follower
+                                        channelfollow.set("isMember", true);
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                        // user can't be a member if he wasn't already a follower this really can't happen
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    }
+
+                                }
+                                else if (result.get("isFollower") === true && channelfollow.get("isFollower") === false) {
+
+                                    // User was a follower but now is not a follower
+                                    if (channelfollow.get("isSelected") === true) {
+                                        channelfollow.set("isSelected", false);
+                                    }
+
+                                    // remove user as follower of that channel
+                                    Channel.increment("followerCount", -1);
+                                    console.log("decrement Follower");
+
+
+                                    if (Channel.get("type") === 'private') {
+
+                                        // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                        // user will need to be added again by channel owner since it's a private channel
+
+                                        channelACL.setReadAccess(user, false);
+                                        channelACL.setWriteAccess(user, false);
+                                        Channel.setACL(channelACL);
+
+                                        // set correct ACL for channelFollow
+                                        //channelFollowACL.setPublicReadAccess(false);
+                                        //channelFollowACL.setPublicWriteAccess(false);
+                                        channelFollowACLPrivate.setReadAccess(user, false);
+                                        channelFollowACLPrivate.setWriteAccess(user, false);
+                                        //channelFollowACL.setReadAccess(ownerChannel, true);
+                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelfollow.setACL(channelFollowACLPrivate);
+
+                                    }
+
+
+                                    if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                        // user want's to stay as member but remove as follower, can't happen. remove him as member and follower
+                                        channelfollow.set("isMember", false);
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user is not a member, was a follower and now wants to un-follow
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user was a follower and member and now wants to both un-follow and not be a member anymore
+                                        Channel.increment("memberCount", -1);
+                                        console.log("decrement Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                        // user can't stay a member since he is un-following this workspace so make him not a member
+                                        channelfollow.set("isMember", false);
+                                        Channel.increment("memberCount", -1);
+                                        console.log("decrement Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    }
+
+                                }  else if (result.get("isFollower") === true && channelfollow.get("isFollower") === true) {
+
+                                    // User was a follower and wants to stay a follower
+                                    if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                        // user wants to be a member now
+                                        Channel.increment("memberCount");
+                                        console.log("increment  Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+
+                                    } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // do nothing since isMember and isFollower did not change
+
+                                        response.success();
+
+                                    } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user want's to stay as a follower but removed as member
+                                        Channel.increment("memberCount", -1);
+                                        console.log("decrement Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+                                    } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                        // do nothing since isMember and isFollower did not change
+
+                                        response.success();
+
+                                    }
+
+                                }  else if ((!result.get("isFollower") || result.get("isFollower") === false) && channelfollow.get("isFollower") === false) {
+
+                                    // User wasn't a follower but now wants to be a member so make him also a follower
+                                    if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                        // user can't be a member unless isFollower === true
+                                        channelfollow.set("isFollower", true);
+
+                                        Channel.increment("followerCount");
+                                        console.log("increment Follower");
+
+
+                                        if (Channel.get("type") === 'private') {
+
+                                            // if channel is private add user ACL so he/she has access to the private channel or channelfollow
+
+                                            channelACL.setReadAccess(user, true);
+                                            channelACL.setWriteAccess(user, true);
+                                            Channel.setACL(channelACL);
+
+                                            // set correct ACL for channelFollow
+                                            //channelFollowACL.setPublicReadAccess(false);
+                                            //channelFollowACL.setPublicWriteAccess(false);
+                                            channelFollowACLPrivate.setReadAccess(user, true);
+                                            channelFollowACLPrivate.setWriteAccess(user, true);
+                                            //channelFollowACL.setReadAccess(ownerChannel, true);
+                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                            channelfollow.setACL(channelFollowACLPrivate);
+
+                                        }
+
+                                        // user wants to be a member now
+                                        Channel.increment("memberCount");
+                                        console.log("increment  Member");
+
+                                        Channel.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                        response.success();
+
+
+                                    } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // do nothing since isMember and isFollower did not change
+                                        response.success();
+
+
+                                    } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                        // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
+
+
+                                        response.success();
+
+                                    } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                        // do nothing since isMember and isFollower did not change
+                                        response.success();
+
+
+                                    }
+
+                                }
+
+
+
+                            }
+                            else if (channelfollow.dirty("isFollower") && !channelfollow.dirty("isMember")) {
+
+                                response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                            }
+                            else if (!channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+
+                                response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                            }
+                            else {
+
+                                // isMember and isFollower not updated, return success.
+                                response.success();
+                            }
+
+                            /*
                             if (channelfollow.dirty("isFollower")) {
 
                                 if (result.get("isFollower") === channelfollow.get("isFollower")) {
@@ -5992,7 +6683,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 //useMasterKey: true,
                                 sessionToken: req.user.getSessionToken()
 
-                            });
+                            });*/
                         }
                     }, (error) => {
                         // The object was not retrieved successfully.
@@ -6005,10 +6696,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                     });
 
-
-                    beforeSave_Time = process.hrtime(time);
-                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
-                    response.success();
 
 
                 }, (error) => {
