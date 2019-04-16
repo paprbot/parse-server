@@ -4481,7 +4481,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 var queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
                                 queryChannelFollowIsSelected.equalTo("user", user);
-                                queryChannelFollowIsSelected.equalTo("channel", Channel);
+                                //queryChannelFollowIsSelected.equalTo("channel", Channel);
                                 queryChannelFollowIsSelected.equalTo("workspace", workspace);
                                 queryChannelFollowIsSelected.equalTo("isSelected", true);
 
@@ -6955,7 +6955,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                         workspaceFollow.save(null, {
 
                                 //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
+                                sessionToken: request.user.getSessionToken()
 
                             }
 
@@ -6972,7 +6972,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                     }, {
 
                         useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
+                        sessionToken: request.user.getSessionToken()
 
                     });
 
