@@ -4542,6 +4542,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             }
 
+                                            return callback (null, Channel);
+
 
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
@@ -4561,43 +4563,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             }
 
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
+                                            return callback (null, Channel);
 
 
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                //console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
@@ -4618,43 +4586,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             }
 
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -4706,44 +4638,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             }
 
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                             Channel.increment("followerCount");
@@ -4761,44 +4656,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
@@ -4819,44 +4677,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
+                                            return callback (null, Channel);
 
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
                                             response.error("Please set isFollower:true or isMember:true since one if required.");
@@ -4922,44 +4744,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                             Channel.increment("followerCount");
@@ -4976,44 +4761,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
@@ -5033,44 +4781,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -5136,44 +4847,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                             Channel.increment("followerCount");
@@ -5190,44 +4864,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
@@ -5247,44 +4884,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -5352,44 +4952,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                             Channel.increment("followerCount");
@@ -5407,44 +4970,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
@@ -5464,44 +4990,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -5568,44 +5057,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                             Channel.increment("followerCount");
@@ -5618,44 +5070,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                     sessionToken: req.user.getSessionToken()
                                                 }
                                             );
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
@@ -5675,44 +5090,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -5773,44 +5151,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
                                             Channel.increment("followerCount");
@@ -5827,44 +5168,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
@@ -5884,44 +5188,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            // add selected ChannelFollow as pointer to workspace_follower
-                                            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                                            queryWorkspaceFollow.equalTo("user", user);
-                                            queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                                            queryWorkspaceFollow.first({
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            }).then((workspaceFollow) => {
-                                                // The object was retrieved successfully.
-
-                                                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-
-                                                workspaceFollow.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-
-                                                    }
-
-                                                );
-
-                                                return callback (null, Channel);
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                console.log("channelfollowisSelected not found");
-                                                response.error(error);
-                                            }, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
+                                            return callback (null, Channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -7667,6 +6934,8 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
             function addIsSelectedChannelFollowPointerWorkspaceFollow (callback) {
 
+                console.log("channelfollow.isSelected: " + channelfollow.toJSON().isSelected);
+
                 if (channelfollow.toJSON().isSelected === true) {
 
                     // add selected ChannelFollow as pointer to workspace_follower
@@ -8257,7 +7526,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     }, {
 
                         useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
+                        sessionToken: request.user.getSessionToken()
 
                     });
 
@@ -8337,7 +7606,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         }, {
 
                             useMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
+                            sessionToken: request.user.getSessionToken()
 
                         });
 
@@ -8349,7 +7618,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     }, {
 
                         useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
+                        sessionToken: request.user.getSessionToken()
 
                     });
 
@@ -8430,7 +7699,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     }, {
 
                         useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
+                        sessionToken: request.user.getSessionToken()
 
                     });
 
