@@ -5521,21 +5521,37 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                     if (Channel.get("type") === 'private') {
 
-                                        // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                        // user will need to be added again by channel owner since it's a private channel
+                                        // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                                        channelACL.setReadAccess(user, false);
-                                        channelACL.setWriteAccess(user, false);
-                                        Channel.setACL(channelACL);
+                                        if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
 
-                                        // set correct ACL for channelFollow
-                                        //channelFollowACL.setPublicReadAccess(false);
-                                        //channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACLPrivate.setReadAccess(user, false);
-                                        channelFollowACLPrivate.setWriteAccess(user, false);
-                                        //channelFollowACL.setReadAccess(ownerChannel, true);
-                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                        channelfollow.setACL(channelFollowACLPrivate);
+                                            // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                                        } else {
+
+                                            // this user is not the channel owner it's ok to remove his/her ACL
+
+                                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                            // user will need to be added again by channel owner since it's a private channel
+
+                                            channelACL.setReadAccess(user, false);
+                                            channelACL.setWriteAccess(user, false);
+                                            Channel.setACL(channelACL);
+
+                                            // set correct ACL for channelFollow
+                                            //channelFollowACL.setPublicReadAccess(false);
+                                            //channelFollowACL.setPublicWriteAccess(false);
+                                            channelFollowACLPrivate.setReadAccess(user, false);
+                                            channelFollowACLPrivate.setWriteAccess(user, false);
+                                            //channelFollowACL.setReadAccess(ownerChannel, true);
+                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                            channelfollow.setACL(channelFollowACLPrivate);
+
+
+                                        }
+
 
                                     }
 
@@ -5778,423 +5794,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 response.success();
                             }
 
-                            /*
-
-                            if (channelfollow.dirty("isFollower")) {
-
-                                if (result.get("isFollower") === channelfollow.get("isFollower")) {
-
-                                    console.log("user isFollower did not change");
-                                    // don't increment or decrement because the user isFollow status did not change
-
-                                }
-                                else if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
-
-                                    Channel.increment("followerCount");
-                                    console.log("increment Follower");
-
-                                    // add this user as channel expert since he/she is a workspace expert and followed this channel
-                                    expertChannelRelation.add(user);
-
-                                    let expertOwner = user.toJSON();
-                                    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                    if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                                    if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                    if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                                    if (expertOwner.user_location) {delete expertOwner.user_location;}
-                                    if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                                    if (expertOwner.authData) {delete expertOwner.authData;}
-                                    if (expertOwner.username) {delete expertOwner.username;}
-                                    if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                                    if (expertOwner.passion) {delete expertOwner.passion;}
-                                    if (expertOwner.identities) {delete expertOwner.identities;}
-                                    if (expertOwner.email) {delete expertOwner.email;}
-                                    if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                                    if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                                    if (expertOwner.website) {delete expertOwner.website;}
-                                    if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                                    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                                    if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                                    if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                                    if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                                    if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                                    if (expertOwner.roles) {delete expertOwner.roles;}
-
-                                    Channel.addUnique("expertsArray", expertOwner);
-
-                                    if (Channel.get("type") === 'private') {
-
-                                        // if channel is private add user ACL so he/she has access to the private channel or channelfollow
-
-                                        channelACL.setReadAccess(user, true);
-                                        channelACL.setWriteAccess(user, true);
-                                        Channel.setACL(channelACL);
-
-                                        // set correct ACL for channelFollow
-                                        //channelFollowACL.setPublicReadAccess(false);
-                                        //channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACLPrivate.setReadAccess(user, true);
-                                        channelFollowACLPrivate.setWriteAccess(user, true);
-                                        //channelFollowACL.setReadAccess(ownerChannel, true);
-                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                        channelfollow.setACL(channelFollowACLPrivate);
-
-                                    }
-
-
-                                }
-                                else if ((result.get("isFollower") === true) && channelfollow.get("isFollower") === false) {
-
-                                    if (channelfollow.get("isSelected") === true) {
-                                        channelfollow.set("isSelected", false);
-                                    }
-
-
-                                    if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === false) && result.get("isMember") === false) {
-
-
-                                        // not a member so remove user as follower of that channel
-                                        Channel.increment("followerCount", -1);
-                                        console.log("decrement Follower");
-
-                                        // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
-                                        expertChannelRelation.remove(user);
-
-                                        let expertOwner = user.toJSON();
-                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
-                                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                                        if (expertOwner.authData) {delete expertOwner.authData;}
-                                        if (expertOwner.username) {delete expertOwner.username;}
-                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                                        if (expertOwner.passion) {delete expertOwner.passion;}
-                                        if (expertOwner.identities) {delete expertOwner.identities;}
-                                        if (expertOwner.email) {delete expertOwner.email;}
-                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                                        if (expertOwner.website) {delete expertOwner.website;}
-                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                                        if (expertOwner.roles) {delete expertOwner.roles;}
-
-                                        Channel.remove("expertsArray", expertOwner);
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                            // user will need to be added again by channel owner since it's a private channel
-
-                                            channelACL.setReadAccess(user, false);
-                                            channelACL.setWriteAccess(user, false);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, false);
-                                            channelFollowACLPrivate.setWriteAccess(user, false);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-
-                                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === false) && result.get("isMember") === true) {
-
-
-                                        // since the user was a member, and wants to un-follow this channel we will remove him
-                                        channelfollow.set("isMember", false);
-                                        Channel.increment("followerCount", -1);
-                                        //console.log("decrement Follower");
-
-                                        // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
-                                        expertChannelRelation.remove(user);
-
-                                        let expertOwner = user.toJSON();
-                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
-                                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                                        if (expertOwner.authData) {delete expertOwner.authData;}
-                                        if (expertOwner.username) {delete expertOwner.username;}
-                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                                        if (expertOwner.passion) {delete expertOwner.passion;}
-                                        if (expertOwner.identities) {delete expertOwner.identities;}
-                                        if (expertOwner.email) {delete expertOwner.email;}
-                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                                        if (expertOwner.website) {delete expertOwner.website;}
-                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                                        if (expertOwner.roles) {delete expertOwner.roles;}
-
-                                        Channel.remove("expertsArray", expertOwner);
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                            // user will need to be added again by channel owner since it's a private channel
-
-                                            channelACL.setReadAccess(user, false);
-                                            channelACL.setWriteAccess(user, false);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, false);
-                                            channelFollowACLPrivate.setWriteAccess(user, false);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-
-                                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === true) && result.get("isMember") === false) {
-
-
-                                        // since the user set isFollow: false, even if he also passes isMember = true we assume the user wants to unfollow so we remove them.
-                                        channelfollow.set("isMember", false);
-                                        Channel.increment("followerCount", -1);
-                                        //console.log("decrement Follower");
-
-                                        // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
-                                        expertChannelRelation.remove(user);
-
-                                        let expertOwner = user.toJSON();
-                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
-                                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                                        if (expertOwner.authData) {delete expertOwner.authData;}
-                                        if (expertOwner.username) {delete expertOwner.username;}
-                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                                        if (expertOwner.passion) {delete expertOwner.passion;}
-                                        if (expertOwner.identities) {delete expertOwner.identities;}
-                                        if (expertOwner.email) {delete expertOwner.email;}
-                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                                        if (expertOwner.website) {delete expertOwner.website;}
-                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                                        if (expertOwner.roles) {delete expertOwner.roles;}
-
-                                        Channel.remove("expertsArray", expertOwner);
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                            // user will need to be added again by channel owner since it's a private channel
-
-                                            channelACL.setReadAccess(user, false);
-                                            channelACL.setWriteAccess(user, false);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, false);
-                                            channelFollowACLPrivate.setWriteAccess(user, false);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-
-                                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === true) && result.get("isMember") === true) {
-
-                                        // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
-                                        channelfollow.set("isMember", false);
-                                        Channel.increment("followerCount", -1);
-                                        //Workspace.increment("memberCount", -1);
-                                        console.log("decrement Follower");
-
-                                        // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
-                                        expertChannelRelation.remove(user);
-
-                                        let expertOwner = user.toJSON();
-                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
-                                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                                        if (expertOwner.authData) {delete expertOwner.authData;}
-                                        if (expertOwner.username) {delete expertOwner.username;}
-                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                                        if (expertOwner.passion) {delete expertOwner.passion;}
-                                        if (expertOwner.identities) {delete expertOwner.identities;}
-                                        if (expertOwner.email) {delete expertOwner.email;}
-                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                                        if (expertOwner.website) {delete expertOwner.website;}
-                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                                        if (expertOwner.roles) {delete expertOwner.roles;}
-
-                                        Channel.remove("expertsArray", expertOwner);
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                            // user will need to be added again by channel owner since it's a private channel
-
-                                            channelACL.setReadAccess(user, false);
-                                            channelACL.setWriteAccess(user, false);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, false);
-                                            channelFollowACLPrivate.setWriteAccess(user, false);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-                                    }
-
-
-                                } else {
-
-                                    console.log("do nothing Follower");
-                                    // do nothing
-
-                                }
-
-                            }
-
-                            if (channelfollow.dirty("isMember")) {
-
-                                if (result.get("isMember") === channelfollow.get("isMember")) {
-
-                                    console.log("user isMember did not change");
-                                    // doin't increment or decrement because the user isFollow status did not change
-
-                                } else if ((result.get("isMember") === false || !result.get("isMember")) && channelfollow.get("isMember") === true) {
-
-                                    if ((!channelfollow.get("isFollower") || channelfollow.get("isFollower") === false) && (result.get("isFollower") === false || !result.get("isFollower"))) {
-
-                                        // since user was not a follower, but is now a member make him also a follower
-
-                                        Channel.increment("memberCount");
-                                        Channel.increment("followerCount");
-                                        channelfollow.set("isFollower", true);
-                                        console.log("increment Follower & Member");
-
-                                        // add this user as channel expert since he/she is a workspace expert and followed or joined this channel
-                                        expertChannelRelation.add(user);
-
-                                        let expertOwner = user.toJSON();
-                                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                                        if (expertOwner.user_location) {delete expertOwner.user_location;}
-                                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                                        if (expertOwner.authData) {delete expertOwner.authData;}
-                                        if (expertOwner.username) {delete expertOwner.username;}
-                                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                                        if (expertOwner.passion) {delete expertOwner.passion;}
-                                        if (expertOwner.identities) {delete expertOwner.identities;}
-                                        if (expertOwner.email) {delete expertOwner.email;}
-                                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                                        if (expertOwner.website) {delete expertOwner.website;}
-                                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                                        if (expertOwner.roles) {delete expertOwner.roles;}
-
-                                        Channel.addUnique("expertsArray", expertOwner);
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private add user ACL so he/she has access to the private channel or channelfollow
-
-                                            channelACL.setReadAccess(user, true);
-                                            channelACL.setWriteAccess(user, true);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, true);
-                                            channelFollowACLPrivate.setWriteAccess(user, true);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-                                    } else {
-
-                                        // since user is already follower, make him only a member
-
-                                        Channel.increment("memberCount");
-                                        console.log("increment  Member");
-                                        //Workspace.save();
-
-                                        // no need to add as expert since user is already a follower
-
-                                    }
-
-
-                                } else if ((result.get("isMember") === true) && channelfollow.get("isMember") === false) {
-
-                                    Channel.increment("memberCount", -1);
-                                    console.log("decrement Member");
-                                    //Workspace.save();
-
-
-                                } else {
-
-                                    console.log("do nothing Member");
-                                    // do nothing
-
-                                }
-
-
-                            }
-
-                            console.log("beforeSave ChannelFollow SessionToken: "+JSON.stringify(req.user.getSessionToken()));
-
-                            Channel.save(null, {
-
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-                            });*/
 
 
                         } else {
@@ -6309,21 +5908,36 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                     if (Channel.get("type") === 'private') {
 
-                                        // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                        // user will need to be added again by channel owner since it's a private channel
+                                        // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                                        channelACL.setReadAccess(user, false);
-                                        channelACL.setWriteAccess(user, false);
-                                        Channel.setACL(channelACL);
+                                        if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
 
-                                        // set correct ACL for channelFollow
-                                        //channelFollowACL.setPublicReadAccess(false);
-                                        //channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACLPrivate.setReadAccess(user, false);
-                                        channelFollowACLPrivate.setWriteAccess(user, false);
-                                        //channelFollowACL.setReadAccess(ownerChannel, true);
-                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                        channelfollow.setACL(channelFollowACLPrivate);
+                                            // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                                        } else {
+
+                                            // this user is not the channel owner it's ok to remove his/her ACL
+
+                                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                            // user will need to be added again by channel owner since it's a private channel
+
+                                            channelACL.setReadAccess(user, false);
+                                            channelACL.setWriteAccess(user, false);
+                                            Channel.setACL(channelACL);
+
+                                            // set correct ACL for channelFollow
+                                            //channelFollowACL.setPublicReadAccess(false);
+                                            //channelFollowACL.setPublicWriteAccess(false);
+                                            channelFollowACLPrivate.setReadAccess(user, false);
+                                            channelFollowACLPrivate.setWriteAccess(user, false);
+                                            //channelFollowACL.setReadAccess(ownerChannel, true);
+                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                            channelfollow.setACL(channelFollowACLPrivate);
+
+
+                                        }
 
                                     }
 
@@ -6531,244 +6145,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 response.success();
                             }
 
-                            /*
-                            if (channelfollow.dirty("isFollower")) {
 
-                                if (result.get("isFollower") === channelfollow.get("isFollower")) {
-
-                                    console.log("user isFollower did not change");
-                                    // don't increment or decrement because the user isFollow status did not change
-
-                                } else if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
-
-                                    Channel.increment("followerCount");
-                                    console.log("increment Follower");
-
-                                    if (Channel.get("type") === 'private') {
-
-                                        // if channel is private add user ACL so he/she has access to the private channel or channelfollow
-
-                                        channelACL.setReadAccess(user, true);
-                                        channelACL.setWriteAccess(user, true);
-                                        Channel.setACL(channelACL);
-
-                                        // set correct ACL for channelFollow
-                                        //channelFollowACL.setPublicReadAccess(false);
-                                        //channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACLPrivate.setReadAccess(user, true);
-                                        channelFollowACLPrivate.setWriteAccess(user, true);
-                                        //channelFollowACL.setReadAccess(ownerChannel, true);
-                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                        channelfollow.setACL(channelFollowACLPrivate);
-
-                                    }
-
-
-                                } else if ((result.get("isFollower") === true) && channelfollow.get("isFollower") === false) {
-
-                                    if (channelfollow.get("isSelected") === true) {
-                                        channelfollow.set("isSelected", false);
-                                    }
-
-
-                                    if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === false) && result.get("isMember") === false) {
-
-
-                                        // not a member so remove user as follower of that channel
-                                        Channel.increment("followerCount", -1);
-                                        console.log("decrement Follower");
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                            // user will need to be added again by channel owner since it's a private channel
-
-                                            channelACL.setReadAccess(user, false);
-                                            channelACL.setWriteAccess(user, false);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, false);
-                                            channelFollowACLPrivate.setWriteAccess(user, false);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-
-                                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === false) && result.get("isMember") === true) {
-
-
-                                        // since the user was a member, and wants to un-follow this channel we will remove him
-                                        channelfollow.set("isMember", false);
-                                        Channel.increment("followerCount", -1);
-                                        //console.log("decrement Follower");
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                            // user will need to be added again by channel owner since it's a private channel
-
-                                            channelACL.setReadAccess(user, false);
-                                            channelACL.setWriteAccess(user, false);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, false);
-                                            channelFollowACLPrivate.setWriteAccess(user, false);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-
-                                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === true) && result.get("isMember") === false) {
-
-
-                                        // since the user set isFollow: false, even if he also passes isMember = true we assume the user wants to unfollow so we remove them.
-                                        channelfollow.set("isMember", false);
-                                        Channel.increment("followerCount", -1);
-                                        //console.log("decrement Follower");
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                            // user will need to be added again by channel owner since it's a private channel
-
-                                            channelACL.setReadAccess(user, false);
-                                            channelACL.setWriteAccess(user, false);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, false);
-                                            channelFollowACLPrivate.setWriteAccess(user, false);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-
-                                    } else if ((!channelfollow.get("isMember") || channelfollow.get("isMember") === true) && result.get("isMember") === true) {
-
-                                        // since the user was a member, and wants to unfollow this workspace we will remove him from this workspace as a member and follower
-                                        channelfollow.set("isMember", false);
-                                        Channel.increment("followerCount", -1);
-                                        //Workspace.increment("memberCount", -1);
-                                        console.log("decrement Follower");
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                            // user will need to be added again by channel owner since it's a private channel
-
-                                            channelACL.setReadAccess(user, false);
-                                            channelACL.setWriteAccess(user, false);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, false);
-                                            channelFollowACLPrivate.setWriteAccess(user, false);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-                                    }
-
-
-                                } else {
-
-                                    console.log("do nothing Follower");
-                                    // do nothing
-
-                                }
-
-                            }
-
-                            if (channelfollow.dirty("isMember")) {
-
-                                if (result.get("isMember") === channelfollow.get("isMember")) {
-
-                                    console.log("user isMember did not change");
-                                    // doin't increment or decrement because the user isFollow status did not change
-
-                                } else if ((result.get("isMember") === false || !result.get("isMember")) && channelfollow.get("isMember") === true) {
-
-                                    if ((!channelfollow.get("isFollower") || channelfollow.get("isFollower") === false) && (result.get("isFollower") === false || !result.get("isFollower"))) {
-
-                                        // since user was not a follower, but is now a member make him also a follower
-
-                                        Channel.increment("memberCount");
-                                        Channel.increment("followerCount");
-                                        channelfollow.set("isFollower", true);
-                                        console.log("increment Follower & Member");
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private add user ACL so he/she has access to the private channel or channelfollow
-
-                                            channelACL.setReadAccess(user, true);
-                                            channelACL.setWriteAccess(user, true);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, true);
-                                            channelFollowACLPrivate.setWriteAccess(user, true);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-                                    } else {
-
-                                        // since user is already follower, make him only a member
-
-                                        Channel.increment("memberCount");
-                                        console.log("increment  Member");
-                                        //Workspace.save();
-
-                                    }
-
-
-                                } else if ((result.get("isMember") === true) && channelfollow.get("isMember") === false) {
-
-                                    Channel.increment("memberCount", -1);
-                                    console.log("decrement Member");
-                                    //Workspace.save();
-
-
-                                } else {
-
-                                    console.log("do nothing Member");
-                                    // do nothing
-
-                                }
-
-
-                            }
-
-                            //console.log("channel: "+JSON.stringify(Channel));
-                            Channel.save(null, {
-
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });*/
                         }
 
                         }, (error) => {
@@ -9012,11 +8389,32 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                         if (channel.get("type") === 'private') {
 
-                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
 
-                            channelACL.setReadAccess(user, false);
-                            channelACL.setWriteAccess(user, false);
-                            Channel.setACL(channelACL);
+                                // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
+
+                                if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
+
+                                    // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                                } else {
+
+                                    // this user is not the channel owner it's ok to remove his/her ACL
+
+                                    // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                    // user will need to be added again by channel owner since it's a private channel
+
+                                    channelACL.setReadAccess(user, false);
+                                    channelACL.setWriteAccess(user, false);
+                                    Channel.setACL(channelACL);
+
+
+                                }
+
+
+
+
 
                         }
                         channel.save(null, {
@@ -9063,11 +8461,31 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                         if (channel.get("type") === 'private') {
 
-                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
 
-                            channelACL.setReadAccess(user, false);
-                            channelACL.setWriteAccess(user, false);
-                            Channel.setACL(channelACL);
+                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
+
+                            if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
+
+                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                            } else {
+
+                                // this user is not the channel owner it's ok to remove his/her ACL
+
+                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                // user will need to be added again by channel owner since it's a private channel
+
+                                channelACL.setReadAccess(user, false);
+                                channelACL.setWriteAccess(user, false);
+                                Channel.setACL(channelACL);
+
+
+                            }
+
+
+
 
                         }
                         channel.save(null, {
@@ -9121,11 +8539,31 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                         if (channel.get("type") === 'private') {
 
-                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
 
-                            channelACL.setReadAccess(user, false);
-                            channelACL.setWriteAccess(user, false);
-                            Channel.setACL(channelACL);
+
+                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
+
+                            if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
+
+                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                            } else {
+
+                                // this user is not the channel owner it's ok to remove his/her ACL
+
+                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                // user will need to be added again by channel owner since it's a private channel
+
+                                channelACL.setReadAccess(user, false);
+                                channelACL.setWriteAccess(user, false);
+                                Channel.setACL(channelACL);
+
+
+                            }
+
+
 
                         }
                         channel.save(null, {
@@ -9155,11 +8593,29 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                         if (channel.get("type") === 'private') {
 
-                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
+                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                            channelACL.setReadAccess(user, false);
-                            channelACL.setWriteAccess(user, false);
-                            Channel.setACL(channelACL);
+                            if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
+
+                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                            } else {
+
+                                // this user is not the channel owner it's ok to remove his/her ACL
+
+                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                // user will need to be added again by channel owner since it's a private channel
+
+                                channelACL.setReadAccess(user, false);
+                                channelACL.setWriteAccess(user, false);
+                                Channel.setACL(channelACL);
+
+
+                            }
+
+
 
                         }
                         channel.save(null, {
@@ -9178,11 +8634,28 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                         if (channel.get("type") === 'private') {
 
-                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
+                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                            channelACL.setReadAccess(user, false);
-                            channelACL.setWriteAccess(user, false);
-                            Channel.setACL(channelACL);
+                            if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
+
+                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                            } else {
+
+                                // this user is not the channel owner it's ok to remove his/her ACL
+
+                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                // user will need to be added again by channel owner since it's a private channel
+
+                                channelACL.setReadAccess(user, false);
+                                channelACL.setWriteAccess(user, false);
+                                Channel.setACL(channelACL);
+
+
+                            }
+
 
                         }
                         channel.save(null, {
@@ -9208,11 +8681,28 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                         if (channel.get("type") === 'private') {
 
-                            // if channel is private remove user ACL so he/she has access to the private channel or channelfollow
+                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                            channelACL.setReadAccess(user, false);
-                            channelACL.setWriteAccess(user, false);
-                            Channel.setACL(channelACL);
+                            if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
+
+                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                            } else {
+
+                                // this user is not the channel owner it's ok to remove his/her ACL
+
+                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                // user will need to be added again by channel owner since it's a private channel
+
+                                channelACL.setReadAccess(user, false);
+                                channelACL.setWriteAccess(user, false);
+                                Channel.setACL(channelACL);
+
+
+                            }
+
 
                         }
                         channel.save(null, {
