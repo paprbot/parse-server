@@ -3869,7 +3869,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                     console.log("workspace_follower result from query: " + JSON.stringify(result));
                     Workspace = result.get("workspace");
-                    let workspaceACL = Channel.getACL();
+                    let workspaceACL = Workspace.getACL();
                     let workspaceFollowACLPrivate = result.getACL();
                     user = result.get("user");
 
@@ -5260,7 +5260,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 });
 
 
-            } else {
+            }
+            else {
 
                 //console.log("do nothing at all");
 
