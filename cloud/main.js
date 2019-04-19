@@ -1689,7 +1689,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
     if (
 
-        !req.user || !req.user.getSessionToken()) {response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+        !req.user || !req.user.getSessionToken()) {response.error("beforeSave WorkSpace Session token: X-Parse-Session-Token is required");
 
     } else {
 
@@ -2193,14 +2193,14 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
     if (!req.user) {
 
-        response.error("afterSave Channel Session token: X-Parse-Session-Token is required");
+        response.error("beforeSave Channel Session token: X-Parse-Session-Token is required");
 
     } else if (req.user) {
 
         if (!req.user.getSessionToken()) {
 
 
-            response.error("afterSave Channel Session token: X-Parse-Session-Token is required");
+            response.error("beforeSave Channel Session token: X-Parse-Session-Token is required");
 
         } else {
 
@@ -3580,13 +3580,13 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
     if (!req.user) {
 
-        response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+        response.error("beforeSave workspace_follower Session token: X-Parse-Session-Token is required");
 
     } else if (req.user) {
 
         if (!req.user.getSessionToken()) {
 
-            response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+            response.error("beforeSave workspace_follower Session token: X-Parse-Session-Token is required");
 
         } else {
 
@@ -4080,6 +4080,11 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 if (result_workspacefollower) {
 
                                     result_workspacefollower.set("isSelected", true);
+                                    result_workspacefollower.save(null, {
+
+                                        //useMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+                                    });
                                     user.set("isSelectedWorkspaceFollower", result_workspacefollower);
 
                                     // remove user as follower of that channel
@@ -5298,13 +5303,13 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
     if (!req.user) {
 
-        response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+        response.error("beforeSave ChannelFollow Session token: X-Parse-Session-Token is required");
 
     } else if (req.user) {
 
         if (!req.user.getSessionToken()) {
 
-            response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+            response.error("beforeSave ChannelFollow Session token: X-Parse-Session-Token is required");
 
         } else {
 
@@ -8023,13 +8028,13 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
     if (!request.user) {
 
-        response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+        response.error("afterSave ChannelFollow Session token: X-Parse-Session-Token is required");
 
     } else if (request.user) {
 
         if (!request.user.getSessionToken()) {
 
-            response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+            response.error("afterSave ChannelFollow Session token: X-Parse-Session-Token is required");
 
         } else {
 
@@ -8176,13 +8181,13 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 
     if (!request.user) {
 
-        response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+        response.error("afterSave Channel Session token: X-Parse-Session-Token is required");
 
     } else if (request.user) {
 
         if (!request.user.getSessionToken()) {
 
-            response.error("afterSave WorkSpace Session token: X-Parse-Session-Token is required");
+            response.error("afterSave Channel Session token: X-Parse-Session-Token is required");
 
         } else {
 
