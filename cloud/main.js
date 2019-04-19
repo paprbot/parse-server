@@ -3178,7 +3178,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             Workspace.save(null, {
 
                 useMasterKey: true,
-                sessionToken: request.user.getSessionToken()
+                sessionToken: req.user.getSessionToken()
 
             });
 
@@ -3193,7 +3193,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
                 Channel.save(null, {
 
                     //useMasterKey: true,
-                    sessionToken: request.user.getSessionToken()
+                    sessionToken: req.user.getSessionToken()
 
                 });
 
@@ -3708,7 +3708,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     memberRole.save(null, {
 
                                         useMasterKey: true,
-                                        sessionToken: request.user.getSessionToken()
+                                        sessionToken: req.user.getSessionToken()
 
                                     });
 
@@ -3725,7 +3725,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             followerRole.save(null, {
 
                                                 useMasterKey: true,
-                                                sessionToken: request.user.getSessionToken()
+                                                sessionToken: req.user.getSessionToken()
 
                                             });
 
@@ -3782,7 +3782,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     followerRole.save(null, {
 
                                         useMasterKey: true,
-                                        sessionToken: request.user.getSessionToken()
+                                        sessionToken: req.user.getSessionToken()
 
                                     });
 
@@ -3836,7 +3836,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     memberRole.save(null, {
 
                                         useMasterKey: true,
-                                        sessionToken: request.user.getSessionToken()
+                                        sessionToken: req.user.getSessionToken()
 
                                     });
 
@@ -3853,7 +3853,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             followerRole.save(null, {
 
                                                 useMasterKey: true,
-                                                sessionToken: request.user.getSessionToken()
+                                                sessionToken: req.user.getSessionToken()
 
                                             });
 
@@ -3976,7 +3976,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 queryMemberRole.first({
 
                                     useMasterKey: true,
-                                    sessionToken: request.user.getSessionToken()
+                                    sessionToken: req.user.getSessionToken()
 
                                 }).then((memberRole) => {
                                         // The object was retrieved successfully.
@@ -3987,7 +3987,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         memberRole.save(null, {
 
                                             useMasterKey: true,
-                                            sessionToken: request.user.getSessionToken()
+                                            sessionToken: req.user.getSessionToken()
 
                                         });
 
@@ -4000,7 +4000,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         queryfollowerRole.first({
 
                                             useMasterKey: true,
-                                            sessionToken: request.user.getSessionToken()
+                                            sessionToken: req.user.getSessionToken()
 
                                         }).then((followerRole) => {
                                                 // The object was retrieved successfully.
@@ -4009,7 +4009,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 followerRole.save(null, {
 
                                                     useMasterKey: true,
-                                                    sessionToken: request.user.getSessionToken()
+                                                    sessionToken: req.user.getSessionToken()
 
                                                 });
 
@@ -4038,7 +4038,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             }, {
 
                                                 useMasterKey: true,
-                                                sessionToken: request.user.getSessionToken()
+                                                sessionToken: req.user.getSessionToken()
 
                                             });
 
@@ -4050,7 +4050,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     }, {
 
                                     useMasterKey: true,
-                                    sessionToken: request.user.getSessionToken()
+                                    sessionToken: req.user.getSessionToken()
 
                                  });
 
@@ -4064,7 +4064,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 queryfollowerRole.first({
 
                                     useMasterKey: true,
-                                    sessionToken: request.user.getSessionToken()
+                                    sessionToken: req.user.getSessionToken()
 
                                 }).then((followerRole) => {
                                         // The object was retrieved successfully.
@@ -4075,7 +4075,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         followerRole.save(null, {
 
                                             useMasterKey: true,
-                                            sessionToken: request.user.getSessionToken()
+                                            sessionToken: req.user.getSessionToken()
 
                                         });
 
@@ -4104,7 +4104,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     },{
 
                                         useMasterKey: true,
-                                        sessionToken: request.user.getSessionToken()
+                                        sessionToken: req.user.getSessionToken()
 
                                     });
 
@@ -4120,7 +4120,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 queryfollowerRole.first({
 
                                     useMasterKey: true,
-                                    sessionToken: request.user.getSessionToken()
+                                    sessionToken: req.user.getSessionToken()
 
                                 }).then((followerRole) => {
                                         // The object was retrieved successfully.
@@ -4131,7 +4131,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         followerRole.save(null, {
 
                                             useMasterKey: true,
-                                            sessionToken: request.user.getSessionToken()
+                                            sessionToken: req.user.getSessionToken()
 
                                         });
 
@@ -4160,7 +4160,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     }, {
 
                                     useMasterKey: true,
-                                    sessionToken: request.user.getSessionToken()
+                                    sessionToken: req.user.getSessionToken()
 
                                 });
 
@@ -7580,7 +7580,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     post.save(null, {
 
         useMasterKey: true,
-        sessionToken: req.user.getSessionToken()
+        sessionToken: request.user.getSessionToken()
 
     });
 
