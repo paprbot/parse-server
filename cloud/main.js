@@ -1982,7 +1982,8 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
             });
 
 
-        } else if (!workspace.isNew() && !workspace.dirty("workspace_url")) {
+        }
+        else if (!workspace.isNew() && !workspace.dirty("workspace_url")) {
 
             workspace.set("isNew", false);
 
@@ -2013,7 +2014,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                             let expertOwner = simplifyUser(expert);
 
-                            //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+                            console.log("expertOwner 2: " + JSON.stringify(expertOwner));
 
                             //o[key] = expertOwner;
 
@@ -2163,7 +2164,8 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
             }
 
 
-        } else {
+        }
+        else {
 
 
             let finalTime = process.hrtime(time);
@@ -4246,6 +4248,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 memberRole.save(null, {useMasterKey: true});
 
                                                 var userRolesRelation = user.relation("roles");
+
                                                 userRolesRelation.remove(memberRole);
 
                                                 // now add follower since a member is by default a follower
@@ -4258,7 +4261,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                         followerRole.getUsers().remove(user);
                                                         followerRole.save(null, {useMasterKey: true});
 
-                                                        var userRolesRelation = user.relation("roles");
+                                                        //var userRolesRelation = user.relation("roles");
                                                         userRolesRelation.remove(followerRole);
                                                         user.save(null, {useMasterKey: true});
 
@@ -8687,7 +8690,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     expertObject = workspace.get("experts");
                     let expertsArray = [];
 
-                    //console.log("Experts: " + JSON.stringify(expertObject));
+                    console.log("Experts: " + JSON.stringify(expertObject));
 
                     expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
 
@@ -8701,7 +8704,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         var User = new Parse.Object("_User");
                         var queryRole = new Parse.Query(Parse.Role);
 
-                        //console.log("\n Experts: " + JSON.stringify(experts));
+                        console.log("\n Experts: " + JSON.stringify(experts));
 
                         queryRole.equalTo('name', 'expert-' + workspace.id);
 
@@ -8712,9 +8715,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                         }).then((role) => {
 
-                            var expertrole = role;
+                            let expertrole = role;
 
-                            //console.log("Role: " + JSON.stringify(role));
+                            console.log("Role: " + JSON.stringify(role));
 
                             expertrole.getUsers(null, {
 
@@ -8728,13 +8731,16 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                                 sessionToken: request.user.getSessionToken()
 
                             });
-                            var userRolesRelation;
+                            //var userRolesRelation;
 
                             for (var i = 0; i < experts.length; i++) {
 
-                                userRolesRelation = experts[i].relation("roles");
+                                let expertObject = experts[i];
+
+                                let userRolesRelation = expertObject.relation("roles");
+                                console.log("userRolesRelation afterSave Workspace: " + JSON.stringify(userRolesRelation));
                                 userRolesRelation.add(expertrole); // add owner role to the user roles field.
-                                experts[i].save(null, {
+                                expertObject.save(null, {
 
                                     useMasterKey: true,
                                     sessionToken: request.user.getSessionToken()
@@ -8858,7 +8864,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     //console.log("channel isNew: " + channel.get("isNew"));
                     //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
 
-                    if (channel.get("isNew") === true) {
+                    if (workspace.get("isNew") === true) {
 
 
                         //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
@@ -8895,7 +8901,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         return callback(null, workspaceFollower);
 
 
-                    } else {return callback (null, channel);}
+                    } else {return callback (null, workspace);}
 
 
                 }
@@ -8925,7 +8931,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         return callback (null, Channel);
 
 
-                    } else {
+                    }
+                    else {
 
                         return callback (null, workspace);
                     }
