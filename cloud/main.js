@@ -1601,9 +1601,9 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
                 let isSelectedWorkspaceFollower_Previous = User.get("isSelectedWorkspaceFollower");
                 isSelectedWorkspaceFollower_Previous.set("isSelected", false);
-                isSelectedWorkspaceFollower_Previous.save({
+                isSelectedWorkspaceFollower_Previous.save(null, {
 
-                    useMasterKey: true,
+                    //useMasterKey: true,
                     sessionToken: req.user.getSessionToken()
 
                 });
@@ -1830,7 +1830,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                                     //o[key] = expertOwner;
 
                                     workspace.addUnique("expertsArray", expertOwner);
-                                    /*workspace.save({
+                                    /*workspace.save(null, {
 
                                      useMasterKey: true,
                                      sessionToken: req.user.getSessionToken()
@@ -2025,7 +2025,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                             //o[key] = expertOwner;
 
                             workspace.addUnique("expertsArray", expertOwner);
-                            /*workspace.save({
+                            /*workspace.save(null, {
 
                              useMasterKey: true,
                              sessionToken: req.user.getSessionToken()
@@ -3190,7 +3190,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
                 Channel.id = channel.id;
 
                 Channel.increment("postCount");
-                Channel.save({
+                Channel.save(null, {
 
                     //useMasterKey: true,
                     sessionToken: request.user.getSessionToken()
@@ -3360,7 +3360,12 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
                     for (var i = 0; i < postSocialResults.length; i++) {
 
                         postSocialResults[i].set("archive", post.get("archive"));
-                        postSocialResults[i].save();
+                        postSocialResults[i].save(null, {
+
+                            useMasterKey: true,
+                            sessionToken: req.user.getSessionToken()
+
+                        });
 
                     }
 
@@ -3700,7 +3705,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
 
                                     memberRole.getUsers().add(user);
-                                    memberRole.save(null, {useMasterKey: true});
+                                    memberRole.save(null, {
+
+                                        useMasterKey: true,
+                                        sessionToken: request.user.getSessionToken()
+
+                                    });
 
                                     var userRolesRelation = user.relation("roles");
                                     userRolesRelation.add(memberRole);
@@ -3712,7 +3722,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
 
                                             followerRole.getUsers().add(user);
-                                            followerRole.save(null, {useMasterKey: true});
+                                            followerRole.save(null, {
+
+                                                useMasterKey: true,
+                                                sessionToken: request.user.getSessionToken()
+
+                                            });
 
                                             var userRolesRelation = user.relation("roles");
                                             userRolesRelation.add(followerRole);
@@ -3764,7 +3779,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
 
                                     followerRole.getUsers().add(user);
-                                    followerRole.save(null, {useMasterKey: true});
+                                    followerRole.save(null, {
+
+                                        useMasterKey: true,
+                                        sessionToken: request.user.getSessionToken()
+
+                                    });
 
                                     var userRolesRelation = user.relation("roles");
                                     userRolesRelation.add(followerRole);
@@ -3813,7 +3833,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
 
                                     memberRole.getUsers().add(user);
-                                    memberRole.save(null, {useMasterKey: true});
+                                    memberRole.save(null, {
+
+                                        useMasterKey: true,
+                                        sessionToken: request.user.getSessionToken()
+
+                                    });
 
                                     var userRolesRelation = user.relation("roles");
                                     userRolesRelation.add(memberRole);
@@ -3825,7 +3850,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
 
                                             followerRole.getUsers().add(user);
-                                            followerRole.save(null, {useMasterKey: true});
+                                            followerRole.save(null, {
+
+                                                useMasterKey: true,
+                                                sessionToken: request.user.getSessionToken()
+
+                                            });
 
                                             var userRolesRelation = user.relation("roles");
                                             userRolesRelation.add(followerRole);
@@ -3943,14 +3973,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                 // now add both member and follower roles since the user is leaving the workspace and un-following it.
                                 queryMemberRole.equalTo('name', memberName);
-                                queryMemberRole.first({useMasterKey: true})
-                                    .then((memberRole) => {
+                                queryMemberRole.first({
+
+                                    useMasterKey: true,
+                                    sessionToken: request.user.getSessionToken()
+
+                                }).then((memberRole) => {
                                         // The object was retrieved successfully.
 
                                         //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
                                         memberRole.getUsers().add(user);
-                                        memberRole.save(null, {useMasterKey: true});
+                                        memberRole.save(null, {
+
+                                            useMasterKey: true,
+                                            sessionToken: request.user.getSessionToken()
+
+                                        });
 
                                         var userRolesRelation = user.relation("roles");
                                         userRolesRelation.add(memberRole);
@@ -3958,12 +3997,21 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         // now add follower since a member is by default a follower
                                         queryfollowerRole.equalTo('name', followerName);
 
-                                        queryfollowerRole.first({useMasterKey: true})
-                                            .then((followerRole) => {
+                                        queryfollowerRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: request.user.getSessionToken()
+
+                                        }).then((followerRole) => {
                                                 // The object was retrieved successfully.
 
                                                 followerRole.getUsers().add(user);
-                                                followerRole.save(null, {useMasterKey: true});
+                                                followerRole.save(null, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: request.user.getSessionToken()
+
+                                                });
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.add(followerRole);
@@ -3987,14 +4035,24 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 // The object was not retrieved successfully.
                                                 // error is a Parse.Error with an error code and message.
                                                 response.error(error);
-                                            }, {useMasterKey: true});
+                                            }, {
+
+                                                useMasterKey: true,
+                                                sessionToken: request.user.getSessionToken()
+
+                                            });
 
 
                                     }, (error) => {
                                         // The object was not retrieved successfully.
                                         // error is a Parse.Error with an error code and message.
                                         response.error(error);
-                                    }, {useMasterKey: true});
+                                    }, {
+
+                                    useMasterKey: true,
+                                    sessionToken: request.user.getSessionToken()
+
+                                 });
 
 
                             }
@@ -4003,14 +4061,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 // user isFollow is true but user is not a member, make user only follower
 
                                 queryfollowerRole.equalTo('name', followerName);
-                                queryfollowerRole.first({useMasterKey: true})
-                                    .then((followerRole) => {
+                                queryfollowerRole.first({
+
+                                    useMasterKey: true,
+                                    sessionToken: request.user.getSessionToken()
+
+                                }).then((followerRole) => {
                                         // The object was retrieved successfully.
 
                                         //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
 
                                         followerRole.getUsers().add(user);
-                                        followerRole.save(null, {useMasterKey: true});
+                                        followerRole.save(null, {
+
+                                            useMasterKey: true,
+                                            sessionToken: request.user.getSessionToken()
+
+                                        });
 
                                         var userRolesRelation = user.relation("roles");
                                         userRolesRelation.add(followerRole);
@@ -4034,7 +4101,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         // The object was not retrieved successfully.
                                         // error is a Parse.Error with an error code and message.
                                         response.error(error);
-                                    }, {useMasterKey: true});
+                                    },{
+
+                                        useMasterKey: true,
+                                        sessionToken: request.user.getSessionToken()
+
+                                    });
 
 
 
@@ -4045,14 +4117,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 workspace_follower.set("isMember", true);
 
                                 queryfollowerRole.equalTo('name', followerName);
-                                queryfollowerRole.first({useMasterKey: true})
-                                    .then((followerRole) => {
+                                queryfollowerRole.first({
+
+                                    useMasterKey: true,
+                                    sessionToken: request.user.getSessionToken()
+
+                                }).then((followerRole) => {
                                         // The object was retrieved successfully.
 
                                         //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
 
                                         followerRole.getUsers().add(user);
-                                        followerRole.save(null, {useMasterKey: true});
+                                        followerRole.save(null, {
+
+                                            useMasterKey: true,
+                                            sessionToken: request.user.getSessionToken()
+
+                                        });
 
                                         var userRolesRelation = user.relation("roles");
                                         userRolesRelation.add(followerRole);
@@ -4076,7 +4157,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         // The object was not retrieved successfully.
                                         // error is a Parse.Error with an error code and message.
                                         response.error(error);
-                                    }, {useMasterKey: true});
+                                    }, {
+
+                                    useMasterKey: true,
+                                    sessionToken: request.user.getSessionToken()
+
+                                });
 
 
 
@@ -4203,14 +4289,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         workspace_follower.set("isMember", false);
 
                                         queryfollowerRole.equalTo('name', followerName);
-                                        queryfollowerRole.first({useMasterKey: true})
-                                            .then((followerRole) => {
+                                        queryfollowerRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        }).then((followerRole) => {
                                                 // The object was retrieved successfully.
 
                                                 //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
 
                                                 followerRole.getUsers().remove(user);
-                                                followerRole.save(null, {useMasterKey: true});
+                                                followerRole.save(null, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.remove(followerRole);
@@ -4234,7 +4329,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 // The object was not retrieved successfully.
                                                 // error is a Parse.Error with an error code and message.
                                                 response.error(error);
-                                            }, {useMasterKey: true});
+                                            }, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
 
 
@@ -4244,14 +4344,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         // user is not a member, was a follower and now wants to un-follow
 
                                         queryfollowerRole.equalTo('name', followerName);
-                                        queryfollowerRole.first({useMasterKey: true})
-                                            .then((followerRole) => {
+                                        queryfollowerRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        }).then((followerRole) => {
                                                 // The object was retrieved successfully.
 
                                                 //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
 
                                                 followerRole.getUsers().remove(user);
-                                                followerRole.save(null, {useMasterKey: true});
+                                                followerRole.save(null, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.remove(followerRole);
@@ -4268,8 +4377,6 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                     sessionToken: req.user.getSessionToken()
                                                 });
 
-                                                // todo send new workspace_follower for this user that is now isSelected (most recent) and send the channel follow for this workspace.
-
                                                 response.success(result_workspacefollower);
 
 
@@ -4277,7 +4384,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 // The object was not retrieved successfully.
                                                 // error is a Parse.Error with an error code and message.
                                                 response.error(error);
-                                            }, {useMasterKey: true});
+                                            }, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
 
                                     }
@@ -4289,14 +4401,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                         // now remove both member and follower roles since the user is leaving the workspace and un-following it.
                                         queryMemberRole.equalTo('name', memberName);
-                                        queryMemberRole.first({useMasterKey: true})
-                                            .then((memberRole) => {
+                                        queryMemberRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        }).then((memberRole) => {
                                                 // The object was retrieved successfully.
 
-                                                //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+                                                console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
                                                 memberRole.getUsers().remove(user);
-                                                memberRole.save(null, {useMasterKey: true});
+                                                memberRole.save(null, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 var userRolesRelation = user.relation("roles");
 
@@ -4305,12 +4426,21 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 // now add follower since a member is by default a follower
                                                 queryfollowerRole.equalTo('name', followerName);
 
-                                                queryfollowerRole.first({useMasterKey: true})
-                                                    .then((followerRole) => {
+                                                queryfollowerRole.first({
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                }).then((followerRole) => {
                                                         // The object was retrieved successfully.
 
                                                         followerRole.getUsers().remove(user);
-                                                        followerRole.save(null, {useMasterKey: true});
+                                                        followerRole.save(null, {
+
+                                                            useMasterKey: true,
+                                                            sessionToken: req.user.getSessionToken()
+
+                                                        });
 
                                                         //var userRolesRelation = user.relation("roles");
                                                         userRolesRelation.remove(followerRole);
@@ -4333,14 +4463,24 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                         // The object was not retrieved successfully.
                                                         // error is a Parse.Error with an error code and message.
                                                         response.error(error);
-                                                    }, {useMasterKey: true});
+                                                    }, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
 
                                             }, (error) => {
                                                 // The object was not retrieved successfully.
                                                 // error is a Parse.Error with an error code and message.
                                                 response.error(error);
-                                            }, {useMasterKey: true});
+                                            }, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
 
                                     }
@@ -4353,14 +4493,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                         // now remove both member and follower roles since the user is leaving the workspace and un-following it.
                                         queryMemberRole.equalTo('name', memberName);
-                                        queryMemberRole.first({useMasterKey: true})
-                                            .then((memberRole) => {
+                                        queryMemberRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        }).then((memberRole) => {
                                                 // The object was retrieved successfully.
 
                                                 //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
                                                 memberRole.getUsers().remove(user);
-                                                memberRole.save(null, {useMasterKey: true});
+                                                memberRole.save(null, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.remove(memberRole);
@@ -4368,12 +4517,21 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 // now add follower since a member is by default a follower
                                                 queryfollowerRole.equalTo('name', followerName);
 
-                                                queryfollowerRole.first({useMasterKey: true})
-                                                    .then((followerRole) => {
+                                                queryfollowerRole.first({
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                }).then((followerRole) => {
                                                         // The object was retrieved successfully.
 
                                                         followerRole.getUsers().remove(user);
-                                                        followerRole.save(null, {useMasterKey: true});
+                                                        followerRole.save(null, {
+
+                                                            useMasterKey: true,
+                                                            sessionToken: req.user.getSessionToken()
+
+                                                        });
 
                                                         var userRolesRelation = user.relation("roles");
                                                         userRolesRelation.remove(followerRole);
@@ -4397,14 +4555,24 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                         // The object was not retrieved successfully.
                                                         // error is a Parse.Error with an error code and message.
                                                         response.error(error);
-                                                    }, {useMasterKey: true});
+                                                    }, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
 
                                             }, (error) => {
                                                 // The object was not retrieved successfully.
                                                 // error is a Parse.Error with an error code and message.
                                                 response.error(error);
-                                            }, {useMasterKey: true});
+                                            }, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
 
                                     }
@@ -4496,14 +4664,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         workspace_follower.set("isMember", false);
 
                                         queryfollowerRole.equalTo('name', followerName);
-                                        queryfollowerRole.first({useMasterKey: true})
-                                            .then((followerRole) => {
+                                        queryfollowerRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        }).then((followerRole) => {
                                                 // The object was retrieved successfully.
 
                                                 //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
 
                                                 followerRole.getUsers().remove(user);
-                                                followerRole.save(null, {useMasterKey: true});
+                                                followerRole.save(null, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.remove(followerRole);
@@ -4527,7 +4704,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 // The object was not retrieved successfully.
                                                 // error is a Parse.Error with an error code and message.
                                                 response.error(error);
-                                            }, {useMasterKey: true});
+                                            }, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
 
 
@@ -4537,14 +4719,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         // user is not a member, was a follower and now wants to un-follow
 
                                         queryfollowerRole.equalTo('name', followerName);
-                                        queryfollowerRole.first({useMasterKey: true})
-                                            .then((followerRole) => {
+                                        queryfollowerRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        }).then((followerRole) => {
                                                 // The object was retrieved successfully.
 
                                                 //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
 
                                                 followerRole.getUsers().remove(user);
-                                                followerRole.save(null, {useMasterKey: true});
+                                                followerRole.save(null, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.remove(followerRole);
@@ -4569,7 +4760,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 // The object was not retrieved successfully.
                                                 // error is a Parse.Error with an error code and message.
                                                 response.error(error);
-                                            }, {useMasterKey: true});
+                                            }, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
 
                                     }
@@ -4581,14 +4777,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                         // now remove both member and follower roles since the user is leaving the workspace and un-following it.
                                         queryMemberRole.equalTo('name', memberName);
-                                        queryMemberRole.first({useMasterKey: true})
-                                            .then((memberRole) => {
+                                        queryMemberRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        }).then((memberRole) => {
                                                 // The object was retrieved successfully.
 
                                                 //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
                                                 memberRole.getUsers().remove(user);
-                                                memberRole.save(null, {useMasterKey: true});
+                                                memberRole.save(null, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.remove(memberRole);
@@ -4596,12 +4801,21 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 // now add follower since a member is by default a follower
                                                 queryfollowerRole.equalTo('name', followerName);
 
-                                                queryfollowerRole.first({useMasterKey: true})
-                                                    .then((followerRole) => {
+                                                queryfollowerRole.first({
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                }).then((followerRole) => {
                                                         // The object was retrieved successfully.
 
                                                         followerRole.getUsers().remove(user);
-                                                        followerRole.save(null, {useMasterKey: true});
+                                                        followerRole.save(null, {
+
+                                                            useMasterKey: true,
+                                                            sessionToken: req.user.getSessionToken()
+
+                                                        });
 
                                                         var userRolesRelation = user.relation("roles");
                                                         userRolesRelation.remove(followerRole);
@@ -4625,14 +4839,24 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                         // The object was not retrieved successfully.
                                                         // error is a Parse.Error with an error code and message.
                                                         response.error(error);
-                                                    }, {useMasterKey: true});
+                                                    }, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
 
                                             }, (error) => {
                                                 // The object was not retrieved successfully.
                                                 // error is a Parse.Error with an error code and message.
                                                 response.error(error);
-                                            }, {useMasterKey: true});
+                                            }, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
 
                                     }
@@ -4645,14 +4869,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                         // now remove both member and follower roles since the user is leaving the workspace and un-following it.
                                         queryMemberRole.equalTo('name', memberName);
-                                        queryMemberRole.first({useMasterKey: true})
-                                            .then((memberRole) => {
+                                        queryMemberRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        }).then((memberRole) => {
                                                 // The object was retrieved successfully.
 
                                                 //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
                                                 memberRole.getUsers().remove(user);
-                                                memberRole.save(null, {useMasterKey: true});
+                                                memberRole.save(null, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.remove(memberRole);
@@ -4660,12 +4893,21 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 // now add follower since a member is by default a follower
                                                 queryfollowerRole.equalTo('name', followerName);
 
-                                                queryfollowerRole.first({useMasterKey: true})
-                                                    .then((followerRole) => {
+                                                queryfollowerRole.first({
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                }).then((followerRole) => {
                                                         // The object was retrieved successfully.
 
                                                         followerRole.getUsers().remove(user);
-                                                        followerRole.save(null, {useMasterKey: true});
+                                                        followerRole.save(null, {
+
+                                                            useMasterKey: true,
+                                                            sessionToken: req.user.getSessionToken()
+
+                                                        });
 
                                                         var userRolesRelation = user.relation("roles");
                                                         userRolesRelation.remove(followerRole);
@@ -4689,14 +4931,24 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                         // The object was not retrieved successfully.
                                                         // error is a Parse.Error with an error code and message.
                                                         response.error(error);
-                                                    }, {useMasterKey: true});
+                                                    }, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
 
                                             }, (error) => {
                                                 // The object was not retrieved successfully.
                                                 // error is a Parse.Error with an error code and message.
                                                 response.error(error);
-                                            }, {useMasterKey: true});
+                                            }, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
 
                                     }
@@ -4731,14 +4983,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                 // now add both member and follower roles since the user is leaving the workspace and un-following it.
                                 queryMemberRole.equalTo('name', memberName);
-                                queryMemberRole.first({useMasterKey: true})
-                                    .then((memberRole) => {
+                                queryMemberRole.first({
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                }).then((memberRole) => {
                                         // The object was retrieved successfully.
 
                                         //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
                                         memberRole.getUsers().add(user);
-                                        memberRole.save(null, {useMasterKey: true});
+                                        memberRole.save(null, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
                                         var userRolesRelation = user.relation("roles");
                                         userRolesRelation.add(memberRole);
@@ -4762,7 +5023,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         // The object was not retrieved successfully.
                                         // error is a Parse.Error with an error code and message.
                                         response.error(error);
-                                    }, {useMasterKey: true});
+                                    }, {
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
 
 
                             }
@@ -4780,14 +5046,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 console.log("decrement Member");
 
                                 queryMemberRole.equalTo('name', memberName);
-                                queryMemberRole.first({useMasterKey: true})
-                                    .then((memberRole) => {
+                                queryMemberRole.first({
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                }).then((memberRole) => {
                                         // The object was retrieved successfully.
 
                                         //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
                                         memberRole.getUsers().remove(user);
-                                        memberRole.save(null, {useMasterKey: true});
+                                        memberRole.save(null, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
                                         var userRolesRelation = user.relation("roles");
                                         userRolesRelation.remove(memberRole);
@@ -4811,7 +5086,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         // The object was not retrieved successfully.
                                         // error is a Parse.Error with an error code and message.
                                         response.error(error);
-                                    }, {useMasterKey: true});
+                                    }, {
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
 
                             }
                             else if (result.get("isMember") === true && workspace_follower.get("isMember") === true) {
@@ -4862,14 +5142,23 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                 // now add both member and follower roles
                                 queryMemberRole.equalTo('name', memberName);
-                                queryMemberRole.first({useMasterKey: true})
-                                    .then((memberRole) => {
+                                queryMemberRole.first({
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                }).then((memberRole) => {
                                         // The object was retrieved successfully.
 
                                         //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
                                         memberRole.getUsers().add(user);
-                                        memberRole.save(null, {useMasterKey: true});
+                                        memberRole.save(null, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
                                         var userRolesRelation = user.relation("roles");
                                         userRolesRelation.add(memberRole);
@@ -4877,12 +5166,21 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         // now add follower since a member is by default a follower
                                         queryfollowerRole.equalTo('name', followerName);
 
-                                        queryfollowerRole.first({useMasterKey: true})
-                                            .then((followerRole) => {
+                                        queryfollowerRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        }).then((followerRole) => {
                                                 // The object was retrieved successfully.
 
                                                 followerRole.getUsers().add(user);
-                                                followerRole.save(null, {useMasterKey: true});
+                                                followerRole.save(null, {
+
+                                                    useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.add(followerRole);
@@ -4906,14 +5204,24 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 // The object was not retrieved successfully.
                                                 // error is a Parse.Error with an error code and message.
                                                 response.error(error);
-                                            }, {useMasterKey: true});
+                                            }, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
 
                                     }, (error) => {
                                         // The object was not retrieved successfully.
                                         // error is a Parse.Error with an error code and message.
                                         response.error(error);
-                                    }, {useMasterKey: true});
+                                    }, {
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
 
 
                             }
@@ -5505,29 +5813,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             console.log("User: " + JSON.stringify(User));
 
-                                            let expertOwner = User.toJSON();
-                                            if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                                            if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                                            if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                                            if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                                            if (expertOwner.user_location) {delete expertOwner.user_location;}
-                                            if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                                            if (expertOwner.authData) {delete expertOwner.authData;}
-                                            if (expertOwner.username) {delete expertOwner.username;}
-                                            if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                                            if (expertOwner.passion) {delete expertOwner.passion;}
-                                            if (expertOwner.identities) {delete expertOwner.identities;}
-                                            if (expertOwner.email) {delete expertOwner.email;}
-                                            if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                                            if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                                            if (expertOwner.website) {delete expertOwner.website;}
-                                            if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                                            if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                                            if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                                            if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                                            if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                                            if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                                            if (expertOwner.roles) {delete expertOwner.roles;}
+                                            let expertOwner = simplifyUser(User);
 
 
                                             Channel.addUnique("expertsArray", expertOwner);
@@ -7291,7 +7577,12 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     relation.add(postSocial);
     //console.log("afterAdd: " + JSON.stringify(relation));
 
-    post.save();
+    post.save(null, {
+
+        useMasterKey: true,
+        sessionToken: req.user.getSessionToken()
+
+    });
 
     var diff = process.hrtime(time);
     console.log(`PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
@@ -7468,7 +7759,12 @@ Parse.Cloud.afterSave('MeetingSnippet', function(req, response) {
              }
              */
 
-            postQuestion.save().then((postQuestion) => {
+            postQuestion.save(null, {
+
+                useMasterKey: true,
+                sessionToken: req.user.getSessionToken()
+
+            }).then((postQuestion) => {
                 // Execute any logic that should take place after the object is saved.
                 //alert('New object created with objectId: ' + postQuestion.id);
                 //console.log("postQuestion 123: " + JSON.stringify(postQuestion.id));
@@ -7504,7 +7800,12 @@ Parse.Cloud.afterSave('MeetingSnippet', function(req, response) {
 
         var postQuestionRelation = Post.relation("post_questions");
         postQuestionRelation.add(postQuestion);
-        Post.save();
+        Post.save(null, {
+
+            useMasterKey: true,
+            sessionToken: req.user.getSessionToken()
+
+        });
 
         return callback(null, postQuestion);
 
@@ -7642,15 +7943,24 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
                 //console.log("meetingPost2: " + JSON.stringify(meetingPost));
 
 
-                meetingPost.save()
-                    .then((meetingPost) => {
+                meetingPost.save(null, {
+
+                    useMasterKey: true,
+                    sessionToken: req.user.getSessionToken()
+
+                }).then((meetingPost) => {
                         // Execute any logic that should take place after the object is saved.
                         //alert('New object created with objectId: ' + meetingPost.id);
                         //console.log("meetingPost3: " + JSON.stringify(meetingPost.id));
 
                         if (!meetingObject.get("post")) {
                             meetingObject.set("post", meetingPost);
-                            meetingObject.save();
+                            meetingObject.save(null, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
                         }
 
                         return callback(null, meetingObject);
