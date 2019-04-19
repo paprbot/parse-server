@@ -1601,6 +1601,12 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
                 let isSelectedWorkspaceFollower_Previous = User.get("isSelectedWorkspaceFollower");
                 isSelectedWorkspaceFollower_Previous.set("isSelected", false);
+                isSelectedWorkspaceFollower_Previous.save({
+
+                    useMasterKey: true,
+                    sessionToken: req.user.getSessionToken()
+
+                });
 
                 let finalTime = process.hrtime(time);
                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
@@ -3710,7 +3716,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                             var userRolesRelation = user.relation("roles");
                                             userRolesRelation.add(followerRole);
-                                            user.save(null, {useMasterKey: true});
+                                            user.save(null, {
+
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+
+                                            });
 
                                             beforeSave_Time = process.hrtime(time);
                                             console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
@@ -3757,7 +3768,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     var userRolesRelation = user.relation("roles");
                                     userRolesRelation.add(followerRole);
-                                    user.save(null, {useMasterKey: true});
+                                    user.save(null, {
+
+                                        //useMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
 
                                     beforeSave_Time = process.hrtime(time);
                                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
@@ -3813,7 +3829,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                             var userRolesRelation = user.relation("roles");
                                             userRolesRelation.add(followerRole);
-                                            user.save(null, {useMasterKey: true});
+                                            user.save(null, {
+
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+
+                                            });
 
                                             beforeSave_Time = process.hrtime(time);
                                             console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
@@ -3946,7 +3967,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.add(followerRole);
-                                                user.save(null, {useMasterKey: true});
+                                                user.save(null, {
+
+                                                    //useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 Workspace.save(null, {
 
@@ -3988,7 +4014,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                         var userRolesRelation = user.relation("roles");
                                         userRolesRelation.add(followerRole);
-                                        user.save(null, {useMasterKey: true});
+                                        user.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
                                         Workspace.save(null, {
 
@@ -4025,7 +4056,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                         var userRolesRelation = user.relation("roles");
                                         userRolesRelation.add(followerRole);
-                                        user.save(null, {useMasterKey: true});
+                                        user.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
                                         Workspace.save(null, {
 
@@ -4075,7 +4111,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             }).then((result_workspacefollower) => {
                                 // The object was retrieved successfully.
-                                //console.log("result_workspacefollower" + JSON.stringify(result_workspacefollower));
+                                console.log("result_workspacefollower" + JSON.stringify(result_workspacefollower));
 
                                 if (result_workspacefollower) {
 
@@ -4178,11 +4214,16 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.remove(followerRole);
-                                                user.save(null, {useMasterKey: true});
+                                                user.save(null, {
+
+                                                    //useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 Workspace.save(null, {
 
-                                                    //useMasterKey: true,
+                                                    useMasterKey: true,
                                                     sessionToken: req.user.getSessionToken()
                                                 });
 
@@ -4214,7 +4255,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.remove(followerRole);
-                                                user.save(null, {useMasterKey: true});
+                                                user.save(null, {
+
+                                                    //useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 Workspace.save(null, {
 
@@ -4268,7 +4314,11 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                         //var userRolesRelation = user.relation("roles");
                                                         userRolesRelation.remove(followerRole);
-                                                        user.save(null, {useMasterKey: true});
+                                                        user.save(null, {
+
+                                                            //useMasterKey: true,
+                                                            sessionToken: req.user.getSessionToken()
+                                                        });
 
                                                         Workspace.save(null, {
 
@@ -4327,7 +4377,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                         var userRolesRelation = user.relation("roles");
                                                         userRolesRelation.remove(followerRole);
-                                                        user.save(null, {useMasterKey: true});
+                                                        user.save(null, {
+
+                                                            //useMasterKey: true,
+                                                            sessionToken: req.user.getSessionToken()
+
+                                                        });
 
                                                         Workspace.save(null, {
 
@@ -4452,7 +4507,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.remove(followerRole);
-                                                user.save(null, {useMasterKey: true});
+                                                user.save(null, {
+
+                                                    //useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 Workspace.save(null, {
 
@@ -4488,7 +4548,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.remove(followerRole);
-                                                user.save(null, {useMasterKey: true});
+                                                user.save(null, {
+
+                                                    //useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 Workspace.save(null, {
 
@@ -4540,7 +4605,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                         var userRolesRelation = user.relation("roles");
                                                         userRolesRelation.remove(followerRole);
-                                                        user.save(null, {useMasterKey: true});
+                                                        user.save(null, {
+
+                                                            //useMasterKey: true,
+                                                            sessionToken: req.user.getSessionToken()
+
+                                                        });
 
                                                         Workspace.save(null, {
 
@@ -4599,7 +4669,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                         var userRolesRelation = user.relation("roles");
                                                         userRolesRelation.remove(followerRole);
-                                                        user.save(null, {useMasterKey: true});
+                                                        user.save(null, {
+
+                                                            //useMasterKey: true,
+                                                            sessionToken: req.user.getSessionToken()
+
+                                                        });
 
                                                         Workspace.save(null, {
 
@@ -4667,7 +4742,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                         var userRolesRelation = user.relation("roles");
                                         userRolesRelation.add(memberRole);
-                                        user.save(null, {useMasterKey: true});
+                                        user.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
                                         Workspace.save(null, {
 
@@ -4711,7 +4791,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                         var userRolesRelation = user.relation("roles");
                                         userRolesRelation.remove(memberRole);
-                                        user.save(null, {useMasterKey: true});
+                                        user.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
 
                                         Workspace.save(null, {
 
@@ -4801,7 +4886,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                 var userRolesRelation = user.relation("roles");
                                                 userRolesRelation.add(followerRole);
-                                                user.save(null, {useMasterKey: true});
+                                                user.save(null, {
+
+                                                    //useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                });
 
                                                 Workspace.save(null, {
 
