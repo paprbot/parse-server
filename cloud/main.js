@@ -1560,6 +1560,55 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 }, {useMasterKey: true});
 
 // Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
+Parse.Cloud.beforeSave('Session', function(req, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let session = req.object;
+    let user = session.get("user");
+    let expiresAt = session.get("expiresAt");
+    let _tagPublic = '_tags:' + '*';
+    let _tagUserId = '_tags:' + user.id;
+
+    if (session.isNew()) {
+
+        // new session, create a new algoliaAPIKey for this user
+
+        // generate a public API key for user 42. Here, records are tagged with:
+        //  - 'user_XXXX' if they are visible by user XXXX
+        const user_public_key = client.generateSecuredApiKey(
+            '4cbf716235b59cc21f2fa38eb29c4e39',
+            {
+                validUntil: expiresAt,
+                filters: '_tagPublic OR _tagUserId',
+                userToken: user.id
+            }
+        );
+
+        session.set("algoliaSecureAPIKey", user_public_key);
+
+        let finalTime = process.hrtime(time);
+        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+    } else if (!user.isNew()) {
+
+
+        let finalTime = process.hrtime(time);
+        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+
+    }
+
+
+
+
+}, {useMasterKey: true});
+
+// Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
 Parse.Cloud.beforeSave('_User', function(req, response) {
 
     const NS_PER_SEC = 1e9;
@@ -1669,7 +1718,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
         response.success();}
 
 
-});
+}, {useMasterKey: true});
 
 // Run beforeSave functions workspace
 Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
@@ -3386,6 +3435,15 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         } else { return callback(null, post);}
 
     }
+
+    // todo function get qna for question posts
+
+    function getQnA (callback) {}
+
+    // todo function get messages for posts
+
+    function getMessages (callback) {}
+
 
 
 
