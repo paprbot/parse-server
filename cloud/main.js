@@ -402,7 +402,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
     let User = request.params.user;
     let WorkspaceFollower = request.params.workspace_follower;
 
-    var workspaceFollower = new Parse.Object("WorkSpace");
+    var workspaceFollower = new Parse.Object("workspace_follower");
     workspaceFollower.id = WorkspaceFollower;
 
     var user = new Parse.Object("_User");
@@ -432,6 +432,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
 
                 let queryWorkspaceFollowerSelected = new Parse.Query("workspace_follower");
                 queryWorkspaceFollowerSelected.descending("updatedAt");
+                queryWorkspaceFollowerSelected.include("workspace");
 
                 queryWorkspaceFollowerSelected.first({
 
@@ -453,7 +454,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
                         user.set("isSelectedWorkspaceFollower", result_workspacefollower);
                         user.save(null, {
 
-                            useMasterKey: true,
+                            //useMasterKey: true,
                             sessionToken: sessionToken
 
                         });
@@ -461,14 +462,14 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
                         var finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                        return response.success(result_workspacefollower);
+                        return response.success(result_workspacefollower.toJSON());
 
                     } else {
 
                         user.set("isSelectedWorkspaceFollower", null);
                         user.save(null, {
 
-                            useMasterKey: true,
+                            //useMasterKey: true,
                             sessionToken: sessionToken
 
                         });
