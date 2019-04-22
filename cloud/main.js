@@ -1559,54 +1559,6 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
 }, {useMasterKey: true});
 
-// Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
-Parse.Cloud.beforeSave('Session', function(req, response) {
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let session = req.object;
-    let user = session.get("user");
-    let expiresAt = session.get("expiresAt");
-    let _tagPublic = '_tags:' + '*';
-    let _tagUserId = '_tags:' + user.id;
-
-    if (session.isNew()) {
-
-        // new session, create a new algoliaAPIKey for this user
-
-        // generate a public API key for user 42. Here, records are tagged with:
-        //  - 'user_XXXX' if they are visible by user XXXX
-        const user_public_key = client.generateSecuredApiKey(
-            '4cbf716235b59cc21f2fa38eb29c4e39',
-            {
-                validUntil: expiresAt,
-                filters: '_tagPublic OR _tagUserId',
-                userToken: user.id
-            }
-        );
-
-        session.set("algoliaSecureAPIKey", user_public_key);
-
-        let finalTime = process.hrtime(time);
-        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-        response.success();
-    } else if (!user.isNew()) {
-
-
-        let finalTime = process.hrtime(time);
-        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-        response.success();
-
-    }
-
-
-
-
-}, {useMasterKey: true});
 
 // Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
 Parse.Cloud.beforeSave('_User', function(req, response) {
@@ -1615,9 +1567,37 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
-    var user = req.object;
-    var socialProfilePicURL = user.get("socialProfilePicURL");
-    var profileImage = user.get("profileimage");
+    let user = req.object;
+    let socialProfilePicURL = user.get("socialProfilePicURL");
+    let profileImage = user.get("profileimage");
+
+    //let expiresAt = session.get("expiresAt");
+    let _tagPublic = '_tags:' + '*';
+    let _tagUserId = '_tags:' + user.id;
+
+    if (user.get("isLogin")) {
+
+        user.set("isLogin", false);
+
+        // new session, create a new algoliaAPIKey for this user
+
+        // generate a public API key for user 42. Here, records are tagged with:
+        //  - 'user_XXXX' if they are visible by user XXXX
+        const user_public_key = client.generateSecuredApiKey(
+            '4cbf716235b59cc21f2fa38eb29c4e39',
+            {
+                //validUntil: expiresAt,
+                filters: [
+                    _tagPublic,
+                    _tagUserId
+                ],
+                userToken: user.id
+            }
+        );
+
+        user.set("algoliaSecureAPIKey", user_public_key);
+
+    }
 
 
     if (user.dirty("profileimage")) {
@@ -1627,17 +1607,20 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
         console.log("Profileimage url: " + JSON.stringify(profileImage.toJSON().url));
 
 
-    } else if (!user.dirty("profileimage")) {user.set("isDirtyProfileimage", false);}
+    }
+    else if (!user.dirty("profileimage")) {user.set("isDirtyProfileimage", false);}
 
     if (user.dirty("isOnline")) {
         user.set("isDirtyIsOnline", true);
 
-    } else if (!user.dirty("isOnline")) {user.set("isDirtyIsOnline", false);}
+    }
+    else if (!user.dirty("isOnline")) {user.set("isDirtyIsOnline", false);}
 
     if (user.isNew()) {
         user.set("isNew", true);
         user.set("showAvailability", true);
-    } else if (!user.isNew()) {
+    }
+    else if (!user.isNew()) {
 
         if (user.dirty("isSelectedWorkspaceFollower")) {
 
