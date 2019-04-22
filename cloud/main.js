@@ -399,8 +399,15 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
     let time = process.hrtime();
 
     //get request params
-    let user = request.params.user;
-    let workspaceFollower = request.params.workspace_follower;
+    let User = request.params.user;
+    let WorkspaceFollower = request.params.workspace_follower;
+
+    var workspaceFollower = new Parse.Object("WorkSpace");
+    workspaceFollower.id = WorkspaceFollower;
+
+    var user = new Parse.Object("_User");
+    user.id = User;
+
 
     if (!request.user) {
 
