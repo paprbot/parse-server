@@ -118,14 +118,14 @@ Parse.Cloud.define("searchWorkspaces", function (request, response) {
                 var finalTime = process.hrtime(time);
                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                response.success(content.hits);
+                return response.success(content.hits);
             });
 
 
         }, (error) => {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
-            return callback (error);
+            return response.error(error);
         }, { useMasterKey: true , sessionToken: sessionToken});
 
 
@@ -1983,13 +1983,11 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
             '4cbf716235b59cc21f2fa38eb29c4e39',
             {
                 //validUntil: expiresAt,
-                filters: [
-                    _tagPublic,
-                    _tagUserId
-                ],
+                tagFilters: [ [_tagUserId , _tagPublic] ],
                 userToken: user.id
             }
         );
+
 
         user.set("algoliaSecureAPIKey", user_public_key);
 
