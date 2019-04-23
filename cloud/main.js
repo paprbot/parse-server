@@ -471,6 +471,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
             if(result) {
 
                 let queryWorkspaceFollowerSelected = new Parse.Query("workspace_follower");
+                queryWorkspaceFollowerSelected.equalTo("isFollower", true);
                 queryWorkspaceFollowerSelected.descending("updatedAt");
                 queryWorkspaceFollowerSelected.include("workspace");
 
