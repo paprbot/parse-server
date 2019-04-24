@@ -2027,6 +2027,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
             }).then((User) => {
 
                 let isSelectedWorkspaceFollower_Previous = User.get("isSelectedWorkspaceFollower");
+                console.log("user.isisSelectedWorkspaceFollower: " + JSON.stringify(isSelectedWorkspaceFollower_Previous));
                 isSelectedWorkspaceFollower_Previous.set("isSelected", false);
                 isSelectedWorkspaceFollower_Previous.save(null, {
 
@@ -2036,7 +2037,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
                 });
 
                 let finalTime = process.hrtime(time);
-                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                console.log(`finalTime took _User beforeSave ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
                 response.success();
 
