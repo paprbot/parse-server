@@ -1968,6 +1968,10 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     let socialProfilePicURL = user.get("socialProfilePicURL");
     let profileImage = user.get("profileimage");
 
+    let workspaceFollower = new Parse.extend("workspace_follower");
+    let queryWorkspaceFollower = new Parse.Query(workspaceFollower);
+    queryWorkspaceFollower.equalTo("isSelected", true);
+
     //let expiresAt = session.get("expiresAt");
     let _tagPublic = '_tags:' + '*';
     let _tagUserId = '_tags:' + user.id;
@@ -2017,16 +2021,17 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     }
     else if (!user.isNew()) {
 
+        user.set("isNew", false);
+
         if (user.dirty("isSelectedWorkspaceFollower")) {
 
-            user.fetch(user.id, {
+            queryWorkspaceFollower.first( {
 
                 useMasterKey: true,
                 sessionToken: req.user.getSessionToken()
 
-            }).then((User) => {
+            }).then((isSelectedWorkspaceFollower_Previous) => {
 
-                let isSelectedWorkspaceFollower_Previous = User.get("isSelectedWorkspaceFollower");
                 console.log("user.isisSelectedWorkspaceFollower: " + JSON.stringify(isSelectedWorkspaceFollower_Previous));
                 isSelectedWorkspaceFollower_Previous.set("isSelected", false);
                 isSelectedWorkspaceFollower_Previous.save(null, {
@@ -2055,7 +2060,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
         }
 
-        user.set("isNew", false);
+
     }
 
 
