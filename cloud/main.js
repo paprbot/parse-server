@@ -2026,13 +2026,14 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
         if (user.dirty("isSelectedWorkspaceFollower")) {
 
-            queryWorkspaceFollower.first( {
+            user.fetch(user.id {
 
                 useMasterKey: true,
                 sessionToken: req.user.getSessionToken()
 
-            }).then((isSelectedWorkspaceFollower_Previous) => {
+            }).then((User) => {
 
+                let isSelectedWorkspaceFollower_Previous = User.get("isisSelectedWorkspaceFollower");
                 console.log("user.isisSelectedWorkspaceFollower: " + JSON.stringify(isSelectedWorkspaceFollower_Previous));
                 isSelectedWorkspaceFollower_Previous.set("isSelected", false);
                 isSelectedWorkspaceFollower_Previous.save(null, {
@@ -4463,26 +4464,15 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                     //useMasterKey: true,
                                                     sessionToken: req.user.getSessionToken()
 
-                                                }).then((result) => {
-
-                                                    Workspace.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    });
-
-                                                    response.success();
-
-                                                }, (error) => {
-                                                    // The object was not retrieved successfully.
-                                                    // error is a Parse.Error with an error code and message.
-                                                    response.error(error);
-                                                }, {
-
-                                                    useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-
                                                 });
+
+                                                Workspace.save(null, {
+
+                                                    //useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+                                                });
+
+                                                response.success();
 
 
                                             }, (error) => {
@@ -4880,27 +4870,15 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                     //useMasterKey: true,
                                                     sessionToken: req.user.getSessionToken()
-
-                                                }).then((result) => {
-
-                                                    Workspace.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    });
-    
-                                                    response.success();
-
-                                                }, (error) => {
-                                                    // The object was not retrieved successfully.
-                                                    // error is a Parse.Error with an error code and message.
-                                                    response.error(error);
-                                                }, {
-
-                                                    useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-
                                                 });
+
+                                                Workspace.save(null, {
+
+                                                    //useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+                                                });
+
+                                            response.success();
 
 
                                             }, (error) => {
