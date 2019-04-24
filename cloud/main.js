@@ -1968,10 +1968,13 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     let socialProfilePicURL = user.get("socialProfilePicURL");
     let profileImage = user.get("profileimage");
 
-    let workspaceFollower = Parse.object.extend("workspace_follower");
+    let workspaceFollower = Parse.Object.extend("workspace_follower");
     let queryWorkspaceFollower = new Parse.Query(workspaceFollower);
     queryWorkspaceFollower.equalTo("isSelected", true);
     queryWorkspaceFollower.equalTo("user", user);
+
+    let userObject = Parse.Object.extend("_User");
+    let userQuery = new Parse.Query(userObject);
 
     //let expiresAt = session.get("expiresAt");
     let _tagPublic = '_tags:' + '*';
@@ -2026,14 +2029,16 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
         if (user.dirty("isSelectedWorkspaceFollower")) {
 
-            user.fetch(user.id {
+            userQuery.get(user.id, {
 
                 useMasterKey: true,
                 sessionToken: req.user.getSessionToken()
 
             }).then((User) => {
 
-                let isSelectedWorkspaceFollower_Previous = User.get("isisSelectedWorkspaceFollower");
+                console.log("User: " + JSON.stringify(User));
+
+                let isSelectedWorkspaceFollower_Previous = User.get("isSelectedWorkspaceFollower");
                 console.log("user.isisSelectedWorkspaceFollower: " + JSON.stringify(isSelectedWorkspaceFollower_Previous));
                 isSelectedWorkspaceFollower_Previous.set("isSelected", false);
                 isSelectedWorkspaceFollower_Previous.save(null, {
