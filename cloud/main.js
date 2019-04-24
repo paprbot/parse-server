@@ -1971,6 +1971,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     let workspaceFollower = new Parse.extend("workspace_follower");
     let queryWorkspaceFollower = new Parse.Query(workspaceFollower);
     queryWorkspaceFollower.equalTo("isSelected", true);
+    queryWorkspaceFollower.equalTo("user", user);
 
     //let expiresAt = session.get("expiresAt");
     let _tagPublic = '_tags:' + '*';
