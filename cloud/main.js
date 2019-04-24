@@ -482,7 +482,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
 
                 }).then((result_workspacefollower) => {
                     // The object was retrieved successfully.
-                    console.log("result_workspacefollower" + JSON.stringify(result_workspacefollower));
+                    //console.log("result_workspacefollower" + JSON.stringify(result_workspacefollower));
 
                     if (result_workspacefollower) {
 
@@ -1968,7 +1968,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     let socialProfilePicURL = user.get("socialProfilePicURL");
     let profileImage = user.get("profileimage");
 
-    let workspaceFollower = new Parse.extend("workspace_follower");
+    let workspaceFollower = Parse.object.extend("workspace_follower");
     let queryWorkspaceFollower = new Parse.Query(workspaceFollower);
     queryWorkspaceFollower.equalTo("isSelected", true);
     queryWorkspaceFollower.equalTo("user", user);
@@ -4463,15 +4463,26 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                     //useMasterKey: true,
                                                     sessionToken: req.user.getSessionToken()
 
-                                                });
+                                                }).then((result) => {
 
-                                                Workspace.save(null, {
+                                                    Workspace.save(null, {
 
-                                                    //useMasterKey: true,
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    });
+
+                                                    response.success();
+
+                                                }, (error) => {
+                                                    // The object was not retrieved successfully.
+                                                    // error is a Parse.Error with an error code and message.
+                                                    response.error(error);
+                                                }, {
+
+                                                    useMasterKey: true,
                                                     sessionToken: req.user.getSessionToken()
-                                                });
 
-                                                response.success();
+                                                });
 
 
                                             }, (error) => {
@@ -4869,15 +4880,27 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                                     //useMasterKey: true,
                                                     sessionToken: req.user.getSessionToken()
-                                                });
 
-                                                Workspace.save(null, {
+                                                }).then((result) => {
 
-                                                    //useMasterKey: true,
+                                                    Workspace.save(null, {
+
+                                                        //useMasterKey: true,
+                                                        sessionToken: req.user.getSessionToken()
+                                                    });
+    
+                                                    response.success();
+
+                                                }, (error) => {
+                                                    // The object was not retrieved successfully.
+                                                    // error is a Parse.Error with an error code and message.
+                                                    response.error(error);
+                                                }, {
+
+                                                    useMasterKey: true,
                                                     sessionToken: req.user.getSessionToken()
-                                                });
 
-                                            response.success();
+                                                });
 
 
                                             }, (error) => {
