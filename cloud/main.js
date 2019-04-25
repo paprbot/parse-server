@@ -4484,24 +4484,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 Workspace.increment("followerCount");
                                 console.log("increment Follower");
 
-                                let followerRole = new Parse.Role();
-                                let followerName = 'Follower-' + Workspace.id;
-                                followerRole.set("name", followerName);
-
-                                followerRole.getUsers().add(user);
-                                followerRole.save(null, {
-
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
-
                                 let userRolesRelation = user.relation("roles");
-                                userRolesRelation.add(followerRole);
-
-                                let memberRole = new Parse.Role();
-                                let memberName = 'member-' + Workspace.id;
-                                memberRole.set("name", memberName);
 
                                 if (Workspace.get("type") === 'private') {
 
@@ -4541,33 +4524,137 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     Workspace.increment("memberCount");
                                     console.log("increment  Member");
 
-                                    console.log("memberRole: " + JSON.stringify(memberRole));
+                                    // add user as both member and follower
 
-                                    memberRole.getUsers().add(user);
-                                    memberRole.save(null, {
+                                    function addFollowerRole (callback) {
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                        let followerName = 'Follower-' + Workspace.id;
 
+                                        // now add follower since a member is by default a follower
+                                        queryfollowerRole.equalTo('name', followerName);
+
+                                        queryfollowerRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        }).then((followerRole) => {
+                                            // The object was retrieved successfully.
+
+                                            followerRole.getUsers({
+
+                                                useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+
+                                            }).add(user);
+                                            followerRole.save(null, {
+
+                                                useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+
+                                            });
+
+                                            console.log("followerRole: " + JSON.stringify(followerRole));
+
+
+                                            return callback (null, followerRole);
+
+                                        }, (error) => {
+                                            // The object was not retrieved successfully.
+                                            // error is a Parse.Error with an error code and message.
+                                            return callback (error);
+                                        }, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
+
+                                    }
+
+                                    function addMemberRole (callback) {
+
+                                        let memberName = 'member-' + Workspace.id;
+
+                                        queryMemberRole.equalTo('name', memberName);
+                                        queryMemberRole.first({
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        }).then((memberRole) => {
+                                            // The object was retrieved successfully.
+
+                                            console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+
+                                            memberRole.getUsers({
+
+                                                useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+
+                                            }).add(user);
+                                            memberRole.save(null, {
+
+                                                useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+
+                                            });
+
+                                            return callback (null, memberRole);
+
+
+                                        }, (error) => {
+                                            // The object was not retrieved successfully.
+                                            // error is a Parse.Error with an error code and message.
+                                            return callback (error);
+                                        }, {
+
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
+
+
+                                    }
+
+                                    async.parallel([
+                                        async.apply(addFollowerRole),
+                                        async.apply(addMemberRole)
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        } else {
+
+                                            let followerRole = results[0];
+                                            let memberRole = results[1];
+
+                                            if (followerRole) {
+                                                userRolesRelation.add(followerRole);
+                                            }
+
+                                            if (memberRole) {
+                                                userRolesRelation.add(memberRole);
+
+                                            }
+
+                                            user.save(null, {
+
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+
+                                            });
+
+                                            Workspace.save(null, {
+
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+                                            });
+
+                                            response.success();
+
+                                        }
                                     });
-
-                                    userRolesRelation.add(memberRole);
-
-                                    user.save(null, {
-
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
-
-                                    });
-
-                                    Workspace.save(null, {
-
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
-                                    });
-
-                                    response.success();
-
 
 
                                 }
