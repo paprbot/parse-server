@@ -9167,7 +9167,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                         }).then((savedRoles) => {
 
-                            //console.log("savedRoles: " + JSON.stringify(savedRoles));
+                            console.log("savedRoles: " + JSON.stringify(savedRoles));
 
                             var memberrole = savedRoles[4];
                             //memberrole.getUsers().add(usersToAddToRole);
@@ -9281,96 +9281,120 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 function getExperts (callback) {
 
-                    // todo check if expert is dirty, if no ignore and return callback
-
-                    var expertObject = Parse.Object.extend("_User");
+                    let expertObject = Parse.Object.extend("_User");
                     expertObject = workspace.get("experts");
                     let expertsArray = [];
 
-                    //console.log("Experts: " + JSON.stringify(expertObject));
+                    if (workspace.get("isNew")) {
 
-                    expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
+                        expertsArray = workspace.get("expertsArray");
 
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                        console.log("isNew Workspace expertsArray: " + JSON.stringify(expertsArray));
 
-                    }).then((experts) => {
+                        return callback (null, expertsArray);
 
-                        // Convert Parse.Object to JSON
-                        //workspace = workspace.toJSON();
-                        var User = new Parse.Object("_User");
-                        var queryRole = new Parse.Query(Parse.Role);
+                    } else {
 
-                        //console.log("\n Experts: " + JSON.stringify(experts));
+                        console.log("workspace.dirty_experts: " + JSON.stringify(workspace.dirty("experts")));
 
-                        queryRole.equalTo('name', 'expert-' + workspace.id);
+                        if (workspace.dirty("experts")) {
 
-                        queryRole.first({
+                            // expert being added or removed, update algolia, else return callback.
 
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        }).then((role) => {
-
-                            let expertrole = role;
-
-                            console.log("Role: " + JSON.stringify(role));
-
-                            expertrole.getUsers(null, {
+                            expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
 
                                 useMasterKey: true,
                                 sessionToken: request.user.getSessionToken()
 
-                            }).add(experts);
-                            expertrole.save(null, {
+                            }).then((experts) => {
 
-                                useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
+                                // Convert Parse.Object to JSON
+                                //workspace = workspace.toJSON();
+                                let User = new Parse.Object("_User");
+                                let queryRole = new Parse.Query(Parse.Role);
 
-                            });
-                            //var userRolesRelation;
+                                //console.log("\n Experts: " + JSON.stringify(experts));
 
-                            for (var i = 0; i < experts.length; i++) {
+                                queryRole.equalTo('name', 'expert-' + workspace.id);
 
-                                let expertObject = experts[i];
+                                queryRole.first({
 
-                                let userRolesRelation = expertObject.relation("roles");
-                                console.log("userRolesRelation afterSave Workspace: " + JSON.stringify(userRolesRelation));
-                                userRolesRelation.add(expertrole); // add owner role to the user roles field.
-                                expertObject.save(null, {
+                                    useMasterKey: true,
+                                    sessionToken: request.user.getSessionToken()
+
+                                }).then((role) => {
+
+                                    let expertrole = role;
+
+                                    console.log("Role: " + JSON.stringify(role));
+
+                                    expertrole.getUsers().add(experts);
+                                    expertrole.save(null, {
+
+                                        useMasterKey: true,
+                                        sessionToken: request.user.getSessionToken()
+
+                                    });
+                                    //var userRolesRelation;
+
+                                    for (let i = 0; i < experts.length; i++) {
+
+                                        let expertObject = experts[i];
+
+                                        let userRolesRelation = expertObject.relation("roles");
+                                        console.log("userRolesRelation afterSave Workspace: " + JSON.stringify(userRolesRelation));
+                                        userRolesRelation.add(expertrole); // add owner role to the user roles field.
+                                        expertObject.save(null, {
+
+                                            useMasterKey: true,
+                                            sessionToken: request.user.getSessionToken()
+
+                                        });
+
+                                    }
+
+                                    return callback (null, experts);
+
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    return callback (null, error);
+                                }, {
 
                                     useMasterKey: true,
                                     sessionToken: request.user.getSessionToken()
 
                                 });
 
-                            }
 
-                            return callback (null, experts);
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                return callback (null, error);
+                            }, {
 
+                                useMasterKey: true,
+                                sessionToken: request.user.getSessionToken()
 
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            return callback (null, error);
-                        }, {
-
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
+                            });
 
 
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        return callback (null, error);
-                    }, {
+                        }
+                        else {
 
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                            expertsArray = workspace.get("expertsArray");
 
-                    });
+                            console.log("isNew Workspace expertsArray: isDirtyExperts false " + JSON.stringify(expertsArray));
+
+                            return callback (null, expertsArray);
+
+
+                        }
+
+
+                    }
+
 
                 }
 
@@ -9553,8 +9577,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     //console.log("results length: " + JSON.stringify(results));
 
                     workspaceToSave = results[3];
-                    var skillsToSave = results[1];
-                    var expertsToSave = results[2];
+                    let skillsToSave = results[1];
+                    let expertsToSave = results[2];
 
                     workspaceToSave["skills"] = skillsToSave;
                     workspaceToSave["experts"] = expertsToSave;
