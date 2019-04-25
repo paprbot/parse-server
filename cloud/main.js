@@ -118,20 +118,20 @@ Parse.Cloud.define("searchWorkspaces", function (request, response) {
                 var finalTime = process.hrtime(time);
                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                return response.success(content.hits);
+                response.success(content.hits);
             });
 
 
         }, (error) => {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
-            return response.error(error);
+             response.error(error);
         }, { useMasterKey: true , sessionToken: sessionToken});
 
 
     } else {
 
-        return response.error("A valid user sessionToken is required.");
+         response.error("A valid user sessionToken is required.");
     }
 
 
@@ -451,7 +451,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
 
     if (!request.user) {
 
-        return response.error("Please enter use sessionToken it's required.");
+         response.error("Please enter use sessionToken it's required.");
 
     } else {
 
@@ -494,7 +494,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
                         var finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                        return response.success(result_workspacefollower.toJSON());
+                         response.success(result_workspacefollower.toJSON());
 
                     } else {
 
@@ -503,7 +503,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
                         var finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                        return response.success();
+                         response.success();
 
                     }
 
@@ -4174,12 +4174,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 }).then((followerRole) => {
                     // The object was retrieved successfully.
 
-                    followerRole.getUsers({
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    }).add(user);
+                    followerRole.getUsers().add(user);
                     followerRole.save(null, {
 
                         useMasterKey: true,
@@ -4218,12 +4213,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                     //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
-                    memberRole.getUsers({
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    }).add(user);
+                    memberRole.getUsers().add(user);
                     memberRole.save(null, {
 
                         useMasterKey: true,
@@ -4261,12 +4251,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 }).then((followerRole) => {
                     // The object was retrieved successfully.
 
-                    followerRole.getUsers({
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    }).remove(user);
+                    followerRole.getUsers().remove(user);
                     followerRole.save(null, {
 
                         useMasterKey: true,
@@ -4305,12 +4290,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                     //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
-                    memberRole.getUsers({
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    }).remove(user);
+                    memberRole.getUsers().remove(user);
                     memberRole.save(null, {
 
                         useMasterKey: true,
@@ -4377,7 +4357,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         let beforeSaveElse_Time = process.hrtime(time);
                         console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                        return response.error(results);
+                        response.error(results);
 
                     } else {
 
@@ -4492,7 +4472,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     let beforeSaveElse_Time = process.hrtime(time);
                                     console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                    return response.success();
+                                    response.success();
 
                                 }
                             });
@@ -4537,7 +4517,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     let beforeSaveElse_Time = process.hrtime(time);
                                     console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                    return response.success();
+                                     response.success();
 
                                 }
                             });
@@ -4629,7 +4609,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     let beforeSaveElse_Time = process.hrtime(time);
                                     console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                    return response.success();
+                                    response.success();
 
                                 }
                             });
@@ -4886,7 +4866,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             let beforeSaveElse_Time = process.hrtime(time);
                                             console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                            return response.success();
+                                            response.success();
 
                                         }
                                     });
@@ -4928,7 +4908,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             let beforeSaveElse_Time = process.hrtime(time);
                                             console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                            return response.success();
+                                            response.success();
 
                                         }
                                     });
@@ -5020,7 +5000,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             let beforeSaveElse_Time = process.hrtime(time);
                                             console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                            return response.success();
+                                            response.success();
 
                                         }
                                     });
@@ -5040,7 +5020,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     let beforeSaveElse_Time = process.hrtime(time);
                                     console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                    return response.success();
+                                    response.success();
 
                                 }
 
@@ -5146,7 +5126,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             let beforeSaveElse_Time = process.hrtime(time);
                                             console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                            return response.success();
+                                            response.success();
 
                                         }
                                     });
@@ -5243,7 +5223,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             let beforeSaveElse_Time = process.hrtime(time);
                                             console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                            return response.success();
+                                            response.success();
 
                                         }
                                     });
@@ -5345,7 +5325,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             let beforeSaveElse_Time = process.hrtime(time);
                                             console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                            return response.success();
+                                            response.success();
 
                                         }
                                     });
@@ -5480,7 +5460,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             let beforeSaveElse_Time = process.hrtime(time);
                                             console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                            return response.success();
+                                            response.success();
 
                                         }
                                     });
@@ -5615,13 +5595,13 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             sessionToken: req.user.getSessionToken()
                                         });
 
-                                        return response.success();
+                                         response.success();
 
 
                                     }, (error) => {
                                         // The object was not retrieved successfully.
                                         // error is a Parse.Error with an error code and message.
-                                        return response.error(error);
+                                         response.error(error);
                                     }, {
 
                                         useMasterKey: true,
@@ -5635,7 +5615,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     // do nothing since isMember and isFollower did not change
 
-                                    return response.success();
+                                    response.success();
 
                                 }
                                 else if ((result.get("isMember") === true) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
@@ -5697,7 +5677,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     // do nothing since isMember and isFollower did not change
 
-                                    return response.success();
+                                    response.success();
 
                                 }
 
@@ -5827,7 +5807,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 else if ((result.get("isMember") === false || !result.get("isMember") ) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
 
                                     // do nothing since isMember and isFollower did not change
-                                    return response.success();
+                                     response.success();
 
 
                                 }
@@ -5836,13 +5816,13 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
 
 
-                                    return response.success();
+                                     response.success();
 
                                 }
                                 else if (result.get("isMember") === true && workspace_follower.get("isMember") === true) {
 
                                     // do nothing since isMember and isFollower did not change
-                                    return response.success();
+                                     response.success();
 
 
                                 }
@@ -5853,18 +5833,18 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         }
                         else if (workspace_follower.dirty("isFollower") && !workspace_follower.dirty("isMember")) {
 
-                            return response.error("Please enter both isFollower and isMember when updating either member of follower.");
+                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
 
                         }
                         else if (!workspace_follower.dirty("isFollower") && workspace_follower.dirty("isMember")) {
 
-                            return response.error("Please enter both isFollower and isMember when updating either member of follower.");
+                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
 
                         }
                         else {
 
                             // isMember and isFollower not updated, return success.
-                            return response.success();
+                            response.success();
                         }
 
                     }
@@ -5880,7 +5860,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 let beforeSaveElse_Time = process.hrtime(time);
                 console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                return response.success();
+                 response.success();
 
             }
 
