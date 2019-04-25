@@ -470,14 +470,17 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
             // save was successful
             if(result) {
 
+                console.log("result leaveWorkspace query: " + JSON.stringify(result));
+
                 let queryWorkspaceFollowerSelected = new Parse.Query("workspace_follower");
-                queryWorkspaceFollowerSelected.equalTo("isFollower", true);
-                queryWorkspaceFollowerSelected.descending("updatedAt");
+                queryWorkspaceFollowerSelected.equalTo("isSelected", true);
+                queryWorkspaceFollowerSelected.equalTo("user", user);
+                //queryWorkspaceFollowerSelected.descending("updatedAt");
                 queryWorkspaceFollowerSelected.include("workspace");
 
                 queryWorkspaceFollowerSelected.first({
 
-                    useMasterKey: true,
+                    //useMasterKey: true,
                     sessionToken: sessionToken
 
                 }).then((result_workspacefollower) => {
@@ -486,19 +489,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
 
                     if (result_workspacefollower) {
 
-                        result_workspacefollower.set("isSelected", true);
-                        result_workspacefollower.save(null, {
 
-                            //useMasterKey: true,
-                            sessionToken: sessionToken
-                        });
-                        /*user.set("isSelectedWorkspaceFollower", result_workspacefollower);
-                        user.save(null, {
-
-                            //useMasterKey: true,
-                            sessionToken: sessionToken
-
-                        });*/
 
                         var finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
@@ -507,13 +498,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
 
                     } else {
 
-                        user.set("isSelectedWorkspaceFollower", null);
-                        user.save(null, {
 
-                            //useMasterKey: true,
-                            sessionToken: sessionToken
-
-                        });
 
                         var finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
@@ -4059,12 +4044,17 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
             var queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
             queryWorkspaceFollower.include(["user", "workspace"]);
 
+            var user = new Parse.Object("_User");
+            user = workspace_follower.get("user");
+
             let previousQueryWorkspaceFollowerJoin = new Parse.Query(WORKSPACEFOLLOWER);
             previousQueryWorkspaceFollowerJoin.include("workspace");
+            previousQueryWorkspaceFollowerJoin.equalTo("user", user);
             previousQueryWorkspaceFollowerJoin.equalTo("isSelected", true);
 
             let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
             previousQueryWorkspaceFollowerLeave.include("workspace");
+            previousQueryWorkspaceFollowerLeave.equalTo("user", user);
             previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
             previousQueryWorkspaceFollowerLeave.descending("updatedAt");
 
@@ -4073,8 +4063,6 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
             var Workspace = new WORKSPACE();
             Workspace.id = workspace.id;
 
-            var user = new Parse.Object("_User");
-            user = workspace_follower.get("user");
 
             var memberName = "member-" + Workspace.id;
             var followerName = "Follower-" + Workspace.id;
