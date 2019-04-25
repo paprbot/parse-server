@@ -8968,7 +8968,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
         queryWorkspace.equalTo("objectId", workspaceToSave.objectId);
         queryWorkspace.include( ["user"] );
-        queryWorkspace.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image"]);
+        queryWorkspace.select(["expertsArray", "user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image"]);
 
         //console.log("Workspace Object: " + JSON.stringify(workspace.id));
         //console.log("objectID: " + objectToSave.objectId);
@@ -9581,7 +9581,11 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     let expertsToSave = results[2];
 
                     workspaceToSave["skills"] = skillsToSave;
-                    workspaceToSave["experts"] = expertsToSave;
+                    if (workspace.dirty("experts")) {
+                        workspaceToSave["experts"] = expertsToSave;
+                    } else {
+                        delete workspaceToSave.experts;
+                    }
 
                     //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
                     //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
