@@ -2106,19 +2106,22 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
-    var workspace = req.object;
-    var owner = new Parse.Object("_User");
+    let workspace = req.object;
+    let owner = new Parse.Object("_User");
     owner = workspace.get("user");
 
     console.log("request.object: " + JSON.stringify(req.object));
-    var workspaceExpertObjects = req.object.toJSON().experts.objects;
+    if(workspace.get("experts")) {
+        let workspaceExpertObjects = req.object.toJSON().experts.objects;
+        let exp__op = req.object.toJSON().experts.__op;
 
-    let exp__op = req.object.toJSON().experts.__op;
+    }
+
 
     //console.log("request: " + JSON.stringify(req));
     //console.log("workspaceExperts__op: " + JSON.stringify(workspaceExpertObjects));
 
-    var expertRelation = workspace.relation("experts");
+    let expertRelation = workspace.relation("experts");
     let expertArray = [];
 
     if (
@@ -2128,9 +2131,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
     } else {
 
         //var WORKSPACE = Parse.Object.extend("WorkSpace");
-        var WORKspace = new Parse.Object("WorkSpace");
+        let WORKspace = new Parse.Object("WorkSpace");
 
-        var queryWorkspace = new Parse.Query(WORKspace);
+        let queryWorkspace = new Parse.Query(WORKspace);
 
         if (workspace.isNew()) {
 
@@ -4761,7 +4764,10 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         let previousWorkspaceFollowJoin = results[1];
                         let previousWorkspaceFollowLeave = results[2];
 
-                        console.log("workspace_follower result from query: " + JSON.stringify(result));
+                        console.log("workspace_follower result from query: " + JSON.stringify(result.get("name")));
+                        console.log("previousWorkspaceFollowJoin result from query: " + JSON.stringify(previousWorkspaceFollowJoin.get("name")));
+                        console.log("previousWorkspaceFollowLeave result from query: " + JSON.stringify(previousWorkspaceFollowLeave.get("name")));
+
                         Workspace = result.get("workspace");
                         let workspaceACL = Workspace.getACL();
                         let workspaceFollowACLPrivate = result.getACL();
@@ -9295,7 +9301,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         var User = new Parse.Object("_User");
                         var queryRole = new Parse.Query(Parse.Role);
 
-                        console.log("\n Experts: " + JSON.stringify(experts));
+                        //console.log("\n Experts: " + JSON.stringify(experts));
 
                         queryRole.equalTo('name', 'expert-' + workspace.id);
 
