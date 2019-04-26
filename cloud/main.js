@@ -1698,7 +1698,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                     //console.log("Experts: " + JSON.stringify(expertObject));
 
-                    expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
+                    expertObject.query().select(["expertsArray", "fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
 
                         useMasterKey: true,
                         sessionToken: request.user.getSessionToken()
@@ -1875,7 +1875,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         return cb(err);
                     }
 
-                    //console.log("results length: " + JSON.stringify(results));
+                    console.log("results length: " + JSON.stringify(results));
 
                     if (collection === "WorkSpace") {
 
@@ -1883,16 +1883,16 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         var skillsToSave = results[0];
                         var expertsToSave = results[1];
 
-                        //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
-                        //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-                        //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
+                        console.log("skillsToSave: " + JSON.stringify(skillsToSave));
+                        console.log("expertsToSave: " + JSON.stringify(expertsToSave));
+                        console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
 
                         workspaceToSave["skills"] = skillsToSave;
                         workspaceToSave["experts"] = expertsToSave;
 
                         object = workspaceToSave;
 
-                        //console.log("object: " + JSON.stringify(object));
+                        console.log("object: " + JSON.stringify(object));
 
                         return cb(null, object);
 
@@ -1914,7 +1914,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
             }, function (err, objectsToIndex) {
 
-                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+                console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
                 // Add or update new objects
                 indexWorkspaces.partialUpdateObjects(objectsToIndex, true, function (err, content) {
@@ -4374,7 +4374,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
                             workspace_follower.set("isSelected", true);
-                            user.set("isSelectedWorkspaceFollower", workspace_follower);
+                            //user.set("isSelectedWorkspaceFollower", workspace_follower);
 
                             // a member is already a follower so only add member role for this user.
 
@@ -9490,7 +9490,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     if (workspace.get("isNew") === true) {
 
 
-                        //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+                        console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(channel.getACL()));
 
                         workspaceFollower.set("archive", false);
                         workspaceFollower.set("user", workspace.get("user"));
@@ -9516,7 +9516,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                         workspaceFollower.save(null, {
 
-                            useMasterKey: true,
+                            //useMasterKey: true,
                             sessionToken: request.user.getSessionToken()
 
                         });
@@ -9576,7 +9576,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         response.error(err);
                     }
 
-                    //console.log("results length: " + JSON.stringify(results));
+                    console.log("results length: " + JSON.stringify(results));
 
                     workspaceToSave = results[3];
                     let skillsToSave = results[1];
