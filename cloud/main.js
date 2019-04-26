@@ -4003,7 +4003,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             queryfollowerRole.first({
 
-                                useMasterKey: true,
+                                //useMasterKey: true,
                                 sessionToken: req.user.getSessionToken()
 
                             }).then((followerRole) => {
@@ -4012,7 +4012,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 followerRole.getUsers().add(user);
                                 followerRole.save(null, {
 
-                                    useMasterKey: true,
+                                    //useMasterKey: true,
                                     sessionToken: req.user.getSessionToken()
 
                                 });
@@ -4028,7 +4028,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 return callback (error);
                             }, {
 
-                                useMasterKey: true,
+                                //useMasterKey: true,
                                 sessionToken: req.user.getSessionToken()
 
                             });
@@ -4040,7 +4040,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                             queryMemberRole.equalTo('name', memberName);
                             queryMemberRole.first({
 
-                                useMasterKey: true,
+                                //useMasterKey: true,
                                 sessionToken: req.user.getSessionToken()
 
                             }).then((memberRole) => {
@@ -4051,7 +4051,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 memberRole.getUsers().add(user);
                                 memberRole.save(null, {
 
-                                    useMasterKey: true,
+                                    //useMasterKey: true,
                                     sessionToken: req.user.getSessionToken()
 
                                 });
@@ -4065,7 +4065,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 return callback (error);
                             }, {
 
-                                useMasterKey: true,
+                                //useMasterKey: true,
                                 sessionToken: req.user.getSessionToken()
 
                             });
@@ -4149,8 +4149,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             async.parallel([
                                 async.apply(addFollowerRole),
-                                async.apply(addMemberRole),
-                                async.apply(createDefaultChannelFollows)
+                                async.apply(addMemberRole)
+                                //async.apply(createDefaultChannelFollows)
 
                             ], function (err, results) {
                                 if (err) {
@@ -4352,7 +4352,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                     response.error(error);
                 }, {
 
-                    useMasterKey: true,
+                    //useMasterKey: true,
                     sessionToken: req.user.getSessionToken()
 
                 });
