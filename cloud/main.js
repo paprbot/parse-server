@@ -8896,7 +8896,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                 var workspace = Parse.Object.extend("WorkSpace");
                 workspace = Workspace;
                 workspaceToSave = Workspace.toJSON();
-                //console.log("ObjectToSave: " + JSON.stringify(workspace));
+                console.log("Workspace from afterSave Query: " + JSON.stringify(workspace));
 
                 function createWorkspaceRoles (callback) {
 
@@ -9404,7 +9404,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 function createOwnerWorkspaceFollower (callback) {
 
-                    //console.log("channel isNew: " + channel.get("isNew"));
+                    console.log("workspace createOwnerWorkspaceFollower  isNew: " + workspace.get("isNew"));
                     //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
 
                     if (workspace.get("isNew") === true) {
@@ -9412,7 +9412,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         let viewableBy = [];
                         let followersArray = [];
 
-                        console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(workspace.getACL()));
+                        console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(workspace));
 
                         workspaceFollower.set("archive", false);
                         workspaceFollower.set("user", workspace.get("user"));
