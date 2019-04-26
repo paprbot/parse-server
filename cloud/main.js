@@ -1897,12 +1897,8 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
     let owner = new Parse.Object("_User");
     owner = workspace.get("user");
 
-    console.log("request.object: " + JSON.stringify(req.object));
-    if(workspace.get("experts") || workspace.dirty("experts") === true) {
-        let workspaceExpertObjects = req.object.toJSON().experts.objects;
-        let exp__op = req.object.toJSON().experts.__op;
+    console.log("WorkSpace request.object: " + JSON.stringify(req.object));
 
-    }
 
 
     //console.log("request: " + JSON.stringify(req));
@@ -2022,6 +2018,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                 } else {
 
                     if (workspace.dirty("experts") === true) {
+
+                        let workspaceExpertObjects = req.object.toJSON().experts.objects;
+                        let exp__op = req.object.toJSON().experts.__op;
 
                         workspace.set("isDirtyExperts", true);
 
@@ -2212,6 +2211,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
         }
         else if (!workspace.isNew() && !workspace.dirty("workspace_url")) {
 
+
             workspace.set("isNew", false);
 
             //console.log("workspace.dirty: " + workspace.dirty("experts"));
@@ -2219,6 +2219,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
             if (workspace.dirty("experts") === true) {
 
                 workspace.set("isDirtyExperts", true);
+
+                let workspaceExpertObjects = req.object.toJSON().experts.objects;
+                let exp__op = req.object.toJSON().experts.__op;
 
                 if (exp__op === "AddRelation") {
 
