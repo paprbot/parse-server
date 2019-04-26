@@ -1797,10 +1797,46 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     if (user.isNew()) {
         user.set("isNew", true);
         user.set("showAvailability", true);
-    }
-    else if (!user.isNew()) {
+
+        if (socialProfilePicURL!= null)  {
+
+            var displayName = user.get("displayName");
+            var fileName = user.id + displayName + '_profilePicture';
+
+            const options = {
+                uri: socialProfilePicURL,
+                resolveWithFullResponse: true,
+                encoding: null, // <-- this is important for binary data like images.
+            };
+
+            requestPromise(options)
+                .then((response) => {
+                    const data = Array.from(Buffer.from(response.body, 'binary'));
+                    const contentType = response.headers['content-type'];
+                    const file = new Parse.File(fileName, data, contentType);
+                    return file.save();
+                })
+                .then((file) => {
+
+                    user.set("profileimage", file);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                    response.success();
+                })
+                .catch(console.error);
+
+        } else {
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();}
+
+    } else if (!user.isNew()) {
 
         user.set("isNew", false);
+        response.success();
 
        /* if (user.dirty("isSelectedWorkspaceFollower")) {
 
@@ -1846,42 +1882,6 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     }
 
 
-
-    if (user.isNew() && socialProfilePicURL!=null) {
-
-        var displayName = user.get("displayName");
-        var fileName = user.id + displayName + '_profilePicture';
-
-        const options = {
-            uri: socialProfilePicURL,
-            resolveWithFullResponse: true,
-            encoding: null, // <-- this is important for binary data like images.
-        };
-
-        requestPromise(options)
-            .then((response) => {
-                const data = Array.from(Buffer.from(response.body, 'binary'));
-                const contentType = response.headers['content-type'];
-                const file = new Parse.File(fileName, data, contentType);
-                return file.save();
-            })
-            .then((file) => {
-
-                user.set("profileimage", file);
-
-                let finalTime = process.hrtime(time);
-                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                response.success();
-            })
-            .catch(console.error);
-
-    } else {
-
-        let finalTime = process.hrtime(time);
-        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-        response.success();}
 
 
 }, {useMasterKey: true});
@@ -9131,7 +9131,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                             userRolesRelation.add(ownerRole); // add owner role to the user roles field.
                             owner.save(null, {
 
-                                useMasterKey: true,
+                                //useMasterKey: true,
                                 sessionToken: request.user.getSessionToken()
 
                             });
@@ -9422,8 +9422,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                         // set correct ACL for channelFollow
                         var workspaceFollowACL = new Parse.ACL();
-                        workspaceFollowACL.setPublicReadAccess(false);
-                        workspaceFollowACL.setPublicWriteAccess(false);
+                        workspaceFollowACL.setPublicReadAccess(true);
+                        workspaceFollowACL.setPublicWriteAccess(true);
                         workspaceFollowACL.setReadAccess(workspace.get("user"), true);
                         workspaceFollowACL.setWriteAccess(workspace.get("user"), true);
                         workspaceFollower.setACL(workspaceFollowACL);
@@ -9434,7 +9434,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         workspaceFollower.set("isMemberRequestedByWorkspaceAdmin", false);
                         workspaceFollower.set("isMemberRequestedByUser", false);
 
-                        //console.log("channelFollow: " + JSON.stringify(channelFollow));
+                        console.log("workspaceFollower: " + JSON.stringify(workspaceFollower));
 
                         workspaceFollower.save(null, {
 
