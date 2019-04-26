@@ -27,6 +27,7 @@ function simplifyUser (User) {
     if (expertOwner.mySkills) {delete expertOwner.mySkills;}
     if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
     if (expertOwner.roles) {delete expertOwner.roles;}
+    if (expertOwner.algoliaSecureAPIKey) {delete expertOwner.algoliaSecureAPIKey;}
 
 
     return expertOwner;

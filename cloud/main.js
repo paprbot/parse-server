@@ -4349,7 +4349,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 // check to make sure that the workspace_follower for a user - workspace is unique
                 queryWorkspaceFollower.first({
 
-                    useMasterKey: true,
+                    //useMasterKey: true,
                     sessionToken: req.user.getSessionToken()
 
                 }).then((results) => {
@@ -4370,12 +4370,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             Workspace.increment("followerCount");
                             Workspace.increment("memberCount");
-                            Workspace.save(null, {
 
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
 
                             // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
                             workspace_follower.set("isSelected", true);
@@ -4466,6 +4461,13 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     }
 
                                     user.save(null, {
+
+                                        //useMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
+
+                                    Workspace.save(null, {
 
                                         //useMasterKey: true,
                                         sessionToken: req.user.getSessionToken()
@@ -5861,7 +5863,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
             }
             else {
 
-                //console.log("do nothing at all");
+                console.log("do nothing at all");
 
                 let beforeSaveElse_Time = process.hrtime(time);
                 console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
@@ -8942,9 +8944,9 @@ Parse.Cloud.afterSave('Skill', function(request) {
 Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
 
-    var NS_PER_SEC = 1e9;
+    const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
-    var time = process.hrtime();
+    let time = process.hrtime();
 
     if (!request.user || !request.user.getSessionToken()) {
 
