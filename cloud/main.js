@@ -1947,6 +1947,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     expertRelation.add(owner);
 
                     workspace.set("isNew", true);
+                    workspace.set("followerCount", 0);
+                    workspace.set("memberCount", 0);
+                    workspace.set("isDirtExperts", false);
 
                     owner.fetch(owner.id, {
 
@@ -9317,69 +9320,84 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     //var workspaceFollower = new Parse.Object(WORKSPACEFollower);
 
                     //console.log("workspace type: " + JSON.stringify(workspace.id));
-                    var WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-                    var queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
 
-                    let viewableBy = [];
+                    let followersArray = [];
 
-                    queryWorkspaceFollower.equalTo("workspace", workspace);
+                    if (workspace.get("isNew")) {
 
-                    // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
-                    queryWorkspaceFollower.limit(10000);
-                    // queryWorkspaceFollower.include( ["workspace"] );
+                        console.log("isNew Workspace no followers yet except workspace owner: " + JSON.stringify(followersArray));
 
-                    queryWorkspaceFollower.find({
+                        return callback (null, followersArray);
 
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                    } else {
 
-                    }).then((followers) => {
+                        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+                        let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
 
-                        //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
+                        let viewableBy = [];
 
-                        delete workspaceToSave.skills;
-                        delete workspaceToSave.experts;
+                        queryWorkspaceFollower.equalTo("workspace", workspace);
 
-                        workspaceToSave.objectID = workspaceToSave.objectId;
-                        workspaceToSave['followers'] = followers;
+                        // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
+                        queryWorkspaceFollower.limit(10000);
+                        // queryWorkspaceFollower.include( ["workspace"] );
+
+                        queryWorkspaceFollower.find({
+
+                            useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
+
+                        }).then((followers) => {
+
+                            console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
+
+                            delete workspaceToSave.skills;
+                            delete workspaceToSave.experts;
+
+                            workspaceToSave.objectID = workspaceToSave.objectId;
+                            workspaceToSave['followers'] = followers;
 
 
-                        for (var i = 0; i < followers.length; i++) {
+                            for (var i = 0; i < followers.length; i++) {
 
-                            if (workspaceToSave.type === 'private') {
-                                viewableBy.push(followers[i].toJSON().user.objectId);
-                                //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
+                                if (workspaceToSave.type === 'private') {
+                                    viewableBy.push(followers[i].toJSON().user.objectId);
+                                    //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
+                                }
+
+
                             }
 
+                            if (workspaceToSave.type === 'private') {
 
-                        }
+                                workspaceToSave._tags= viewableBy;
+                                //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
 
-                        if (workspaceToSave.type === 'private') {
+                            } else if (workspaceToSave.type === 'public') {
 
-                            workspaceToSave._tags= viewableBy;
-                            //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
+                                workspaceToSave._tags = ['*'];
 
-                        } else if (workspaceToSave.type === 'public') {
+                            }
 
-                            workspaceToSave._tags = ['*'];
+                            // console.log("followers: " + JSON.stringify(workspaceToSave.followers));
 
-                        }
-
-                        // console.log("followers: " + JSON.stringify(workspaceToSave.followers));
-
-                        return callback (null, workspaceToSave);
+                            return callback (null, workspaceToSave);
 
 
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        return callback (null, error);
-                    }, {
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback (null, error);
+                        }, {
 
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                            useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
-                    });
+                        });
+
+
+
+                    }
 
 
                 }
@@ -9391,8 +9409,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     if (workspace.get("isNew") === true) {
 
+                        let viewableBy = [];
+                        let followersArray = [];
 
-                        console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(channel.getACL()));
+                        console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(workspace.getACL()));
 
                         workspaceFollower.set("archive", false);
                         workspaceFollower.set("user", workspace.get("user"));
@@ -9421,13 +9441,64 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                             //useMasterKey: true,
                             sessionToken: request.user.getSessionToken()
 
+                        }).then((result) => {
+
+                            // save was successful
+
+                            console.log("workspace new workspace: " + JSON.stringify(result.objectId));
+
+                            workspaceFollower.toJSON().objectId = result.objectId;
+
+                            console.log("workspace new workspace to save: " + JSON.stringify(workspaceFollower));
+
+                            delete workspaceToSave.skills;
+                            delete workspaceToSave.experts;
+
+                            workspaceToSave.objectID = workspaceToSave.objectId;
+                            followersArray.push(workspaceFollower);
+                            workspaceToSave['followers'] = followersArray;
+
+                            // add _tags for this workspacefollower so it's visible in algolia
+
+                            if (workspace.get("type") === 'private') {
+                                viewableBy.push(workspaceFollower.toJSON().user.objectId);
+                                //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
+                            }
+
+
+                            if (workspace.get("type") === 'private') {
+
+                                workspaceToSave._tags= viewableBy;
+                                //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
+
+                            } else if (workspace.get("type")=== 'public') {
+
+                                workspaceToSave._tags = ['*'];
+
+                            }
+
+
+
+                            return callback(null, workspaceToSave);
+
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            response.error(error);
+                        }, {
+
+                            useMasterKey: true,
+                            sessionToken: sessionToken
+
                         });
 
-                        return callback(null, workspaceFollower);
 
+                    } else {
 
-                    } else {return callback (null, workspace);}
-
+                        return callback (null, workspace);
+                    }
 
                 }
 
@@ -9480,7 +9551,13 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     console.log("results length: " + JSON.stringify(results));
 
-                    workspaceToSave = results[3];
+                    if(workspace.get("isNew")) {
+                        workspaceToSave = results[4];
+
+                    } else {
+                        workspaceToSave = results[3];
+
+                    }
                     let skillsToSave = results[1];
                     let expertsToSave = results[2];
 
@@ -9488,12 +9565,19 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     if (workspace.dirty("experts")) {
                         workspaceToSave["experts"] = expertsToSave;
                     } else {
-                        delete workspaceToSave.experts;
+
+                        if (workspace.get("isNew")) {
+
+                            workspaceToSave["experts"] = expertsToSave;
+                        } else {
+                            delete workspaceToSave.experts;
+
+                        }
                     }
 
-                    //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
-                    //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-                    //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
+                    console.log("skillsToSave: " + JSON.stringify(skillsToSave));
+                    console.log("expertsToSave: " + JSON.stringify(expertsToSave));
+                    console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
 
                     indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
                         if (err) response.error(err);
