@@ -3843,7 +3843,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
             let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
             queryWorkspaceFollower.include(["user", "workspace"]);
 
-            let user = new Parse.Object("_User");
+            let USER = Parse.Object.extend("_User");
+            let user = new Parse.Object(USER);
             user.id = workspace_follower.get("user").id;
             if (!user) { return response.error("please add _User it's required when adding new or updating workspace follower");} else {
                 var userRolesRelation = user.relation("roles");
@@ -4083,7 +4084,6 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
                             workspace_follower.set("isSelected", true);
-                            user.set("isSelectedWorkspaceFollower", workspace_follower);
 
                             // a member is already a follower so only add member role for this user.
 
@@ -4149,8 +4149,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             async.parallel([
                                 async.apply(addFollowerRole),
-                                async.apply(addMemberRole)
-                                //async.apply(createDefaultChannelFollows)
+                                async.apply(addMemberRole),
+                                async.apply(createDefaultChannelFollows)
 
                             ], function (err, results) {
                                 if (err) {
@@ -4204,7 +4204,6 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
                             workspace_follower.set("isSelected", true);
-                            user.set("isSelectedWorkspaceFollower", workspace_follower);
 
                             async.parallel([
                                 async.apply(addFollowerRole),
@@ -4289,7 +4288,6 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
                             workspace_follower.set("isSelected", true);
-                            user.set("isSelectedWorkspaceFollower", workspace_follower);
 
                             async.parallel([
                                 async.apply(addFollowerRole),
@@ -8656,6 +8654,94 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                 var finalTime = process.hrtime(time);
                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                 response.success(results);
+
+
+            });
+
+
+
+        }
+    }
+
+
+
+}, {useMasterKey: true});
+
+
+Parse.Cloud.afterSave('workspace_follower', function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    // Convert Parse.Object to JSON
+    let workspace_follow = request.object;
+
+    let user = workspace_follow.get("user");
+
+    console.log("afterSave workspace_follower: " + JSON.stringify(workspace_follower));
+
+    if (!request.user) {
+
+        response.error("afterSave ChannelFollow Session token: X-Parse-Session-Token is required");
+
+    } else if (request.user) {
+
+        if (!request.user.getSessionToken()) {
+
+            response.error("afterSave ChannelFollow Session token: X-Parse-Session-Token is required");
+
+        } else {
+
+
+            function addIsSelectedWorkspaceFollowPointerToUser (callback) {
+
+                console.log("workspace_follow.isSelected: " + workspace_follow.toJSON().isSelected);
+
+                if (workspace_follow.get("isNew") && workspace_follow.toJSON().isSelected === true) {
+
+                    // add selected workspaceFollow as pointer to user
+                    user.set("isSelectedChannelFollow", workspace_follow);
+                    user.save(null, {
+
+                        //useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
+
+                    });
+
+                    return callback (null, workspace_follow);
+
+
+                } else {
+
+
+
+                    return callback (null, workspace_follow);
+
+
+                }
+
+
+            }
+
+
+            async.parallel([
+                async.apply(addIsSelectedWorkspaceFollowPointerToUser)
+                // async.apply(addChannelsToAlgolia)
+
+            ], function (err, results) {
+                if (err) {
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.error(err);
+                }
+
+                //console.log("results length: " + JSON.stringify(results));
+
+                var finalTime = process.hrtime(time);
+                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                response.success();
 
 
             });
