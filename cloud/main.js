@@ -3818,7 +3818,6 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
     let time = process.hrtime();
 
     let workspace_follower = req.object;
-    let workspace = workspace_follower.get("workspace");
 
     if (!req.user) {
 
@@ -3840,6 +3839,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
             let user = new Parse.Object("_User");
             user = workspace_follower.get("user");
+            if (!user) { return response.error("please add _User it's required when adding new or updating workspace follower");}
             let userRolesRelation = user.relation("roles");
 
             let previousQueryWorkspaceFollowerJoin = new Parse.Query(WORKSPACEFOLLOWER);
@@ -3852,18 +3852,6 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
             previousQueryWorkspaceFollowerLeave.equalTo("user", user);
             previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
             previousQueryWorkspaceFollowerLeave.descending("updatedAt");
-
-            let WORKSPACE = Parse.Object.extend("WorkSpace");
-            let Workspace = new WORKSPACE();
-            Workspace.id = workspace.id;
-
-            let Channel = Parse.Object.extend("Channel");
-            let defaultChannelQuery = new Parse.Query(Channel);
-            defaultChannelQuery.equalTo("default", true);
-            defaultChannelQuery.equalTo("workspace", Workspace);
-
-            let memberName = "member-" + Workspace.id;
-            let followerName = "Follower-" + Workspace.id;
 
             let queryMemberRole = new Parse.Query(Parse.Role);
             let queryfollowerRole = new Parse.Query(Parse.Role);
@@ -4108,6 +4096,20 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
             // if there is a new workspace_follower object increase counter for number of followers and members on a workspace
             if (workspace_follower.isNew()) {
+
+                let workspace = workspace_follower.get("workspace");
+
+                let WORKSPACE = Parse.Object.extend("WorkSpace");
+                let Workspace = new WORKSPACE();
+                Workspace.id = workspace.id;
+
+                let Channel = Parse.Object.extend("Channel");
+                let defaultChannelQuery = new Parse.Query(Channel);
+                defaultChannelQuery.equalTo("default", true);
+                defaultChannelQuery.equalTo("workspace", Workspace);
+
+                let memberName = "member-" + Workspace.id;
+                let followerName = "Follower-" + Workspace.id;
 
                 let workspaceFollowerName = workspace_follower.get("user").id + "-" + workspace_follower.get("workspace").id;
                 console.log("workspaceFollowerName user: " + JSON.stringify(workspaceFollowerName));
@@ -4548,6 +4550,13 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         response.error(err);
                     } else {
 
+                        let Channel = Parse.Object.extend("Channel");
+                        let defaultChannelQuery = new Parse.Query(Channel);
+                        defaultChannelQuery.equalTo("default", true);
+                        defaultChannelQuery.equalTo("workspace", Workspace);
+
+                        let memberName = "member-" + Workspace.id;
+                        let followerName = "Follower-" + Workspace.id;
 
                         let result = results[0]; // current workspace_follower that is in the DB
                         let previousWorkspaceFollowJoin = results[1];
