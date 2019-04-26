@@ -2485,7 +2485,13 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         // channel is not unique return error
                         var finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                        response.error("There is already a chan(afterSave Channel if needed.
+                        response.error("There is already a channel with this name: " + channel.get("name") + ' ' + "please use a channel name that isn't already taken.");
+
+                    } else {
+
+                        //console.log("nice no channel with this name, create it!");
+
+                        // set isNew to true so we can use this in afterSave Channel if needed.
                         channel.set("isNew", true);
 
                         // set channel to not be default if user didn't specify it
