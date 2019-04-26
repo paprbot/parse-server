@@ -3839,259 +3839,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
             let user = new Parse.Object("_User");
             user = workspace_follower.get("user");
-            if (!user) { return response.error("please add _User it's required when adding new or updating workspace follower");}
-            let userRolesRelation = user.relation("roles");
-
-            let previousQueryWorkspaceFollowerJoin = new Parse.Query(WORKSPACEFOLLOWER);
-            previousQueryWorkspaceFollowerJoin.include("workspace");
-            previousQueryWorkspaceFollowerJoin.equalTo("user", user);
-            previousQueryWorkspaceFollowerJoin.equalTo("isSelected", true);
-
-            let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
-            previousQueryWorkspaceFollowerLeave.include("workspace");
-            previousQueryWorkspaceFollowerLeave.equalTo("user", user);
-            previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
-            previousQueryWorkspaceFollowerLeave.descending("updatedAt");
+            if (!user) { return response.error("please add _User it's required when adding new or updating workspace follower");} else {
+                var userRolesRelation = user.relation("roles");
+            }
 
             let queryMemberRole = new Parse.Query(Parse.Role);
             let queryfollowerRole = new Parse.Query(Parse.Role);
-
-            function createDefaultChannelFollows (callback) {
-
-                defaultChannelQuery.find({
-
-                    //useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                }).then((defaultChannels) => {
-                    // The object was retrieved successfully.
-
-                    if (defaultChannels) {
-
-                        async.map(defaultChannels, function (channel, cb) {
-
-                            let ChannelFollower = Parse.Object.extend("ChannelFollow");
-                            let channelFollower = new Parse.Object(ChannelFollower);
-
-                            //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
-
-                            channelFollower.set("archive", false);
-                            channelFollower.set("user", user);
-                            channelFollower.set("workspace", Workspace);
-                            channelFollower.set("channel", channel);
-                            channelFollower.set("notificationCount", 0);
-                            if (channel.get("name") === 'general') {
-                                channelFollower.set("isSelected", true);
-                            } else {
-                                channelFollower.set("isSelected", false);
-                            }
-
-                            channelFollower.set("isMember", true);
-                            channelFollower.set("isFollower", true);
-
-                            //console.log("channelFollow: " + JSON.stringify(channelFollow));
-
-                            channelFollower.save(null, {
-
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
-
-                            channel = channelFollower;
-
-                            return cb (null, channel);
-
-
-                        }, function (err, defaultChannels) {
-
-                            //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
-
-                            if (err) {
-                                return callback (err);
-                            } else {
-
-                                return callback (null, defaultChannels);
-
-
-                            }
-
-                        });
-
-
-
-
-                    } else {
-
-                        return callback (null, defaultChannels);
-                    }
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    return callback(error);
-                }, {
-
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                });
-            }
-
-            function addFollowerRole (callback) {
-
-                // now add follower since a member is by default a follower
-                queryfollowerRole.equalTo('name', followerName);
-
-                queryfollowerRole.first({
-
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                }).then((followerRole) => {
-                    // The object was retrieved successfully.
-
-                    followerRole.getUsers().add(user);
-                    followerRole.save(null, {
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    });
-
-                    console.log("followerRole: " + JSON.stringify(followerRole));
-
-
-                    return callback (null, followerRole);
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    return callback (error);
-                }, {
-
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                });
-
-            }
-
-            function addMemberRole (callback) {
-
-                queryMemberRole.equalTo('name', memberName);
-                queryMemberRole.first({
-
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                }).then((memberRole) => {
-                    // The object was retrieved successfully.
-
-                    //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
-
-                    memberRole.getUsers().add(user);
-                    memberRole.save(null, {
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    });
-
-                    return callback (null, memberRole);
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    return callback (error);
-                }, {
-
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                });
-
-
-            }
-
-            function removeFollowerRole (callback) {
-
-                // now add follower since a member is by default a follower
-                queryfollowerRole.equalTo('name', followerName);
-
-                queryfollowerRole.first({
-
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                }).then((followerRole) => {
-                    // The object was retrieved successfully.
-
-                    followerRole.getUsers().remove(user);
-                    followerRole.save(null, {
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    });
-
-                    console.log("followerRole: " + JSON.stringify(followerRole));
-
-
-                    return callback (null, followerRole);
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    return callback (error);
-                }, {
-
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                });
-
-            }
-
-            function removeMemberRole (callback) {
-
-                queryMemberRole.equalTo('name', memberName);
-                queryMemberRole.first({
-
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                }).then((memberRole) => {
-                    // The object was retrieved successfully.
-
-                    //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
-
-                    memberRole.getUsers().remove(user);
-                    memberRole.save(null, {
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    });
-
-                    return callback (null, memberRole);
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    return callback (error);
-                }, {
-
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                });
-
-
-            }
 
 
             // if there is a new workspace_follower object increase counter for number of followers and members on a workspace
@@ -4107,6 +3860,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 let defaultChannelQuery = new Parse.Query(Channel);
                 defaultChannelQuery.equalTo("default", true);
                 defaultChannelQuery.equalTo("workspace", Workspace);
+
 
                 let memberName = "member-" + Workspace.id;
                 let followerName = "Follower-" + Workspace.id;
@@ -4152,6 +3906,166 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         response.error(results);
 
                     } else {
+
+                        function createDefaultChannelFollows (callback) {
+
+                            defaultChannelQuery.find({
+
+                                //useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((defaultChannels) => {
+                                // The object was retrieved successfully.
+
+                                if (defaultChannels) {
+
+                                    async.map(defaultChannels, function (channel, cb) {
+
+                                        let ChannelFollower = Parse.Object.extend("ChannelFollow");
+                                        let channelFollower = new Parse.Object(ChannelFollower);
+
+                                        //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+
+                                        channelFollower.set("archive", false);
+                                        channelFollower.set("user", user);
+                                        channelFollower.set("workspace", Workspace);
+                                        channelFollower.set("channel", channel);
+                                        channelFollower.set("notificationCount", 0);
+                                        if (channel.get("name") === 'general') {
+                                            channelFollower.set("isSelected", true);
+                                        } else {
+                                            channelFollower.set("isSelected", false);
+                                        }
+
+                                        channelFollower.set("isMember", true);
+                                        channelFollower.set("isFollower", true);
+
+                                        //console.log("channelFollow: " + JSON.stringify(channelFollow));
+
+                                        channelFollower.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
+
+                                        channel = channelFollower;
+
+                                        return cb (null, channel);
+
+
+                                    }, function (err, defaultChannels) {
+
+                                        //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
+
+                                        if (err) {
+                                            return callback (err);
+                                        } else {
+
+                                            return callback (null, defaultChannels);
+
+
+                                        }
+
+                                    });
+
+
+
+
+                                } else {
+
+                                    return callback (null, defaultChannels);
+                                }
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                return callback(error);
+                            }, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
+                        }
+
+                        function addFollowerRole (callback) {
+
+                            // now add follower since a member is by default a follower
+                            queryfollowerRole.equalTo('name', followerName);
+
+                            queryfollowerRole.first({
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((followerRole) => {
+                                // The object was retrieved successfully.
+
+                                followerRole.getUsers().add(user);
+                                followerRole.save(null, {
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
+
+                                console.log("followerRole: " + JSON.stringify(followerRole));
+
+
+                                return callback (null, followerRole);
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
+
+                        }
+
+                        function addMemberRole (callback) {
+
+                            queryMemberRole.equalTo('name', memberName);
+                            queryMemberRole.first({
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((memberRole) => {
+                                // The object was retrieved successfully.
+
+                                //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+
+                                memberRole.getUsers().add(user);
+                                memberRole.save(null, {
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
+
+                                return callback (null, memberRole);
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
+
+
+                        }
 
 
 
@@ -4441,6 +4355,17 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
             }
             else if (!workspace_follower.isNew() && (workspace_follower.dirty("isFollower") || workspace_follower.dirty("isMember"))) {
 
+                let previousQueryWorkspaceFollowerJoin = new Parse.Query(WORKSPACEFOLLOWER);
+                previousQueryWorkspaceFollowerJoin.include("workspace");
+                previousQueryWorkspaceFollowerJoin.equalTo("user", user);
+                previousQueryWorkspaceFollowerJoin.equalTo("isSelected", true);
+
+                let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
+                previousQueryWorkspaceFollowerLeave.include("workspace");
+                previousQueryWorkspaceFollowerLeave.equalTo("user", user);
+                previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
+                previousQueryWorkspaceFollowerLeave.descending("updatedAt");
+
                 function getCurrentWorkspaceFollower (callback) {
 
                     queryWorkspaceFollower.get(WorkspaceFollower.id, {
@@ -4550,6 +4475,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         response.error(err);
                     } else {
 
+                        let workspace = workspace_follower.get("workspace");
+
+                        let WORKSPACE = Parse.Object.extend("WorkSpace");
+                        let Workspace = new WORKSPACE();
+                        Workspace.id = workspace.id;
+
                         let Channel = Parse.Object.extend("Channel");
                         let defaultChannelQuery = new Parse.Query(Channel);
                         defaultChannelQuery.equalTo("default", true);
@@ -4572,6 +4503,244 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         user = result.get("user");
 
                         let expertWorkspaceRelation = Workspace.relation("experts");
+
+                        function addFollowerRole (callback) {
+
+                            // now add follower since a member is by default a follower
+                            queryfollowerRole.equalTo('name', followerName);
+
+                            queryfollowerRole.first({
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((followerRole) => {
+                                // The object was retrieved successfully.
+
+                                followerRole.getUsers().add(user);
+                                followerRole.save(null, {
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
+
+                                console.log("followerRole: " + JSON.stringify(followerRole));
+
+
+                                return callback (null, followerRole);
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
+
+                        }
+
+                        function addMemberRole (callback) {
+
+                            queryMemberRole.equalTo('name', memberName);
+                            queryMemberRole.first({
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((memberRole) => {
+                                // The object was retrieved successfully.
+
+                                //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+
+                                memberRole.getUsers().add(user);
+                                memberRole.save(null, {
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
+
+                                return callback (null, memberRole);
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
+
+
+                        }
+
+                        function removeFollowerRole (callback) {
+
+                            // now add follower since a member is by default a follower
+                            queryfollowerRole.equalTo('name', followerName);
+
+                            queryfollowerRole.first({
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((followerRole) => {
+                                // The object was retrieved successfully.
+
+                                followerRole.getUsers().remove(user);
+                                followerRole.save(null, {
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
+
+                                console.log("followerRole: " + JSON.stringify(followerRole));
+
+
+                                return callback (null, followerRole);
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
+
+                        }
+
+                        function removeMemberRole (callback) {
+
+                            queryMemberRole.equalTo('name', memberName);
+                            queryMemberRole.first({
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((memberRole) => {
+                                // The object was retrieved successfully.
+
+                                //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+
+                                memberRole.getUsers().remove(user);
+                                memberRole.save(null, {
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
+
+                                return callback (null, memberRole);
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
+
+
+                        }
+
+                        function createDefaultChannelFollows (callback) {
+
+                            defaultChannelQuery.find({
+
+                                //useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((defaultChannels) => {
+                                // The object was retrieved successfully.
+
+                                if (defaultChannels) {
+
+                                    async.map(defaultChannels, function (channel, cb) {
+
+                                        let ChannelFollower = Parse.Object.extend("ChannelFollow");
+                                        let channelFollower = new Parse.Object(ChannelFollower);
+
+                                        //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+
+                                        channelFollower.set("archive", false);
+                                        channelFollower.set("user", user);
+                                        channelFollower.set("workspace", Workspace);
+                                        channelFollower.set("channel", channel);
+                                        channelFollower.set("notificationCount", 0);
+                                        if (channel.get("name") === 'general') {
+                                            channelFollower.set("isSelected", true);
+                                        } else {
+                                            channelFollower.set("isSelected", false);
+                                        }
+
+                                        channelFollower.set("isMember", true);
+                                        channelFollower.set("isFollower", true);
+
+                                        //console.log("channelFollow: " + JSON.stringify(channelFollow));
+
+                                        channelFollower.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+
+                                        });
+
+                                        channel = channelFollower;
+
+                                        return cb (null, channel);
+
+
+                                    }, function (err, defaultChannels) {
+
+                                        //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
+
+                                        if (err) {
+                                            return callback (err);
+                                        } else {
+
+                                            return callback (null, defaultChannels);
+
+
+                                        }
+
+                                    });
+
+
+
+
+                                } else {
+
+                                    return callback (null, defaultChannels);
+                                }
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                return callback(error);
+                            }, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
+                        }
+
                         //console.log("userRole: " + JSON.stringify(userRoleRelation));
 
                         //var expertRoleName = "expert-" + workspace_follower.get("workspace").id;
@@ -5364,53 +5533,41 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     Workspace.increment("memberCount");
                                     console.log("increment  Member");
 
-                                    // now add both member and follower roles since the user is leaving the workspace and un-following it.
-                                    queryMemberRole.equalTo('name', memberName);
-                                    queryMemberRole.first({
+                                    // now add both member only since user is already a follower
+                                    async.parallel([
+                                        async.apply(addMemberRole)
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        } else {
 
-                                    }).then((memberRole) => {
-                                        // The object was retrieved successfully.
+                                            let memberRole = results[0];
 
-                                        //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+                                            if (memberRole) {
+                                                userRolesRelation.add(memberRole);
 
-                                        memberRole.getUsers().add(user);
-                                        memberRole.save(null, {
+                                            }
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                            user.save(null, {
 
-                                        });
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
 
-                                        var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.add(memberRole);
-                                        user.save(null, {
+                                            });
 
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                            Workspace.save(null, {
 
-                                        });
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+                                            });
 
-                                        Workspace.save(null, {
+                                            let beforeSaveElse_Time = process.hrtime(time);
+                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
-                                        });
+                                            response.success();
 
-                                         response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                         response.error(error);
-                                    }, {
-
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
-
+                                        }
                                     });
 
 
@@ -5428,52 +5585,40 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     Workspace.increment("memberCount", -1);
                                     console.log("decrement Member");
 
-                                    queryMemberRole.equalTo('name', memberName);
-                                    queryMemberRole.first({
+                                    async.parallel([
+                                        async.apply(removeMemberRole)
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        } else {
 
-                                    }).then((memberRole) => {
-                                        // The object was retrieved successfully.
+                                            let memberRole = results[0];
 
-                                        //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+                                            if (memberRole) {
+                                                userRolesRelation.remove(memberRole);
 
-                                        memberRole.getUsers().remove(user);
-                                        memberRole.save(null, {
+                                            }
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                            user.save(null, {
 
-                                        });
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
 
-                                        var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.remove(memberRole);
-                                        user.save(null, {
+                                            });
 
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                            Workspace.save(null, {
 
-                                        });
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+                                            });
 
-                                        Workspace.save(null, {
+                                            let beforeSaveElse_Time = process.hrtime(time);
+                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
-                                        });
+                                            response.success();
 
-                                        response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {
-
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
-
+                                        }
                                     });
 
                                 }
@@ -5524,49 +5669,28 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     user.set("isSelectedWorkspaceFollower", workspace_follower);
 
                                     // now add both member and follower roles
-                                    queryMemberRole.equalTo('name', memberName);
-                                    queryMemberRole.first({
+                                    async.parallel([
+                                        async.apply(addFollowerRole),
+                                        async.apply(addMemberRole),
+                                        async.apply(createDefaultChannelFollows)
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        } else {
 
-                                    }).then((memberRole) => {
-                                        // The object was retrieved successfully.
+                                            let followerRole = results[0];
+                                            let memberRole = results[1];
 
-                                        //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+                                            if (followerRole) {
+                                                userRolesRelation.add(followerRole);
+                                            }
 
-                                        memberRole.getUsers().add(user);
-                                        memberRole.save(null, {
+                                            if (memberRole) {
+                                                userRolesRelation.add(memberRole);
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                            }
 
-                                        });
-
-                                        var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.add(memberRole);
-
-                                        // now add follower since a member is by default a follower
-                                        queryfollowerRole.equalTo('name', followerName);
-
-                                        queryfollowerRole.first({
-
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
-
-                                        }).then((followerRole) => {
-                                            // The object was retrieved successfully.
-
-                                            followerRole.getUsers().add(user);
-                                            followerRole.save(null, {
-
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            var userRolesRelation = user.relation("roles");
-                                            userRolesRelation.add(followerRole);
                                             user.save(null, {
 
                                                 //useMasterKey: true,
@@ -5580,30 +5704,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                                 sessionToken: req.user.getSessionToken()
                                             });
 
+                                            let beforeSaveElse_Time = process.hrtime(time);
+                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
                                             response.success();
 
-
-                                        }, (error) => {
-                                            // The object was not retrieved successfully.
-                                            // error is a Parse.Error with an error code and message.
-                                            response.error(error);
-                                        }, {
-
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
-
-                                        });
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {
-
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
-
+                                        }
                                     });
 
 
