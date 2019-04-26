@@ -8679,7 +8679,7 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
 
     let user = workspace_follow.get("user");
 
-    console.log("afterSave workspace_follower: " + JSON.stringify(workspace_follower));
+    console.log("afterSave workspace_follower: " + JSON.stringify(workspace_follow));
 
     if (!request.user) {
 
@@ -8700,16 +8700,49 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
 
                 if (workspace_follow.get("isNew") && workspace_follow.toJSON().isSelected === true) {
 
-                    // add selected workspaceFollow as pointer to user
-                    user.set("isSelectedChannelFollow", workspace_follow);
-                    user.save(null, {
+                    // add selected ChannelFollow as pointer to workspace_follower
+                    let queryWorkspaceFollow = new Parse.Query("workspace_follower");
+
+                    queryWorkspaceFollow.get(workspace_follow.id, {
+
+                        //useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
+
+                    }).then((workspaceFollow) => {
+                        // The object was retrieved successfully.
+
+                        console.log("workspaceFollow: " + JSON.stringify(workspaceFollow));
+
+                        user = workspaceFollow.get("user");
+
+                        console.log("workspaceFollow aftersave user: " + JSON.stringify(user));
+
+
+                        user.set("isSelectedChannelFollow", workspaceFollow);
+                        user.save(null, {
+
+                                //useMasterKey: true,
+                                sessionToken: request.user.getSessionToken()
+
+                            }
+
+                        );
+
+                        return callback (null, workspaceFollow);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        //console.log("channelfollowisSelected not found");
+                        response.error(error);
+                    }, {
 
                         //useMasterKey: true,
                         sessionToken: request.user.getSessionToken()
 
                     });
 
-                    return callback (null, workspace_follow);
 
 
                 } else {
