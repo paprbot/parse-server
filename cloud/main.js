@@ -8853,6 +8853,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
+
+
     if (!request.user || !request.user.getSessionToken()) {
 
         response.error("afterSave WorkSpace Session token: a valid X-Parse-Session-Token is required");
@@ -8872,6 +8874,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
         var owner = new Parse.Object("_User");
         owner = workspace.get("user");
+
+        let sessionToken = request.user.getSessionToken();
 
         queryWorkspace.equalTo("objectId", workspaceToSave.objectId);
         queryWorkspace.include( ["user"] );
@@ -9438,7 +9442,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                         workspaceFollower.save(null, {
 
-                            //useMasterKey: true,
+                            useMasterKey: true,
                             sessionToken: request.user.getSessionToken()
 
                         }).then((result) => {
