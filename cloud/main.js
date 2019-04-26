@@ -1898,7 +1898,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
     owner = workspace.get("user");
 
     console.log("request.object: " + JSON.stringify(req.object));
-    if(workspace.get("experts")) {
+    if(workspace.get("experts") || workspace.dirty("experts") === true) {
         let workspaceExpertObjects = req.object.toJSON().experts.objects;
         let exp__op = req.object.toJSON().experts.__op;
 
