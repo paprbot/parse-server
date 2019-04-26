@@ -3844,7 +3844,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
             queryWorkspaceFollower.include(["user", "workspace"]);
 
             let user = new Parse.Object("_User");
-            user = workspace_follower.get("user");
+            user.id = workspace_follower.get("user").id;
             if (!user) { return response.error("please add _User it's required when adding new or updating workspace follower");} else {
                 var userRolesRelation = user.relation("roles");
             }
