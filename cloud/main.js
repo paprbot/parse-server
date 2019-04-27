@@ -9571,9 +9571,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                             // save was successful
 
-                            console.log("workspace new workspace: " + JSON.stringify(result.objectId));
+                            console.log("workspace new workspace: " + JSON.stringify(result));
 
-                            workspaceFollower.toJSON().objectId = result.objectId;
+                            //workspaceFollower.toJSON().objectId = result.objectId;
 
                             console.log("workspace new workspace to save: " + JSON.stringify(workspaceFollower));
 
@@ -9583,6 +9583,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                             workspaceToSave.objectID = workspaceToSave.objectId;
                             followersArray.push(workspaceFollower);
                             workspaceToSave['followers'] = followersArray;
+
+                            console.log("workspaceToSave with followers: " + JSON.stringify(workspaceToSave));
+
 
                             // add _tags for this workspacefollower so it's visible in algolia
 
@@ -9678,7 +9681,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     console.log("results length: " + JSON.stringify(results));
 
                     if(workspace.get("isNew")) {
-                        workspaceToSave = results[4];
+                        workspaceToSave = results[5];
 
                     } else {
                         workspaceToSave = results[3];
