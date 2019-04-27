@@ -9573,7 +9573,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                             console.log("workspace new workspace: " + JSON.stringify(result));
 
-                            //workspaceFollower.toJSON().objectId = result.objectId;
+                            workspaceFollower = result;
 
                             console.log("workspace new workspace to save: " + JSON.stringify(workspaceFollower));
 
