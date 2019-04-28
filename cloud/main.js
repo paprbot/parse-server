@@ -125,13 +125,13 @@ Parse.Cloud.define("searchWorkspaces", function (request, response) {
         }, (error) => {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
-             response.error(error);
+            response.error(error);
         }, { useMasterKey: true , sessionToken: sessionToken});
 
 
     } else {
 
-         response.error("A valid user sessionToken is required.");
+        response.error("A valid user sessionToken is required.");
     }
 
 
@@ -451,7 +451,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
 
     if (!request.user) {
 
-         response.error("Please enter use sessionToken it's required.");
+        response.error("Please enter use sessionToken it's required.");
 
     } else {
 
@@ -494,7 +494,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
                         var finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                         response.success(result_workspacefollower.toJSON());
+                        response.success(result_workspacefollower.toJSON());
 
                     } else {
 
@@ -503,7 +503,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
                         var finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                         response.success();
+                        response.success();
 
                     }
 
@@ -1511,146 +1511,146 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                 function getSkills(callback) {
 
-                 if (collection != "WorkSpace") {
+                    if (collection != "WorkSpace") {
 
-                 return callback(null, object);
+                        return callback(null, object);
 
-                 } else {
+                    } else {
 
-                 // todo need to check if skills is dirty, if yes then query to update algolia if not then ignore.
+                        // todo need to check if skills is dirty, if yes then query to update algolia if not then ignore.
 
-                 var skillObject = Parse.Object.extend("Skill");
-                 //var skillsRelation = new skillObject.relation("skills");
-                 skillObject = workspace.get("skills");
-                 //console.log("Skills: " + JSON.stringify(skillObject));
-                 //console.log("Skill Length:" + skillObject);
+                        var skillObject = Parse.Object.extend("Skill");
+                        //var skillsRelation = new skillObject.relation("skills");
+                        skillObject = workspace.get("skills");
+                        //console.log("Skills: " + JSON.stringify(skillObject));
+                        //console.log("Skill Length:" + skillObject);
 
-                 var skillObjectQuery = skillObject.query();
-                 skillObjectQuery.ascending("level");
-                 skillObjectQuery.find({
+                        var skillObjectQuery = skillObject.query();
+                        skillObjectQuery.ascending("level");
+                        skillObjectQuery.find({
 
-                 success: function (skill) {
+                            success: function (skill) {
 
-                 //console.log("Skills: " + JSON.stringify(skill));
+                                //console.log("Skills: " + JSON.stringify(skill));
 
-                 return callback(null, skill);
+                                return callback(null, skill);
 
-                 },
-                 error: function (error) {
-                 alert("Error: " + error.code + " " + error.message);
-                 return callback(error);
-                 }
-                 }, {useMasterKey: true});
-                 }
+                            },
+                            error: function (error) {
+                                alert("Error: " + error.code + " " + error.message);
+                                return callback(error);
+                            }
+                        }, {useMasterKey: true});
+                    }
 
-                 }
+                }
 
-                 function getExperts(callback) {
+                function getExperts(callback) {
 
-                 if (collection != "WorkSpace") {
+                    if (collection != "WorkSpace") {
 
-                 return callback(null, object);
+                        return callback(null, object);
 
-                 } else {
+                    } else {
 
-                 // todo check if expert is dirty, if no ignore and return callback
+                        // todo check if expert is dirty, if no ignore and return callback
 
-                 var expertObject = Parse.Object.extend("_User");
-                 expertObject = workspace.get("experts");
-                 //console.log("Experts: " + JSON.stringify(expertObject));
+                        var expertObject = Parse.Object.extend("_User");
+                        expertObject = workspace.get("experts");
+                        //console.log("Experts: " + JSON.stringify(expertObject));
 
-                 expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
+                        expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
 
-                 success: function (experts) {
-
-
-                 //console.log("\n Experts: " + JSON.stringify(experts));
-
-                 return callback(null, experts);
+                            success: function (experts) {
 
 
-                 },
-                 error: function (error) {
-                 alert("Error: " + error.code + " " + error.message);
-                 return callback(error);
-                 }
-                 }, {useMasterKey: true});
+                                //console.log("\n Experts: " + JSON.stringify(experts));
 
-                 }
-
-                 }
-
-                 function getWorkspaceFollowers(callback) {
-
-                 //todo check for when we should be updating workspace_follower in Algolia Index
-                 // get workspace_followers only in the following scenarios (1) user isFollower or isMember == true (2) workspace admin sent request for a user to join a workspace it's viewable to that user.
-
-                 if (collection != "WorkSpace") {
-
-                 return callback(null, object);
-
-                 } else {
-
-                 var WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-                 var queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
-
-                 let viewableBy = [];
-
-                 queryWorkspaceFollower.equalTo("workspace", workspace);
-
-                 // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
-                 queryWorkspaceFollower.limit(10000);
-                 // queryWorkspaceFollower.include( ["workspace"] );
-
-                 queryWorkspaceFollower.find({
-
-                 success: function (followers) {
-
-                 //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
-
-                 delete workspaceToSave.skills;
-                 delete workspaceToSave.experts;
-
-                 workspaceToSave.objectID = workspaceToSave.objectId;
-                 workspaceToSave['followers'] = followers;
+                                return callback(null, experts);
 
 
-                 for (var i = 0; i < followers.length; i++) {
+                            },
+                            error: function (error) {
+                                alert("Error: " + error.code + " " + error.message);
+                                return callback(error);
+                            }
+                        }, {useMasterKey: true});
 
-                 if (workspaceToSave.type === 'private') {
-                 viewableBy.push(followers[i].toJSON().user.objectId);
-                 //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
-                 }
+                    }
+
+                }
+
+                function getWorkspaceFollowers(callback) {
+
+                    //todo check for when we should be updating workspace_follower in Algolia Index
+                    // get workspace_followers only in the following scenarios (1) user isFollower or isMember == true (2) workspace admin sent request for a user to join a workspace it's viewable to that user.
+
+                    if (collection != "WorkSpace") {
+
+                        return callback(null, object);
+
+                    } else {
+
+                        var WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+                        var queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+
+                        let viewableBy = [];
+
+                        queryWorkspaceFollower.equalTo("workspace", workspace);
+
+                        // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
+                        queryWorkspaceFollower.limit(10000);
+                        // queryWorkspaceFollower.include( ["workspace"] );
+
+                        queryWorkspaceFollower.find({
+
+                            success: function (followers) {
+
+                                //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
+
+                                delete workspaceToSave.skills;
+                                delete workspaceToSave.experts;
+
+                                workspaceToSave.objectID = workspaceToSave.objectId;
+                                workspaceToSave['followers'] = followers;
 
 
-                 }
+                                for (var i = 0; i < followers.length; i++) {
 
-                 if (workspaceToSave.type === 'private') {
-
-                 workspaceToSave._tags= viewableBy;
-                 //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
-
-                 } else if (workspaceToSave.type === 'public') {
-
-                 workspaceToSave._tags = ['*'];
-
-                 }
-
-                 //console.log("followers: " + JSON.stringify(workspaceToSave.followers));
-
-                 return callback(null, workspaceToSave);
-
-                 },
-                 error: function (error) {
-                 alert("Error: " + error.code + " " + error.message);
-                 return callback(error);
-                 }
-                 }, {useMasterKey: true});
-
-                 }
+                                    if (workspaceToSave.type === 'private') {
+                                        viewableBy.push(followers[i].toJSON().user.objectId);
+                                        //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
+                                    }
 
 
-                 }
+                                }
+
+                                if (workspaceToSave.type === 'private') {
+
+                                    workspaceToSave._tags= viewableBy;
+                                    //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
+
+                                } else if (workspaceToSave.type === 'public') {
+
+                                    workspaceToSave._tags = ['*'];
+
+                                }
+
+                                //console.log("followers: " + JSON.stringify(workspaceToSave.followers));
+
+                                return callback(null, workspaceToSave);
+
+                            },
+                            error: function (error) {
+                                alert("Error: " + error.code + " " + error.message);
+                                return callback(error);
+                            }
+                        }, {useMasterKey: true});
+
+                    }
+
+
+                }
 
                 async.parallel([
                     async.apply(getSkills),
@@ -1838,45 +1838,45 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
         user.set("isNew", false);
         response.success();
 
-       /* if (user.dirty("isSelectedWorkspaceFollower")) {
+        /* if (user.dirty("isSelectedWorkspaceFollower")) {
 
-            userQuery.first({
+         userQuery.first({
 
-                //useMasterKey: true,
-                sessionToken: req.user.getSessionToken()
+         //useMasterKey: true,
+         sessionToken: req.user.getSessionToken()
 
-            }).then((User) => {
+         }).then((User) => {
 
-                console.log("BeforeSave _User userQuery result: " + JSON.stringify(User));
+         console.log("BeforeSave _User userQuery result: " + JSON.stringify(User));
 
-                let isSelectedWorkspaceFollower_Previous = User.get("isSelectedWorkspaceFollower");
-                console.log("user.isisSelectedWorkspaceFollower: " + JSON.stringify(isSelectedWorkspaceFollower_Previous));
-                isSelectedWorkspaceFollower_Previous.set("isSelected", false);
-                isSelectedWorkspaceFollower_Previous.save(null, {
+         let isSelectedWorkspaceFollower_Previous = User.get("isSelectedWorkspaceFollower");
+         console.log("user.isisSelectedWorkspaceFollower: " + JSON.stringify(isSelectedWorkspaceFollower_Previous));
+         isSelectedWorkspaceFollower_Previous.set("isSelected", false);
+         isSelectedWorkspaceFollower_Previous.save(null, {
 
-                    //useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+         //useMasterKey: true,
+         sessionToken: req.user.getSessionToken()
 
-                });
+         });
 
-                let finalTime = process.hrtime(time);
-                console.log(`finalTime took _User beforeSave ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+         let finalTime = process.hrtime(time);
+         console.log(`finalTime took _User beforeSave ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
-                response.success();
+         response.success();
 
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {
+         }, (error) => {
+         // The object was not retrieved successfully.
+         // error is a Parse.Error with an error code and message.
+         response.error(error);
+         }, {
 
-                useMasterKey: true,
-                sessionToken: req.user.getSessionToken()
+         useMasterKey: true,
+         sessionToken: req.user.getSessionToken()
 
-            });
+         });
 
 
-        }*/
+         }*/
 
 
     }
@@ -3845,7 +3845,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
             let USER = Parse.Object.extend("_User");
             let user = new Parse.Object(USER);
-            user.id = workspace_follower.get("user").id;
+            user.id = req.user.id;
             if (!user) { return response.error("please add _User it's required when adding new or updating workspace follower");} else {
                 var userRolesRelation = user.relation("roles");
             }
@@ -4090,61 +4090,61 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                             console.log("workspace.isNew() user: " + JSON.stringify(user));
 
                             /*queryMemberRole.equalTo('name', memberName);
-                            queryMemberRole.first({
-                                success: function (memberRole) { // Role Object
-                                    //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+                             queryMemberRole.first({
+                             success: function (memberRole) { // Role Object
+                             //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
 
-                                    memberRole.getUsers().add(user);
-                                    memberRole.save(null, {
+                             memberRole.getUsers().add(user);
+                             memberRole.save(null, {
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                             useMasterKey: true,
+                             sessionToken: req.user.getSessionToken()
 
-                                    });
+                             });
 
-                                    userRolesRelation.add(memberRole);
+                             userRolesRelation.add(memberRole);
 
-                                    // now add follower since a member is by default a follower
-                                    queryfollowerRole.equalTo('name', followerName);
-                                    queryfollowerRole.first({
-                                        success: function (followerRole) { // Role Object
-                                            //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+                             // now add follower since a member is by default a follower
+                             queryfollowerRole.equalTo('name', followerName);
+                             queryfollowerRole.first({
+                             success: function (followerRole) { // Role Object
+                             //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
 
-                                            followerRole.getUsers().add(user);
-                                            followerRole.save(null, {
+                             followerRole.getUsers().add(user);
+                             followerRole.save(null, {
 
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
+                             useMasterKey: true,
+                             sessionToken: req.user.getSessionToken()
 
-                                            });
+                             });
 
-                                            var userRolesRelation = user.relation("roles");
-                                            userRolesRelation.add(followerRole);
-                                            user.save(null, {
+                             var userRolesRelation = user.relation("roles");
+                             userRolesRelation.add(followerRole);
+                             user.save(null, {
 
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
+                             //useMasterKey: true,
+                             sessionToken: req.user.getSessionToken()
 
-                                            });
+                             });
 
-                                            beforeSave_Time = process.hrtime(time);
-                                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+                             beforeSave_Time = process.hrtime(time);
+                             console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
-                                            response.success();
+                             response.success();
 
-                                        },
-                                        error: function (error) {
-                                            console.log("Bruh, can't find the Admin role");
-                                            response.error(error);
-                                        }
-                                    });
+                             },
+                             error: function (error) {
+                             console.log("Bruh, can't find the Admin role");
+                             response.error(error);
+                             }
+                             });
 
-                                },
-                                error: function (error) {
-                                    console.log("Bruh, can't find the Admin role");
-                                    response.error(error);
-                                }
-                            });*/
+                             },
+                             error: function (error) {
+                             console.log("Bruh, can't find the Admin role");
+                             response.error(error);
+                             }
+                             });*/
 
 
                             async.parallel([
@@ -4230,7 +4230,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     let beforeSaveElse_Time = process.hrtime(time);
                                     console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                     response.success();
+                                    response.success();
 
                                 }
                             });
@@ -4238,38 +4238,38 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
 
                             /*queryfollowerRole.equalTo('name', followerName);
-                            queryfollowerRole.first({
-                                success: function (followerRole) { // Role Object
-                                    //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+                             queryfollowerRole.first({
+                             success: function (followerRole) { // Role Object
+                             //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
 
-                                    followerRole.getUsers().add(user);
-                                    followerRole.save(null, {
+                             followerRole.getUsers().add(user);
+                             followerRole.save(null, {
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                             useMasterKey: true,
+                             sessionToken: req.user.getSessionToken()
 
-                                    });
+                             });
 
-                                    var userRolesRelation = user.relation("roles");
-                                    userRolesRelation.add(followerRole);
-                                    user.save(null, {
+                             var userRolesRelation = user.relation("roles");
+                             userRolesRelation.add(followerRole);
+                             user.save(null, {
 
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                             //useMasterKey: true,
+                             sessionToken: req.user.getSessionToken()
 
-                                    });
+                             });
 
-                                    beforeSave_Time = process.hrtime(time);
-                                    console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+                             beforeSave_Time = process.hrtime(time);
+                             console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
-                                    response.success();
+                             response.success();
 
-                                },
-                                error: function (error) {
-                                    console.log("Bruh, can't find the Admin role");
-                                    response.error(error);
-                                }
-                            });*/
+                             },
+                             error: function (error) {
+                             console.log("Bruh, can't find the Admin role");
+                             response.error(error);
+                             }
+                             });*/
 
 
                         }
@@ -4892,52 +4892,52 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     });
 
                                     /*queryfollowerRole.equalTo('name', followerName);
-                                    queryfollowerRole.first({
+                                     queryfollowerRole.first({
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                    }).then((followerRole) => {
-                                        // The object was retrieved successfully.
+                                     }).then((followerRole) => {
+                                     // The object was retrieved successfully.
 
-                                        //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
+                                     //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
 
-                                        followerRole.getUsers().add(user);
-                                        followerRole.save(null, {
+                                     followerRole.getUsers().add(user);
+                                     followerRole.save(null, {
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                        });
+                                     });
 
-                                        var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.add(followerRole);
-                                        user.save(null, {
+                                     var userRolesRelation = user.relation("roles");
+                                     userRolesRelation.add(followerRole);
+                                     user.save(null, {
 
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                     //useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                        });
+                                     });
 
-                                        Workspace.save(null, {
+                                     Workspace.save(null, {
 
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
-                                        });
+                                     //useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
+                                     });
 
-                                        response.success();
+                                     response.success();
 
 
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    },{
+                                     }, (error) => {
+                                     // The object was not retrieved successfully.
+                                     // error is a Parse.Error with an error code and message.
+                                     response.error(error);
+                                     },{
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                    });*/
+                                     });*/
 
 
 
@@ -5111,58 +5111,58 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
 
                                     /*queryfollowerRole.equalTo('name', followerName);
-                                    queryfollowerRole.first({
+                                     queryfollowerRole.first({
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                    }).then((followerRole) => {
-                                        // The object was retrieved successfully.
+                                     }).then((followerRole) => {
+                                     // The object was retrieved successfully.
 
-                                        //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
+                                     //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
 
-                                        followerRole.getUsers().remove(user);
-                                        followerRole.save(null, {
+                                     followerRole.getUsers().remove(user);
+                                     followerRole.save(null, {
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                        });
+                                     });
 
-                                        var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.remove(followerRole);
-                                        user.save(null, {
+                                     var userRolesRelation = user.relation("roles");
+                                     userRolesRelation.remove(followerRole);
+                                     user.save(null, {
 
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                     //useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                        });
+                                     });
 
-                                        Workspace.save(null, {
+                                     Workspace.save(null, {
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
-                                        });
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
+                                     });
 
-                                        let beforeSaveElse_Time = process.hrtime(time);
-                                        console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                                     let beforeSaveElse_Time = process.hrtime(time);
+                                     console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                        response.success();
+                                     response.success();
 
 
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        let beforeSaveElse_Time = process.hrtime(time);
-                                        console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                                     }, (error) => {
+                                     // The object was not retrieved successfully.
+                                     // error is a Parse.Error with an error code and message.
+                                     let beforeSaveElse_Time = process.hrtime(time);
+                                     console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                        response.error(error);
-                                    }, {
+                                     response.error(error);
+                                     }, {
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                    });*/
+                                     });*/
 
 
 
@@ -5208,54 +5208,54 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
 
                                     /*queryfollowerRole.equalTo('name', followerName);
-                                    queryfollowerRole.first({
+                                     queryfollowerRole.first({
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                    }).then((followerRole) => {
-                                        // The object was retrieved successfully.
+                                     }).then((followerRole) => {
+                                     // The object was retrieved successfully.
 
-                                        //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
+                                     //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
 
-                                        followerRole.getUsers().remove(user);
-                                        followerRole.save(null, {
+                                     followerRole.getUsers().remove(user);
+                                     followerRole.save(null, {
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                        });
+                                     });
 
-                                        var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.remove(followerRole);
-                                        user.save(null, {
+                                     var userRolesRelation = user.relation("roles");
+                                     userRolesRelation.remove(followerRole);
+                                     user.save(null, {
 
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                     //useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                        });
+                                     });
 
-                                        Workspace.save(null, {
+                                     Workspace.save(null, {
 
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
-                                        });
-
-
-
-                                        response.success();
+                                     //useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
+                                     });
 
 
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                     response.success();
 
-                                    });*/
+
+                                     }, (error) => {
+                                     // The object was not retrieved successfully.
+                                     // error is a Parse.Error with an error code and message.
+                                     response.error(error);
+                                     }, {
+
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
+
+                                     });*/
 
 
                                 }
@@ -5309,87 +5309,87 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     });
 
 
-                                   /* queryMemberRole.equalTo('name', memberName);
-                                    queryMemberRole.first({
+                                    /* queryMemberRole.equalTo('name', memberName);
+                                     queryMemberRole.first({
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                    }).then((memberRole) => {
-                                        // The object was retrieved successfully.
+                                     }).then((memberRole) => {
+                                     // The object was retrieved successfully.
 
-                                        console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+                                     console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
-                                        memberRole.getUsers().remove(user);
-                                        memberRole.save(null, {
+                                     memberRole.getUsers().remove(user);
+                                     memberRole.save(null, {
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                        });
+                                     });
 
-                                        var userRolesRelation = user.relation("roles");
+                                     var userRolesRelation = user.relation("roles");
 
-                                        userRolesRelation.remove(memberRole);
+                                     userRolesRelation.remove(memberRole);
 
-                                        // now add follower since a member is by default a follower
-                                        queryfollowerRole.equalTo('name', followerName);
+                                     // now add follower since a member is by default a follower
+                                     queryfollowerRole.equalTo('name', followerName);
 
-                                        queryfollowerRole.first({
+                                     queryfollowerRole.first({
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                        }).then((followerRole) => {
-                                            // The object was retrieved successfully.
+                                     }).then((followerRole) => {
+                                     // The object was retrieved successfully.
 
-                                            followerRole.getUsers().remove(user);
-                                            followerRole.save(null, {
+                                     followerRole.getUsers().remove(user);
+                                     followerRole.save(null, {
 
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                            });
+                                     });
 
-                                            //var userRolesRelation = user.relation("roles");
-                                            userRolesRelation.remove(followerRole);
-                                            user.save(null, {
+                                     //var userRolesRelation = user.relation("roles");
+                                     userRolesRelation.remove(followerRole);
+                                     user.save(null, {
 
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
+                                     //useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
+                                     });
 
-                                            Workspace.save(null, {
+                                     Workspace.save(null, {
 
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
+                                     //useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
+                                     });
 
-                                            response.success();
-
-
-                                        }, (error) => {
-                                            // The object was not retrieved successfully.
-                                            // error is a Parse.Error with an error code and message.
-                                            response.error(error);
-                                        }, {
-
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
-
-                                        });
+                                     response.success();
 
 
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {
+                                     }, (error) => {
+                                     // The object was not retrieved successfully.
+                                     // error is a Parse.Error with an error code and message.
+                                     response.error(error);
+                                     }, {
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                    });*/
+                                     });
+
+
+                                     }, (error) => {
+                                     // The object was not retrieved successfully.
+                                     // error is a Parse.Error with an error code and message.
+                                     response.error(error);
+                                     }, {
+
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
+
+                                     });*/
 
 
                                 }
@@ -5444,85 +5444,85 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     });
 
                                     /*queryMemberRole.equalTo('name', memberName);
-                                    queryMemberRole.first({
+                                     queryMemberRole.first({
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                    }).then((memberRole) => {
-                                        // The object was retrieved successfully.
+                                     }).then((memberRole) => {
+                                     // The object was retrieved successfully.
 
-                                        //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+                                     //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
 
-                                        memberRole.getUsers().remove(user);
-                                        memberRole.save(null, {
+                                     memberRole.getUsers().remove(user);
+                                     memberRole.save(null, {
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                        });
+                                     });
 
-                                        var userRolesRelation = user.relation("roles");
-                                        userRolesRelation.remove(memberRole);
+                                     var userRolesRelation = user.relation("roles");
+                                     userRolesRelation.remove(memberRole);
 
-                                        // now add follower since a member is by default a follower
-                                        queryfollowerRole.equalTo('name', followerName);
+                                     // now add follower since a member is by default a follower
+                                     queryfollowerRole.equalTo('name', followerName);
 
-                                        queryfollowerRole.first({
+                                     queryfollowerRole.first({
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                        }).then((followerRole) => {
-                                            // The object was retrieved successfully.
+                                     }).then((followerRole) => {
+                                     // The object was retrieved successfully.
 
-                                            followerRole.getUsers().remove(user);
-                                            followerRole.save(null, {
+                                     followerRole.getUsers().remove(user);
+                                     followerRole.save(null, {
 
-                                                useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                            });
+                                     });
 
-                                            var userRolesRelation = user.relation("roles");
-                                            userRolesRelation.remove(followerRole);
-                                            user.save(null, {
+                                     var userRolesRelation = user.relation("roles");
+                                     userRolesRelation.remove(followerRole);
+                                     user.save(null, {
 
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
+                                     //useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                            });
+                                     });
 
-                                            Workspace.save(null, {
+                                     Workspace.save(null, {
 
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
+                                     //useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
+                                     });
 
-                                            response.success();
+                                     response.success();
 
-                                        }, (error) => {
-                                            // The object was not retrieved successfully.
-                                            // error is a Parse.Error with an error code and message.
-                                            response.error(error);
-                                        }, {
+                                     }, (error) => {
+                                     // The object was not retrieved successfully.
+                                     // error is a Parse.Error with an error code and message.
+                                     response.error(error);
+                                     }, {
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                        });
+                                     });
 
 
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {
+                                     }, (error) => {
+                                     // The object was not retrieved successfully.
+                                     // error is a Parse.Error with an error code and message.
+                                     response.error(error);
+                                     }, {
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                     useMasterKey: true,
+                                     sessionToken: req.user.getSessionToken()
 
-                                    });*/
+                                     });*/
 
 
                                 }
@@ -5722,7 +5722,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 else if ((result.get("isMember") === false || !result.get("isMember") ) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
 
                                     // do nothing since isMember and isFollower did not change
-                                     response.success();
+                                    response.success();
 
 
                                 }
@@ -5731,13 +5731,13 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
 
 
-                                     response.success();
+                                    response.success();
 
                                 }
                                 else if (result.get("isMember") === true && workspace_follower.get("isMember") === true) {
 
                                     // do nothing since isMember and isFollower did not change
-                                     response.success();
+                                    response.success();
 
 
                                 }
@@ -5775,7 +5775,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 let beforeSaveElse_Time = process.hrtime(time);
                 console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                 response.success();
+                response.success();
 
             }
 
@@ -8849,8 +8849,8 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                         //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
                         channelFollow.set("archive", false);
-                        channelFollow.set("user", channel.get("user").id);
-                        channelFollow.set("workspace", channel.get("workspace").id);
+                        channelFollow.set("user", channel.get("user"));
+                        channelFollow.set("workspace", channel.get("workspace"));
                         channelFollow.set("channel", channel);
                         channelFollow.set("notificationCount", 0);
                         channelFollow.set("isSelected", false);
@@ -9553,12 +9553,12 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         workspaceFollower.set("isSelected", false);
 
                         // set correct ACL for channelFollow
-                        let workspaceFollowACL = new Parse.ACL();
-                        workspaceFollowACL.setPublicReadAccess(true);
-                        workspaceFollowACL.setPublicWriteAccess(true);
-                        workspaceFollowACL.setReadAccess(User, true);
-                        workspaceFollowACL.setWriteAccess(User, true);
-                        workspaceFollower.setACL(workspaceFollowACL);
+                        /*let workspaceFollowACL = new Parse.ACL();
+                         workspaceFollowACL.setPublicReadAccess(true);
+                         workspaceFollowACL.setPublicWriteAccess(true);
+                         workspaceFollowACL.setReadAccess(User, true);
+                         workspaceFollowACL.setWriteAccess(User, true);
+                         workspaceFollower.setACL(workspaceFollowACL);*/
 
                         // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
                         workspaceFollower.set("isMember", true);
@@ -9641,6 +9641,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     if (workspace.get("isNew") === true) {
 
+                        //let Channel = Parse.Object.extend("Channel");
                         let Channel = new Parse.Object("Channel");
 
                         Channel.set("name", "general");
@@ -9690,7 +9691,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     } else {
                         workspaceToSave = results[3];
-
+//
                     }
                     let skillsToSave = results[1];
                     let expertsToSave = results[2];
