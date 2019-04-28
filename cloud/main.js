@@ -9019,7 +9019,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                 // The object was retrieved successfully.
                 //console.log("Result from get " + JSON.stringify(Workspace));
 
-                var workspace = Parse.Object.extend("WorkSpace");
+                //var workspace = Parse.Object.extend("WorkSpace");
                 workspace = Workspace;
                 workspaceToSave = Workspace.toJSON();
                 console.log("Workspace from afterSave Query: " + JSON.stringify(workspace));
@@ -9542,7 +9542,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                         workspaceFollower.set("archive", false);
                         workspaceFollower.set("user", workspace.get("user"));
-                        workspaceFollower.set("workspace", workspace.get("workspace"));
+                        workspaceFollower.set("workspace", request.object);
                         workspaceFollower.set("notificationCount", 0);
                         workspaceFollower.set("isSelected", false);
 
@@ -9564,7 +9564,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                         workspaceFollower.save(null, {
 
-                            useMasterKey: true,
+                            //useMasterKey: true,
                             sessionToken: request.user.getSessionToken()
 
                         }).then((result) => {
@@ -9678,7 +9678,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         response.error(err);
                     }
 
-                    console.log("results length: " + JSON.stringify(results));
+                    console.log("results length: " + JSON.stringify(results.length));
 
                     if(workspace.get("isNew")) {
                         workspaceToSave = results[5];
@@ -9704,9 +9704,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         }
                     }
 
-                    console.log("skillsToSave: " + JSON.stringify(skillsToSave));
-                    console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-                    console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
+                    //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
+                    //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
+                    //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
 
                     indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
                         if (err) response.error(err);
