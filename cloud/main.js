@@ -4485,7 +4485,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         response.error(err);
                     } else {
 
-                        let workspace = workspace_follower.get("workspace");
+                        let result = results[0]; // current workspace_follower that is in the DB
+
+                        let workspace = result.get("workspace");
 
                         let WORKSPACE = Parse.Object.extend("WorkSpace");
                         let Workspace = new WORKSPACE();
@@ -4501,12 +4503,14 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         let memberName = "member-" + Workspace.id;
                         let followerName = "Follower-" + Workspace.id;
 
-                        let result = results[0]; // current workspace_follower that is in the DB
+                        let currentWorkspaceFollower = new Parse.Object("workspace_follower");
+                        currentWorkspaceFollower.id = results[0].id;
 
-                        let previousWorkspaceFollowJoin = new Parse.Object("WorkSpace");
+
+                        let previousWorkspaceFollowJoin = new Parse.Object("workspace_follower");
                         previousWorkspaceFollowJoin.id = results[1].id;
 
-                        let previousWorkspaceFollowLeave = new Parse.Object("WorkSpace");
+                        let previousWorkspaceFollowLeave = new Parse.Object("workspace_follower");
                         previousWorkspaceFollowLeave.id = results[2].id;
 
 
@@ -4514,11 +4518,11 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         console.log("previousWorkspaceFollowJoin result from query: " + JSON.stringify(previousWorkspaceFollowJoin.id));
                         console.log("previousWorkspaceFollowLeave result from query: " + JSON.stringify(previousWorkspaceFollowLeave.id));
 
-                        Workspace = result.get("workspace");
-                        let workspaceACL = Workspace.getACL();
+                        //Workspace = result.get("workspace");
+                        let workspaceACL = result.get("workspace").getACL();
                         let workspaceFollowACLPrivate = result.getACL();
 
-                        user = result.get("user");
+                        //user = result.get("user");
 
                         let expertWorkspaceRelation = Workspace.relation("experts");
 
@@ -4779,7 +4783,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                 let userRolesRelation = user.relation("roles");
 
-                                if (Workspace.get("type") === 'private') {
+                                if (workspace.get("type") === 'private') {
 
                                     // if Workspace is private add user ACL so he/she has access to the private Workspace or workspace_follower
 
@@ -5032,11 +5036,11 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                 Workspace.remove("expertsArray", expert);
 
-                                if (Workspace.get("type") === 'private') {
+                                if (workspace.get("type") === 'private') {
 
                                     // check if this user is a Workspace owner then don't remove the ACL or he won't be able to come back to his Workspace
 
-                                    if (Workspace.get("user").toJSON().objectId === user.toJSON().objectId) {
+                                    if (workspace.get("user").toJSON().objectId === user.toJSON().objectId) {
 
                                         // this user who is unfollowing is also the Workspace owner, don't remove his ACL.
 
@@ -5665,7 +5669,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     console.log("increment  Member");
 
 
-                                    if (Workspace.get("type") === 'private') {
+                                    if (workspace.get("type") === 'private') {
 
                                         // if channel is private add user ACL so he/she has access to the private channel or channelfollow
 
