@@ -3843,11 +3843,14 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
             let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
             queryWorkspaceFollower.include(["user", "workspace"]);
 
-            let USER = Parse.Object.extend("_User");
-            let user = new Parse.Object(USER);
+            //let USER = Parse.Object.extend("_User");
+            let user = new Parse.Object("_User");
             user.id = req.user.id;
+            console.log("user beforeSave workspace_follower: " + JSON.stringify(user));
             if (!user) { return response.error("please add _User it's required when adding new or updating workspace follower");} else {
                 var userRolesRelation = user.relation("roles");
+                console.log("user beforeSave workspace_follower userRoleRelation: " + JSON.stringify(user));
+
             }
 
             let queryMemberRole = new Parse.Query(Parse.Role);
@@ -3859,15 +3862,14 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                 let workspace = workspace_follower.get("workspace");
 
-                let WORKSPACE = Parse.Object.extend("WorkSpace");
-                let Workspace = new WORKSPACE();
+                //let WORKSPACE = Parse.Object.extend("WorkSpace");
+                let Workspace = new Parse.Object("WorkSpace");
                 Workspace.id = workspace.id;
 
-                let Channel = Parse.Object.extend("Channel");
-                let defaultChannelQuery = new Parse.Query(Channel);
+                //let Channel = Parse.Object.extend("Channel");
+                let Channel = new Parse.Object("Channel");
                 defaultChannelQuery.equalTo("default", true);
                 defaultChannelQuery.equalTo("workspace", Workspace);
-
 
                 let memberName = "member-" + Workspace.id;
                 let followerName = "Follower-" + Workspace.id;
@@ -3926,19 +3928,21 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                 if (defaultChannels) {
 
-                                    async.map(defaultChannels, function (channel, cb) {
+                                    async.map(defaultChannels, function (defaultChannelObject, cb) {
 
-                                        let ChannelFollower = Parse.Object.extend("ChannelFollow");
-                                        let channelFollower = new Parse.Object(ChannelFollower);
+                                        //let ChannelFollower = Parse.Object.extend("ChannelFollow");
+                                        let channelFollower = new Parse.Object("ChannelFollow");
+                                        let ChannelObject = new Parse.Object("Channel");
+                                        ChannelObject.id = defaultChannelObject.id;
 
-                                        //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+                                        console.log("defaultChannelQuery: " + JSON.stringify(defaultChannelObject));
 
                                         channelFollower.set("archive", false);
                                         channelFollower.set("user", user);
                                         channelFollower.set("workspace", Workspace);
-                                        channelFollower.set("channel", channel);
+                                        channelFollower.set("channel", ChannelObject);
                                         channelFollower.set("notificationCount", 0);
-                                        if (channel.get("name") === 'general') {
+                                        if (defaultChannelObject.get("name") === 'general') {
                                             channelFollower.set("isSelected", true);
                                         } else {
                                             channelFollower.set("isSelected", false);
@@ -3947,7 +3951,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         channelFollower.set("isMember", true);
                                         channelFollower.set("isFollower", true);
 
-                                        //console.log("channelFollow: " + JSON.stringify(channelFollow));
+                                        console.log("channelFollow final before save: " + JSON.stringify(channelFollower));
 
                                         channelFollower.save(null, {
 
@@ -3956,9 +3960,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                         });
 
-                                        channel = channelFollower;
+                                        defaultChannelObject = channelFollower;
 
-                                        return cb (null, channel);
+                                        return cb (null, defaultChannelObject);
 
 
                                     }, function (err, defaultChannels) {
@@ -4073,7 +4077,6 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
 
                         }
-
 
 
                         if (workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === true) {
@@ -8517,7 +8520,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
-    var time = process.hrtime();
+    let time = process.hrtime();
 
     // Convert Parse.Object to JSON
     let channelfollow = request.object;
@@ -8558,6 +8561,8 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                     }).then((workspaceFollow) => {
                         // The object was retrieved successfully.
+
+
 
                         workspaceFollow.set("isSelectedChannelFollow", channelfollow);
                         workspaceFollow.save(null, {
@@ -9455,7 +9460,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     if (workspace.get("isNew")) {
 
-                        console.log("isNew Workspace no followers yet except workspace owner: " + JSON.stringify(followersArray));
+                        //console.log("isNew Workspace no followers yet except workspace owner: " + JSON.stringify(followersArray));
 
                         return callback (null, followersArray);
 
@@ -9534,7 +9539,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 function createOwnerWorkspaceFollower (callback) {
 
-                    console.log("workspace createOwnerWorkspaceFollower  isNew: " + workspace.get("isNew"));
+                    //console.log("workspace createOwnerWorkspaceFollower  isNew: " + workspace.get("isNew"));
                     //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
 
                     if (workspace.get("isNew") === true) {
