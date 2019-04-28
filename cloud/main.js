@@ -8976,8 +8976,6 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
-
-
     if (!request.user || !request.user.getSessionToken()) {
 
         response.error("afterSave WorkSpace Session token: a valid X-Parse-Session-Token is required");
@@ -8985,12 +8983,12 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
     } else {
 
         // Convert Parse.Object to JSON
-        var workspace = request.object;
+        let workspace = request.object;
 
-        var workspaceToSave = request.object.toJSON();
+        let workspaceToSave = request.object.toJSON();
 
-        var WORKSPACE = Parse.Object.extend("WorkSpace");
-        var queryWorkspace = new Parse.Query(WORKSPACE);
+        let WORKSPACE = Parse.Object.extend("WorkSpace");
+        let queryWorkspace = new Parse.Query(WORKSPACE);
 
         let sessionToken = request.user.getSessionToken();
 
@@ -9016,9 +9014,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 //var workspace = Parse.Object.extend("WorkSpace");
 
-                let WORKSPACE_FOLLOW = Parse.Object.extend("workspace_follower");
-                let workspaceFollower = new Parse.Object(WORKSPACE_FOLLOW);
-
+                //let WORKSPACE_FOLLOW = Parse.Object.extend("workspace_follower");
                 let owner = new Parse.Object("_User");
                 owner = workspace.get("user");
 
@@ -9546,16 +9542,18 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         let viewableBy = [];
                         let followersArray = [];
 
+                        let workspaceFollower = new Parse.Object("workspace_follower");
+
                         console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(workspace));
 
                         workspaceFollower.set("archive", false);
                         workspaceFollower.set("user", User);
-                        workspaceFollower.set("workspace", workspace);
+                        workspaceFollower.set("workspace", WorkSpace);
                         workspaceFollower.set("notificationCount", 0);
                         workspaceFollower.set("isSelected", false);
 
                         // set correct ACL for channelFollow
-                        var workspaceFollowACL = new Parse.ACL();
+                        let workspaceFollowACL = new Parse.ACL();
                         workspaceFollowACL.setPublicReadAccess(true);
                         workspaceFollowACL.setPublicWriteAccess(true);
                         workspaceFollowACL.setReadAccess(User, true);
@@ -9643,8 +9641,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     if (workspace.get("isNew") === true) {
 
-                        var CHANNEL = Parse.Object.extend("Channel");
-                        var Channel = new Parse.Object(CHANNEL);
+                        let Channel = new Parse.Object("Channel");
 
                         Channel.set("name", "general");
                         Channel.set("default", true);
