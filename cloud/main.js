@@ -3868,6 +3868,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                 //let Channel = Parse.Object.extend("Channel");
                 let Channel = new Parse.Object("Channel");
+
+                let CHANNEL = Parse.Object.extend("Channel");
+                let defaultChannelQuery = new Parse.Query(CHANNEL);
                 defaultChannelQuery.equalTo("default", true);
                 defaultChannelQuery.equalTo("workspace", Workspace);
 
@@ -4488,8 +4491,10 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         let Workspace = new WORKSPACE();
                         Workspace.id = workspace.id;
 
-                        let Channel = Parse.Object.extend("Channel");
-                        let defaultChannelQuery = new Parse.Query(Channel);
+                        let Channel = new Parse.Object("Channel");
+
+                        let CHANNEL = Parse.Object.extend("Channel");
+                        let defaultChannelQuery = new Parse.Query(CHANNEL);
                         defaultChannelQuery.equalTo("default", true);
                         defaultChannelQuery.equalTo("workspace", Workspace);
 
