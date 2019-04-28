@@ -4502,12 +4502,17 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         let followerName = "Follower-" + Workspace.id;
 
                         let result = results[0]; // current workspace_follower that is in the DB
-                        let previousWorkspaceFollowJoin = results[1];
-                        let previousWorkspaceFollowLeave = results[2];
+
+                        let previousWorkspaceFollowJoin = new Parse.Object("WorkSpace");
+                        previousWorkspaceFollowJoin.id = results[1].id;
+
+                        let previousWorkspaceFollowLeave = new Parse.Object("WorkSpace");
+                        previousWorkspaceFollowLeave.id = results[2].id;
+
 
                         console.log("workspace_follower result from query: " + JSON.stringify(result.get("name")));
-                        console.log("previousWorkspaceFollowJoin result from query: " + JSON.stringify(previousWorkspaceFollowJoin.get("name")));
-                        console.log("previousWorkspaceFollowLeave result from query: " + JSON.stringify(previousWorkspaceFollowLeave.get("name")));
+                        console.log("previousWorkspaceFollowJoin result from query: " + JSON.stringify(previousWorkspaceFollowJoin.id));
+                        console.log("previousWorkspaceFollowLeave result from query: " + JSON.stringify(previousWorkspaceFollowLeave.id));
 
                         Workspace = result.get("workspace");
                         let workspaceACL = Workspace.getACL();
