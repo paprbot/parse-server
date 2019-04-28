@@ -3934,9 +3934,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
                                         channelFollower.set("archive", false);
-                                        channelFollower.set("user", user.id);
-                                        channelFollower.set("workspace", Workspace.id);
-                                        channelFollower.set("channel", channel.id);
+                                        channelFollower.set("user", user);
+                                        channelFollower.set("workspace", Workspace);
+                                        channelFollower.set("channel", channel);
                                         channelFollower.set("notificationCount", 0);
                                         if (channel.get("name") === 'general') {
                                             channelFollower.set("isSelected", true);
@@ -4504,6 +4504,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         Workspace = result.get("workspace");
                         let workspaceACL = Workspace.getACL();
                         let workspaceFollowACLPrivate = result.getACL();
+
                         user = result.get("user");
 
                         let expertWorkspaceRelation = Workspace.relation("experts");
@@ -4682,9 +4683,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
                                         channelFollower.set("archive", false);
-                                        channelFollower.set("user", user.id);
-                                        channelFollower.set("workspace", Workspace.id);
-                                        channelFollower.set("channel", channel.id);
+                                        channelFollower.set("user", user);
+                                        channelFollower.set("workspace", Workspace);
+                                        channelFollower.set("channel", channel);
                                         channelFollower.set("notificationCount", 0);
                                         if (channel.get("name") === 'general') {
                                             channelFollower.set("isSelected", true);
@@ -7991,22 +7992,22 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
                 //console.log("postFile_url: " + postFile_url);
 
                 var Workspace = new Parse.Object("WorkSpace");
-                Workspace.id = meetingObject.get("workspace");
+                Workspace = meetingObject.get("workspace");
                 //console.log("workspace ID: "  + JSON.stringify(Workspace.id));
 
                 var Channel = new Parse.Object("Channel");
-                Channel.id = meetingObject.get("channel");
+                Channel = meetingObject.get("channel");
                 //console.log("Channel ID: "  + JSON.stringify(Channel.id));
 
                 var User = new Parse.Object("_User");
-                User.id = meetingObject.get("user");
+                User = meetingObject.get("user");
                 //console.log("User ID: "  + JSON.stringify(User.id));
 
                 //console.log("meetingPost: " + JSON.stringify(meetingPost));
 
-                if (meetingObject.get("workspace")) {meetingPost.set("workspace", Workspace.id);}
-                if (meetingObject.get("channel")) {meetingPost.set("channel", Channel.id);}
-                if (meetingObject.get("user")) { meetingPost.set("user", User.id);}
+                if (meetingObject.get("workspace")) {meetingPost.set("workspace", Workspace);}
+                if (meetingObject.get("channel")) {meetingPost.set("channel", Channel);}
+                if (meetingObject.get("user")) { meetingPost.set("user", User);}
                 meetingPost.set("transcript", meetingObject.get("FullMeetingText"));
 
                 if (postFile_name && postFile_url) { meetingPost.set("post_file",
@@ -8991,12 +8992,6 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
         var WORKSPACE = Parse.Object.extend("WorkSpace");
         var queryWorkspace = new Parse.Query(WORKSPACE);
 
-        var WORKSPACE_FOLLOW = Parse.Object.extend("workspace_follower");
-        var workspaceFollower = new Parse.Object(WORKSPACE_FOLLOW);
-
-        var owner = new Parse.Object("_User");
-        owner = workspace.get("user");
-
         let sessionToken = request.user.getSessionToken();
 
         queryWorkspace.equalTo("objectId", workspaceToSave.objectId);
@@ -9020,9 +9015,22 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                 //console.log("Result from get " + JSON.stringify(Workspace));
 
                 //var workspace = Parse.Object.extend("WorkSpace");
+
+                let WORKSPACE_FOLLOW = Parse.Object.extend("workspace_follower");
+                let workspaceFollower = new Parse.Object(WORKSPACE_FOLLOW);
+
+                let owner = new Parse.Object("_User");
+                owner = workspace.get("user");
+
+                let User = new Parse.Object("_User");
+                User.id = workspace.get("user").id;
+
+                let WorkSpace = new Parse.Object("WorkSpace");
+                WorkSpace.id =  Workspace.id;
+
                 workspace = Workspace;
                 workspaceToSave = Workspace.toJSON();
-                console.log("Workspace from afterSave Query: " + JSON.stringify(workspace));
+                console.log("Workspace from afterSave Query: " + JSON.stringify(WorkSpace));
 
                 function createWorkspaceRoles (callback) {
 
@@ -9200,7 +9208,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                         }).then((savedRoles) => {
 
-                            console.log("savedRoles: " + JSON.stringify(savedRoles));
+                            //console.log("savedRoles: " + JSON.stringify(savedRoles));
 
                             var memberrole = savedRoles[4];
                             //memberrole.getUsers().add(usersToAddToRole);
@@ -9541,8 +9549,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(workspace));
 
                         workspaceFollower.set("archive", false);
-                        workspaceFollower.set("user", workspace.get("user").id);
-                        workspaceFollower.set("workspace", workspace.id);
+                        workspaceFollower.set("user", User);
+                        workspaceFollower.set("workspace", workspace);
                         workspaceFollower.set("notificationCount", 0);
                         workspaceFollower.set("isSelected", false);
 
@@ -9550,8 +9558,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         var workspaceFollowACL = new Parse.ACL();
                         workspaceFollowACL.setPublicReadAccess(true);
                         workspaceFollowACL.setPublicWriteAccess(true);
-                        workspaceFollowACL.setReadAccess(workspace.get("user"), true);
-                        workspaceFollowACL.setWriteAccess(workspace.get("user"), true);
+                        workspaceFollowACL.setReadAccess(User, true);
+                        workspaceFollowACL.setWriteAccess(User, true);
                         workspaceFollower.setACL(workspaceFollowACL);
 
                         // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
@@ -9643,8 +9651,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         Channel.set("type", "public");
                         Channel.set("purpose", "Community wide announcements and general questions");
                         Channel.set("allowMemberPostCreation", false);
-                        Channel.set("workspace", workspace.id);
-                        Channel.set("user", owner.id);
+                        Channel.set("workspace", workspace);
+                        Channel.set("user", owner);
                         Channel.save(null, {
 
                                 //useMasterKey: true,
