@@ -3934,9 +3934,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
                                         channelFollower.set("archive", false);
-                                        channelFollower.set("user", user);
-                                        channelFollower.set("workspace", Workspace);
-                                        channelFollower.set("channel", channel);
+                                        channelFollower.set("user", user.id);
+                                        channelFollower.set("workspace", Workspace.id);
+                                        channelFollower.set("channel", channel.id);
                                         channelFollower.set("notificationCount", 0);
                                         if (channel.get("name") === 'general') {
                                             channelFollower.set("isSelected", true);
@@ -4682,9 +4682,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
                                         channelFollower.set("archive", false);
-                                        channelFollower.set("user", user);
-                                        channelFollower.set("workspace", Workspace);
-                                        channelFollower.set("channel", channel);
+                                        channelFollower.set("user", user.id);
+                                        channelFollower.set("workspace", Workspace.id);
+                                        channelFollower.set("channel", channel.id);
                                         channelFollower.set("notificationCount", 0);
                                         if (channel.get("name") === 'general') {
                                             channelFollower.set("isSelected", true);
@@ -8848,8 +8848,8 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                         //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
                         channelFollow.set("archive", false);
-                        channelFollow.set("user", channel.get("user"));
-                        channelFollow.set("workspace", channel.get("workspace"));
+                        channelFollow.set("user", channel.get("user").id);
+                        channelFollow.set("workspace", channel.get("workspace").id);
                         channelFollow.set("channel", channel);
                         channelFollow.set("notificationCount", 0);
                         channelFollow.set("isSelected", false);
@@ -9541,8 +9541,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(workspace));
 
                         workspaceFollower.set("archive", false);
-                        workspaceFollower.set("user", workspace.get("user"));
-                        workspaceFollower.set("workspace", request.object);
+                        workspaceFollower.set("user", workspace.get("user").id);
+                        workspaceFollower.set("workspace", workspace.id);
                         workspaceFollower.set("notificationCount", 0);
                         workspaceFollower.set("isSelected", false);
 
@@ -9643,8 +9643,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         Channel.set("type", "public");
                         Channel.set("purpose", "Community wide announcements and general questions");
                         Channel.set("allowMemberPostCreation", false);
-                        Channel.set("workspace", workspace);
-                        Channel.set("user", owner);
+                        Channel.set("workspace", workspace.id);
+                        Channel.set("user", owner.id);
                         Channel.save(null, {
 
                                 //useMasterKey: true,
