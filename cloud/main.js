@@ -5946,10 +5946,20 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             function addExpertsArrayToChannel (callback) {
 
                                 //var userRole = user.get("roles");
-                                console.log("user object: " + JSON.stringify(user));
-                                let userRoleRelation = user.relation("roles");
-                                let expertChannelRelation = channel.relation("experts");
+                                user.fetch(user.id, {
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                }).then((User) => {
+                                    // The object was retrieved successfully.
+
+                                console.log("user object: " + JSON.stringify(User));
+                                let userRoleRelation = User.relation("roles");
+                                let expertChannelRelation = channelObject.relation("experts");
                                 console.log("userRole: " + JSON.stringify(userRoleRelation));
+                                console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
+
 
                                 let expertRoleName = "expert-" + workspace.id;
 
@@ -5970,39 +5980,23 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         expertChannelRelation.add(user);
 
-                                        user.fetch(user.id, {
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                        console.log("addExpertsArrayToChannel User: " + JSON.stringify(User));
 
-                                        }).then((User) => {
-
-                                            console.log("addExpertsArrayToChannel User: " + JSON.stringify(User));
-
-                                            let expertOwner = simplifyUser(User);
+                                        let expertOwner = simplifyUser(User);
 
 
-                                            channel.addUnique("expertsArray", expertOwner);
-                                            /*Channel.save(null, {
+                                        channel.addUnique("expertsArray", expertOwner);
+                                        /*Channel.save(null, {
 
-                                             //useMasterKey: true,
-                                             sessionToken: req.user.getSessionToken()
+                                         //useMasterKey: true,
+                                         sessionToken: req.user.getSessionToken()
 
-                                             }
-                                             );*/
+                                         }
+                                         );*/
 
-                                            return callback (null, channel);
+                                        return callback (null, channel);
 
-
-
-                                        }, (error) => {
-                                            // Error
-
-                                            return callback (error);
-                                        }, { useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
-
-                                        });
 
 
                                     } else {
@@ -6010,6 +6004,18 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         return callback (null, channel);
                                     }
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("userRoleRelationQuery no result");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
+
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
