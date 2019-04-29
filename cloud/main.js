@@ -2532,7 +2532,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                             response.success();
 
-                        } else if (channel.get("type") === 'privateMembers') {
+                        }
+                        else if (channel.get("type") === 'privateMembers') {
 
                             // get member role for this workspace
                             var queryMemberRole = new Parse.Query(Parse.Role);
@@ -2564,7 +2565,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 }, {useMasterKey: true});
 
 
-                        } else if (channel.get("type") === 'privateExperts') {
+                        }
+                        else if (channel.get("type") === 'privateExperts') {
 
                             // get member role for this workspace
                             var queryRole = new Parse.Query(Parse.Role);
@@ -2596,7 +2598,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 }, {useMasterKey: true});
 
 
-                        } else if (channel.get("type") === 'privateAdmins') {
+                        }
+                        else if (channel.get("type") === 'privateAdmins') {
 
                             // get member role for this workspace
                             var queryRole = new Parse.Query(Parse.Role);
@@ -2628,7 +2631,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 }, {useMasterKey: true});
 
 
-                        } else if (channel.get("type") === 'privateModerators') {
+                        }
+                        else if (channel.get("type") === 'privateModerators') {
 
                             // get member role for this workspace
                             var queryRole = new Parse.Query(Parse.Role);
@@ -2660,7 +2664,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 }, {useMasterKey: true});
 
 
-                        } else if (channel.get("type") === 'privateOwners') {
+                        }
+                        else if (channel.get("type") === 'privateOwners') {
 
                             // get member role for this workspace
                             var queryRole = new Parse.Query(Parse.Role);
@@ -2691,7 +2696,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     response.error(error);
                                 }, {useMasterKey: true});
 
-                        } else if (channel.get("type") === 'public') {
+                        }
+                        else if (channel.get("type") === 'public') {
 
                             //console.log("channel is: " + JSON.stringify(channel.get("type")));
                             //console.log("channelACL: " + JSON.stringify(channelACL));
@@ -8946,6 +8952,9 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                         let Channel = new CHANNEL();
                         Channel.id = channel.id;
 
+                        let expertChannelRelation = channel.relation("experts");
+                        console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
+
                         let USER = Parse.Object.extend("_User");
                         let User = new USER();
                         User.id = channel.get("user").id;
@@ -8954,38 +8963,94 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                         let Workspace = new WORKSPACE();
                         Workspace.id = channel.get("workspace").id;
 
+                        if (channel.get("name") === 'general') {
 
-                        //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+                            expertChannelRelation.add(User);
+                            channel.save(null, {
 
-                        channelFollow.set("archive", false);
-                        channelFollow.set("user", User);
-                        channelFollow.set("workspace", Workspace);
-                        channelFollow.set("channel", Channel);
-                        channelFollow.set("notificationCount", 0);
-                        channelFollow.set("isSelected", false);
+                                //useMasterKey: true,
+                                sessionToken: request.user.getSessionToken()
 
-                        // set correct ACL for channelFollow
-                        var channelFollowACL = new Parse.ACL();
-                        channelFollowACL.setPublicReadAccess(false);
-                        channelFollowACL.setPublicWriteAccess(false);
-                        channelFollowACL.setReadAccess(User, true);
-                        channelFollowACL.setWriteAccess(User, true);
-                        channelFollow.setACL(channelFollowACL);
+                            }).then((channelObject) => {
 
-                        // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
-                        channelFollow.set("isMember", true);
-                        channelFollow.set("isFollower", true);
+                                //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
-                        //console.log("channelFollow: " + JSON.stringify(channelFollow));
+                                channelFollow.set("archive", false);
+                                channelFollow.set("user", User);
+                                channelFollow.set("workspace", Workspace);
+                                channelFollow.set("channel", Channel);
+                                channelFollow.set("notificationCount", 0);
+                                channelFollow.set("isSelected", false);
 
-                        channelFollow.save(null, {
+                                // set correct ACL for channelFollow
+                                var channelFollowACL = new Parse.ACL();
+                                channelFollowACL.setPublicReadAccess(false);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(User, true);
+                                channelFollowACL.setWriteAccess(User, true);
+                                channelFollow.setACL(channelFollowACL);
 
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
+                                // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
+                                channelFollow.set("isMember", true);
+                                channelFollow.set("isFollower", true);
 
-                        });
+                                //console.log("channelFollow: " + JSON.stringify(channelFollow));
 
-                        return callback(null, channelFollow);
+                                channelFollow.save(null, {
+
+                                    //useMasterKey: true,
+                                    sessionToken: request.user.getSessionToken()
+
+                                });
+
+                                return callback(null, channelFollow);
+                                
+                            }, (error) => {
+                                // Execute any logic that should take place if the save fails.
+                                // error is a Parse.Error with an error code and message.
+                                //alert('Failed to create new object, with error code: ' + error.message);
+
+                                return response.error(error);
+                            });
+
+
+
+                        } else {
+
+                            //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+
+                            channelFollow.set("archive", false);
+                            channelFollow.set("user", User);
+                            channelFollow.set("workspace", Workspace);
+                            channelFollow.set("channel", Channel);
+                            channelFollow.set("notificationCount", 0);
+                            channelFollow.set("isSelected", false);
+
+                            // set correct ACL for channelFollow
+                            var channelFollowACL = new Parse.ACL();
+                            channelFollowACL.setPublicReadAccess(false);
+                            channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACL.setReadAccess(User, true);
+                            channelFollowACL.setWriteAccess(User, true);
+                            channelFollow.setACL(channelFollowACL);
+
+                            // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
+                            channelFollow.set("isMember", true);
+                            channelFollow.set("isFollower", true);
+
+                            //console.log("channelFollow: " + JSON.stringify(channelFollow));
+
+                            channelFollow.save(null, {
+
+                                //useMasterKey: true,
+                                sessionToken: request.user.getSessionToken()
+
+                            });
+
+                            return callback(null, channelFollow);
+
+
+                        }
 
 
                     } else {return callback (null, channel);}
@@ -9760,6 +9825,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         Channel.set("allowMemberPostCreation", false);
                         Channel.set("workspace", workspace);
                         Channel.set("user", owner);
+
+                        let expertOwner = simplifyUser(owner);
+                        Channel.addUnique("expertsArray", expertOwner);
+
                         Channel.save(null, {
 
                                 //useMasterKey: true,
