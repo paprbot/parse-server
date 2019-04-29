@@ -5811,8 +5811,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
-    var channelfollow = req.object;
-    var channel = channelfollow.get("channel");
+    let channelfollow = req.object;
+
+    let CHANNEL = Parse.Object.extend("Channel");
+    let channel = new CHANNEL();
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+
     //console.log("channel: " + JSON.stringify(channel));
     console.log("req.user: " + JSON.stringify(req.user));
 
@@ -5829,17 +5838,25 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
         } else {
 
-            var queryChannelFollow = new Parse.Query("ChannelFollow");
-            var queryChannel = new Parse.Query("Channel");
+            let queryChannelFollow = new Parse.Query("ChannelFollow");
+            let queryChannel = new Parse.Query(CHANNEL);
 
             //console.log("post: " + JSON.stringify(channelfollow));
 
             // if there is a post that got added, then increase counter, else ignoremyObject
             if (channelfollow.isNew()) {
 
-                var beforeSave_Time;
+                if (!channelfollow.get("channel")) {
+                    return response.error("Channel is required.");
+                }
+                if (!channelfollow.get("user")) {
+                    return response.error("User who is the channel creator is required when creating a new channel");
+                }
+                if (!channelfollow.get("workspace")) {
+                    return response.error("Workspace is required when creating a new channel");
+                }
 
-                var channelFollowName = channelfollow.get("user").id + "-" + channelfollow.get("workspace").id + "-" + channelfollow.get("channel").id;
+                let channelFollowName = channelfollow.get("user").id + "-" + channelfollow.get("workspace").id + "-" + channelfollow.get("channel").id;
                 console.log("channelFollowName user: " + JSON.stringify(channelFollowName));
 
                 queryChannelFollow.equalTo("name", channelFollowName);
@@ -5863,15 +5880,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                     } else {
 
-                        if (!channelfollow.get("channel")) {
-                            response.error("Channel is required.");
-                        }
-                        if (!channelfollow.get("user")) {
-                            response.error("User who is the channel creator is required when creating a new channel");
-                        }
-                        if (!channelfollow.get("workspace")) {
-                            response.error("Workspace is required when creating a new channel");
-                        }
+
                         if (!channelfollow.get("archive")) {
                             channelfollow.set("archive", false);
                         }
@@ -5879,33 +5888,43 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             channelfollow.set("notificationCount", 0);
                         }
 
-                        let workspace = channelfollow.get("workspace");
+                        channel.id = channelfollow.get("channel").id;
+
+                        workspace.id = channelfollow.get("workspace").id;
+
+                        user.id = channelfollow.get("user").id;
+
+                        console.log("channel, workspace and user: " + JSON.stringify(channel) + JSON.stringify(workspace) + JSON.stringify(user));
 
                         queryChannel.get(channel.id, {
 
-                            useMasterKey: true,
+                            //useMasterKey: true,
                             sessionToken: req.user.getSessionToken()
 
                         }).then((channelObject) => {
                             // The object was retrieved successfully.
 
-                            let user = channelfollow.get("user");
+                            //let user = channelfollow.get("user");
 
+                            //let Channel = channelObject;
 
-                            var Channel = channelObject;
-                            let ownerChannel = Channel.get("user");
-                            console.log("channelType: " + JSON.stringify(Channel.get("type")));
+                            let OWNERUSER = Parse.Object.extend("_User");
+                            let ownerUser = new OWNERUSER();
+                            ownerUser.id = channelObject.get("user").id;
+
+                            //let ownerChannel = Channel.get("user");
+                            console.log("channelType: " + JSON.stringify(channelObject.get("type")));
 
                             function addExpertsArrayToChannel (callback) {
 
                                 //var userRole = user.get("roles");
-                                var userRoleRelation = user.relation("roles");
-                                var expertChannelRelation = Channel.relation("experts");
-                                //console.log("userRole: " + JSON.stringify(userRoleRelation));
+                                let userRoleRelation = user.relation("roles");
+                                let expertChannelRelation = channel.relation("experts");
+                                console.log("userRole: " + JSON.stringify(userRoleRelation));
 
-                                var expertRoleName = "expert-" + channelfollow.get("workspace").id;
+                                let expertRoleName = "expert-" + workspace.id;
 
-                                var userRoleRelationQuery = userRoleRelation.query();
+                                let userRoleRelationQuery = userRoleRelation.query();
                                 userRoleRelationQuery.equalTo("name", expertRoleName);
                                 userRoleRelationQuery.first({
 
@@ -5934,7 +5953,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             let expertOwner = simplifyUser(User);
 
 
-                                            Channel.addUnique("expertsArray", expertOwner);
+                                            channel.addUnique("expertsArray", expertOwner);
                                             /*Channel.save(null, {
 
                                              //useMasterKey: true,
@@ -5943,7 +5962,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                              }
                                              );*/
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
 
 
@@ -5960,7 +5979,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     } else {
                                         // no role exists don't add experts to channel
 
-                                        return callback (null, Channel);
+                                        return callback (null, channel);
                                     }
                                 }, (error) => {
                                     // The object was not retrieved successfully.
@@ -5980,7 +5999,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             function updateFollowersInChannel (callback) {
 
 
-                                var queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
+                                let queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
                                 queryChannelFollowIsSelected.equalTo("user", user);
                                 //queryChannelFollowIsSelected.equalTo("channel", Channel);
                                 queryChannelFollowIsSelected.equalTo("workspace", workspace);
@@ -5994,25 +6013,27 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }).then((ChannelFollowIsSelected) => {
                                     // The object was retrieved successfully.
 
-
+                                    let ChannelFollowISSELECTED = Parse.Object.extend("ChannelFollow");
+                                    let channelFollowIsSelectedSave = new ChannelFollowISSELECTED();
+                                    channelFollowIsSelectedSave.id = ChannelFollowIsSelected.id;
 
                                     channelfollow.set("name", channelFollowName);
                                     //console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
 
-                                    var channelACL = Channel.getACL();
-                                    var channelFollowACLPrivate = channelACL;
-                                    var channelFollowACL = new Parse.ACL();
+                                    let channelACL = channelObject.getACL();
+                                    let channelFollowACLPrivate = channelACL;
+                                    let channelFollowACL = new Parse.ACL();
 
                                     // If this is a private channel, set ACL for owner to read and write
-                                    if (Channel.get("type") === 'private') {
+                                    if (channelObject.get("type") === 'private') {
 
                                         var adminRolePrivate = new Parse.Role();
-                                        var adminNamePrivate = 'admin-' + channelfollow.get("workspace").id;
+                                        var adminNamePrivate = 'admin-' + workspace.id;
                                         adminRolePrivate.set("name", adminNamePrivate);
 
                                         channelACL.setReadAccess(user, true);
                                         channelACL.setWriteAccess(user, true);
-                                        Channel.setACL(channelACL);
+                                        channel.setACL(channelACL);
 
                                         // set correct ACL for channelFollow
                                         //channelFollowACL.setPublicReadAccess(false);
@@ -6024,8 +6045,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         channelfollow.setACL(channelFollowACLPrivate);
 
                                         if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            Channel.increment("followerCount");
-                                            Channel.increment("memberCount");
+                                            channel.increment("followerCount");
+                                            channel.increment("memberCount");
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
@@ -6033,8 +6054,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6043,19 +6064,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             }
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
 
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            Channel.increment("followerCount");
+                                            channel.increment("followerCount");
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6064,21 +6085,21 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             }
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
 
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
-                                            Channel.increment("memberCount");
-                                            Channel.increment("followerCount");
+                                            channel.increment("memberCount");
+                                            channel.increment("followerCount");
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6087,7 +6108,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             }
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -6095,19 +6116,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         } else {
 
-                                            beforeSave_Time = process.hrtime(time);
+                                            let beforeSave_Time = process.hrtime(time);
                                             console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         }
 
-                                    } else if (Channel.get("type") === 'privateMembers') {
+                                    } else if (channelObject.get("type") === 'privateMembers') {
 
                                         // get member role for this workspace
                                         //var queryMemberRole = new Parse.Query(Parse.Role);
                                         var memberRole = new Parse.Role();
-                                        var memberName = 'member-' + channelfollow.get("workspace").id;
+                                        var memberName = 'member-' + workspace.id;
                                         memberRole.set("name", memberName);
 
                                         // set correct ACL for channelFollow
@@ -6117,20 +6138,20 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         channelFollowACL.setWriteAccess(memberRole, false);
                                         channelFollowACL.setReadAccess(user, true);
                                         channelFollowACL.setWriteAccess(user, true);
-                                        channelFollowACL.setReadAccess(ownerChannel, true);
-                                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelFollowACL.setReadAccess(ownerUser, true);
+                                        channelFollowACL.setWriteAccess(ownerUser, true);
                                         channelfollow.setACL(channelFollowACL);
 
                                         if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            Channel.increment("followerCount");
-                                            Channel.increment("memberCount");
+                                            channel.increment("followerCount");
+                                            channel.increment("memberCount");
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6139,17 +6160,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                             }
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            Channel.increment("followerCount");
+                                            channel.increment("followerCount");
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6157,20 +6178,20 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
-                                            Channel.increment("memberCount");
-                                            Channel.increment("followerCount");
+                                            channel.increment("memberCount");
+                                            channel.increment("followerCount");
                                             channelfollow.set("isFollower", true);
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6178,7 +6199,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -6186,7 +6207,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         } else {
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         }
 
@@ -6210,11 +6231,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                          }, { useMasterKey: true });*/
 
 
-                                    } else if (Channel.get("type") === 'privateExperts') {
+                                    } else if (channelObject.get("type") === 'privateExperts') {
 
                                         // get expert role for this workspace
                                         var expertRole = new Parse.Role();
-                                        var expertName = 'expert-' + channelfollow.get("workspace").id;
+                                        var expertName = 'expert-' + workspace.id;
                                         expertRole.set("name", expertName);
 
                                         // set correct ACL for channelFollow
@@ -6224,20 +6245,20 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         channelFollowACL.setWriteAccess(expertRole, false);
                                         channelFollowACL.setReadAccess(user, true);
                                         channelFollowACL.setWriteAccess(user, true);
-                                        channelFollowACL.setReadAccess(ownerChannel, true);
-                                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelFollowACL.setReadAccess(ownerUser, true);
+                                        channelFollowACL.setWriteAccess(ownerUser, true);
                                         channelfollow.setACL(channelFollowACL);
 
                                         if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            Channel.increment("followerCount");
-                                            Channel.increment("memberCount");
+                                            channel.increment("followerCount");
+                                            channel.increment("memberCount");
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6245,16 +6266,16 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            Channel.increment("followerCount");
+                                            channel.increment("followerCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6262,19 +6283,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
-                                            Channel.increment("memberCount");
-                                            Channel.increment("followerCount");
+                                            channel.increment("memberCount");
+                                            channel.increment("followerCount");
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6282,7 +6303,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -6290,7 +6311,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         } else {
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
                                         }
 
                                         /*queryRole.equalTo('name', Name);
@@ -6314,11 +6335,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                          response.error(error);
                                          }, { useMasterKey: true });*/
 
-                                    } else if (Channel.get("type") === 'privateAdmins') {
+                                    } else if (channelObject.get("type") === 'privateAdmins') {
 
                                         // get admin role for this workspace
                                         var adminRole = new Parse.Role();
-                                        var adminName = 'expert-' + channelfollow.get("workspace").id;
+                                        var adminName = 'expert-' + workspace.id;
                                         adminRole.set("name", adminName);
 
                                         // set correct ACL for channelFollow
@@ -6328,19 +6349,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         channelFollowACL.setWriteAccess(adminRole, false);
                                         channelFollowACL.setReadAccess(user, true);
                                         channelFollowACL.setWriteAccess(user, true);
-                                        channelFollowACL.setReadAccess(ownerChannel, true);
-                                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelFollowACL.setReadAccess(ownerUser, true);
+                                        channelFollowACL.setWriteAccess(ownerUser, true);
                                         channelfollow.setACL(channelFollowACL);
 
                                         if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            Channel.increment("followerCount");
-                                            Channel.increment("memberCount");
+                                            channel.increment("followerCount");
+                                            channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6348,16 +6369,16 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            Channel.increment("followerCount");
+                                            channel.increment("followerCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6365,19 +6386,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
-                                            Channel.increment("memberCount");
-                                            Channel.increment("followerCount");
+                                            channel.increment("memberCount");
+                                            channel.increment("followerCount");
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6385,7 +6406,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -6393,7 +6414,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         } else {
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         }
 
@@ -6419,11 +6440,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                          }, { useMasterKey: true });*/
 
 
-                                    } else if (Channel.get("type") === 'privateModerators') {
+                                    } else if (channelObject.get("type") === 'privateModerators') {
 
                                         // get moderator role for this workspace
                                         var moderatorRole = new Parse.Role();
-                                        var moderatorName = 'expert-' + channelfollow.get("workspace").id;
+                                        var moderatorName = 'expert-' + workspace.id;
                                         moderatorRole.set("name", moderatorName);
 
                                         // set correct ACL for channelFollow
@@ -6433,19 +6454,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         channelFollowACL.setWriteAccess(moderatorRole, false);
                                         channelFollowACL.setReadAccess(user, true);
                                         channelFollowACL.setWriteAccess(user, true);
-                                        channelFollowACL.setReadAccess(ownerChannel, true);
-                                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelFollowACL.setReadAccess(ownerUser, true);
+                                        channelFollowACL.setWriteAccess(ownerUser, true);
                                         channelfollow.setACL(channelFollowACL);
 
                                         if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            Channel.increment("followerCount");
-                                            Channel.increment("memberCount");
+                                            channel.increment("followerCount");
+                                            channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6453,17 +6474,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            Channel.increment("followerCount");
+                                            channel.increment("followerCount");
 
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6471,19 +6492,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
-                                            Channel.increment("memberCount");
-                                            Channel.increment("followerCount");
+                                            channel.increment("memberCount");
+                                            channel.increment("followerCount");
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6491,7 +6512,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -6499,7 +6520,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         } else {
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
                                         }
 
                                         /*queryRole.equalTo('name', Name);
@@ -6524,11 +6545,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                          }, { useMasterKey: true });*/
 
 
-                                    } else if (Channel.get("type") === 'privateOwners') {
+                                    } else if (channelObject.get("type") === 'privateOwners') {
 
                                         // get owner role for this workspace
                                         var ownerRole = new Parse.Role();
-                                        var ownerName = 'expert-' + channelfollow.get("workspace").id;
+                                        var ownerName = 'expert-' + workspace.id;
                                         ownerRole.set("name", ownerName);
 
                                         // set correct ACL for channelFollow
@@ -6538,19 +6559,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         channelFollowACL.setWriteAccess(ownerRole, false);
                                         channelFollowACL.setReadAccess(user, true);
                                         channelFollowACL.setWriteAccess(user, true);
-                                        channelFollowACL.setReadAccess(ownerChannel, true);
-                                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelFollowACL.setReadAccess(ownerUser, true);
+                                        channelFollowACL.setWriteAccess(ownerUser, true);
                                         channelfollow.setACL(channelFollowACL);
 
                                         if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            Channel.increment("followerCount");
-                                            Channel.increment("memberCount");
+                                            channel.increment("followerCount");
+                                            channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6558,17 +6579,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            Channel.increment("followerCount");
+                                            channel.increment("followerCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             ChannelFollowIsSelected("isSelected", false);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6576,19 +6597,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
-                                            Channel.increment("memberCount");
-                                            Channel.increment("followerCount");
+                                            channel.increment("memberCount");
+                                            channel.increment("followerCount");
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6596,7 +6617,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -6604,7 +6625,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         } else {
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         }
 
@@ -6630,26 +6651,26 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                          }, { useMasterKey: true });*/
 
 
-                                    } else if (Channel.get("type") === "public") {
+                                    } else if (channelObject.get("type") === "public") {
 
                                         // do nothing, since ACL will be public read/write by default
                                         channelFollowACL.setPublicReadAccess(true);
                                         channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACL.setReadAccess(ownerChannel, true);
-                                        channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelFollowACL.setReadAccess(ownerUser, true);
+                                        channelFollowACL.setWriteAccess(ownerUser, true);
                                         channelFollowACL.setReadAccess(user, true);
                                         channelFollowACL.setWriteAccess(user, true);
                                         channelfollow.setACL(channelFollowACL);
 
                                         if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            Channel.increment("followerCount");
-                                            Channel.increment("memberCount");
+                                            channel.increment("followerCount");
+                                            channel.increment("memberCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6657,16 +6678,16 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            Channel.increment("followerCount");
+                                            channel.increment("followerCount");
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6674,19 +6695,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
                                             // a member is by default always a follower.
-                                            Channel.increment("memberCount");
-                                            Channel.increment("followerCount");
+                                            channel.increment("memberCount");
+                                            channel.increment("followerCount");
                                             channelfollow.set("isFollower", true);
                                             // set isSelected for this channel to true and set previous channel that was selected to false
                                             channelfollow.set("isSelected", true);
                                             if (ChannelFollowIsSelected) {
 
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
+                                                channelFollowIsSelectedSave.set("isSelected", false);
+                                                channelFollowIsSelectedSave.save(null, {
 
                                                         //useMasterKey: true,
                                                         sessionToken: req.user.getSessionToken()
@@ -6694,7 +6715,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 );
 
                                             }
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -6702,14 +6723,14 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         } else {
 
-                                            return callback (null, Channel);
+                                            return callback (null, channel);
 
                                         }
 
 
-                                    } else if (channel.get("type") != 'private' || channel.get("type") != 'public' || channel.get("type") != 'privateOwners' || channel.get("type") != 'privateModerators' || channel.get("type") != 'privateAdmins' || channel.get("type") != 'privateExperts' || channel.get("type") != 'privateMembers') {
+                                    } else if (channelObject.get("type") != 'private' || channelObject.get("type") != 'public' || channelObject.get("type") != 'privateOwners' || channelObject.get("type") != 'privateModerators' || channelObject.get("type") != 'privateAdmins' || channelObject.get("type") != 'privateExperts' || channelObject.get("type") != 'privateMembers') {
 
-                                        var finalTime = process.hrtime(time);
+                                        let finalTime = process.hrtime(time);
                                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                         response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
                                     }
@@ -6737,18 +6758,18 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     response.error(err);
                                 }
 
-                                Channel = results[1];
-                                Channel.set("expertsArray", results[0].get("expertsArray"));
+                                channel = results[1];
+                                channel.set("expertsArray", results[0].get("expertsArray"));
 
-                                console.log("Channel async.Parallels: " + JSON.stringify(Channel));
+                                console.log("Channel async.Parallels: " + JSON.stringify(channel));
 
-                                Channel.save(null, {
+                                channel.save(null, {
 
                                     //useMasterKey: true,
                                     sessionToken: req.user.getSessionToken()
 
                                 });
-                                beforeSave_Time = process.hrtime(time);
+                                let beforeSave_Time = process.hrtime(time);
                                 console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
                                 response.success();
@@ -6766,7 +6787,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             response.error(error);
                         }, {
 
-                            useMasterKey: true,
+                            //useMasterKey: true,
                             sessionToken: req.user.getSessionToken()
 
                         });
@@ -7231,7 +7252,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
 
 
-                            } else {
+                            }
+                            else {
                                 // no role exists don't add or remove experts from channel
 
                                 if (channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
