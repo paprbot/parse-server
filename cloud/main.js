@@ -4403,24 +4403,24 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                 function getPreviousSelectedWorkspaceFollowerJoin (callback) {
 
-                    previousQueryWorkspaceFollowerJoin.first( {
+                    previousQueryWorkspaceFollowerJoin.find( {
 
                         //useMasterKey: true,
                         sessionToken: req.user.getSessionToken()
 
-                    }).then((result) => {
+                    }).then((results) => {
                         // The object was retrieved successfully.
 
-                        if (result) {
+                        if (results) {
 
                             // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
-                            return callback (null, result);
+                            return callback (null, results);
 
                         } else {
 
                             // there was no workspace that was previously selected, return empty
 
-                            return callback (null, result);
+                            return callback (null, results);
                         }
 
 
@@ -4508,14 +4508,14 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
 
                         let previousWorkspaceFollowJoin = new Parse.Object("workspace_follower");
-                        previousWorkspaceFollowJoin.id = results[1].id;
+                        let previousWorkspaceFollowers = results[1];
 
                         let previousWorkspaceFollowLeave = new Parse.Object("workspace_follower");
                         previousWorkspaceFollowLeave.id = results[2].id;
 
 
                         console.log("workspace_follower result from query: " + JSON.stringify(result.get("name")));
-                        console.log("previousWorkspaceFollowJoin result from query: " + JSON.stringify(previousWorkspaceFollowJoin.id));
+                        console.log("previousWorkspaceFollowJoin result from query length of array: " + JSON.stringify(previousWorkspaceFollowers.length));
                         console.log("previousWorkspaceFollowLeave result from query: " + JSON.stringify(previousWorkspaceFollowLeave.id));
 
                         //Workspace = result.get("workspace");
@@ -4803,14 +4803,22 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 user.set("isSelectedWorkspaceFollower", workspace_follower);
 
                                 // joining a workspace follower, so mark previous one as false
-                                if (previousWorkspaceFollowJoin) {
-                                    previousWorkspaceFollowJoin.set("isSelected", false);
+                                if (previousWorkspaceFollowJoin.length > 0) {
 
-                                    previousWorkspaceFollowJoin.save(null, {
+                                    for (var i = 0; i < previousWorkspaceFollowers.length; i++) {
 
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
-                                    });
+                                        previousWorkspaceFollowJoin.id = previousWorkspaceFollowers[i].id;
+
+                                        previousWorkspaceFollowJoin.set("isSelected", false);
+
+                                        previousWorkspaceFollowJoin.save(null, {
+
+                                            //useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
+                                        });
+
+                                    }
+
 
                                 }
 
@@ -5686,7 +5694,27 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     }
 
-                                    // set isSelected for this workspace_follower to true and set previous workspace_follower that was selected to false
+                                    // joining a workspace follower, so mark previous one as false
+                                    if (previousWorkspaceFollowJoin.length > 0) {
+
+                                        for (var i = 0; i < previousWorkspaceFollowers.length; i++) {
+
+                                            previousWorkspaceFollowJoin.id = previousWorkspaceFollowers[i].id;
+
+                                            previousWorkspaceFollowJoin.set("isSelected", false);
+
+                                            previousWorkspaceFollowJoin.save(null, {
+
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+                                            });
+
+                                        }
+
+
+                                    }
+
+                                    // set isSelected for this workspace_follower to true
                                     workspace_follower.set("isSelected", true);
                                     user.set("isSelectedWorkspaceFollower", workspace_follower);
 
@@ -5819,8 +5847,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
 
-    let USER = Parse.Object.extend("_User");
-    let user = new USER();
+    var USER = Parse.Object.extend("_User");
+    var user = new USER();
 
     //console.log("channel: " + JSON.stringify(channel));
     console.log("req.user: " + JSON.stringify(req.user));
@@ -5918,6 +5946,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             function addExpertsArrayToChannel (callback) {
 
                                 //var userRole = user.get("roles");
+                                console.log("user object: " + JSON.stringify(user));
                                 let userRoleRelation = user.relation("roles");
                                 let expertChannelRelation = channel.relation("experts");
                                 console.log("userRole: " + JSON.stringify(userRoleRelation));
