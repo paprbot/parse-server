@@ -5807,9 +5807,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 // Run beforeSave functions to count number of channel followers and members
 Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
-    var NS_PER_SEC = 1e9;
+    const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
-    var time = process.hrtime();
+    let time = process.hrtime();
 
     var channelfollow = req.object;
     var channel = channelfollow.get("channel");
@@ -8268,8 +8268,12 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                 workspaceQuery.matchesQuery("experts", userQuery);
                 workspaceQuery.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "image"]);
 
-                workspaceQuery.find({useMasterKey: true})
-                    .then((objectsToIndex) => {
+                workspaceQuery.find({
+
+                    useMasterKey: true,
+                    sessionToken: request.user.getSessionToken()
+
+                }).then((objectsToIndex) => {
                         // The object was retrieved successfully.
                         console.log("Result from get " + JSON.stringify(objectsToIndex.length));
 
@@ -8336,7 +8340,12 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                         // error is a Parse.Error with an error code and message.
                         return callback (error);
 
-                    }, {useMasterKey: true});
+                    }, {
+
+                        useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
+
+                    });
 
 
                 /*workspaceQuery.find({
@@ -8513,7 +8522,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                     response.error(err);
                 }
 
-                var finalTime = process.hrtime(time);
+                let finalTime = process.hrtime(time);
                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                 response.success();
                 //return callback (null, resultsToMap);
@@ -8524,7 +8533,12 @@ Parse.Cloud.afterSave('_User', function(request, response) {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
             response.error(error);
-        }, {useMasterKey: true});
+        }, {
+
+            useMasterKey: true,
+            sessionToken: request.user.getSessionToken()
+
+        });
 
 
 }, {useMasterKey: true});
@@ -9660,8 +9674,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     if (workspace.get("isNew") === true) {
 
-                        //let Channel = Parse.Object.extend("Channel");
-                        let Channel = new Parse.Object("Channel");
+                        let CHANNEL = Parse.Object.extend("Channel");
+                        let Channel = new CHANNEL();
 
                         Channel.set("name", "general");
                         Channel.set("default", true);
