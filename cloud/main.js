@@ -6008,6 +6008,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     } else {
                                         // no role exists don't add experts to channel
 
+
+
                                         return callback (null, channel);
                                     }
                                 }, (error) => {
@@ -9004,7 +9006,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                                 });
 
                                 return callback(null, channelFollow);
-                                
+
                             }, (error) => {
                                 // Execute any logic that should take place if the save fails.
                                 // error is a Parse.Error with an error code and message.
@@ -9411,6 +9413,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                             });
 
                             var expertrole = savedRoles[1];
+                            expertrole.getUsers().add(owner);
                             //expertrole.getUsers().add(usersToAddToRole);
                             expertrole.getRoles().add(moderatorRole);
                             expertrole.save(null, {
@@ -9433,6 +9436,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                             var userRolesRelation = owner.relation("roles");
                             userRolesRelation.add(ownerRole); // add owner role to the user roles field.
+                            userRolesRelation.add(expertrole); // add owner role to the user roles field.
                             owner.save(null, {
 
                                 //useMasterKey: true,
