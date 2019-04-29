@@ -8965,94 +8965,39 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                         let Workspace = new WORKSPACE();
                         Workspace.id = channel.get("workspace").id;
 
-                        if (channel.get("name") === 'general') {
 
-                            expertChannelRelation.add(User);
-                            channel.save(null, {
+                        //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
-                                //useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
+                        channelFollow.set("archive", false);
+                        channelFollow.set("user", User);
+                        channelFollow.set("workspace", Workspace);
+                        channelFollow.set("channel", Channel);
+                        channelFollow.set("notificationCount", 0);
+                        channelFollow.set("isSelected", false);
 
-                            }).then((channelObject) => {
+                        // set correct ACL for channelFollow
+                        var channelFollowACL = new Parse.ACL();
+                        channelFollowACL.setPublicReadAccess(false);
+                        channelFollowACL.setPublicWriteAccess(false);
+                        channelFollowACL.setReadAccess(User, true);
+                        channelFollowACL.setWriteAccess(User, true);
+                        channelFollow.setACL(channelFollowACL);
 
-                                //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+                        // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
+                        channelFollow.set("isMember", true);
+                        channelFollow.set("isFollower", true);
 
-                                channelFollow.set("archive", false);
-                                channelFollow.set("user", User);
-                                channelFollow.set("workspace", Workspace);
-                                channelFollow.set("channel", Channel);
-                                channelFollow.set("notificationCount", 0);
-                                channelFollow.set("isSelected", false);
+                        //console.log("channelFollow: " + JSON.stringify(channelFollow));
 
-                                // set correct ACL for channelFollow
-                                var channelFollowACL = new Parse.ACL();
-                                channelFollowACL.setPublicReadAccess(false);
-                                channelFollowACL.setPublicWriteAccess(false);
-                                channelFollowACL.setReadAccess(User, true);
-                                channelFollowACL.setWriteAccess(User, true);
-                                channelFollow.setACL(channelFollowACL);
+                        channelFollow.save(null, {
 
-                                // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
-                                channelFollow.set("isMember", true);
-                                channelFollow.set("isFollower", true);
+                            //useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
-                                //console.log("channelFollow: " + JSON.stringify(channelFollow));
+                        });
 
-                                channelFollow.save(null, {
+                        return callback(null, channelFollow);
 
-                                    //useMasterKey: true,
-                                    sessionToken: request.user.getSessionToken()
-
-                                });
-
-                                return callback(null, channelFollow);
-
-                            }, (error) => {
-                                // Execute any logic that should take place if the save fails.
-                                // error is a Parse.Error with an error code and message.
-                                //alert('Failed to create new object, with error code: ' + error.message);
-
-                                return response.error(error);
-                            });
-
-
-
-                        } else {
-
-                            //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
-
-                            channelFollow.set("archive", false);
-                            channelFollow.set("user", User);
-                            channelFollow.set("workspace", Workspace);
-                            channelFollow.set("channel", Channel);
-                            channelFollow.set("notificationCount", 0);
-                            channelFollow.set("isSelected", false);
-
-                            // set correct ACL for channelFollow
-                            var channelFollowACL = new Parse.ACL();
-                            channelFollowACL.setPublicReadAccess(false);
-                            channelFollowACL.setPublicWriteAccess(false);
-                            channelFollowACL.setReadAccess(User, true);
-                            channelFollowACL.setWriteAccess(User, true);
-                            channelFollow.setACL(channelFollowACL);
-
-                            // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
-                            channelFollow.set("isMember", true);
-                            channelFollow.set("isFollower", true);
-
-                            //console.log("channelFollow: " + JSON.stringify(channelFollow));
-
-                            channelFollow.save(null, {
-
-                                //useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
-
-                            });
-
-                            return callback(null, channelFollow);
-
-
-                        }
 
 
                     } else {return callback (null, channel);}
@@ -9829,9 +9774,6 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         Channel.set("allowMemberPostCreation", false);
                         Channel.set("workspace", workspace);
                         Channel.set("user", owner);
-
-                        let expertOwner = simplifyUser(owner);
-                        Channel.addUnique("expertsArray", expertOwner);
 
                         Channel.save(null, {
 
