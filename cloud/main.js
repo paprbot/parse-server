@@ -8762,7 +8762,10 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
     // Convert Parse.Object to JSON
     let workspace_follow = request.object;
 
-    let user = workspace_follow.get("user");
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+    user.id = workspace_follow.get("user").id;
+
 
     console.log("afterSave workspace_follower: " + JSON.stringify(workspace_follow));
 
@@ -8796,14 +8799,18 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
                     }).then((workspaceFollow) => {
                         // The object was retrieved successfully.
 
+                        let WORKSPACEFOLLOW = Parse.Object.extend("workspace_follower");
+                        let workspace_follower = new WORKSPACEFOLLOW();
+                        workspace_follower.id = workspaceFollow.id;
+
                         console.log("workspaceFollow: " + JSON.stringify(workspaceFollow));
 
-                        user = workspaceFollow.get("user");
+                        user.id = workspaceFollow.get("user").id;
 
                         console.log("workspaceFollow aftersave user: " + JSON.stringify(user));
 
 
-                        user.set("isSelectedChannelFollow", workspaceFollow);
+                        user.set("isSelectedChannelFollow", workspace_follower);
                         user.save(null, {
 
                                 //useMasterKey: true,
@@ -8929,13 +8936,25 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 
                     if (channel.get("isNew") === true) {
 
+                        let CHANNEL = Parse.Object.extend("Channel");
+                        let Channel = new CHANNEL();
+                        Channel.id = channel.id;
+
+                        let USER = Parse.Object.extend("_User");
+                        let User = new USER();
+                        User.id = channel.get("user").id;
+
+                        let WORKSPACE = Parse.Object.extend("WorkSpace");
+                        let Workspace = new WORKSPACE();
+                        Workspace.id = channel.get("workspace").id;
+
 
                         //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
                         channelFollow.set("archive", false);
-                        channelFollow.set("user", channel.get("user"));
-                        channelFollow.set("workspace", channel.get("workspace"));
-                        channelFollow.set("channel", channel);
+                        channelFollow.set("user", User);
+                        channelFollow.set("workspace", Workspace);
+                        channelFollow.set("channel", Channel);
                         channelFollow.set("notificationCount", 0);
                         channelFollow.set("isSelected", false);
 
@@ -8943,8 +8962,8 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                         var channelFollowACL = new Parse.ACL();
                         channelFollowACL.setPublicReadAccess(false);
                         channelFollowACL.setPublicWriteAccess(false);
-                        channelFollowACL.setReadAccess(channel.get("user"), true);
-                        channelFollowACL.setWriteAccess(channel.get("user"), true);
+                        channelFollowACL.setReadAccess(User, true);
+                        channelFollowACL.setWriteAccess(User, true);
                         channelFollow.setACL(channelFollowACL);
 
                         // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
