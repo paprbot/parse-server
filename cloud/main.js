@@ -2429,12 +2429,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 // Run beforeSave functions channel
 Parse.Cloud.beforeSave('Channel', function(req, response) {
 
-    var NS_PER_SEC = 1e9;
+    const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
-    var time = process.hrtime();
-    var channel = req.object;
+    let time = process.hrtime();
+    let channel = req.object;
 
-    var channelACL = new Parse.ACL();
+    let channelACL = new Parse.ACL();
 
     if (!req.user) {
 
@@ -2452,18 +2452,18 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
             //console.log("req.user SessionToken: " + JSON.stringify(req.user.getSessionToken()));
 
             //var owner = new Parse.Object("_User");
-            var owner = channel.get("user");
-            var expertRelation = channel.relation("experts");
+            let owner = channel.get("user");
+            let expertRelation = channel.relation("experts");
 
             //var WORKSPACE = new Parse.Object("WORKSPACE");
-            var workspace = channel.get("workspace");
+            let workspace = channel.get("workspace");
 
             let channelName = channel.get("name");
             channelName = channelName.toLowerCase().trim();
             channel.set("name", channelName);
 
             //var CHANNEL = new Parse.Object("Channel");
-            var queryChannel = new Parse.Query("Channel");
+            let queryChannel = new Parse.Query("Channel");
 
             //console.log("channel.isNew: " + channel.isNew());
 
@@ -2489,6 +2489,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                 //console.log("nameWorkspaceID: " + nameWorkspaceID);
 
                 queryChannel.equalTo("nameWorkspaceID", nameWorkspaceID);
+                queryChannel.include("user");
 
                 queryChannel.first({
 
@@ -2517,10 +2518,48 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             channel.set("default", false);
                         }
 
+                        if (channel.get("name") === 'general') {
+                            // this is auto-created when a owner creates a new workspace hence he is an expert
+
+                            owner.fetch(owner.id, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((expert) => {
+
+                                let expertOwner = simplifyUser(expert);
+
+                                //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+                                expertRelation.add(owner);
+
+                                channel.addUnique("expertsArray", expertOwner);
+                                //expertArray.push(expertOwner);
+
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                response.error(error);
+                            }, {
+
+                                useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
+
+
+
+
+                        }
+
+
                         // set 0 for countPosts, countFollowers and countMembers
                         channel.set("postCount", 0);
                         channel.set("memberCount", 0);
                         channel.set("followerCount", 0);
+
 
                         // by default archive needs to be set to false
                         channel.set("archive", false);
@@ -5888,7 +5927,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
     var user = new USER();
 
     //console.log("channel: " + JSON.stringify(channel));
-    console.log("req.user: " + JSON.stringify(req.user));
+    //console.log("req.user: " + JSON.stringify(req.user));
 
 
     if (!req.user) {
