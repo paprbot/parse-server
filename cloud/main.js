@@ -9576,12 +9576,12 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
 
 Parse.Cloud.afterSave('Channel', function(request, response) {
 
-    var NS_PER_SEC = 1e9;
+    const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
-    var time = process.hrtime();
+    let time = process.hrtime();
 
     // Convert Parse.Object to JSON
-    var objectToSave = request.object.toJSON();
+    let Channel = request.object;
 
     //console.log("afterSaveChannel req.user: " + JSON.stringify(request.user));
 
@@ -9597,23 +9597,19 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 
         } else {
 
-
-            var queryChannel = new Parse.Query("Channel");
+            let CHANNEL = Parse.Object.extend("Channel");
+            let queryChannel = new Parse.Query(CHANNEL);
             //queryChannel.equalTo("objectId", request.object.id);
             queryChannel.include( ["user", "workspace", "category"] );
             //queryChannel.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive"]);
-
-            // channel is new so let's add a channelfollow row for the channel creator so he can see the channel
-            var CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
-            var channelFollow = new Parse.Object("ChannelFollow");
 
             //console.log("Request: " + JSON.stringify(request));
             //console.log("objectID: " + objectToSave.objectId);
             //console.log("objectID: " + objectToSave.user.objectId);
 
-            queryChannel.get(request.object.id, {
+            queryChannel.get(Channel.id, {
 
-                useMasterKey: true,
+                //useMasterKey: true,
                 sessionToken: request.user.getSessionToken()
 
             }).then((channel) => {
@@ -9624,42 +9620,40 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                 let workspace = new WORKSPACE();
                 workspace.id = channel.get("workspace").id;
 
-                var channelToSave = channel.toJSON();
+                let USER = Parse.Object.extend("_User");
+                let User = new USER();
+                User.id = channel.get("user").id;
+
+                let channelToSave = channel.toJSON();
 
                 function createOwnerChannelFollow (callback) {
 
-                    //console.log("channel isNew: " + channel.get("isNew"));
+                    console.log("channel isNew: " + channel.get("isNew"));
                     //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
 
                     if (channel.get("isNew") === true) {
 
-                        let CHANNEL = Parse.Object.extend("Channel");
+                        // channel is new so let's add a channelfollow row for the channel creator so he can see the channel
+                        let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
+                        let channelFollow = new CHANNELFOLLOW();
+
                         let Channel = new CHANNEL();
                         Channel.id = channel.id;
 
                         let expertChannelRelation = channel.relation("experts");
                         console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
 
-                        let USER = Parse.Object.extend("_User");
-                        let User = new USER();
-                        User.id = channel.get("user").id;
-
-                        let WORKSPACE = Parse.Object.extend("WorkSpace");
-                        let Workspace = new WORKSPACE();
-                        Workspace.id = channel.get("workspace").id;
-
-
                         //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
                         channelFollow.set("archive", false);
                         channelFollow.set("user", User);
-                        channelFollow.set("workspace", Workspace);
+                        channelFollow.set("workspace", workspace);
                         channelFollow.set("channel", Channel);
                         channelFollow.set("notificationCount", 0);
                         channelFollow.set("isSelected", false);
 
                         // set correct ACL for channelFollow
-                        var channelFollowACL = new Parse.ACL();
+                        let channelFollowACL = new Parse.ACL();
                         channelFollowACL.setPublicReadAccess(false);
                         channelFollowACL.setPublicWriteAccess(false);
                         channelFollowACL.setReadAccess(User, true);
@@ -9708,7 +9702,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 
                 function incrementChannelCounttoWorkspace (callback) {
 
-                    if (channel.get("isNew")) {
+                    if (channel.get("isNew") === true) {
 
                         workspace.increment("channelCount");
                         workspace.save(null, {
@@ -9754,7 +9748,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                 response.error(error);
             }, {
 
-                useMasterKey: true,
+                //useMasterKey: true,
                 sessionToken: request.user.getSessionToken()
 
             });
@@ -10630,6 +10624,26 @@ Parse.Cloud.afterDelete('Channel', function(request) {
         }
         console.log('Parse<>Algolia object deleted');
     });
+});
+
+// Delete AlgoliaSearch channel object if it's deleted from Parse
+Parse.Cloud.beforeDelete('Channel', function(request, response) {
+
+    // get objects
+    let channel = request.object;
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = channel.get("workspace").id;
+
+    workspace.increment("channelCount", -1);
+    workspace.save(null, {
+
+        useMasterKey: true,
+        sessionToken: request.user.getSessionToken()
+
+    });
+
+    response.success();
 });
 
 
