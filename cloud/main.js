@@ -1954,6 +1954,8 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     workspace.set("followerCount", 0);
                     workspace.set("memberCount", 0);
                     workspace.set("isDirtyExperts", false);
+                    //workspace.increment("followerCount");
+                    //workspace.increment("memberCount");
 
 
                     owner.fetch(owner.id, {
@@ -4020,7 +4022,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                 });
 
-                            } else if (workspace_follower.get("isNewWorkspace") === true) {
+                            }
+                            else if (workspace_follower.get("isNewWorkspace") === true) {
 
                                 return callback (null, workspace_follower);
                             }
@@ -4107,8 +4110,22 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                         if (workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === true) {
 
-                            Workspace.increment("followerCount");
-                            Workspace.increment("memberCount");
+                            if (workspace_follower.get("isNewWorkspace") === false || !workspace_follower.get("isNewWorkspace")) {
+
+                                Workspace.increment("followerCount");
+                                Workspace.increment("memberCount");
+                                Workspace.save(null, {
+
+                                    //useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
+
+                                });
+
+                            } else if (workspace_follower.get("isNewWorkspace") === true) {
+
+                                workspace_follower.set("isNewWorkspace", false);
+                            }
+
 
 
                             // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
@@ -4205,12 +4222,6 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     });
 
-                                    Workspace.save(null, {
-
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
-
-                                    });
 
                                     let beforeSaveElse_Time = process.hrtime(time);
                                     console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
