@@ -1954,9 +1954,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     workspace.set("followerCount", 0);
                     workspace.set("memberCount", 0);
                     workspace.set("isDirtyExperts", false);
-                    //workspace.increment("followerCount");
-                    //workspace.increment("memberCount");
-
+                    workspace.increment("followerCount");
+                    workspace.increment("memberCount");
+                    workspace.set("isDirtySkills" === false);
 
                     owner.fetch(owner.id, {
 
