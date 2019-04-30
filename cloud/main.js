@@ -3937,87 +3937,94 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                         function createDefaultChannelFollows (callback) {
 
-                            defaultChannelQuery.find({
+                            if (!workspace_follower.get("isNewWorkspace") || workspace_follower.get("isNewWorkspace") === false) {
 
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
+                                defaultChannelQuery.find({
 
-                            }).then((defaultChannels) => {
-                                // The object was retrieved successfully.
+                                    //useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
 
-                                if (defaultChannels) {
+                                }).then((defaultChannels) => {
+                                    // The object was retrieved successfully.
 
-                                    async.map(defaultChannels, function (defaultChannelObject, cb) {
+                                    if (defaultChannels) {
 
-                                        //let ChannelFollower = Parse.Object.extend("ChannelFollow");
-                                        let channelFollower = new Parse.Object("ChannelFollow");
-                                        let ChannelObject = new Parse.Object("Channel");
-                                        ChannelObject.id = defaultChannelObject.id;
+                                        async.map(defaultChannels, function (defaultChannelObject, cb) {
 
-                                        console.log("defaultChannelQuery: " + JSON.stringify(defaultChannelObject));
+                                            //let ChannelFollower = Parse.Object.extend("ChannelFollow");
+                                            let channelFollower = new Parse.Object("ChannelFollow");
+                                            let ChannelObject = new Parse.Object("Channel");
+                                            ChannelObject.id = defaultChannelObject.id;
 
-                                        channelFollower.set("archive", false);
-                                        channelFollower.set("user", user);
-                                        channelFollower.set("workspace", Workspace);
-                                        channelFollower.set("channel", ChannelObject);
-                                        channelFollower.set("notificationCount", 0);
-                                        if (defaultChannelObject.get("name") === 'general') {
-                                            channelFollower.set("isSelected", true);
-                                        } else {
-                                            channelFollower.set("isSelected", false);
-                                        }
+                                            console.log("defaultChannelQuery: " + JSON.stringify(defaultChannelObject));
 
-                                        channelFollower.set("isMember", true);
-                                        channelFollower.set("isFollower", true);
+                                            channelFollower.set("archive", false);
+                                            channelFollower.set("user", user);
+                                            channelFollower.set("workspace", Workspace);
+                                            channelFollower.set("channel", ChannelObject);
+                                            channelFollower.set("notificationCount", 0);
+                                            if (defaultChannelObject.get("name") === 'general') {
+                                                channelFollower.set("isSelected", true);
+                                            } else {
+                                                channelFollower.set("isSelected", false);
+                                            }
 
-                                        console.log("channelFollow final before save: " + JSON.stringify(channelFollower));
+                                            channelFollower.set("isMember", true);
+                                            channelFollower.set("isFollower", true);
 
-                                        channelFollower.save(null, {
+                                            console.log("channelFollow final before save: " + JSON.stringify(channelFollower));
 
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                            channelFollower.save(null, {
+
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+
+                                            });
+
+                                            defaultChannelObject = channelFollower;
+
+                                            return cb (null, defaultChannelObject);
+
+
+                                        }, function (err, defaultChannels) {
+
+                                            //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
+
+                                            if (err) {
+                                                return callback (err);
+                                            } else {
+
+                                                return callback (null, defaultChannels);
+
+
+                                            }
 
                                         });
 
-                                        defaultChannelObject = channelFollower;
-
-                                        return cb (null, defaultChannelObject);
 
 
-                                    }, function (err, defaultChannels) {
+                                    } else {
 
-                                        //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
-
-                                        if (err) {
-                                            return callback (err);
-                                        } else {
-
-                                            return callback (null, defaultChannels);
+                                        return callback (null, defaultChannels);
+                                    }
 
 
-                                        }
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    return callback(error);
+                                }, {
 
-                                    });
+                                    useMasterKey: true,
+                                    sessionToken: req.user.getSessionToken()
 
+                                });
 
+                            } else if (workspace_follower.get("isNewWorkspace") === true) {
 
+                                return callback (null, workspace_follower);
+                            }
 
-                                } else {
-
-                                    return callback (null, defaultChannels);
-                                }
-
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                return callback(error);
-                            }, {
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
                         }
 
                         function addFollowerRole (callback) {
@@ -10340,6 +10347,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         workspaceFollower.set("workspace", WorkSpace);
                         workspaceFollower.set("notificationCount", 0);
                         workspaceFollower.set("isSelected", false);
+                        workspaceFollower.set("isNewWorkspace", true);
 
                         // set correct ACL for channelFollow
                         /*let workspaceFollowACL = new Parse.ACL();
