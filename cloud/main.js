@@ -1918,9 +1918,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
         let queryWorkspace = new Parse.Query(WORKspace);
 
-        if (workspace.dirty("skills") === true) {
-            workspace.set("isDirtySkills", false);
-        } else if (workspace.dirty("skills") === false) {
+        if (workspace.dirty("skills")) {
+            workspace.set("isDirtySkills", true);
+        } else if (!workspace.dirty("skills")) {
             workspace.set("isDirtySkills", false);
 
         }
@@ -2028,7 +2028,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                 } else {
 
-                    if (workspace.dirty("experts") === true) {
+                    if (workspace.dirty("experts")) {
 
                         let workspaceExpertObjects = req.object.toJSON().experts.objects;
                         let exp__op = req.object.toJSON().experts.__op;
@@ -2225,9 +2225,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
             workspace.set("isNew", false);
 
-            //console.log("workspace.dirty: " + workspace.dirty("experts"));
+            console.log("workspace.dirty: " + workspace.dirty("experts"));
 
-            if (workspace.dirty("experts") === true) {
+            if (workspace.dirty("experts")) {
 
                 workspace.set("isDirtyExperts", true);
 
@@ -9791,7 +9791,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
         queryWorkspace.equalTo("objectId", workspaceToSave.objectId);
         queryWorkspace.include( ["user"] );
-        queryWorkspace.select(["expertsArray", "user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image"]);
+        queryWorkspace.select(["isDirtySkills", "isDirtyExperts", "expertsArray", "user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image"]);
 
         console.log("Workspace Object: " + JSON.stringify(workspace));
         //console.log("objectID: " + objectToSave.objectId);
@@ -10084,7 +10084,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 function getSkills (callback) {
 
-                    //console.log("Skills: " + JSON.stringify(skillObject));
+                    console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
                     //console.log("Skill Length:" + skillObject);
 
                     if (workspace.get("isDirtySkills")) {
@@ -10105,7 +10105,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         }, (error) => {
                             // The object was not retrieved successfully.
                             // error is a Parse.Error with an error code and message.
-                            return callback (null, error);
+                            return callback (error);
                         }, {
 
                             useMasterKey: true,
@@ -10528,7 +10528,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
 
                     indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
-                        if (err) response.error(err);
+                        if (err) return response.error(err);
 
                         console.log("Parse<>Algolia workspace saved from AfterSave Workspace function ");
 
