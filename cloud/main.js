@@ -1919,9 +1919,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
         let queryWorkspace = new Parse.Query(WORKspace);
 
         if (workspace.dirty("skills") === true) {
-            workspace.set("isDirtySkills" === true);
+            workspace.set("isDirtySkills", false);
         } else if (workspace.dirty("skills") === false) {
-            workspace.set("isDirtySkills" === false);
+            workspace.set("isDirtySkills", false);
 
         }
 
@@ -1956,7 +1956,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     workspace.set("isDirtyExperts", false);
                     workspace.increment("followerCount");
                     workspace.increment("memberCount");
-                    workspace.set("isDirtySkills" === false);
+                    workspace.set("isDirtySkills", false);
 
                     owner.fetch(owner.id, {
 
@@ -10523,9 +10523,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     }
 
-                    //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
-                    //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-                    //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
+                    console.log("skillsToSave: " + JSON.stringify(skillsToSave));
+                    console.log("expertsToSave: " + JSON.stringify(expertsToSave));
+                    console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
 
                     indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
                         if (err) response.error(err);
