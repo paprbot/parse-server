@@ -1947,6 +1947,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     workspace.set("memberCount", 0);
                     workspace.set("isDirtyExperts", false);
 
+
                     owner.fetch(owner.id, {
 
                         useMasterKey: true,
@@ -1963,7 +1964,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
 
-                        response.success();
+                        return response.success();
 
                     }, (error) => {
                         // The object was not retrieved successfully.
@@ -6795,8 +6796,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
                                         }
 
-                                    }
-                                    else {
+                                    } else {
 
                                         // no channels followed by user
                                         // check if this is a new workspace with new channel == general being created.
@@ -6859,7 +6859,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                         channelfollow.set("isSelected", false);
                                                     }
 
-
                                                     return callback (null, channel);
 
 
@@ -6875,7 +6874,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                     } else {
                                                         channelfollow.set("isSelected", false);
                                                     }
-
 
                                                     return callback (null, channel);
 
@@ -7403,16 +7401,14 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 }
 
 
-                                            }
-                                            else if (channelObject.get("type") != 'private' || channelObject.get("type") != 'public' || channelObject.get("type") != 'privateOwners' || channelObject.get("type") != 'privateModerators' || channelObject.get("type") != 'privateAdmins' || channelObject.get("type") != 'privateExperts' || channelObject.get("type") != 'privateMembers') {
+                                            } else if (channelObject.get("type") != 'private' || channelObject.get("type") != 'public' || channelObject.get("type") != 'privateOwners' || channelObject.get("type") != 'privateModerators' || channelObject.get("type") != 'privateAdmins' || channelObject.get("type") != 'privateExperts' || channelObject.get("type") != 'privateMembers') {
 
                                                 let finalTime = process.hrtime(time);
                                                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                                 response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
                                             }
 
-                                        }
-                                        else {
+                                        }  else {
 
                                                 // no default channels present
 
@@ -9762,11 +9758,15 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
         let sessionToken = request.user.getSessionToken();
 
+        let skillObject = Parse.Object.extend("Skill");
+        //var skillsRelation = new skillObject.relation("skills");
+        skillObject = workspace.get("skills");
+
         queryWorkspace.equalTo("objectId", workspaceToSave.objectId);
         queryWorkspace.include( ["user"] );
         queryWorkspace.select(["expertsArray", "user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image"]);
 
-        //console.log("Workspace Object: " + JSON.stringify(workspace.id));
+        console.log("Workspace Object: " + JSON.stringify(workspace));
         //console.log("objectID: " + objectToSave.objectId);
         //console.log("objectID: " + objectToSave.user.objectId);
 
@@ -9777,8 +9777,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
             useMasterKey: true,
             sessionToken: request.user.getSessionToken()
 
-        })
-            .then((Workspace) => {
+        }).then((Workspace) => {
                 // The object was retrieved successfully.
                 //console.log("Result from get " + JSON.stringify(Workspace));
 
@@ -10054,37 +10053,42 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 function getSkills (callback) {
 
-                    // todo need to check if skills is dirty, if yes then query to update algolia if not then ignore.
-
-                    var skillObject = Parse.Object.extend("Skill");
-                    //var skillsRelation = new skillObject.relation("skills");
-                    skillObject = workspace.get("skills");
                     //console.log("Skills: " + JSON.stringify(skillObject));
                     //console.log("Skill Length:" + skillObject);
 
-                    var skillObjectQuery = skillObject.query();
-                    skillObjectQuery.ascending("level");
+                    if (skillObject) {
 
-                    skillObjectQuery.find({
+                        let skillObjectQuery = skillObject.query();
+                        skillObjectQuery.ascending("level");
 
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                        skillObjectQuery.find({
 
-                    }).then((skill) => {
+                            useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
-                        return callback (null, skill);
+                        }).then((skill) => {
+
+                            return callback (null, skill);
 
 
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        return callback (null, error);
-                    }, {
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback (null, error);
+                        }, {
 
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                            useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
-                    });
+                        });
+
+
+                    } else {
+
+                        return callback (null, workspace);
+                    }
+
+
 
                 }
 
@@ -10106,7 +10110,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                         console.log("workspace.dirty_experts: " + JSON.stringify(workspace.dirty("experts")));
 
-                        if (workspace.dirty("experts")) {
+                        if (workspace.get("expertsArray")) {
 
                             // expert being added or removed, update algolia, else return callback.
 
@@ -10424,6 +10428,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         Channel.set("workspace", workspace);
                         Channel.set("user", owner);
 
+                        console.log("Channel save in afterSave Workspace cloud function");
+
                         Channel.save(null, {
 
                                 //useMasterKey: true,
@@ -10464,23 +10470,25 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     } else {
                         workspaceToSave = results[3];
-//
+
                     }
                     let skillsToSave = results[1];
                     let expertsToSave = results[2];
 
-                    workspaceToSave["skills"] = skillsToSave;
-                    if (workspace.dirty("experts")) {
+                    if (skillObject) {
+                        workspaceToSave["skills"] = skillsToSave;
+                    } else {
+
+                        delete workspaceToSave.skills;
+
+                    }
+
+                    if (workspace.get("expertsArray")) {
                         workspaceToSave["experts"] = expertsToSave;
                     } else {
 
-                        if (workspace.get("isNew")) {
+                        delete workspaceToSave.experts;
 
-                            workspaceToSave["experts"] = expertsToSave;
-                        } else {
-                            delete workspaceToSave.experts;
-
-                        }
                     }
 
                     //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
@@ -10494,7 +10502,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                         var finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                        response.success();
+                        return response.success();
 
                     });
 
@@ -10822,29 +10830,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                         // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
                         expertChannelRelation.remove(user);
 
-                        let expertOwner = user.toJSON();
-                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                        if (expertOwner.user_location) {delete expertOwner.user_location;}
-                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                        if (expertOwner.authData) {delete expertOwner.authData;}
-                        if (expertOwner.username) {delete expertOwner.username;}
-                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                        if (expertOwner.passion) {delete expertOwner.passion;}
-                        if (expertOwner.identities) {delete expertOwner.identities;}
-                        if (expertOwner.email) {delete expertOwner.email;}
-                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                        if (expertOwner.website) {delete expertOwner.website;}
-                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                        if (expertOwner.roles) {delete expertOwner.roles;}
+                        let expertOwner = simplifyUser(user);
 
                         Channel.remove("expertsArray", expertOwner);
 
@@ -10894,29 +10880,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                         // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
                         expertChannelRelation.remove(user);
 
-                        let expertOwner = user.toJSON();
-                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                        if (expertOwner.user_location) {delete expertOwner.user_location;}
-                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                        if (expertOwner.authData) {delete expertOwner.authData;}
-                        if (expertOwner.username) {delete expertOwner.username;}
-                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                        if (expertOwner.passion) {delete expertOwner.passion;}
-                        if (expertOwner.identities) {delete expertOwner.identities;}
-                        if (expertOwner.email) {delete expertOwner.email;}
-                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                        if (expertOwner.website) {delete expertOwner.website;}
-                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                        if (expertOwner.roles) {delete expertOwner.roles;}
+                        let expertOwner = simplifyUser(user);
+
 
                         Channel.remove("expertsArray", expertOwner);
 
@@ -10972,29 +10937,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                         // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
                         expertChannelRelation.remove(user);
 
-                        let expertOwner = user.toJSON();
-                        if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
-                        if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
-                        if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
-                        if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
-                        if (expertOwner.user_location) {delete expertOwner.user_location;}
-                        if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
-                        if (expertOwner.authData) {delete expertOwner.authData;}
-                        if (expertOwner.username) {delete expertOwner.username;}
-                        if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-                        if (expertOwner.passion) {delete expertOwner.passion;}
-                        if (expertOwner.identities) {delete expertOwner.identities;}
-                        if (expertOwner.email) {delete expertOwner.email;}
-                        if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
-                        if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-                        if (expertOwner.website) {delete expertOwner.website;}
-                        if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-                        if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
-                        if (expertOwner.createdAt) {delete expertOwner.createdAt;}
-                        if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
-                        if (expertOwner.mySkills) {delete expertOwner.mySkills;}
-                        if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
-                        if (expertOwner.roles) {delete expertOwner.roles;}
+                        let expertOwner = simplifyUser(user);
+
 
                         Channel.remove("expertsArray", expertOwner);
 
