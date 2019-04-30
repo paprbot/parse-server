@@ -1918,6 +1918,14 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
         let queryWorkspace = new Parse.Query(WORKspace);
 
+        if (workspace.dirty("skills") === true) {
+            workspace.set("isDirtySkills" === true);
+        } else if (workspace.dirty("skills") === false) {
+            workspace.set("isDirtySkills" === false);
+
+        }
+
+
         if (workspace.isNew()) {
 
 
@@ -2371,7 +2379,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     });
 
 
-                } else {
+                }
+
+                else {
 
                     // do nothing to expertArray
 
@@ -2380,7 +2390,6 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                     response.success();
                 }
-
 
 
 
@@ -8941,8 +8950,12 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
     //queryUser.equalTo("objectId", objectToSave.objectId);
 
-    queryUser.get(objectToSave.objectId , {useMasterKey: true})
-        .then((user) => {
+    queryUser.get(objectToSave.objectId , {
+
+        useMasterKey: true,
+        sessionToken: request.user.getSessionToken()
+
+    }).then((user) => {
             // The object was retrieved successfully.
             //console.log("Result from get " + JSON.stringify(Workspace));
 
@@ -9758,10 +9771,6 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
         let sessionToken = request.user.getSessionToken();
 
-        let skillObject = Parse.Object.extend("Skill");
-        //var skillsRelation = new skillObject.relation("skills");
-        skillObject = workspace.get("skills");
-
         queryWorkspace.equalTo("objectId", workspaceToSave.objectId);
         queryWorkspace.include( ["user"] );
         queryWorkspace.select(["expertsArray", "user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image"]);
@@ -9796,6 +9805,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                 workspace = Workspace;
                 workspaceToSave = Workspace.toJSON();
                 //console.log("Workspace from afterSave Query: " + JSON.stringify(WorkSpace));
+
+                let skillObject = Parse.Object.extend("Skill");
+                //var skillsRelation = new skillObject.relation("skills");
+                skillObject = workspace.get("skills");
 
                 function createWorkspaceRoles (callback) {
 
@@ -10056,7 +10069,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     //console.log("Skills: " + JSON.stringify(skillObject));
                     //console.log("Skill Length:" + skillObject);
 
-                    if (skillObject) {
+                    if (workspace.get("isDirtySkills")) {
 
                         let skillObjectQuery = skillObject.query();
                         skillObjectQuery.ascending("level");
@@ -10110,7 +10123,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                         console.log("workspace.dirty_experts: " + JSON.stringify(workspace.dirty("experts")));
 
-                        if (workspace.get("expertsArray")) {
+                        if (workspace.get("isDirtyExperts")) {
 
                             // expert being added or removed, update algolia, else return callback.
 
@@ -10475,7 +10488,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     let skillsToSave = results[1];
                     let expertsToSave = results[2];
 
-                    if (skillObject) {
+                    if (workspace.get("isDirtySkills")) {
                         workspaceToSave["skills"] = skillsToSave;
                     } else {
 
@@ -10483,7 +10496,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     }
 
-                    if (workspace.get("expertsArray")) {
+                    if (workspace.get("isDirtyExperts")) {
                         workspaceToSave["experts"] = expertsToSave;
                     } else {
 
