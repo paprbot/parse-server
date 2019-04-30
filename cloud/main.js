@@ -1953,9 +1953,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     workspace.set("isNew", true);
                     workspace.set("followerCount", 0);
                     workspace.set("memberCount", 0);
+                    workspace.set("channelCount", 0);
                     workspace.set("isDirtyExperts", false);
                     workspace.increment("followerCount");
                     workspace.increment("memberCount");
+                    //workspace.increment("channelCount");
+
                     workspace.set("isDirtySkills", false);
 
                     owner.fetch(owner.id, {
@@ -9617,6 +9620,10 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                 // The object was retrieved successfully.
                 //console.log("Result from get channel" + JSON.stringify(channel));
 
+                let WORKSPACE = Parse.Object.extend("WorkSpace");
+                let workspace = new WORKSPACE();
+                workspace.id = channel.get("workspace").id;
+
                 var channelToSave = channel.toJSON();
 
                 function createOwnerChannelFollow (callback) {
@@ -9699,10 +9706,29 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 
                 }
 
+                function incrementChannelCounttoWorkspace (callback) {
+
+                    if (channel.get("isNew")) {
+
+                        workspace.increment("channelCount");
+                        workspace.save(null, {
+
+                            useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
+
+                        });
+
+                        return callback (null, workspace);
+
+                    }
+
+                }
+
 
                 async.parallel([
                     async.apply(createOwnerChannelFollow),
-                    async.apply(addChannelsToAlgolia)
+                    async.apply(addChannelsToAlgolia),
+                    async.apply(incrementChannelCounttoWorkspace)
 
                 ], function (err, results) {
                     if (err) {
@@ -10499,6 +10525,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     if(workspace.get("isNew")) {
                         workspaceToSave = results[5];
+                        workspace.set("isDirtyExperts", true);
 
                     } else {
                         workspaceToSave = results[3];
@@ -10511,17 +10538,30 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         workspaceToSave["skills"] = skillsToSave;
                     } else {
 
-                        delete workspaceToSave.skills;
+                        if (workspace.get("isNew")) {
+                            workspaceToSave["skills"] = [];
+                        } else {
+
+                            delete workspaceToSave.skills;
+
+                        }
 
                     }
 
                     if (workspace.get("isDirtyExperts")) {
                         workspaceToSave["experts"] = expertsToSave;
+                        delete workspaceToSave.expertsArray;
                     } else {
 
                         delete workspaceToSave.experts;
+                        delete workspaceToSave.expertsArray;
 
                     }
+
+                    delete workspaceToSave.isDirtySkills;
+                    delete workspaceToSave.isDirtyExperts;
+                    delete workspaceToSave.isNew;
+
 
                     console.log("skillsToSave: " + JSON.stringify(skillsToSave));
                     console.log("expertsToSave: " + JSON.stringify(expertsToSave));
