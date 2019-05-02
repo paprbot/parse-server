@@ -494,7 +494,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
                         var finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                        response.success(result_workspacefollower.toJSON());
+                        response.success(result_workspacefollower);
 
                     } else {
 
@@ -10143,40 +10143,46 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 function getSkills (callback) {
 
-                    console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
+                    //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
                     //console.log("Skill Length:" + skillObject);
 
-                    if (workspace.get("isDirtySkills")) {
 
-                        let skillObjectQuery = skillObject.query();
-                        skillObjectQuery.ascending("level");
+                    let skillObjectQuery = skillObject.query();
+                    skillObjectQuery.ascending("level");
 
-                        skillObjectQuery.find({
+                    skillObjectQuery.find({
 
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
+                        useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
 
-                        }).then((skill) => {
+                    }).then((skill) => {
 
-                            return callback (null, skill);
+                        let skillObject = [];
+
+                        if (skill) {
+
+                            // skills exist return then then
+                            skillObject = skill;
+                        } else {
+
+                            // do nothing and return empty skill object no skills;
+
+                        }
+
+                        return callback (null, skillObject);
 
 
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            return callback (error);
-                        }, {
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback (error);
+                    }, {
 
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
+                        useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
 
-                        });
+                    });
 
-
-                    } else {
-
-                        return callback (null, workspace);
-                    }
 
 
 
