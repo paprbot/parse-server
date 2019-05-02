@@ -10572,20 +10572,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     }
                     let skillsToSave = results[1];
                     let expertsToSave = results[2];
-
-                    if (workspace.get("isDirtySkills")) {
-                        workspaceToSave["skills"] = skillsToSave;
-                    } else {
-
-                        if (workspace.get("isNew")) {
-                            workspaceToSave["skills"] = [];
-                        } else {
-
-                            delete workspaceToSave.skills;
-
-                        }
-
-                    }
+                    
 
                     if (workspace.get("isDirtyExperts")) {
                         workspaceToSave["experts"] = expertsToSave;
