@@ -2456,8 +2456,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
             //var owner = new Parse.Object("_User");
             let owner = channel.get("user");
-            let expertRelation = Channel.relation("experts");
-            console.log("expertRelation in beforeSave Channel: " + JSON.stringify(expertRelation));
+            //let expertRelation = Channel.relation("experts");
+            //console.log("expertRelation in beforeSave Channel: " + JSON.stringify(expertRelation));
 
 
             //var WORKSPACE = new Parse.Object("WORKSPACE");
@@ -2523,7 +2523,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             channel.set("default", false);
                         }
 
-                        if (channel.get("name") === 'general') {
+                        /*if (channel.get("name") === 'general') {
                             // this is auto-created when a owner creates a new workspace hence he is an expert
 
                             owner.fetch(owner.id, {
@@ -2560,7 +2560,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
 
 
-                        }
+                        }*/
 
 
                         // set 0 for countPosts, countFollowers and countMembers
