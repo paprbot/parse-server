@@ -2450,10 +2450,15 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
         } else {
 
             //console.log("req.user SessionToken: " + JSON.stringify(req.user.getSessionToken()));
+            let CHANNEL = Parse.Object.extend("Channel");
+            let Channel =  new CHANNEL();
+            Channel.id = channel.id;
 
             //var owner = new Parse.Object("_User");
             let owner = channel.get("user");
-            let expertRelation = channel.relation("experts");
+            let expertRelation = Channel.relation("experts");
+            console.log("expertRelation in beforeSave Channel: " + JSON.stringify(expertRelation));
+
 
             //var WORKSPACE = new Parse.Object("WORKSPACE");
             let workspace = channel.get("workspace");
@@ -2463,7 +2468,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
             channel.set("name", channelName);
 
             //var CHANNEL = new Parse.Object("Channel");
-            let queryChannel = new Parse.Query("Channel");
+            let queryChannel = new Parse.Query(CHANNEL);
 
             //console.log("channel.isNew: " + channel.isNew());
 
@@ -2484,7 +2489,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     response.error("Channel type field is required.");
                 }
 
-                var nameWorkspaceID = channel.get("name") + '-' + channel.get("workspace").id;
+                let nameWorkspaceID = channel.get("name") + '-' + channel.get("workspace").id;
                 channel.set("nameWorkspaceID", nameWorkspaceID);
                 //console.log("nameWorkspaceID: " + nameWorkspaceID);
 
@@ -2502,7 +2507,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     if (results) {
 
                         // channel is not unique return error
-                        var finalTime = process.hrtime(time);
+                        let finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                         response.error("There is already a channel with this name: " + channel.get("name") + ' ' + "please use a channel name that isn't already taken.");
 
@@ -2535,6 +2540,9 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                                 channel.addUnique("expertsArray", expertOwner);
                                 //expertArray.push(expertOwner);
+
+                                channel.set("experts", expertRelation);
+                                console.log("expertRelation in beforeSave Channel-2: " + JSON.stringify(channel.get("experts")));
 
 
 
@@ -2582,7 +2590,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             channelACL.setWriteAccess(owner, true);
                             channel.setACL(channelACL);
 
-                            var finalTime = process.hrtime(time);
+                            let finalTime = process.hrtime(time);
                             console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                             response.success();
 
@@ -2590,8 +2598,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         else if (channel.get("type") === 'privateMembers') {
 
                             // get member role for this workspace
-                            var queryMemberRole = new Parse.Query(Parse.Role);
-                            var memberName = 'member-' + workspace.id;
+                            let queryMemberRole = new Parse.Query(Parse.Role);
+                            let memberName = 'member-' + workspace.id;
 
                             queryMemberRole.equalTo('name', memberName);
                             queryMemberRole.first({useMasterKey: true})
@@ -2607,7 +2615,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     channelACL.setWriteAccess(memberRole, true);
                                     channel.setACL(channelACL);
 
-                                    var finalTime = process.hrtime(time);
+                                    let finalTime = process.hrtime(time);
                                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                     response.success();
 
@@ -2623,8 +2631,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         else if (channel.get("type") === 'privateExperts') {
 
                             // get member role for this workspace
-                            var queryRole = new Parse.Query(Parse.Role);
-                            var Name = 'expert-' + workspace.id;
+                            let queryRole = new Parse.Query(Parse.Role);
+                            let Name = 'expert-' + workspace.id;
 
                             queryRole.equalTo('name', Name);
                             queryRole.first({useMasterKey: true})
@@ -2640,7 +2648,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     channelACL.setWriteAccess(Role, true);
                                     channel.setACL(channelACL);
 
-                                    var finalTime = process.hrtime(time);
+                                    let finalTime = process.hrtime(time);
                                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                     response.success();
 
@@ -2656,8 +2664,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         else if (channel.get("type") === 'privateAdmins') {
 
                             // get member role for this workspace
-                            var queryRole = new Parse.Query(Parse.Role);
-                            var Name = 'admin-' + workspace.id;
+                            let queryRole = new Parse.Query(Parse.Role);
+                            let Name = 'admin-' + workspace.id;
 
                             queryRole.equalTo('name', Name);
                             queryRole.first({useMasterKey: true})
@@ -2673,7 +2681,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     channelACL.setWriteAccess(Role, true);
                                     channel.setACL(channelACL);
 
-                                    var finalTime = process.hrtime(time);
+                                    let finalTime = process.hrtime(time);
                                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                     response.success();
 
@@ -2689,8 +2697,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         else if (channel.get("type") === 'privateModerators') {
 
                             // get member role for this workspace
-                            var queryRole = new Parse.Query(Parse.Role);
-                            var Name = 'moderator-' + workspace.id;
+                            let queryRole = new Parse.Query(Parse.Role);
+                            let Name = 'moderator-' + workspace.id;
 
                             queryRole.equalTo('name', Name);
                             queryRole.first({useMasterKey: true})
@@ -2706,7 +2714,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     channelACL.setWriteAccess(Role, true);
                                     channel.setACL(channelACL);
 
-                                    var finalTime = process.hrtime(time);
+                                    let finalTime = process.hrtime(time);
                                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                     response.success();
 
@@ -2722,8 +2730,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         else if (channel.get("type") === 'privateOwners') {
 
                             // get member role for this workspace
-                            var queryRole = new Parse.Query(Parse.Role);
-                            var Name = 'owner-' + workspace.id;
+                            let queryRole = new Parse.Query(Parse.Role);
+                            let Name = 'owner-' + workspace.id;
 
                             queryRole.equalTo('name', Name);
                             queryRole.first({useMasterKey: true})
@@ -2739,7 +2747,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     channelACL.setWriteAccess(Role, true);
                                     channel.setACL(channelACL);
 
-                                    var finalTime = process.hrtime(time);
+                                    let finalTime = process.hrtime(time);
                                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                     response.success();
 
@@ -2843,8 +2851,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 // todo send notification to all users who are not members since they won't get access to this channel anymore
 
                                 // get member role for this workspace
-                                var queryMemberRole = new Parse.Query(Parse.Role);
-                                var memberName = 'member-' + workspace.id;
+                                let queryMemberRole = new Parse.Query(Parse.Role);
+                                let memberName = 'member-' + workspace.id;
 
                                 queryMemberRole.equalTo('name', memberName);
                                 queryMemberRole.first({useMasterKey: true})
@@ -2878,8 +2886,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
 
                                 // get member role for this workspace
-                                var queryRole = new Parse.Query(Parse.Role);
-                                var Name = 'expert-' + workspace.id;
+                                let queryRole = new Parse.Query(Parse.Role);
+                                let Name = 'expert-' + workspace.id;
 
                                 queryRole.equalTo('name', Name);
                                 queryRole.first({useMasterKey: true})
@@ -2913,8 +2921,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
 
                                 // get member role for this workspace
-                                var queryRole = new Parse.Query(Parse.Role);
-                                var Name = 'admin-' + workspace.id;
+                                let queryRole = new Parse.Query(Parse.Role);
+                                let Name = 'admin-' + workspace.id;
 
                                 queryRole.equalTo('name', Name);
                                 queryRole.first({useMasterKey: true})
@@ -2946,8 +2954,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 // todo send notification to all users who are not moderators since they won't get access to this channel anymore
 
                                 // get member role for this workspace
-                                var queryRole = new Parse.Query(Parse.Role);
-                                var Name = 'moderator-' + workspace.id;
+                                let queryRole = new Parse.Query(Parse.Role);
+                                let Name = 'moderator-' + workspace.id;
 
                                 queryRole.equalTo('name', Name);
                                 queryRole.first({useMasterKey: true})
@@ -2980,8 +2988,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
 
                                 // get member role for this workspace
-                                var queryRole = new Parse.Query(Parse.Role);
-                                var Name = 'owner-' + workspace.id;
+                                let queryRole = new Parse.Query(Parse.Role);
+                                let Name = 'owner-' + workspace.id;
 
                                 queryRole.equalTo('name', Name);
                                 queryRole.first({useMasterKey: true})
@@ -3017,7 +3025,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 channelACL.setWriteAccess(owner, true);
                                 channel.setACL(channelACL);
 
-                                var finalTime = process.hrtime(time);
+                                let finalTime = process.hrtime(time);
                                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                 response.success();
 
@@ -3049,7 +3057,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
             }
             else if (!channel.isNew() && !channel.dirty("name")) {
 
-                channel.set("isNew", false);
+                Channel.set("isNew", false);
                 console.log("Channel is not new and name didn't change: " + JSON.stringify(channel));
 
 
@@ -3083,8 +3091,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         // todo send notification to all users who are not members since they won't get access to this channel anymore
 
                         // get member role for this workspace
-                        var queryMemberRole = new Parse.Query(Parse.Role);
-                        var memberName = 'member-' + workspace.id;
+                        let queryMemberRole = new Parse.Query(Parse.Role);
+                        let memberName = 'member-' + workspace.id;
 
                         queryMemberRole.equalTo('name', memberName);
                         queryMemberRole.first({useMasterKey: true})
@@ -3118,8 +3126,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
 
                         // get member role for this workspace
-                        var queryRole = new Parse.Query(Parse.Role);
-                        var Name = 'expert-' + workspace.id;
+                        let queryRole = new Parse.Query(Parse.Role);
+                        let Name = 'expert-' + workspace.id;
 
                         queryRole.equalTo('name', Name);
                         queryRole.first({useMasterKey: true})
@@ -3153,8 +3161,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
 
                         // get member role for this workspace
-                        var queryRole = new Parse.Query(Parse.Role);
-                        var Name = 'admin-' + workspace.id;
+                        let queryRole = new Parse.Query(Parse.Role);
+                        let Name = 'admin-' + workspace.id;
 
                         queryRole.equalTo('name', Name);
                         queryRole.first({useMasterKey: true})
@@ -3184,8 +3192,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         // todo send notification to all users who are not moderators since they won't get access to this channel anymore
 
                         // get member role for this workspace
-                        var queryRole = new Parse.Query(Parse.Role);
-                        var Name = 'moderator-' + workspace.id;
+                        let queryRole = new Parse.Query(Parse.Role);
+                        let Name = 'moderator-' + workspace.id;
 
                         queryRole.equalTo('name', Name);
                         queryRole.first({useMasterKey: true})
@@ -3216,8 +3224,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
 
                         // get member role for this workspace
-                        var queryRole = new Parse.Query(Parse.Role);
-                        var Name = 'owner-' + workspace.id;
+                        let queryRole = new Parse.Query(Parse.Role);
+                        let Name = 'owner-' + workspace.id;
 
                         queryRole.equalTo('name', Name);
                         queryRole.first({useMasterKey: true})
@@ -3251,7 +3259,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         channelACL.setWriteAccess(owner, true);
                         channel.setACL(channelACL);
 
-                        var finalTime = process.hrtime(time);
+                        let finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                         response.success();
 
@@ -3272,12 +3280,13 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                 }
 
 
-            } else {
+            }
+            else {
                 if (!channel.get("isNew")) {
                     channel.set("isNew", false);
                 }
 
-                var finalTime = process.hrtime(time);
+                let finalTime = process.hrtime(time);
                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                 response.success();
             }
@@ -5923,8 +5932,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
 
-    var USER = Parse.Object.extend("_User");
-    var user = new USER();
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
 
     //console.log("channel: " + JSON.stringify(channel));
     //console.log("req.user: " + JSON.stringify(req.user));
@@ -6057,7 +6066,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         expertChannelRelation.add(user);
 
 
-                                        console.log("addExpertsArrayToChannel User: " + JSON.stringify(User));
+                                        console.log("addExpertsArrayToChannel: " + JSON.stringify(expertChannelRelation));
 
                                         let expertOwner = simplifyUser(User);
 
@@ -6865,7 +6874,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
                                         }
 
-                                    } else {
+                                    }
+                                    else {
 
                                         // no channels followed by user
                                         // check if this is a new workspace with new channel == general being created.
@@ -6885,8 +6895,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             // If this is a private channel, set ACL for owner to read and write
                                             if (channelObject.get("type") === 'private') {
 
-                                                var adminRolePrivate = new Parse.Role();
-                                                var adminNamePrivate = 'admin-' + workspace.id;
+                                                let adminRolePrivate = new Parse.Role();
+                                                let adminNamePrivate = 'admin-' + workspace.id;
                                                 adminRolePrivate.set("name", adminNamePrivate);
 
                                                 channelACL.setReadAccess(user, true);
@@ -7427,6 +7437,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                         channelfollow.set("isSelected", false);
                                                     }
 
+                                                    console.log("updateFollowersInChannel channel: " + JSON.stringify(channel));
+
                                                     return callback (null, channel);
 
                                                 }
@@ -7477,7 +7489,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
                                             }
 
-                                        }  else {
+                                        }
+                                        else {
 
                                                 // no default channels present
 
@@ -10560,7 +10573,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         response.error(err);
                     }
 
-                    console.log("results length: " + JSON.stringify(results.length));
+                    //console.log("results length: " + JSON.stringify(results.length));
 
                     if(workspace.get("isNew")) {
                         workspaceToSave = results[5];
@@ -10572,7 +10585,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     }
                     let skillsToSave = results[1];
                     let expertsToSave = results[2];
-                    
+
+
+                    workspaceToSave["skills"] = skillsToSave;
+
 
                     if (workspace.get("isDirtyExperts")) {
                         workspaceToSave["experts"] = expertsToSave;
@@ -10589,9 +10605,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     delete workspaceToSave.isNew;
 
 
-                    console.log("skillsToSave: " + JSON.stringify(skillsToSave));
-                    console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-                    console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
+                    //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
+                    //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
+                    //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
 
                     indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
                         if (err) return response.error(err);
