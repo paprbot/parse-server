@@ -6068,15 +6068,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
 
                                         channelObject.addUnique("expertsArray", expertOwner);
-                                        /*Channel.save(null, {
+                                        expertChannelRelation.add(user);
+
+                                        channelObject.save(null, {
 
                                          //useMasterKey: true,
                                          sessionToken: req.user.getSessionToken()
 
                                          }
-                                         );*/
+                                         );
 
-                                        expertChannelRelation.add(expertOwner);
+                                        //expertChannelRelation.add(user);
 
                                         console.log("addExpertsArrayToChannel channel: " + JSON.stringify(channelObject));
 
@@ -6089,6 +6091,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     else {
                                         // no role exists don't add experts to channel
 
+                                        console.log("userRoleRelationQuery no result");
 
 
                                         return callback (null, channel);
@@ -6799,6 +6802,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                             if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
                                                 channel.increment("followerCount");
                                                 channel.increment("memberCount");
+
+
                                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                                 channelfollow.set("isSelected", true);
                                                 if (ChannelFollowIsSelected) {
@@ -7430,6 +7435,13 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
                                                     channel.increment("followerCount");
                                                     channel.increment("memberCount");
+                                                    channel.save(null, {
+
+                                                            //useMasterKey: true,
+                                                            sessionToken: req.user.getSessionToken()
+
+                                                        }
+                                                    );
                                                     // set isSelected for this channel to true and set previous channel that was selected to false
                                                     if (channelObject.get("name") === 'general') {
                                                         channelfollow.set("isSelected", true);
@@ -7528,12 +7540,12 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     response.error(err);
                                 }
 
-                                let FinalChannelToSave = Parse.Object.extend("Channel");
+                                /*let FinalChannelToSave = Parse.Object.extend("Channel");
                                 let finalChannelToSave = new FinalChannelToSave();
                                 finalChannelToSave.id = channel.id;
 
                                 let FIRSTCHANNELRESULT = Parse.Object.extend("Channel");
-                                let firstChannelResult = new FIRSTCHANNELRESULT();
+                                let firstChannelResult = new Parse.Object(FIRSTCHANNELRESULT);
                                 firstChannelResult = results[0];
 
                                 let SecondChannelResult = Parse.Object.extend("Channel");
@@ -7577,7 +7589,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     //useMasterKey: true,
                                     sessionToken: req.user.getSessionToken()
 
-                                });
+                                });*/
                                 let beforeSave_Time = process.hrtime(time);
                                 console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
