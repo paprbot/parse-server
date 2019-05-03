@@ -6061,19 +6061,13 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     if (results) {
 
                                         // expert role exists, add as channel expert
-                                        console.log("channelExpert: " + JSON.stringify(results));
+                                        //console.log("channelExpert: " + JSON.stringify(results));
 
-                                        expertChannelRelation.add(user);
-
-
-                                        console.log("addExpertsArrayToChannel: " + JSON.stringify(expertChannelRelation));
 
                                         let expertOwner = simplifyUser(User);
 
-                                        console.log("addExpertsArrayToChannel User: " + JSON.stringify(expertOwner));
 
-
-                                        channel.addUnique("expertsArray", expertOwner);
+                                        channelObject.addUnique("expertsArray", expertOwner);
                                         /*Channel.save(null, {
 
                                          //useMasterKey: true,
@@ -6082,11 +6076,17 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                          }
                                          );*/
 
-                                        return callback (null, channel);
+                                        expertChannelRelation.add(expertOwner);
+
+                                        console.log("addExpertsArrayToChannel channel: " + JSON.stringify(channelObject));
+
+
+                                        return callback (null, channelObject);
 
 
 
-                                    } else {
+                                    }
+                                    else {
                                         // no role exists don't add experts to channel
 
 
@@ -7528,12 +7528,51 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     response.error(err);
                                 }
 
-                                channel = results[1];
-                                channel.set("expertsArray", results[0].get("expertsArray"));
+                                let FinalChannelToSave = Parse.Object.extend("Channel");
+                                let finalChannelToSave = new FinalChannelToSave();
+                                finalChannelToSave.id = channel.id;
 
-                                console.log("Channel async.Parallels: " + JSON.stringify(channel));
+                                let FIRSTCHANNELRESULT = Parse.Object.extend("Channel");
+                                let firstChannelResult = new FIRSTCHANNELRESULT();
+                                firstChannelResult = results[0];
 
-                                channel.save(null, {
+                                let SecondChannelResult = Parse.Object.extend("Channel");
+                                let secondChannelResult = new SecondChannelResult();
+                                secondChannelResult = results[1];
+
+                                console.log("firstChannelResult: " + JSON.stringify(firstChannelResult));
+                                console.log("secondChannelResult: " + JSON.stringify(secondChannelResult));
+
+                                if (firstChannelResult) {
+
+                                    if (firstChannelResult.get("experts") && firstChannelResult.get("expertsArray")) {
+
+                                        finalChannelToSave.set("experts", firstChannelResult.get("experts"));
+                                        console.log("experts: " + JSON.stringify(firstChannelResult.get("experts")));
+
+                                        finalChannelToSave.set("expertsArray", firstChannelResult.get("expertsArray"));
+                                        console.log("expertsArray: " + JSON.stringify(firstChannelResult.get("expertsArray")));
+
+                                    }
+                                }
+
+                                if (secondChannelResult) {
+
+                                    if (secondChannelResult.get("followerCount")) {
+                                        finalChannelToSave.set("followerCount", secondChannelResult.get("followerCount"));
+                                    }
+                                    if (secondChannelResult.get("memberCount")) {
+
+                                        finalChannelToSave.set("memberCount", secondChannelResult.get("memberCount"));
+
+
+                                    }
+
+                                }
+
+                                console.log("Channel async.Parallels: " + JSON.stringify(finalChannelToSave));
+
+                                finalChannelToSave.save(null, {
 
                                     //useMasterKey: true,
                                     sessionToken: req.user.getSessionToken()
