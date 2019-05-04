@@ -1829,9 +1829,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
                 })
                 .catch(console.error);
 
-        }
-
-        else {
+        } else {
             let finalTime = process.hrtime(time);
             console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
@@ -1850,26 +1848,19 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
             // generate a public API key for user 42. Here, records are tagged with:
             //  - 'user_XXXX' if they are visible by user XXXX
-            client.generateSecuredApiKey(
+            const user_public_key = client.generateSecuredApiKey(
                 '4cbf716235b59cc21f2fa38eb29c4e39',
                 {
                     //validUntil: expiresAt,
                     tagFilters: [ [_tagUserId , _tagPublic] ],
                     userToken: user.id
                 }
-            ).then((user_public_key) => {
+            );
 
-                console.log("new algoliaPublic key generated for " + JSON.stringify(user.id));
+            console.log("new algoliaPublic key generated for " + JSON.stringify(user.id));
 
-                user.set("algoliaSecureAPIKey", user_public_key);
 
-                response.success();
-
-            }, (error) => {
-                // error in generating secureKey from algolia
-                response.error(error);
-            });
-
+            user.set("algoliaSecureAPIKey", user_public_key);
 
         } else {
 
