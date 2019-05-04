@@ -1957,7 +1957,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     workspace.set("isDirtyExperts", false);
                     workspace.increment("followerCount");
                     workspace.increment("memberCount");
-                    //workspace.increment("channelCount");
+                    workspace.increment("channelCount");
 
                     workspace.set("isDirtySkills", false);
 
@@ -2524,43 +2524,43 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         }
 
                         /*if (channel.get("name") === 'general') {
-                            // this is auto-created when a owner creates a new workspace hence he is an expert
+                         // this is auto-created when a owner creates a new workspace hence he is an expert
 
-                            owner.fetch(owner.id, {
+                         owner.fetch(owner.id, {
 
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
+                         useMasterKey: true,
+                         sessionToken: req.user.getSessionToken()
 
-                            }).then((expert) => {
+                         }).then((expert) => {
 
-                                let expertOwner = simplifyUser(expert);
+                         let expertOwner = simplifyUser(expert);
 
-                                //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
-                                expertRelation.add(owner);
+                         //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+                         expertRelation.add(owner);
 
-                                channel.addUnique("expertsArray", expertOwner);
-                                //expertArray.push(expertOwner);
+                         channel.addUnique("expertsArray", expertOwner);
+                         //expertArray.push(expertOwner);
 
-                                channel.set("experts", expertRelation);
-                                console.log("expertRelation in beforeSave Channel-2: " + JSON.stringify(channel.get("experts")));
-
-
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                response.error(error);
-                            }, {
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
+                         channel.set("experts", expertRelation);
+                         console.log("expertRelation in beforeSave Channel-2: " + JSON.stringify(channel.get("experts")));
 
 
 
+                         }, (error) => {
+                         // The object was not retrieved successfully.
+                         // error is a Parse.Error with an error code and message.
+                         response.error(error);
+                         }, {
 
-                        }*/
+                         useMasterKey: true,
+                         sessionToken: req.user.getSessionToken()
+
+                         });
+
+
+
+
+                         }*/
 
 
                         // set 0 for countPosts, countFollowers and countMembers
@@ -4165,12 +4165,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                 Workspace.increment("followerCount");
                                 Workspace.increment("memberCount");
-                                Workspace.save(null, {
 
-                                    //useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
 
                             } else if (workspace_follower.get("isNewWorkspace") === true) {
 
@@ -4184,7 +4179,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             // a member is already a follower so only add member role for this user.
 
-                            console.log("workspace.isNew() user: " + JSON.stringify(user));
+                            //console.log("workspace.isNew() user: " + JSON.stringify(user));
 
                             /*queryMemberRole.equalTo('name', memberName);
                              queryMemberRole.first({
@@ -4267,6 +4262,13 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     }
 
                                     user.save(null, {
+
+                                        //useMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+
+                                    });
+
+                                    Workspace.save(null, {
 
                                         //useMasterKey: true,
                                         sessionToken: req.user.getSessionToken()
@@ -6039,74 +6041,74 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }).then((User) => {
                                     // The object was retrieved successfully.
 
-                                console.log("user object: " + JSON.stringify(User));
-                                let userRoleRelation = User.relation("roles");
-                                let expertChannelRelation = channelObject.relation("experts");
-                                console.log("userRole: " + JSON.stringify(userRoleRelation));
-                                console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
+                                    console.log("user object: " + JSON.stringify(User));
+                                    let userRoleRelation = User.relation("roles");
+                                    let expertChannelRelation = channelObject.relation("experts");
+                                    console.log("userRole: " + JSON.stringify(userRoleRelation));
+                                    console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
 
 
-                                let expertRoleName = "expert-" + workspace.id;
+                                    let expertRoleName = "expert-" + workspace.id;
 
-                                let userRoleRelationQuery = userRoleRelation.query();
-                                userRoleRelationQuery.equalTo("name", expertRoleName);
-                                userRoleRelationQuery.first({
+                                    let userRoleRelationQuery = userRoleRelation.query();
+                                    userRoleRelationQuery.equalTo("name", expertRoleName);
+                                    userRoleRelationQuery.first({
 
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
+                                        useMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
 
-                                }).then((results) => {
-                                    // The object was retrieved successfully.
+                                    }).then((results) => {
+                                        // The object was retrieved successfully.
 
-                                    if (results) {
+                                        if (results) {
 
-                                        // expert role exists, add as channel expert
-                                        //console.log("channelExpert: " + JSON.stringify(results));
-
-
-                                        let expertOwner = simplifyUser(User);
+                                            // expert role exists, add as channel expert
+                                            //console.log("channelExpert: " + JSON.stringify(results));
 
 
-                                        channelObject.addUnique("expertsArray", expertOwner);
-                                        expertChannelRelation.add(user);
-
-                                        channelObject.save(null, {
-
-                                         //useMasterKey: true,
-                                         sessionToken: req.user.getSessionToken()
-
-                                         }
-                                         );
-
-                                        //expertChannelRelation.add(user);
-
-                                        console.log("addExpertsArrayToChannel channel: " + JSON.stringify(channelObject));
+                                            let expertOwner = simplifyUser(User);
 
 
-                                        return callback (null, channelObject);
+                                            channelObject.addUnique("expertsArray", expertOwner);
+                                            expertChannelRelation.add(user);
+
+                                            channelObject.save(null, {
+
+                                                    //useMasterKey: true,
+                                                    sessionToken: req.user.getSessionToken()
+
+                                                }
+                                            );
+
+                                            //expertChannelRelation.add(user);
+
+                                            console.log("addExpertsArrayToChannel channel: " + JSON.stringify(channelObject));
+
+
+                                            return callback (null, channelObject);
 
 
 
-                                    }
-                                    else {
-                                        // no role exists don't add experts to channel
+                                        }
+                                        else {
+                                            // no role exists don't add experts to channel
 
+                                            console.log("userRoleRelationQuery no result");
+
+
+                                            return callback (null, channel);
+                                        }
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
                                         console.log("userRoleRelationQuery no result");
+                                        return callback (error);
+                                    }, {
 
+                                        useMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
 
-                                        return callback (null, channel);
-                                    }
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("userRoleRelationQuery no result");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
+                                    });
 
                                 }, (error) => {
                                     // The object was not retrieved successfully.
@@ -7435,13 +7437,13 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                 if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
                                                     channel.increment("followerCount");
                                                     channel.increment("memberCount");
-                                                    channel.save(null, {
+                                                    /*channel.save(null, {
 
-                                                            //useMasterKey: true,
-                                                            sessionToken: req.user.getSessionToken()
+                                                     //useMasterKey: true,
+                                                     sessionToken: req.user.getSessionToken()
 
-                                                        }
-                                                    );
+                                                     }
+                                                     );*/
                                                     // set isSelected for this channel to true and set previous channel that was selected to false
                                                     if (channelObject.get("name") === 'general') {
                                                         channelfollow.set("isSelected", true);
@@ -7504,9 +7506,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         }
                                         else {
 
-                                                // no default channels present
+                                            // no default channels present
 
-                                                response.error("error no default channels exists, in beforeSave channelFollow cloud function");
+                                            response.error("error no default channels exists, in beforeSave channelFollow cloud function");
                                         }
 
 
@@ -7541,55 +7543,55 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }
 
                                 /*let FinalChannelToSave = Parse.Object.extend("Channel");
-                                let finalChannelToSave = new FinalChannelToSave();
-                                finalChannelToSave.id = channel.id;
+                                 let finalChannelToSave = new FinalChannelToSave();
+                                 finalChannelToSave.id = channel.id;
 
-                                let FIRSTCHANNELRESULT = Parse.Object.extend("Channel");
-                                let firstChannelResult = new Parse.Object(FIRSTCHANNELRESULT);
-                                firstChannelResult = results[0];
+                                 let FIRSTCHANNELRESULT = Parse.Object.extend("Channel");
+                                 let firstChannelResult = new Parse.Object(FIRSTCHANNELRESULT);
+                                 firstChannelResult = results[0];
 
-                                let SecondChannelResult = Parse.Object.extend("Channel");
-                                let secondChannelResult = new SecondChannelResult();
-                                secondChannelResult = results[1];
+                                 let SecondChannelResult = Parse.Object.extend("Channel");
+                                 let secondChannelResult = new SecondChannelResult();
+                                 secondChannelResult = results[1];
 
-                                console.log("firstChannelResult: " + JSON.stringify(firstChannelResult));
-                                console.log("secondChannelResult: " + JSON.stringify(secondChannelResult));
+                                 console.log("firstChannelResult: " + JSON.stringify(firstChannelResult));
+                                 console.log("secondChannelResult: " + JSON.stringify(secondChannelResult));
 
-                                if (firstChannelResult) {
+                                 if (firstChannelResult) {
 
-                                    if (firstChannelResult.get("experts") && firstChannelResult.get("expertsArray")) {
+                                 if (firstChannelResult.get("experts") && firstChannelResult.get("expertsArray")) {
 
-                                        finalChannelToSave.set("experts", firstChannelResult.get("experts"));
-                                        console.log("experts: " + JSON.stringify(firstChannelResult.get("experts")));
+                                 finalChannelToSave.set("experts", firstChannelResult.get("experts"));
+                                 console.log("experts: " + JSON.stringify(firstChannelResult.get("experts")));
 
-                                        finalChannelToSave.set("expertsArray", firstChannelResult.get("expertsArray"));
-                                        console.log("expertsArray: " + JSON.stringify(firstChannelResult.get("expertsArray")));
+                                 finalChannelToSave.set("expertsArray", firstChannelResult.get("expertsArray"));
+                                 console.log("expertsArray: " + JSON.stringify(firstChannelResult.get("expertsArray")));
 
-                                    }
-                                }
+                                 }
+                                 }
 
-                                if (secondChannelResult) {
+                                 if (secondChannelResult) {
 
-                                    if (secondChannelResult.get("followerCount")) {
-                                        finalChannelToSave.set("followerCount", secondChannelResult.get("followerCount"));
-                                    }
-                                    if (secondChannelResult.get("memberCount")) {
+                                 if (secondChannelResult.get("followerCount")) {
+                                 finalChannelToSave.set("followerCount", secondChannelResult.get("followerCount"));
+                                 }
+                                 if (secondChannelResult.get("memberCount")) {
 
-                                        finalChannelToSave.set("memberCount", secondChannelResult.get("memberCount"));
+                                 finalChannelToSave.set("memberCount", secondChannelResult.get("memberCount"));
 
 
-                                    }
+                                 }
 
-                                }
+                                 }
 
-                                console.log("Channel async.Parallels: " + JSON.stringify(finalChannelToSave));
+                                 console.log("Channel async.Parallels: " + JSON.stringify(finalChannelToSave));
 
-                                finalChannelToSave.save(null, {
+                                 finalChannelToSave.save(null, {
 
-                                    //useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
+                                 //useMasterKey: true,
+                                 sessionToken: req.user.getSessionToken()
 
-                                });*/
+                                 });*/
                                 let beforeSave_Time = process.hrtime(time);
                                 console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
@@ -9080,312 +9082,312 @@ Parse.Cloud.afterSave('_User', function(request, response) {
         sessionToken: request.user.getSessionToken()
 
     }).then((user) => {
-            // The object was retrieved successfully.
-            //console.log("Result from get " + JSON.stringify(Workspace));
+        // The object was retrieved successfully.
+        //console.log("Result from get " + JSON.stringify(Workspace));
 
-            console.log("isNew: " + JSON.stringify(user.get("isNew")));
-            console.log("isDirtyProfileimage: " + JSON.stringify(user.get("isDirtyProfileimage")));
+        console.log("isNew: " + JSON.stringify(user.get("isNew")));
+        console.log("isDirtyProfileimage: " + JSON.stringify(user.get("isDirtyProfileimage")));
 
-            function updateAlgoliaWorkspaceExpertProfileImage (callback) {
+        function updateAlgoliaWorkspaceExpertProfileImage (callback) {
 
-                console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
+            console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
 
-                if (user.get("isDirtyProfileimage") != true && user.get("isDirtyIsOnline") != true) {
+            if (user.get("isDirtyProfileimage") != true && user.get("isDirtyIsOnline") != true) {
 
-                    console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
+                console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
 
-                    return callback (null, user);
+                return callback (null, user);
 
-                }
+            }
 
-                if (user.get("isNew") === true) {
+            if (user.get("isNew") === true) {
 
-                    return callback (null, user);
-                }
-
-
-                var WORKSPACE = Parse.Object.extend("WorkSpace");
-                var workspaceQuery = new Parse.Query(WORKSPACE);
-                var User = Parse.Object.extend("_User");
-                var userQuery = new Parse.Query(User);
+                return callback (null, user);
+            }
 
 
-                userQuery.equalTo("objectId", objectToSave.objectId);
-                console.log("username: " + JSON.stringify(objectToSave.username));
-                workspaceQuery.matchesQuery("experts", userQuery);
-                workspaceQuery.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "image"]);
-
-                workspaceQuery.find({
-
-                    useMasterKey: true,
-                    sessionToken: request.user.getSessionToken()
-
-                }).then((objectsToIndex) => {
-                        // The object was retrieved successfully.
-                        console.log("Result from get " + JSON.stringify(objectsToIndex.length));
-
-                        var workspaces = objectsToIndex;
-                        console.log("ObjectToSave length: " + JSON.stringify(workspaces.length));
-
-                        async.map(objectsToIndex, function (object, cb) {
-
-                            var workspace = object;
-                            var workspaceToSave = object.toJSON();
-                            workspaceToSave.objectID = workspaceToSave.objectId;
-
-                            delete workspaceToSave.skills;
-
-                            var expertObject = Parse.Object.extend("_User");
-                            expertObject = workspace.get("experts");
-                            //console.log("Experts: " + JSON.stringify(expertObject));
-
-                            expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
-
-                                success: function (experts) {
+            var WORKSPACE = Parse.Object.extend("WorkSpace");
+            var workspaceQuery = new Parse.Query(WORKSPACE);
+            var User = Parse.Object.extend("_User");
+            var userQuery = new Parse.Query(User);
 
 
-                                    //console.log("\n Experts: " + JSON.stringify(experts));
+            userQuery.equalTo("objectId", objectToSave.objectId);
+            console.log("username: " + JSON.stringify(objectToSave.username));
+            workspaceQuery.matchesQuery("experts", userQuery);
+            workspaceQuery.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "image"]);
+
+            workspaceQuery.find({
+
+                useMasterKey: true,
+                sessionToken: request.user.getSessionToken()
+
+            }).then((objectsToIndex) => {
+                // The object was retrieved successfully.
+                console.log("Result from get " + JSON.stringify(objectsToIndex.length));
+
+                var workspaces = objectsToIndex;
+                console.log("ObjectToSave length: " + JSON.stringify(workspaces.length));
+
+                async.map(objectsToIndex, function (object, cb) {
+
+                    var workspace = object;
+                    var workspaceToSave = object.toJSON();
+                    workspaceToSave.objectID = workspaceToSave.objectId;
+
+                    delete workspaceToSave.skills;
+
+                    var expertObject = Parse.Object.extend("_User");
+                    expertObject = workspace.get("experts");
+                    //console.log("Experts: " + JSON.stringify(expertObject));
+
+                    expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
+
+                        success: function (experts) {
 
 
-                                    workspaceToSave["experts"] = experts;
-
-                                    object = workspaceToSave;
-
-                                    //console.log("object: " + JSON.stringify(object));
-
-                                    return cb(null, object);
+                            //console.log("\n Experts: " + JSON.stringify(experts));
 
 
-                                },
-                                error: function (error) {
-                                    alert("Error: " + error.code + " " + error.message);
-                                    return cb(error);
-                                }
-                            }, {useMasterKey: true});
+                            workspaceToSave["experts"] = experts;
+
+                            object = workspaceToSave;
+
+                            //console.log("object: " + JSON.stringify(object));
+
+                            return cb(null, object);
 
 
-                        }, function (err, objectsToIndex) {
+                        },
+                        error: function (error) {
+                            alert("Error: " + error.code + " " + error.message);
+                            return cb(error);
+                        }
+                    }, {useMasterKey: true});
 
-                            //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
-                            // Add or update new objects
-                            indexWorkspaces.partialUpdateObjects(objectsToIndex, true, function (err, content) {
-                                if (err) response.error(err);
+                }, function (err, objectsToIndex) {
 
-                                console.log("Parse<>Algolia workspace saved from afterSave _User function ");
+                    //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
-                                var finalTime = process.hrtime(time);
-                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                return callback (null, objectsToIndex);
+                    // Add or update new objects
+                    indexWorkspaces.partialUpdateObjects(objectsToIndex, true, function (err, content) {
+                        if (err) response.error(err);
 
-                            });
+                        console.log("Parse<>Algolia workspace saved from afterSave _User function ");
 
-                        });
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        return callback (error);
-
-                    }, {
-
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                        var finalTime = process.hrtime(time);
+                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                        return callback (null, objectsToIndex);
 
                     });
 
+                });
 
-                /*workspaceQuery.find({
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
 
-                 success: function (workspaces) {
+            }, {
 
-
-                 async.map(workspaces, function (workspace, cb){
-
-                 //var workspace = workspaces[i];
-                 var skillObject = Parse.Object.extend("Skill");
-                 //var skillsRelation = new skillObject.relation("skills");
-                 skillObject = workspace.get("skills");
-                 //console.log("Skills: " + JSON.stringify(skillObject));
-                 //console.log("Skill Length:" + skillObject);
-
-                 var expertObject = Parse.Object.extend("_User");
-                 expertObject = workspace.get("experts");
-                 //console.log("Experts: " + JSON.stringify(expertObject));
-
-                 // if (skillObject.length===0) {console.log("cool skillObject" + skillObject); return callback (null, workspace);}
-                 var skillObjectQuery = skillObject.query();
-                 skillObjectQuery.ascending("level");
-                 skillObjectQuery.find({
-
-                 success: function(skills) {
-
-
-                 // Convert Parse.Object to JSON
-                 //workspace = workspace.toJSON();
-
-                 let arraySkill = [];
-
-                 skills.forEach(v => arraySkill.push(v));
-
-
-                 //console.log("skills: " + JSON.stringify(arraySkill));
-
-                 workspace.set("objectID", workspace.toJSON().objectId);
-                 var WorkSpace = workspace.toJSON();
-                 WorkSpace.skills =  arraySkill;
-                 //console.log("Updated workspace with skills: " + JSON.stringify(WorkSpace));
-
-                 // Specify Algolia's objectID with the Parse.Object unique ID
-                 //workspace.objectID = workspace.objectId;
-
-                 //return callback(null, Workspace);
-
-                 expertObject.query().find({
-
-                 success: function(experts) {
-
-                 // Convert Parse.Object to JSON
-                 //workspace = workspace.toJSON();
-                 //var User = new Parse.Object("_User");
-                 let arrayExperts = [];
-
-                 WorkSpace.experts = arrayExperts;
-                 //console.log("New Workspace experts: " + JSON.stringify(WorkSpace));
-
-
-                 //workspace = JSON.parse(WorkSpace);
-                 // tell async that that particular element of the iterator is done
-                 return cb(null, WorkSpace);
-
-
-                 },
-                 error: function(error) {
-                 alert("Error: " + error.code + " " + error.message);
-                 return callback (error);
-                 }
-                 }, {useMasterKey: true});
-
-
-                 },
-                 error: function(error) {
-                 alert("Error: " + error.code + " " + error.message);
-                 return callback (error);
-                 }
-                 }, {useMasterKey: true});
-
-
-                 //console.log("skill:s " + JSON.stringify(skillObjects));
-
-
-                 }, function(err, results) {
-
-                 if (err) return callback (err);
-                 var diff = process.hrtime(time);
-                 console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-                 //console.log("FinalResults: " + JSON.stringify(results));
-                 //response.render('userPosts', results);
-                 //console.log("partialWorkspaces: " + JSON.stringify(results));
-
-                 // update Algolia index for Workspaces if user objects changes or got updated
-                 indexWorkspaces.partialUpdateObjects(results, function(err, content) {
-                 if (err) return callback (err);
-
-                 console.log("Parse<>Algolia workspaces with updated user profile images saved: "+ JSON.stringify(content));
-
-                 return callback (null, user);
-
-                 });
-
-                 });
-
-
-
-                 },
-                 error: function(error) {
-                 console.log("Error _User afterSave WorkspaceQuery.find: " + error.code + " " + error.message);
-                 //user is not an expert don't update aloglia workspace index
-                 return callback (null, user);
-                 }
-
-                 }, {useMasterKey: true}); */
-
-
-            }
-
-            function addUserAlgolia (callback) {
-
-                var mySkillObject = Parse.Object.extend("Skill");
-                //var skillsRelation = new skillObject.relation("skills");
-                mySkillObject = user.get("mySkills");
-                //console.log("Skills: " + JSON.stringify(mySkillObject));
-
-                var mySkillObjectQuery = mySkillObject.query();
-                mySkillObjectQuery.ascending("level");
-                mySkillObjectQuery.find({
-
-                    success: function(skill) {
-
-                        //skill;
-                        //skill.add(workspace);
-
-                        //console.log("Skills: " + JSON.stringify(skill));
-
-
-                        // Convert Parse.Object to JSON
-                        user = user.toJSON();
-
-                        user['mySkills'] = skill;
-                        //console.log("New User: " + JSON.stringify(user));
-
-                        // Specify Algolia's objectID with the Parse.Object unique ID
-                        user.objectID = user.objectId;
-
-                        // Add or update object
-                        indexUsers.saveObject(user, function(err, content) {
-                            if (err) {
-                                throw err;
-                            }
-                            console.log('Parse<>Algolia object saved: ' + JSON.stringify(content));
-                            return callback (null, content);
-
-                        });
-                    },
-                    error: function(error) {
-                        alert("Error: " + error.code + " " + error.message);
-                        return callback (error);
-                    }
-                }, {useMasterKey: true});
-
-
-            }
-
-            async.parallel([
-                async.apply(addUserAlgolia),
-                async.apply(updateAlgoliaWorkspaceExpertProfileImage)
-
-            ], function (err, results) {
-                if (err) {
-                    response.error(err);
-                }
-
-                let finalTime = process.hrtime(time);
-                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                response.success();
-                //return callback (null, resultsToMap);
+                useMasterKey: true,
+                sessionToken: request.user.getSessionToken()
 
             });
 
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {
 
-            useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
+            /*workspaceQuery.find({
+
+             success: function (workspaces) {
+
+
+             async.map(workspaces, function (workspace, cb){
+
+             //var workspace = workspaces[i];
+             var skillObject = Parse.Object.extend("Skill");
+             //var skillsRelation = new skillObject.relation("skills");
+             skillObject = workspace.get("skills");
+             //console.log("Skills: " + JSON.stringify(skillObject));
+             //console.log("Skill Length:" + skillObject);
+
+             var expertObject = Parse.Object.extend("_User");
+             expertObject = workspace.get("experts");
+             //console.log("Experts: " + JSON.stringify(expertObject));
+
+             // if (skillObject.length===0) {console.log("cool skillObject" + skillObject); return callback (null, workspace);}
+             var skillObjectQuery = skillObject.query();
+             skillObjectQuery.ascending("level");
+             skillObjectQuery.find({
+
+             success: function(skills) {
+
+
+             // Convert Parse.Object to JSON
+             //workspace = workspace.toJSON();
+
+             let arraySkill = [];
+
+             skills.forEach(v => arraySkill.push(v));
+
+
+             //console.log("skills: " + JSON.stringify(arraySkill));
+
+             workspace.set("objectID", workspace.toJSON().objectId);
+             var WorkSpace = workspace.toJSON();
+             WorkSpace.skills =  arraySkill;
+             //console.log("Updated workspace with skills: " + JSON.stringify(WorkSpace));
+
+             // Specify Algolia's objectID with the Parse.Object unique ID
+             //workspace.objectID = workspace.objectId;
+
+             //return callback(null, Workspace);
+
+             expertObject.query().find({
+
+             success: function(experts) {
+
+             // Convert Parse.Object to JSON
+             //workspace = workspace.toJSON();
+             //var User = new Parse.Object("_User");
+             let arrayExperts = [];
+
+             WorkSpace.experts = arrayExperts;
+             //console.log("New Workspace experts: " + JSON.stringify(WorkSpace));
+
+
+             //workspace = JSON.parse(WorkSpace);
+             // tell async that that particular element of the iterator is done
+             return cb(null, WorkSpace);
+
+
+             },
+             error: function(error) {
+             alert("Error: " + error.code + " " + error.message);
+             return callback (error);
+             }
+             }, {useMasterKey: true});
+
+
+             },
+             error: function(error) {
+             alert("Error: " + error.code + " " + error.message);
+             return callback (error);
+             }
+             }, {useMasterKey: true});
+
+
+             //console.log("skill:s " + JSON.stringify(skillObjects));
+
+
+             }, function(err, results) {
+
+             if (err) return callback (err);
+             var diff = process.hrtime(time);
+             console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+             //console.log("FinalResults: " + JSON.stringify(results));
+             //response.render('userPosts', results);
+             //console.log("partialWorkspaces: " + JSON.stringify(results));
+
+             // update Algolia index for Workspaces if user objects changes or got updated
+             indexWorkspaces.partialUpdateObjects(results, function(err, content) {
+             if (err) return callback (err);
+
+             console.log("Parse<>Algolia workspaces with updated user profile images saved: "+ JSON.stringify(content));
+
+             return callback (null, user);
+
+             });
+
+             });
+
+
+
+             },
+             error: function(error) {
+             console.log("Error _User afterSave WorkspaceQuery.find: " + error.code + " " + error.message);
+             //user is not an expert don't update aloglia workspace index
+             return callback (null, user);
+             }
+
+             }, {useMasterKey: true}); */
+
+
+        }
+
+        function addUserAlgolia (callback) {
+
+            var mySkillObject = Parse.Object.extend("Skill");
+            //var skillsRelation = new skillObject.relation("skills");
+            mySkillObject = user.get("mySkills");
+            //console.log("Skills: " + JSON.stringify(mySkillObject));
+
+            var mySkillObjectQuery = mySkillObject.query();
+            mySkillObjectQuery.ascending("level");
+            mySkillObjectQuery.find({
+
+                success: function(skill) {
+
+                    //skill;
+                    //skill.add(workspace);
+
+                    //console.log("Skills: " + JSON.stringify(skill));
+
+
+                    // Convert Parse.Object to JSON
+                    user = user.toJSON();
+
+                    user['mySkills'] = skill;
+                    //console.log("New User: " + JSON.stringify(user));
+
+                    // Specify Algolia's objectID with the Parse.Object unique ID
+                    user.objectID = user.objectId;
+
+                    // Add or update object
+                    indexUsers.saveObject(user, function(err, content) {
+                        if (err) {
+                            throw err;
+                        }
+                        console.log('Parse<>Algolia object saved: ' + JSON.stringify(content));
+                        return callback (null, content);
+
+                    });
+                },
+                error: function(error) {
+                    alert("Error: " + error.code + " " + error.message);
+                    return callback (error);
+                }
+            }, {useMasterKey: true});
+
+
+        }
+
+        async.parallel([
+            async.apply(addUserAlgolia),
+            async.apply(updateAlgoliaWorkspaceExpertProfileImage)
+
+        ], function (err, results) {
+            if (err) {
+                response.error(err);
+            }
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            response.success();
+            //return callback (null, resultsToMap);
 
         });
+
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        response.error(error);
+    }, {
+
+        useMasterKey: true,
+        sessionToken: request.user.getSessionToken()
+
+    });
 
 
 }, {useMasterKey: true});
@@ -9582,7 +9584,7 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
 
                 console.log("workspace_follow.isSelected: " + workspace_follow.toJSON().isSelected);
 
-                if (workspace_follow.get("isNew") && workspace_follow.toJSON().isSelected === true) {
+                if (workspace_follow.get("isNew") === true && workspace_follow.toJSON().isSelected === true) {
 
                     // add selected ChannelFollow as pointer to workspace_follower
                     let queryWorkspaceFollow = new Parse.Query("workspace_follower");
@@ -9606,7 +9608,7 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
                         console.log("workspaceFollow aftersave user: " + JSON.stringify(user));
 
 
-                        user.set("isSelectedChannelFollow", workspace_follower);
+                        user.set("isSelectedWorkspaceFollower", workspace_follower);
                         user.save(null, {
 
                                 //useMasterKey: true,
@@ -9653,14 +9655,14 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
             ], function (err, results) {
                 if (err) {
 
-                    var finalTime = process.hrtime(time);
+                    let finalTime = process.hrtime(time);
                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                     response.error(err);
                 }
 
                 //console.log("results length: " + JSON.stringify(results));
 
-                var finalTime = process.hrtime(time);
+                let finalTime = process.hrtime(time);
                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                 response.success();
 
@@ -9928,417 +9930,405 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
             sessionToken: request.user.getSessionToken()
 
         }).then((Workspace) => {
-                // The object was retrieved successfully.
-                //console.log("Result from get " + JSON.stringify(Workspace));
+            // The object was retrieved successfully.
+            //console.log("Result from get " + JSON.stringify(Workspace));
 
-                //var workspace = Parse.Object.extend("WorkSpace");
+            //var workspace = Parse.Object.extend("WorkSpace");
 
-                //let WORKSPACE_FOLLOW = Parse.Object.extend("workspace_follower");
-                let owner = new Parse.Object("_User");
-                owner = workspace.get("user");
+            //let WORKSPACE_FOLLOW = Parse.Object.extend("workspace_follower");
+            let owner = new Parse.Object("_User");
+            owner = workspace.get("user");
 
-                let User = new Parse.Object("_User");
-                User.id = workspace.get("user").id;
+            let User = new Parse.Object("_User");
+            User.id = workspace.get("user").id;
 
-                let WorkSpace = new Parse.Object("WorkSpace");
-                WorkSpace.id =  Workspace.id;
+            let WorkSpace = new Parse.Object("WorkSpace");
+            WorkSpace.id =  Workspace.id;
 
-                workspace = Workspace;
-                workspaceToSave = Workspace.toJSON();
-                //console.log("Workspace from afterSave Query: " + JSON.stringify(WorkSpace));
+            workspace = Workspace;
+            workspaceToSave = Workspace.toJSON();
+            //console.log("Workspace from afterSave Query: " + JSON.stringify(WorkSpace));
 
-                let skillObject = Parse.Object.extend("Skill");
-                //var skillsRelation = new skillObject.relation("skills");
-                skillObject = workspace.get("skills");
+            let skillObject = Parse.Object.extend("Skill");
+            //var skillsRelation = new skillObject.relation("skills");
+            skillObject = workspace.get("skills");
 
-                function createWorkspaceRoles (callback) {
+            function createWorkspaceRoles (callback) {
 
-                    //console.log("isNew: " + workspace.get("isNew"));
+                //console.log("isNew: " + workspace.get("isNew"));
 
-                    if (workspace.get("isNew") === true) {
+                if (workspace.get("isNew") === true) {
 
-                        //workspace.set("isNew", false);
+                    //workspace.set("isNew", false);
 
-                        // create roles
-                        var roleACL = new Parse.ACL();
-                        roleACL.setPublicReadAccess(true);
-                        //roleACL.setPublicWriteAccess(true);
+                    // create roles
+                    var roleACL = new Parse.ACL();
+                    roleACL.setPublicReadAccess(true);
+                    //roleACL.setPublicWriteAccess(true);
 
-                        var followerName = "Follower-" + workspace.id;
-                        //console.log("followerName: " + followerName);
+                    var followerName = "Follower-" + workspace.id;
+                    //console.log("followerName: " + followerName);
 
-                        var followerRole = new Parse.Role(followerName, roleACL);
-                        followerRole.set("workspace", workspace);
-                        //followerRole["name"] = followerName;
-                        followerRole.set("PermissionBundle", {
-                            "canAddCategory": false,
-                            "canUpdateCategory": false,
-                            "canDeleteCategory": false,
-                            "canAddChanneltoCategory": false,
-                            "canInvitePeopleToWorkspace": false,
-                            "canCreateChannel": false,
-                            "canAddPeopleToChannel": true,
-                            "canCreatePost": false,
-                            "NumberOfCreatePostAllowed": "0",
-                            "canCreateQuestionPost": true,
-                            "NumberOfCreateQuestionsPostAllowed": "3",
-                            "canAskQuestionOnPost": true,
-                            "NumberOfCanAskQuestionOnPostAllowed": "3",
-                            "canCreateOfficeHoursPost": false,
-                            "NumberOfCanCreateOfficeHoursPostAllowed": "0",
-                            "canMentionMembers": false
-                        });
-                        //followerRole.save(null, {useMasterKey: true});
-                        //console.log("followerRole: " + JSON.stringify(followerRole));
+                    var followerRole = new Parse.Role(followerName, roleACL);
+                    followerRole.set("workspace", workspace);
+                    //followerRole["name"] = followerName;
+                    followerRole.set("PermissionBundle", {
+                        "canAddCategory": false,
+                        "canUpdateCategory": false,
+                        "canDeleteCategory": false,
+                        "canAddChanneltoCategory": false,
+                        "canInvitePeopleToWorkspace": false,
+                        "canCreateChannel": false,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": false,
+                        "NumberOfCreatePostAllowed": "0",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "3",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "3",
+                        "canCreateOfficeHoursPost": false,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "0",
+                        "canMentionMembers": false
+                    });
+                    //followerRole.save(null, {useMasterKey: true});
+                    //console.log("followerRole: " + JSON.stringify(followerRole));
 
-                        var memberName = "member-" + workspace.id;
+                    var memberName = "member-" + workspace.id;
 
-                        var memberRole = new Parse.Role(memberName, roleACL);
-                        memberRole.set("workspace", workspace);
-                        //memberRole.set("name", memberName);
-                        memberRole.set("PermissionBundle", {
-                            "canAddCategory": false,
-                            "canUpdateCategory": false,
-                            "canDeleteCategory": false,
-                            "canAddChanneltoCategory": true,
-                            "canInvitePeopleToWorkspace": false,
-                            "canCreateChannel": true,
-                            "canAddPeopleToChannel": true,
-                            "canCreatePost": true,
-                            "NumberOfCreatePostAllowed": "unlimited",
-                            "canCreateQuestionPost": true,
-                            "NumberOfCreateQuestionsPostAllowed": "unlimited",
-                            "canAskQuestionOnPost": true,
-                            "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
-                            "canCreateOfficeHoursPost": true,
-                            "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                            "canMentionMembers": true
-                        });
-                        //memberRole.save(null, {useMasterKey: true});
+                    var memberRole = new Parse.Role(memberName, roleACL);
+                    memberRole.set("workspace", workspace);
+                    //memberRole.set("name", memberName);
+                    memberRole.set("PermissionBundle", {
+                        "canAddCategory": false,
+                        "canUpdateCategory": false,
+                        "canDeleteCategory": false,
+                        "canAddChanneltoCategory": true,
+                        "canInvitePeopleToWorkspace": false,
+                        "canCreateChannel": true,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": true,
+                        "NumberOfCreatePostAllowed": "unlimited",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                        "canCreateOfficeHoursPost": true,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                        "canMentionMembers": true
+                    });
+                    //memberRole.save(null, {useMasterKey: true});
 
-                        var moderatorName = "moderator-" + workspace.id;
+                    var moderatorName = "moderator-" + workspace.id;
 
-                        var moderatorRole = new Parse.Role(moderatorName, roleACL);
-                        moderatorRole.set("workspace", workspace);
-                        //moderatorRole.set("name", moderatorName);
-                        moderatorRole.set("PermissionBundle", {
-                            "canAddCategory": false,
-                            "canUpdateCategory": false,
-                            "canDeleteCategory": false,
-                            "canAddChanneltoCategory": true,
-                            "canInvitePeopleToWorkspace": false,
-                            "canCreateChannel": true,
-                            "canAddPeopleToChannel": true,
-                            "canCreatePost": true,
-                            "NumberOfCreatePostAllowed": "unlimited",
-                            "canCreateQuestionPost": true,
-                            "NumberOfCreateQuestionsPostAllowed": "unlimited",
-                            "canAskQuestionOnPost": true,
-                            "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
-                            "canCreateOfficeHoursPost": true,
-                            "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                            "canMentionMembers": true
-                        });
-                        //moderatorRole.save(null, {useMasterKey: true});
+                    var moderatorRole = new Parse.Role(moderatorName, roleACL);
+                    moderatorRole.set("workspace", workspace);
+                    //moderatorRole.set("name", moderatorName);
+                    moderatorRole.set("PermissionBundle", {
+                        "canAddCategory": false,
+                        "canUpdateCategory": false,
+                        "canDeleteCategory": false,
+                        "canAddChanneltoCategory": true,
+                        "canInvitePeopleToWorkspace": false,
+                        "canCreateChannel": true,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": true,
+                        "NumberOfCreatePostAllowed": "unlimited",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                        "canCreateOfficeHoursPost": true,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                        "canMentionMembers": true
+                    });
+                    //moderatorRole.save(null, {useMasterKey: true});
 
-                        var adminName = "admin-" + workspace.id;
+                    var adminName = "admin-" + workspace.id;
 
-                        var adminRole = new Parse.Role(adminName, roleACL);
-                        adminRole.set("workspace", workspace);
-                        //adminRole.set("name", adminName);
-                        adminRole.set("PermissionBundle", {
-                            "canAddCategory": true,
-                            "canUpdateCategory": true,
-                            "canDeleteCategory": true,
-                            "canAddChanneltoCategory": true,
-                            "canInvitePeopleToWorkspace": true,
-                            "canCreateChannel": true,
-                            "canAddPeopleToChannel": true,
-                            "canCreatePost": true,
-                            "NumberOfCreatePostAllowed": "unlimited",
-                            "canCreateQuestionPost": true,
-                            "NumberOfCreateQuestionsPostAllowed": "unlimited",
-                            "canAskQuestionOnPost": true,
-                            "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
-                            "canCreateOfficeHoursPost": true,
-                            "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                            "canMentionMembers": true
-                        });
-                        //adminRole.save(null, {useMasterKey: true});
+                    var adminRole = new Parse.Role(adminName, roleACL);
+                    adminRole.set("workspace", workspace);
+                    //adminRole.set("name", adminName);
+                    adminRole.set("PermissionBundle", {
+                        "canAddCategory": true,
+                        "canUpdateCategory": true,
+                        "canDeleteCategory": true,
+                        "canAddChanneltoCategory": true,
+                        "canInvitePeopleToWorkspace": true,
+                        "canCreateChannel": true,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": true,
+                        "NumberOfCreatePostAllowed": "unlimited",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                        "canCreateOfficeHoursPost": true,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                        "canMentionMembers": true
+                    });
+                    //adminRole.save(null, {useMasterKey: true});
 
-                        var expertName = "expert-" + workspace.id;
+                    var expertName = "expert-" + workspace.id;
 
-                        var expertRole = new Parse.Role(expertName, roleACL);
-                        expertRole.set("workspace", workspace);
-                        //expertRole.set("name", expertName);
-                        expertRole.set("PermissionBundle", {
-                            "canAddCategory": true,
-                            "canUpdateCategory": true,
-                            "canDeleteCategory": true,
-                            "canAddChanneltoCategory": true,
-                            "canInvitePeopleToWorkspace": true,
-                            "canCreateChannel": true,
-                            "canAddPeopleToChannel": true,
-                            "canCreatePost": true,
-                            "NumberOfCreatePostAllowed": "unlimited",
-                            "canCreateQuestionPost": true,
-                            "NumberOfCreateQuestionsPostAllowed": "unlimited",
-                            "canAskQuestionOnPost": true,
-                            "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
-                            "canCreateOfficeHoursPost": true,
-                            "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                            "canMentionMembers": true
-                        });
-                        //expertRole.save(null, {useMasterKey: true});
-
-
-                        var ownerName = "owner-" + workspace.id;
-                        var ownerRole = new Parse.Role(ownerName, roleACL);
-                        //console.log("ownerRole 1: " + JSON.stringify(ownerRole));
-                        ownerRole.set("workspace", workspace);
-                        //ownerRole.set("name", ownerName);
-                        ownerRole.set("PermissionBundle", {
-                            "canAddCategory": true,
-                            "canUpdateCategory": true,
-                            "canDeleteCategory": true,
-                            "canAddChanneltoCategory": true,
-                            "canInvitePeopleToWorkspace": true,
-                            "canCreateChannel": true,
-                            "canAddPeopleToChannel": true,
-                            "canCreatePost": true,
-                            "NumberOfCreatePostAllowed": "unlimited",
-                            "canCreateQuestionPost": true,
-                            "NumberOfCreateQuestionsPostAllowed": "unlimited",
-                            "canAskQuestionOnPost": true,
-                            "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
-                            "canCreateOfficeHoursPost": true,
-                            "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                            "canMentionMembers": true
-                        });
-                        //console.log("ownerRole 2: " + JSON.stringify(ownerRole));
-                        //ownerRole.save(null, {useMasterKey: true});
-                        //console.log("ownerRole 3: " + JSON.stringify(ownerRole));
+                    var expertRole = new Parse.Role(expertName, roleACL);
+                    expertRole.set("workspace", workspace);
+                    //expertRole.set("name", expertName);
+                    expertRole.set("PermissionBundle", {
+                        "canAddCategory": true,
+                        "canUpdateCategory": true,
+                        "canDeleteCategory": true,
+                        "canAddChanneltoCategory": true,
+                        "canInvitePeopleToWorkspace": true,
+                        "canCreateChannel": true,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": true,
+                        "NumberOfCreatePostAllowed": "unlimited",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                        "canCreateOfficeHoursPost": true,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                        "canMentionMembers": true
+                    });
+                    //expertRole.save(null, {useMasterKey: true});
 
 
-                        Parse.Object.saveAll([ownerRole, expertRole, adminRole, moderatorRole, memberRole, followerRole], {
+                    var ownerName = "owner-" + workspace.id;
+                    var ownerRole = new Parse.Role(ownerName, roleACL);
+                    //console.log("ownerRole 1: " + JSON.stringify(ownerRole));
+                    ownerRole.set("workspace", workspace);
+                    //ownerRole.set("name", ownerName);
+                    ownerRole.set("PermissionBundle", {
+                        "canAddCategory": true,
+                        "canUpdateCategory": true,
+                        "canDeleteCategory": true,
+                        "canAddChanneltoCategory": true,
+                        "canInvitePeopleToWorkspace": true,
+                        "canCreateChannel": true,
+                        "canAddPeopleToChannel": true,
+                        "canCreatePost": true,
+                        "NumberOfCreatePostAllowed": "unlimited",
+                        "canCreateQuestionPost": true,
+                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                        "canAskQuestionOnPost": true,
+                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                        "canCreateOfficeHoursPost": true,
+                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                        "canMentionMembers": true
+                    });
+                    //console.log("ownerRole 2: " + JSON.stringify(ownerRole));
+                    //ownerRole.save(null, {useMasterKey: true});
+                    //console.log("ownerRole 3: " + JSON.stringify(ownerRole));
+
+
+                    Parse.Object.saveAll([ownerRole, expertRole, adminRole, moderatorRole, memberRole, followerRole], {
+
+                        useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
+
+                    }).then((savedRoles) => {
+
+                        //console.log("savedRoles: " + JSON.stringify(savedRoles));
+
+                        var memberrole = savedRoles[4];
+                        //memberrole.getUsers().add(usersToAddToRole);
+                        memberrole.getRoles().add(followerRole);
+                        memberrole.save(null, {
 
                             useMasterKey: true,
                             sessionToken: request.user.getSessionToken()
 
-                        }).then((savedRoles) => {
+                        });
 
-                            //console.log("savedRoles: " + JSON.stringify(savedRoles));
+                        var moderatorrole = savedRoles[3];
+                        //memberrole.getUsers().add(usersToAddToRole);
+                        moderatorrole.getRoles().add(memberRole);
+                        moderatorrole.save(null, {
 
-                            var memberrole = savedRoles[4];
-                            //memberrole.getUsers().add(usersToAddToRole);
-                            memberrole.getRoles().add(followerRole);
-                            memberrole.save(null, {
+                            useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
-                                useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
+                        });
 
-                            });
+                        var adminrole = savedRoles[2];
+                        //memberrole.getUsers().add(usersToAddToRole);
+                        adminrole.getRoles().add(moderatorRole);
+                        adminrole.save(null, {
 
-                            var moderatorrole = savedRoles[3];
-                            //memberrole.getUsers().add(usersToAddToRole);
-                            moderatorrole.getRoles().add(memberRole);
-                            moderatorrole.save(null, {
+                            useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
-                                useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
+                        });
 
-                            });
+                        var expertrole = savedRoles[1];
+                        expertrole.getUsers().add(owner);
+                        //expertrole.getUsers().add(usersToAddToRole);
+                        expertrole.getRoles().add(moderatorRole);
+                        expertrole.save(null, {
 
-                            var adminrole = savedRoles[2];
-                            //memberrole.getUsers().add(usersToAddToRole);
-                            adminrole.getRoles().add(moderatorRole);
-                            adminrole.save(null, {
+                            useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
-                                useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
+                        });
 
-                            });
+                        var ownerrole = savedRoles[0];
+                        ownerrole.getUsers().add(owner);
+                        ownerrole.getRoles().add(expertRole);
+                        ownerrole.getRoles().add(adminRole);
+                        ownerrole.save(null, {
 
-                            var expertrole = savedRoles[1];
-                            expertrole.getUsers().add(owner);
-                            //expertrole.getUsers().add(usersToAddToRole);
-                            expertrole.getRoles().add(moderatorRole);
-                            expertrole.save(null, {
+                            useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
-                                useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
+                        });
 
-                            });
+                        var userRolesRelation = owner.relation("roles");
+                        userRolesRelation.add(ownerRole); // add owner role to the user roles field.
+                        userRolesRelation.add(expertrole); // add owner role to the user roles field.
+                        owner.save(null, {
 
-                            var ownerrole = savedRoles[0];
-                            ownerrole.getUsers().add(owner);
-                            ownerrole.getRoles().add(expertRole);
-                            ownerrole.getRoles().add(adminRole);
-                            ownerrole.save(null, {
-
-                                useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
-
-                            });
-
-                            var userRolesRelation = owner.relation("roles");
-                            userRolesRelation.add(ownerRole); // add owner role to the user roles field.
-                            userRolesRelation.add(expertrole); // add owner role to the user roles field.
-                            owner.save(null, {
-
-                                //useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
-
-                            });
-
-
-                            return callback (null, savedRoles);
-
+                            //useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
                         });
 
 
-                    }
-                    else {return callback (null, workspace);}
+                        return callback (null, savedRoles);
 
-
-
-                }
-
-                function getSkills (callback) {
-
-                    //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
-                    //console.log("Skill Length:" + skillObject);
-
-
-                    let skillObjectQuery = skillObject.query();
-                    skillObjectQuery.ascending("level");
-
-                    skillObjectQuery.find({
-
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
-
-                    }).then((skill) => {
-
-                        let skillObject = [];
-
-                        if (skill) {
-
-                            // skills exist return then then
-                            skillObject = skill;
-                        } else {
-
-                            // do nothing and return empty skill object no skills;
-
-                        }
-
-                        return callback (null, skillObject);
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        return callback (error);
-                    }, {
-
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
 
                     });
 
 
-
-
                 }
+                else {return callback (null, workspace);}
 
-                function getExperts (callback) {
 
-                    let expertObject = Parse.Object.extend("_User");
-                    expertObject = workspace.get("experts");
-                    let expertsArray = [];
 
-                    if (workspace.get("isNew")) {
+            }
 
-                        expertsArray = workspace.get("expertsArray");
+            function getSkills (callback) {
 
-                        //console.log("isNew Workspace expertsArray: " + JSON.stringify(expertsArray));
+                //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
+                //console.log("Skill Length:" + skillObject);
 
-                        return callback (null, expertsArray);
 
+                let skillObjectQuery = skillObject.query();
+                skillObjectQuery.ascending("level");
+
+                skillObjectQuery.find({
+
+                    useMasterKey: true,
+                    sessionToken: request.user.getSessionToken()
+
+                }).then((skill) => {
+
+                    let skillObject = [];
+
+                    if (skill) {
+
+                        // skills exist return then then
+                        skillObject = skill;
                     } else {
 
-                        console.log("workspace.dirty_experts: " + JSON.stringify(workspace.dirty("experts")));
+                        // do nothing and return empty skill object no skills;
 
-                        if (workspace.get("isDirtyExperts")) {
+                    }
 
-                            // expert being added or removed, update algolia, else return callback.
+                    return callback (null, skillObject);
 
-                            expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback (error);
+                }, {
+
+                    useMasterKey: true,
+                    sessionToken: request.user.getSessionToken()
+
+                });
+
+
+
+
+            }
+
+            function getExperts (callback) {
+
+                let expertObject = Parse.Object.extend("_User");
+                expertObject = workspace.get("experts");
+                let expertsArray = [];
+
+                if (workspace.get("isNew")) {
+
+                    expertsArray = workspace.get("expertsArray");
+
+                    //console.log("isNew Workspace expertsArray: " + JSON.stringify(expertsArray));
+
+                    return callback (null, expertsArray);
+
+                } else {
+
+                    console.log("workspace.dirty_experts: " + JSON.stringify(workspace.dirty("experts")));
+
+                    if (workspace.get("isDirtyExperts")) {
+
+                        // expert being added or removed, update algolia, else return callback.
+
+                        expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
+
+                            useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
+
+                        }).then((experts) => {
+
+                            // Convert Parse.Object to JSON
+                            //workspace = workspace.toJSON();
+                            let User = new Parse.Object("_User");
+                            let queryRole = new Parse.Query(Parse.Role);
+
+                            //console.log("\n Experts: " + JSON.stringify(experts));
+
+                            queryRole.equalTo('name', 'expert-' + workspace.id);
+
+                            queryRole.first({
 
                                 useMasterKey: true,
                                 sessionToken: request.user.getSessionToken()
 
-                            }).then((experts) => {
+                            }).then((role) => {
 
-                                // Convert Parse.Object to JSON
-                                //workspace = workspace.toJSON();
-                                let User = new Parse.Object("_User");
-                                let queryRole = new Parse.Query(Parse.Role);
+                                let expertrole = role;
 
-                                //console.log("\n Experts: " + JSON.stringify(experts));
+                                console.log("Role: " + JSON.stringify(role));
 
-                                queryRole.equalTo('name', 'expert-' + workspace.id);
-
-                                queryRole.first({
-
-                                    useMasterKey: true,
-                                    sessionToken: request.user.getSessionToken()
-
-                                }).then((role) => {
-
-                                    let expertrole = role;
-
-                                    console.log("Role: " + JSON.stringify(role));
-
-                                    expertrole.getUsers().add(experts);
-                                    expertrole.save(null, {
-
-                                        useMasterKey: true,
-                                        sessionToken: request.user.getSessionToken()
-
-                                    });
-                                    //var userRolesRelation;
-
-                                    for (let i = 0; i < experts.length; i++) {
-
-                                        let expertObject = experts[i];
-
-                                        let userRolesRelation = expertObject.relation("roles");
-                                        console.log("userRolesRelation afterSave Workspace: " + JSON.stringify(userRolesRelation));
-                                        userRolesRelation.add(expertrole); // add owner role to the user roles field.
-                                        expertObject.save(null, {
-
-                                            useMasterKey: true,
-                                            sessionToken: request.user.getSessionToken()
-
-                                        });
-
-                                    }
-
-                                    return callback (null, experts);
-
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    return callback (null, error);
-                                }, {
+                                expertrole.getUsers().add(experts);
+                                expertrole.save(null, {
 
                                     useMasterKey: true,
                                     sessionToken: request.user.getSessionToken()
 
                                 });
+                                //var userRolesRelation;
+
+                                for (let i = 0; i < experts.length; i++) {
+
+                                    let expertObject = experts[i];
+
+                                    let userRolesRelation = expertObject.relation("roles");
+                                    console.log("userRolesRelation afterSave Workspace: " + JSON.stringify(userRolesRelation));
+                                    userRolesRelation.add(expertrole); // add owner role to the user roles field.
+                                    expertObject.save(null, {
+
+                                        useMasterKey: true,
+                                        sessionToken: request.user.getSessionToken()
+
+                                    });
+
+                                }
+
+                                return callback (null, experts);
 
 
                             }, (error) => {
@@ -10353,103 +10343,6 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                             });
 
 
-                        }
-                        else {
-
-                            expertsArray = workspace.get("expertsArray");
-
-                            console.log("isNew Workspace expertsArray: isDirtyExperts false " + JSON.stringify(expertsArray));
-
-                            return callback (null, expertsArray);
-
-
-                        }
-
-
-                    }
-
-
-                }
-
-                function getWorkspaceFollowers (callback) {
-
-                    //todo check for when we should be updating workspace_follower in Algolia Index
-                    // get workspace_followers only in the following scenarios (1) user isFollower or isMember == true (2) workspace admin sent request for a user to join a workspace it's viewable to that user.
-
-                    // Convert Parse.Object to JSON
-                    // var workspace_follower = request.object;
-
-                    // Specify Algolia's objectID with the Parse.Object unique ID
-                    // var objectToSave = request.object.toJSON();
-
-                    //var WORKSPACEFollower = Parse.Object.extend("workspace_follower");
-                    //var workspaceFollower = new Parse.Object(WORKSPACEFollower);
-
-                    //console.log("workspace type: " + JSON.stringify(workspace.id));
-
-                    let followersArray = [];
-
-                    if (workspace.get("isNew")) {
-
-                        //console.log("isNew Workspace no followers yet except workspace owner: " + JSON.stringify(followersArray));
-
-                        return callback (null, followersArray);
-
-                    } else {
-
-                        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-                        let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
-
-                        let viewableBy = [];
-
-                        queryWorkspaceFollower.equalTo("workspace", workspace);
-
-                        // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
-                        queryWorkspaceFollower.limit(10000);
-                        // queryWorkspaceFollower.include( ["workspace"] );
-
-                        queryWorkspaceFollower.find({
-
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        }).then((followers) => {
-
-                            console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
-
-                            delete workspaceToSave.skills;
-                            delete workspaceToSave.experts;
-
-                            workspaceToSave.objectID = workspaceToSave.objectId;
-                            workspaceToSave['followers'] = followers;
-
-
-                            for (var i = 0; i < followers.length; i++) {
-
-                                if (workspaceToSave.type === 'private') {
-                                    viewableBy.push(followers[i].toJSON().user.objectId);
-                                    //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
-                                }
-
-
-                            }
-
-                            if (workspaceToSave.type === 'private') {
-
-                                workspaceToSave._tags= viewableBy;
-                                //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
-
-                            } else if (workspaceToSave.type === 'public') {
-
-                                workspaceToSave._tags = ['*'];
-
-                            }
-
-                            // console.log("followers: " + JSON.stringify(workspaceToSave.followers));
-
-                            return callback (null, workspaceToSave);
-
-
                         }, (error) => {
                             // The object was not retrieved successfully.
                             // error is a Parse.Error with an error code and message.
@@ -10462,228 +10355,361 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         });
 
 
+                    }
+                    else {
+
+                        expertsArray = workspace.get("expertsArray");
+
+                        console.log("isNew Workspace expertsArray: isDirtyExperts false " + JSON.stringify(expertsArray));
+
+                        return callback (null, expertsArray);
+
 
                     }
 
 
                 }
 
-                function createOwnerWorkspaceFollower (callback) {
 
-                    //console.log("workspace createOwnerWorkspaceFollower  isNew: " + workspace.get("isNew"));
-                    //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
+            }
 
-                    if (workspace.get("isNew") === true) {
+            function getWorkspaceFollowers (callback) {
 
-                        let viewableBy = [];
-                        let followersArray = [];
+                //todo check for when we should be updating workspace_follower in Algolia Index
+                // get workspace_followers only in the following scenarios (1) user isFollower or isMember == true (2) workspace admin sent request for a user to join a workspace it's viewable to that user.
 
-                        let workspaceFollower = new Parse.Object("workspace_follower");
+                // Convert Parse.Object to JSON
+                // var workspace_follower = request.object;
 
-                        //console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(workspace));
+                // Specify Algolia's objectID with the Parse.Object unique ID
+                // var objectToSave = request.object.toJSON();
 
-                        workspaceFollower.set("archive", false);
-                        workspaceFollower.set("user", User);
-                        workspaceFollower.set("workspace", WorkSpace);
-                        workspaceFollower.set("notificationCount", 0);
-                        workspaceFollower.set("isSelected", false);
-                        workspaceFollower.set("isNewWorkspace", true);
+                //var WORKSPACEFollower = Parse.Object.extend("workspace_follower");
+                //var workspaceFollower = new Parse.Object(WORKSPACEFollower);
 
-                        // set correct ACL for channelFollow
-                        /*let workspaceFollowACL = new Parse.ACL();
-                         workspaceFollowACL.setPublicReadAccess(true);
-                         workspaceFollowACL.setPublicWriteAccess(true);
-                         workspaceFollowACL.setReadAccess(User, true);
-                         workspaceFollowACL.setWriteAccess(User, true);
-                         workspaceFollower.setACL(workspaceFollowACL);*/
+                //console.log("workspace type: " + JSON.stringify(workspace.id));
 
-                        // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
-                        workspaceFollower.set("isMember", true);
-                        workspaceFollower.set("isFollower", true);
-                        workspaceFollower.set("isMemberRequestedByWorkspaceAdmin", false);
-                        workspaceFollower.set("isMemberRequestedByUser", false);
+                let followersArray = [];
 
-                        //console.log("workspaceFollower: " + JSON.stringify(workspaceFollower));
+                if (workspace.get("isNew")) {
 
-                        workspaceFollower.save(null, {
+                    //console.log("isNew Workspace no followers yet except workspace owner: " + JSON.stringify(followersArray));
 
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
+                    return callback (null, followersArray);
 
-                        }).then((result) => {
+                } else {
 
-                            // save was successful
+                    let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+                    let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
 
-                            //console.log("workspace new workspace: " + JSON.stringify(result));
+                    let viewableBy = [];
 
-                            workspaceFollower = result;
+                    queryWorkspaceFollower.equalTo("workspace", workspace);
 
-                            //console.log("workspace new workspace to save: " + JSON.stringify(workspaceFollower));
+                    // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
+                    queryWorkspaceFollower.limit(10000);
+                    // queryWorkspaceFollower.include( ["workspace"] );
 
-                            delete workspaceToSave.skills;
-                            delete workspaceToSave.experts;
+                    queryWorkspaceFollower.find({
 
-                            workspaceToSave.objectID = workspaceToSave.objectId;
-                            followersArray.push(workspaceFollower);
-                            workspaceToSave['followers'] = followersArray;
+                        useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
 
-                            //console.log("workspaceToSave with followers: " + JSON.stringify(workspaceToSave));
+                    }).then((followers) => {
+
+                        console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
+
+                        delete workspaceToSave.skills;
+                        delete workspaceToSave.experts;
+
+                        workspaceToSave.objectID = workspaceToSave.objectId;
+                        workspaceToSave['followers'] = followers;
 
 
-                            // add _tags for this workspacefollower so it's visible in algolia
+                        for (var i = 0; i < followers.length; i++) {
 
-                            if (workspace.get("type") === 'private') {
-                                viewableBy.push(workspaceFollower.toJSON().user.objectId);
+                            if (workspaceToSave.type === 'private') {
+                                viewableBy.push(followers[i].toJSON().user.objectId);
                                 //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
                             }
 
 
-                            if (workspace.get("type") === 'private') {
+                        }
 
-                                workspaceToSave._tags= viewableBy;
-                                //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
+                        if (workspaceToSave.type === 'private') {
 
-                            } else if (workspace.get("type")=== 'public') {
+                            workspaceToSave._tags= viewableBy;
+                            //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
 
-                                workspaceToSave._tags = ['*'];
+                        } else if (workspaceToSave.type === 'public') {
 
-                            }
+                            workspaceToSave._tags = ['*'];
 
+                        }
 
+                        // console.log("followers: " + JSON.stringify(workspaceToSave.followers));
 
-                            return callback(null, workspaceToSave);
-
-
-
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            response.error(error);
-                        }, {
-
-                            useMasterKey: true,
-                            sessionToken: sessionToken
-
-                        });
+                        return callback (null, workspaceToSave);
 
 
-                    } else {
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback (null, error);
+                    }, {
 
-                        return callback (null, workspace);
-                    }
-
-                }
-
-                function createGeneralChannel (callback) {
-
-                    if (workspace.get("isNew") === true) {
-
-                        let CHANNEL = Parse.Object.extend("Channel");
-                        let Channel = new CHANNEL();
-
-                        Channel.set("name", "general");
-                        Channel.set("default", true);
-                        Channel.set("type", "public");
-                        Channel.set("purpose", "Community wide announcements and general questions");
-                        Channel.set("allowMemberPostCreation", false);
-                        Channel.set("workspace", workspace);
-                        Channel.set("user", owner);
-
-                        console.log("Channel save in afterSave Workspace cloud function");
-
-                        Channel.save(null, {
-
-                                //useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
-
-                            }
-                        );
-
-                        return callback (null, Channel);
-
-
-                    }
-                    else {
-
-                        return callback (null, workspace);
-                    }
-
-
-                }
-
-                async.parallel([
-                    async.apply(createWorkspaceRoles),
-                    async.apply(getSkills),
-                    async.apply(getExperts),
-                    async.apply(getWorkspaceFollowers),
-                    async.apply(createGeneralChannel),
-                    async.apply(createOwnerWorkspaceFollower)
-
-                ], function (err, results) {
-                    if (err) {
-                        response.error(err);
-                    }
-
-                    //console.log("results length: " + JSON.stringify(results.length));
-
-                    if(workspace.get("isNew")) {
-                        workspaceToSave = results[5];
-                        workspace.set("isDirtyExperts", true);
-
-                    } else {
-                        workspaceToSave = results[3];
-
-                    }
-                    let skillsToSave = results[1];
-                    let expertsToSave = results[2];
-
-
-                    workspaceToSave["skills"] = skillsToSave;
-
-
-                    if (workspace.get("isDirtyExperts")) {
-                        workspaceToSave["experts"] = expertsToSave;
-                        delete workspaceToSave.expertsArray;
-                    } else {
-
-                        delete workspaceToSave.experts;
-                        delete workspaceToSave.expertsArray;
-
-                    }
-
-                    delete workspaceToSave.isDirtySkills;
-                    delete workspaceToSave.isDirtyExperts;
-                    delete workspaceToSave.isNew;
-
-
-                    //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
-                    //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-                    //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
-
-                    indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
-                        if (err) return response.error(err);
-
-                        console.log("Parse<>Algolia workspace saved from AfterSave Workspace function ");
-
-                        var finalTime = process.hrtime(time);
-                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                        return response.success();
+                        useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
 
                     });
 
 
+
+                }
+
+
+            }
+
+            function createOwnerWorkspaceFollower (callback) {
+
+                //console.log("workspace createOwnerWorkspaceFollower  isNew: " + workspace.get("isNew"));
+                //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
+
+                if (workspace.get("isNew") === true) {
+
+                    let viewableBy = [];
+                    let followersArray = [];
+
+                    let workspaceFollower = new Parse.Object("workspace_follower");
+
+                    //console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(workspace));
+
+                    workspaceFollower.set("archive", false);
+                    workspaceFollower.set("user", User);
+                    workspaceFollower.set("workspace", WorkSpace);
+                    workspaceFollower.set("notificationCount", 0);
+                    workspaceFollower.set("isSelected", false);
+                    workspaceFollower.set("isNewWorkspace", true);
+
+                    // set correct ACL for channelFollow
+                    /*let workspaceFollowACL = new Parse.ACL();
+                     workspaceFollowACL.setPublicReadAccess(true);
+                     workspaceFollowACL.setPublicWriteAccess(true);
+                     workspaceFollowACL.setReadAccess(User, true);
+                     workspaceFollowACL.setWriteAccess(User, true);
+                     workspaceFollower.setACL(workspaceFollowACL);*/
+
+                    // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
+                    workspaceFollower.set("isMember", true);
+                    workspaceFollower.set("isFollower", true);
+                    workspaceFollower.set("isMemberRequestedByWorkspaceAdmin", false);
+                    workspaceFollower.set("isMemberRequestedByUser", false);
+
+                    //console.log("workspaceFollower: " + JSON.stringify(workspaceFollower));
+
+                    workspaceFollower.save(null, {
+
+                        //useMasterKey: true,
+                        sessionToken: request.user.getSessionToken()
+
+                    }).then((result) => {
+
+                        // save was successful
+
+                        //console.log("workspace new workspace: " + JSON.stringify(result));
+
+                        workspaceFollower = result;
+
+                        //console.log("workspace new workspace to save: " + JSON.stringify(workspaceFollower));
+
+                        delete workspaceToSave.skills;
+                        delete workspaceToSave.experts;
+
+                        workspaceToSave.objectID = workspaceToSave.objectId;
+                        followersArray.push(workspaceFollower);
+                        workspaceToSave['followers'] = followersArray;
+
+                        //console.log("workspaceToSave with followers: " + JSON.stringify(workspaceToSave));
+
+
+                        // add _tags for this workspacefollower so it's visible in algolia
+
+                        if (workspace.get("type") === 'private') {
+                            viewableBy.push(workspaceFollower.toJSON().user.objectId);
+                            //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
+                        }
+
+
+                        if (workspace.get("type") === 'private') {
+
+                            workspaceToSave._tags= viewableBy;
+                            //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
+
+                        } else if (workspace.get("type")=== 'public') {
+
+                            workspaceToSave._tags = ['*'];
+
+                        }
+
+
+
+                        return callback(null, workspaceToSave);
+
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true,
+                        sessionToken: sessionToken
+
+                    });
+
+
+                } else {
+
+                    return callback (null, workspace);
+                }
+
+            }
+
+            function createGeneralChannel (callback) {
+
+                if (workspace.get("isNew") === true) {
+
+                    let CHANNEL = Parse.Object.extend("Channel");
+                    let Channel = new CHANNEL();
+
+                    Channel.set("name", "general");
+                    Channel.set("default", true);
+                    Channel.set("type", "public");
+                    Channel.set("purpose", "Community wide announcements and general questions");
+                    Channel.set("allowMemberPostCreation", false);
+                    Channel.set("workspace", workspace);
+                    Channel.set("user", owner);
+
+                    console.log("Channel save in afterSave Workspace cloud function");
+
+                    Channel.save(null, {
+
+                            //useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
+
+                        }
+                    );
+
+                    return callback (null, Channel);
+
+
+                }
+                else {
+
+                    return callback (null, workspace);
+                }
+
+
+            }
+
+            async.parallel([
+                async.apply(createWorkspaceRoles),
+                async.apply(getSkills),
+                async.apply(getExperts),
+                async.apply(getWorkspaceFollowers),
+                //async.apply(createGeneralChannel),
+                async.apply(createOwnerWorkspaceFollower)
+
+            ], function (err, results) {
+                if (err) {
+                    response.error(err);
+                }
+
+                //console.log("results length: " + JSON.stringify(results.length));
+
+                if(workspace.get("isNew")) {
+                    workspaceToSave = results[4];
+                    workspace.set("isDirtyExperts", true);
+
+                } else {
+                    workspaceToSave = results[3];
+
+                }
+                let skillsToSave = results[1];
+                let expertsToSave = results[2];
+
+
+                workspaceToSave["skills"] = skillsToSave;
+
+
+                if (workspace.get("isDirtyExperts")) {
+                    workspaceToSave["experts"] = expertsToSave;
+                    delete workspaceToSave.expertsArray;
+                } else {
+
+                    delete workspaceToSave.experts;
+                    delete workspaceToSave.expertsArray;
+
+                }
+
+                delete workspaceToSave.isDirtySkills;
+                delete workspaceToSave.isDirtyExperts;
+                delete workspaceToSave.isNew;
+
+                if (workspace.get("isNew") === true) {
+
+                    let Channel = new Parse.Object("Channel");
+                    //let Channel = new CHANNEL();
+
+                    Channel.set("name", "general");
+                    Channel.set("default", true);
+                    Channel.set("type", "public");
+                    Channel.set("purpose", "Community wide announcements and general questions");
+                    Channel.set("allowMemberPostCreation", false);
+                    Channel.set("workspace", workspace);
+                    Channel.set("user", owner);
+
+                    console.log("Channel save in afterSave Workspace cloud function: " + JSON.stringify(Channel));
+
+                    Channel.save(null, {
+
+                            //useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
+
+                        }
+                    );
+                }
+
+
+                //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
+                //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
+                //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
+
+                indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
+                    if (err) return response.error(err);
+
+                    console.log("Parse<>Algolia workspace saved from AfterSave Workspace function ");
+
+                    var finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    return response.success();
+
                 });
 
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {
-
-                useMasterKey: true,
-                sessionToken: request.user.getSessionToken()
 
             });
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true,
+            sessionToken: request.user.getSessionToken()
+
+        });
 
 
     }
