@@ -5166,11 +5166,11 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
 
                             // joining a workspace follower, so mark previous one as false
-                            if (previousWorkspaceFollowJoin.length > 0) {
+                            if (previousWorkspaceFollowers.length > 0) {
 
-                                console.log("marketing previous workspacefollow that isSelected to false: " +previousWorkspaceFollowJoin.length );
+                                console.log("marketing previous workspacefollow that isSelected to false: " +previousWorkspaceFollowers.length );
 
-                                async.map(previousWorkspaceFollowJoin, function (workspaceFollow, cb) {
+                                async.map(previousWorkspaceFollowers, function (workspaceFollow, cb) {
 
                                     let workspace_Follow =  new WORKSPACEFOLLOWER();
                                     workspace_Follow.id = workspaceFollow.id;
@@ -5188,7 +5188,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     return cb (null, workspaceFollow);
 
 
-                                }, function (err, previousWorkspaceFollowJoin) {
+                                }, function (err, previousWorkspaceFollowers) {
 
                                     //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
 
@@ -5196,7 +5196,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         return callback (err);
                                     } else {
 
-                                        return callback (null, previousWorkspaceFollowJoin);
+                                        return callback (null, previousWorkspaceFollowers);
 
 
                                     }
@@ -5207,7 +5207,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             } else {
 
-                                return callback (null, previousWorkspaceFollowJoin);
+                                return callback (null, previousWorkspaceFollowers);
                             }
 
 
