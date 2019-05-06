@@ -477,7 +477,8 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
                 let queryWorkspaceFollowerSelected = new Parse.Query(WORKSPACEFOLLOWER);
                 queryWorkspaceFollowerSelected.equalTo("isSelected", true);
                 queryWorkspaceFollowerSelected.equalTo("user", user);
-                //queryWorkspaceFollowerSelected.descending("updatedAt");
+                queryWorkspaceFollowerSelected.equalTo("isFollower", true);
+                queryWorkspaceFollowerSelected.descending("updatedAt");
                 queryWorkspaceFollowerSelected.include("workspace");
 
                 queryWorkspaceFollowerSelected.first({
@@ -5161,6 +5162,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                         function removePreviousWorkspaceFollowSelected (callback) {
 
+                            console.log("removePreviousWorkspaceFollowSelected" );
+
+
                             // joining a workspace follower, so mark previous one as false
                             if (previousWorkspaceFollowJoin.length > 0) {
 
@@ -5296,7 +5300,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                             });
 
                                             let beforeSaveElse_Time = process.hrtime(time);
-                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                                            console.log(`beforeSaveElse_Time workspace_Follower join took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
                                             response.success();
 
