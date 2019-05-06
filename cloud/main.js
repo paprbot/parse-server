@@ -4769,6 +4769,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 previousQueryWorkspaceFollowerLeave.include("workspace");
                 previousQueryWorkspaceFollowerLeave.equalTo("user", user);
                 previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
+                previousQueryWorkspaceFollowerLeave.equalTo("isFollower", true);
                 previousQueryWorkspaceFollowerLeave.descending("updatedAt");
 
                 function getCurrentWorkspaceFollower (callback) {
@@ -4898,14 +4899,14 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                         let memberName = "member-" + Workspace.id;
                         let followerName = "Follower-" + Workspace.id;
 
-                        let currentWorkspaceFollower = new Parse.Object("workspace_follower");
+                        let currentWorkspaceFollower = new WORKSPACEFOLLOWER();
                         currentWorkspaceFollower.id = results[0].id;
 
 
-                        let previousWorkspaceFollowJoin = new Parse.Object("workspace_follower");
+                        let previousWorkspaceFollowJoin = new WORKSPACEFOLLOWER();
                         let previousWorkspaceFollowers = results[1];
 
-                        let previousWorkspaceFollowLeave = new Parse.Object("workspace_follower");
+                        let previousWorkspaceFollowLeave = new WORKSPACEFOLLOWER();
                         previousWorkspaceFollowLeave.id = results[2].id;
 
 
@@ -5158,6 +5159,56 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                             });
                         }
 
+                        function removePreviousWorkspaceFollowSelected (callback) {
+
+                            // joining a workspace follower, so mark previous one as false
+                            if (previousWorkspaceFollowJoin.length > 0) {
+
+                                console.log("marketing previous workspacefollow that isSelected to false: " +previousWorkspaceFollowJoin.length );
+
+                                async.map(previousWorkspaceFollowJoin, function (workspaceFollow, cb) {
+
+                                    let workspace_Follow =  new WORKSPACEFOLLOWER();
+                                    workspace_Follow.id = workspaceFollow.id;
+
+                                    workspace_Follow.set("isSelected",false);
+
+                                    workspace_Follow.save(null, {
+
+                                        //useMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    workspaceFollow = workspace_Follow;
+
+                                    return cb (null, workspaceFollow);
+
+
+                                }, function (err, previousWorkspaceFollowJoin) {
+
+                                    //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
+
+                                    if (err) {
+                                        return callback (err);
+                                    } else {
+
+                                        return callback (null, previousWorkspaceFollowJoin);
+
+
+                                    }
+
+                                });
+
+
+
+                            } else {
+
+                                return callback (null, previousWorkspaceFollowJoin);
+                            }
+
+
+                        }
+
                         //console.log("userRole: " + JSON.stringify(userRoleRelation));
 
                         //var expertRoleName = "expert-" + workspace_follower.get("workspace").id;
@@ -5197,25 +5248,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 workspace_follower.set("isSelected", true);
                                 user.set("isSelectedWorkspaceFollower", workspace_follower);
 
-                                // joining a workspace follower, so mark previous one as false
-                                if (previousWorkspaceFollowJoin.length > 0) {
 
-                                    for (var i = 0; i < previousWorkspaceFollowers.length; i++) {
-
-                                        previousWorkspaceFollowJoin.id = previousWorkspaceFollowers[i].id;
-
-                                        previousWorkspaceFollowJoin.set("isSelected", false);
-
-                                        previousWorkspaceFollowJoin.save(null, {
-
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
-                                        });
-
-                                    }
-
-
-                                }
 
                                 // if isFollower === false then isMember has to also be false. but we will check anyway
                                 if ((result.get("isMember") === false || !result.get("isMember") ) && workspace_follower.get("isMember") === true) {
@@ -5229,7 +5262,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                     async.parallel([
                                         async.apply(addFollowerRole),
                                         async.apply(addMemberRole),
-                                        async.apply(createDefaultChannelFollows)
+                                        async.apply(createDefaultChannelFollows),
+                                        async.apply(removePreviousWorkspaceFollowSelected)
 
                                     ], function (err, results) {
                                         if (err) {
@@ -5277,7 +5311,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     async.parallel([
                                         async.apply(addFollowerRole),
-                                        async.apply(createDefaultChannelFollows)
+                                        async.apply(createDefaultChannelFollows),
+                                        async.apply(removePreviousWorkspaceFollowSelected)
 
                                     ], function (err, results) {
                                         if (err) {
@@ -5369,7 +5404,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     async.parallel([
                                         async.apply(addFollowerRole),
-                                        async.apply(createDefaultChannelFollows)
+                                        async.apply(createDefaultChannelFollows),
+                                        async.apply(removePreviousWorkspaceFollowSelected)
+
 
                                     ], function (err, results) {
                                         if (err) {
@@ -5469,7 +5506,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                 }
 
-                                // joining a workspace follower, so mark previous one as false
+                                // joining a workspace follower, so mark previous one as selected true
                                 if (previousWorkspaceFollowLeave) {
                                     previousWorkspaceFollowLeave.set("isSelected", true);
                                     user.set("isSelectedWorkspaceFollower", previousWorkspaceFollowLeave);
