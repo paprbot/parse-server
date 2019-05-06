@@ -442,10 +442,12 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
     let User = request.params.user;
     let WorkspaceFollower = request.params.workspace_follower;
 
-    var workspaceFollower = new Parse.Object("workspace_follower");
+    let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+    let workspaceFollower = new WORKSPACEFOLLOWER();
     workspaceFollower.id = WorkspaceFollower;
 
-    var user = new Parse.Object("_User");
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
     user.id = User;
 
 
@@ -472,7 +474,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
 
                 console.log("result leaveWorkspace query: " + JSON.stringify(result));
 
-                let queryWorkspaceFollowerSelected = new Parse.Query("workspace_follower");
+                let queryWorkspaceFollowerSelected = new Parse.Query(WORKSPACEFOLLOWER);
                 queryWorkspaceFollowerSelected.equalTo("isSelected", true);
                 queryWorkspaceFollowerSelected.equalTo("user", user);
                 //queryWorkspaceFollowerSelected.descending("updatedAt");
@@ -491,7 +493,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
 
 
 
-                        var finalTime = process.hrtime(time);
+                        let finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                         response.success(result_workspacefollower);
@@ -500,7 +502,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
 
 
 
-                        var finalTime = process.hrtime(time);
+                        let finalTime = process.hrtime(time);
                         console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                         response.success();
@@ -1752,8 +1754,8 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     console.log("_User req: " + JSON.stringify(req.user));
 
     //let expiresAt = session.get("expiresAt");
-    let _tagPublic = '_tags:' + '*';
-    let _tagUserId = '_tags:' + user.id;
+    let _tagPublic = '*';
+    let _tagUserId = user.id;
 
 
     if (user.dirty("profileimage")) {
@@ -1797,6 +1799,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
 
             user.set("algoliaSecureAPIKey", user_public_key);
+
 
         }
 
@@ -1861,6 +1864,9 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
 
             user.set("algoliaSecureAPIKey", user_public_key);
+
+            response.success();
+
 
         } else {
 
@@ -2487,8 +2493,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
             //var owner = new Parse.Object("_User");
             let owner = channel.get("user");
-            let expertRelation = Channel.relation("experts");
-            console.log("expertRelation in beforeSave Channel: " + JSON.stringify(expertRelation));
+            //let expertRelation = Channel.relation("experts");
+            //console.log("expertRelation in beforeSave Channel: " + JSON.stringify(expertRelation));
 
 
             //var WORKSPACE = new Parse.Object("WORKSPACE");
@@ -2599,17 +2605,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
 
                                     channel.addUnique("expertsArray", expertOwner);
-                                    //expertChannelRelation.add(user);
 
-                                    /*channelObject.save(null, {
-
-                                     //useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     }
-                                     );*/
-
-                                    //expertChannelRelation.add(user);
 
                                     console.log("addExpertsArrayToChannel channel: " + JSON.stringify(channel));
 
@@ -3391,7 +3387,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                         response.success();
 
-                    } else if (channel.get("type") === 'privateMembers') {
+                    }
+                    else if (channel.get("type") === 'privateMembers') {
 
                         // todo send notification to all users who are not members since they won't get access to this channel anymore
 
@@ -3425,7 +3422,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             }, {useMasterKey: true});
 
 
-                    } else if (channel.get("type") === 'privateExperts') {
+                    }
+                    else if (channel.get("type") === 'privateExperts') {
 
                         // todo send notification to all users who are not experts since they won't get access to this channel anymore
 
@@ -3460,7 +3458,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             }, {useMasterKey: true});
 
 
-                    } else if (channel.get("type") === 'privateAdmins') {
+                    }
+                    else if (channel.get("type") === 'privateAdmins') {
 
                         // todo send notification to all users who are not admins since they won't get access to this channel anymore
 
@@ -3492,7 +3491,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 response.error(error);
                             }, {useMasterKey: true});
 
-                    } else if (channel.get("type") === 'privateModerators') {
+                    }
+                    else if (channel.get("type") === 'privateModerators') {
 
                         // todo send notification to all users who are not moderators since they won't get access to this channel anymore
 
@@ -3523,7 +3523,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 response.error(error);
                             }, {useMasterKey: true});
 
-                    } else if (channel.get("type") === 'privateOwners') {
+                    }
+                    else if (channel.get("type") === 'privateOwners') {
 
                         // todo send notification to all users who are not privateOwners since they won't get access to this channel anymore
 
@@ -3555,7 +3556,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 response.error(error);
                             }, {useMasterKey: true});
 
-                    } else if (channel.get("type") === 'public') {
+                    }
+                    else if (channel.get("type") === 'public') {
 
                         // private workspace, but this is a channel that is accessible to all members of this private workspace
                         channelACL.setPublicReadAccess(true);
@@ -3569,7 +3571,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         response.success();
 
 
-                    } else if (channel.get("type") != 'private' || channel.get("type") != 'public' || channel.get("type") != 'privateOwners' || channel.get("type") != 'privateModerators' || channel.get("type") != 'privateAdmins' || channel.get("type") != 'privateExperts' || channel.get("type") != 'privateMembers') {
+                    }
+                    else if (channel.get("type") != 'private' || channel.get("type") != 'public' || channel.get("type") != 'privateOwners' || channel.get("type") != 'privateModerators' || channel.get("type") != 'privateAdmins' || channel.get("type") != 'privateExperts' || channel.get("type") != 'privateMembers') {
 
                         response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
                     } else {
