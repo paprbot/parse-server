@@ -1520,7 +1520,8 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                         return callback(null, object);
 
-                    } else {
+                    }
+                    else {
 
                         // todo need to check if skills is dirty, if yes then query to update algolia if not then ignore.
 
@@ -1567,7 +1568,8 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                         return callback(null, object);
 
-                    } else {
+                    }
+                    else {
 
                         // todo check if expert is dirty, if no ignore and return callback
 
@@ -1577,11 +1579,14 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                         if (experts) {
 
+                            console.log("experts getExperts: " + JSON.stringify(experts));
+
                             return callback (null, experts);
 
                         } else {
 
                             experts = [];
+                            console.log("experts getExperts else: " + JSON.stringify(experts));
 
                             return callback (null, experts);
 
@@ -1628,7 +1633,8 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                         return callback(null, object);
 
-                    } else {
+                    }
+                    else {
 
                         let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
                         let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
@@ -1667,7 +1673,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                                     if (workspaceToSave.type === 'private') {
                                         viewableBy.push(followers[i].toJSON().user.objectId);
-                                        //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
+                                        console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
                                     }
 
 
@@ -1676,7 +1682,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                                 if (workspaceToSave.type === 'private') {
 
                                     workspaceToSave._tags= viewableBy;
-                                    //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
+                                    console.log("private _tags: " + JSON.stringify(workspaceToSave._tags));
 
                                 } else if (workspaceToSave.type === 'public') {
 
@@ -1750,7 +1756,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
             }, function (err, objectsToIndex) {
 
-                console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+                console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex));
 
                 // Add or update new objects
                 indexWorkspaces.partialUpdateObjects(objectsToIndex, true, function (err, content) {
