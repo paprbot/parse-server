@@ -1504,10 +1504,10 @@ Parse.Cloud.define("indexCollection", function(request, response) {
             // The object was retrieved successfully.
             //console.log("Result from get " + JSON.stringify(Workspace));
 
-            let workspaces = objectsToIndex;
-            console.log("ObjectToSave length: " + JSON.stringify(workspaces.length));
+            let objects = objectsToIndex;
+            console.log("ObjectToSave length: " + JSON.stringify(objects.length));
 
-            async.map(objectsToIndex, function (object, cb) {
+            async.map(objects, function (object, cb) {
 
                 let WORKSPACE = Parse.Object.extend("WorkSpace");
                 let workspace = new WORKSPACE();
@@ -1649,7 +1649,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         queryWorkspaceFollower.equalTo("workspace", workspace);
 
                         // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
-                        queryWorkspaceFollower.limit(10000);
+                        queryWorkspaceFollower.limit(10);
                         // queryWorkspaceFollower.include( ["workspace"] );
 
                         queryWorkspaceFollower.find({
@@ -1759,12 +1759,12 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                 });
 
 
-            }, function (err, objectsToIndex) {
+            }, function (err, objects) {
 
-                console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+                console.log("PrepIndex completed: " + JSON.stringify(objects.length));
 
                 // Add or update new objects
-                index.partialUpdateObjects(objectsToIndex, true, function (err, content) {
+                index.partialUpdateObjects(objects, true, function (err, content) {
                     if (err) response.error(err);
 
                     console.log("Parse<>Algolia workspace saved from indexCollection function ");
