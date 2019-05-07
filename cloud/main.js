@@ -1504,7 +1504,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
             // The object was retrieved successfully.
             //console.log("Result from get " + JSON.stringify(Workspace));
 
-            //let workspaces = objectsToIndex;
+            let workspaces = objectsToIndex;
             console.log("ObjectToSave length: " + JSON.stringify(workspaces.length));
 
             async.map(objectsToIndex, function (object, cb) {
@@ -1572,8 +1572,21 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         // todo check if expert is dirty, if no ignore and return callback
 
                         //let expertObject = Parse.Object.extend("_User");
+
                         let experts = workspace.get("expertsArray");
-                        return callback (null, experts);
+
+                        if (experts) {
+
+                            return callback (null, experts);
+
+                        } else {
+
+                            experts = [];
+
+                            return callback (null, experts);
+
+                        }
+
                         //console.log("Experts: " + JSON.stringify(expertObject));
 
                         /*expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
@@ -1638,7 +1651,16 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                                 delete workspaceToSave.experts;
 
                                 workspaceToSave.objectID = workspaceToSave.objectId;
-                                workspaceToSave['followers'] = followers;
+
+                                if (followers) {
+
+                                    workspaceToSave['followers'] = followers;
+
+                                } else {
+
+                                    followers = [];
+                                    workspaceToSave['followers'] = followers;
+                                }
 
 
                                 for (var i = 0; i < followers.length; i++) {
