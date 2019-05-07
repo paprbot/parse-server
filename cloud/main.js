@@ -1445,18 +1445,18 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
 // cloud API and function to index and import all users from Parse to AlgoliaSearch indexUsers
 Parse.Cloud.define("indexCollection", function(request, response) {
 
-    var NS_PER_SEC = 1e9;
+    const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
-    var time = process.hrtime();
+    let time = process.hrtime();
 
-    var objectsToIndex = [];
+    let objectsToIndex = [];
     //Create a new query for User collection in Parse
 
-    var collection = request.params.collection;
-    var index;
-    var skills;
-    var skillsToLearn;
-    var query = new Parse.Query(collection);
+    let collection = request.params.collection;
+    let index;
+    let skills;
+    let skillsToLearn;
+    let query = new Parse.Query(collection);
     query.limit(10000); // todo limit to at most 1000 results need to change and iterate until done todo
 
     console.log('collection: ' + request.params.collection);
@@ -1486,7 +1486,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
             break;
         case "WorkSpace":
             query.include( ["user"] );
-            query.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image"]);
+            query.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image", "channelCount", "expertsArray", "notificationCount"]);
             index = indexWorkspaces;
             skills = "skills";
 
@@ -1497,20 +1497,22 @@ Parse.Cloud.define("indexCollection", function(request, response) {
             break;
         default:
             response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Channel, Meeting");
-    };
+    }
 
     query.find({useMasterKey: true})
         .then((objectsToIndex) => {
             // The object was retrieved successfully.
             //console.log("Result from get " + JSON.stringify(Workspace));
 
-            var workspaces = objectsToIndex;
+            //let workspaces = objectsToIndex;
             console.log("ObjectToSave length: " + JSON.stringify(workspaces.length));
 
             async.map(objectsToIndex, function (object, cb) {
 
-                var workspace = object;
-                var workspaceToSave = object.toJSON();
+                let WORKSPACE = Parse.Object.extend("WorkSpace");
+                let workspace = new WORKSPACE();
+                workspace = object;
+                let workspaceToSave = workspace.toJSON();
 
                 function getSkills(callback) {
 
@@ -1522,13 +1524,14 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                         // todo need to check if skills is dirty, if yes then query to update algolia if not then ignore.
 
-                        var skillObject = Parse.Object.extend("Skill");
+                        let SKILL = Parse.Object.extend("Skill");
+                        let skillObject = new SKILL();
                         //var skillsRelation = new skillObject.relation("skills");
                         skillObject = workspace.get("skills");
                         //console.log("Skills: " + JSON.stringify(skillObject));
                         //console.log("Skill Length:" + skillObject);
 
-                        var skillObjectQuery = skillObject.query();
+                        let skillObjectQuery = skillObject.query();
                         skillObjectQuery.ascending("level");
                         skillObjectQuery.find({
 
@@ -1558,26 +1561,35 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                         // todo check if expert is dirty, if no ignore and return callback
 
-                        var expertObject = Parse.Object.extend("_User");
-                        expertObject = workspace.get("experts");
+                        let expertObject = Parse.Object.extend("_User");
+                        //let experts = workspace.get("expertsArray");
                         //console.log("Experts: " + JSON.stringify(expertObject));
 
                         expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
 
-                            success: function (experts) {
+                            useMasterKey: true
+                        }).then((experts) => {
 
-
-                                //console.log("\n Experts: " + JSON.stringify(experts));
+                            if (experts) {
 
                                 return callback(null, experts);
 
+                            } else {
 
-                            },
-                            error: function (error) {
-                                alert("Error: " + error.code + " " + error.message);
-                                return callback(error);
+                                let expertsEmpty = [];
+                                return callback (null, expertsEmpty);
+
                             }
-                        }, {useMasterKey: true});
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback (null, error);
+                        }, {
+
+                            useMasterKey: true
+                        });
+
 
                     }
 
@@ -1594,8 +1606,8 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                     } else {
 
-                        var WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-                        var queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+                        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+                        let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
 
                         let viewableBy = [];
 
@@ -1655,6 +1667,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                 }
 
+
                 async.parallel([
                     async.apply(getSkills),
                     async.apply(getExperts),
@@ -1670,8 +1683,8 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                     if (collection === "WorkSpace") {
 
                         workspaceToSave = results[2];
-                        var skillsToSave = results[0];
-                        var expertsToSave = results[1];
+                        let skillsToSave = results[0];
+                        let expertsToSave = results[1];
 
                         console.log("skillsToSave: " + JSON.stringify(skillsToSave));
                         console.log("expertsToSave: " + JSON.stringify(expertsToSave));
@@ -1691,7 +1704,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                     else {
 
                         // convert to regular key/value JavaScript object
-                        object = results[3];
+                        object = results[2];
                         object = object.toJSON();
                         // Specify Algolia's objectID with the Parse.Object unique ID
                         object.objectID = object.objectId;
@@ -1712,7 +1725,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                     console.log("Parse<>Algolia workspace saved from indexCollection function ");
 
-                    var finalTime = process.hrtime(time);
+                    let finalTime = process.hrtime(time);
                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                     response.success();
 
@@ -11042,7 +11055,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     console.log("Parse<>Algolia workspace saved from AfterSave Workspace function ");
 
-                    var finalTime = process.hrtime(time);
+                    let finalTime = process.hrtime(time);
                     console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                     return response.success();
 
