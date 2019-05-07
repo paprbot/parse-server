@@ -1761,7 +1761,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
             }, function (err, objectsToIndex) {
 
-                console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex));
+                console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
                 // Add or update new objects
                 index.partialUpdateObjects(objectsToIndex, true, function (err, content) {
