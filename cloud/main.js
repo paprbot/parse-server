@@ -1656,7 +1656,6 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                             .then((followers) => {
                                 // The object was retrieved successfully.
 
-
                                 //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
 
                                 delete workspaceToSave.skills;
@@ -1668,33 +1667,41 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                                     workspaceToSave['followers'] = followers;
 
+                                    for (var i = 0; i < followers.length; i++) {
+
+                                        if (workspaceToSave.type === 'private') {
+                                            viewableBy.push(followers[i].toJSON().user.objectId);
+                                            console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
+                                        }
+
+
+                                    }
+
+                                    if (workspaceToSave.type === 'private') {
+
+                                        workspaceToSave._tags= viewableBy;
+                                        console.log("private _tags: " + JSON.stringify(workspaceToSave._tags));
+
+                                    } else if (workspaceToSave.type === 'public') {
+
+                                        workspaceToSave._tags = ['*'];
+
+                                    }
+
                                 } else {
+
+                                    // this case should never exist, we should always have a follower for a workspace (owner)
 
                                     followers = [];
                                     workspaceToSave['followers'] = followers;
-                                }
-
-
-                                for (var i = 0; i < followers.length; i++) {
-
-                                    if (workspaceToSave.type === 'private') {
-                                        viewableBy.push(followers[i].toJSON().user.objectId);
-                                        console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
-                                    }
-
-
-                                }
-
-                                if (workspaceToSave.type === 'private') {
-
-                                    workspaceToSave._tags= viewableBy;
-                                    console.log("private _tags: " + JSON.stringify(workspaceToSave._tags));
-
-                                } else if (workspaceToSave.type === 'public') {
 
                                     workspaceToSave._tags = ['*'];
 
+
                                 }
+
+
+
 
                                 //console.log("followers: " + JSON.stringify(workspaceToSave.followers));
 
