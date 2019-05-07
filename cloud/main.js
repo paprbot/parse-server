@@ -1528,18 +1528,28 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         let skillObject = new SKILL();
                         //var skillsRelation = new skillObject.relation("skills");
                         skillObject = workspace.get("skills");
-                        //console.log("Skills: " + JSON.stringify(skillObject));
+                        console.log("Skills: " + JSON.stringify(skillObject));
                         //console.log("Skill Length:" + skillObject);
+
 
                         let skillObjectQuery = skillObject.query();
                         skillObjectQuery.ascending("level");
                         skillObjectQuery.find({
 
                             success: function (skill) {
+                                console.log("Skills: " + JSON.stringify(skill));
 
-                                //console.log("Skills: " + JSON.stringify(skill));
+                                if (skill) {
 
-                                return callback(null, skill);
+                                    return callback(null, skill);
+
+
+                                } else {
+
+                                    skill = [];
+                                    return callback (null, skill);
+                                }
+
 
                             },
                             error: function (error) {
@@ -1561,11 +1571,12 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                         // todo check if expert is dirty, if no ignore and return callback
 
-                        let expertObject = Parse.Object.extend("_User");
-                        //let experts = workspace.get("expertsArray");
+                        //let expertObject = Parse.Object.extend("_User");
+                        let experts = workspace.get("expertsArray");
+                        return callback (null, experts);
                         //console.log("Experts: " + JSON.stringify(expertObject));
 
-                        expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
+                        /*expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
 
                             useMasterKey: true
                         }).then((experts) => {
@@ -1588,7 +1599,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         }, {
 
                             useMasterKey: true
-                        });
+                        });*/
 
 
                     }
