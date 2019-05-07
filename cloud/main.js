@@ -1457,7 +1457,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
     let skills;
     let skillsToLearn;
     let query = new Parse.Query(collection);
-    query.limit(10000); // todo limit to at most 1000 results need to change and iterate until done todo
+    query.limit(50); // todo limit to at most 1000 results need to change and iterate until done todo
 
     console.log('collection: ' + request.params.collection);
 
@@ -1649,12 +1649,13 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         queryWorkspaceFollower.equalTo("workspace", workspace);
 
                         // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
-                        queryWorkspaceFollower.limit(10);
+                        queryWorkspaceFollower.limit(10000);
                         // queryWorkspaceFollower.include( ["workspace"] );
 
-                        queryWorkspaceFollower.find({
+                        queryWorkspaceFollower.find({useMasterKey: true})
+                            .then((followers) => {
+                                // The object was retrieved successfully.
 
-                            success: function (followers) {
 
                                 //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
 
@@ -1699,12 +1700,13 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
                                 return callback(null, workspaceToSave);
 
-                            },
-                            error: function (error) {
-                                alert("Error: " + error.code + " " + error.message);
-                                return callback(error);
-                            }
-                        }, {useMasterKey: true});
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                response.error(error);
+                            }, {useMasterKey: true});
 
                     }
 
@@ -1730,16 +1732,16 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         let skillsToSave = results[0];
                         let expertsToSave = results[1];
 
-                        console.log("skillsToSave: " + JSON.stringify(skillsToSave));
-                        console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-                        console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
+                        //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
+                        //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
+                        //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
 
                         workspaceToSave["skills"] = skillsToSave;
                         workspaceToSave["experts"] = expertsToSave;
 
                         object = workspaceToSave;
 
-                        console.log("object: " + JSON.stringify(object));
+                        //console.log("object: " + JSON.stringify(object));
 
                         return cb(null, object);
 
