@@ -1764,7 +1764,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                 console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex));
 
                 // Add or update new objects
-                indexWorkspaces.partialUpdateObjects(objectsToIndex, true, function (err, content) {
+                index.partialUpdateObjects(objectsToIndex, true, function (err, content) {
                     if (err) response.error(err);
 
                     console.log("Parse<>Algolia workspace saved from indexCollection function ");
