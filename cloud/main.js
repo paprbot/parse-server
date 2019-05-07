@@ -1514,6 +1514,11 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                 workspace = object;
                 let workspaceToSave = workspace.toJSON();
 
+                let skillObject = Parse.Object.extend("Skill");
+                //var skillsRelation = new skillObject.relation("skills");
+                skillObject = workspace.get("skills");
+                console.log("skillObject: " + JSON.stringify(skillObject));
+
                 function getSkills(callback) {
 
                     if (collection != "WorkSpace") {
@@ -1523,41 +1528,41 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                     }
                     else {
 
-                        // todo need to check if skills is dirty, if yes then query to update algolia if not then ignore.
-
-                        let SKILL = Parse.Object.extend("Skill");
-                        let skillObject = new SKILL();
-                        //var skillsRelation = new skillObject.relation("skills");
-                        skillObject = workspace.get("skills");
-                        console.log("Skills: " + JSON.stringify(skillObject));
                         //console.log("Skill Length:" + skillObject);
-
 
                         let skillObjectQuery = skillObject.query();
                         skillObjectQuery.ascending("level");
+
                         skillObjectQuery.find({
 
-                            success: function (skill) {
-                                console.log("Skills: " + JSON.stringify(skill));
+                            useMasterKey: true
+                        }).then((skill) => {
 
-                                if (skill) {
+                            let skillObject = [];
 
-                                    return callback(null, skill);
+                            if (skill) {
 
+                                // skills exist return then then
+                                skillObject = skill;
+                            } else {
 
-                                } else {
+                                // do nothing and return empty skill object no skills;
 
-                                    skill = [];
-                                    return callback (null, skill);
-                                }
-
-
-                            },
-                            error: function (error) {
-                                alert("Error: " + error.code + " " + error.message);
-                                return callback(error);
                             }
-                        }, {useMasterKey: true});
+
+                            return callback (null, skillObject);
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback (error);
+                        }, {
+
+                            useMasterKey: true
+                        });
+
+
                     }
 
                 }
