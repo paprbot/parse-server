@@ -11340,7 +11340,7 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
     let owner = new USER();
     owner.id = workspace.get("user");
 
-    let sessionToken;
+    var sessionToken;
 
     if (!request.user) {
 
@@ -11544,7 +11544,7 @@ Parse.Cloud.beforeDelete('WorkSpace', function(request, response) {
     let owner = new USER();
     owner.id = workspace.get("user");
 
-    let sessionToken;
+    var sessionToken;
 
     if (!request.user) {
 
@@ -11736,61 +11736,136 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 
     // todo remove ACL for users who unfollow or are not members anymore
 
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let workspaceFollower = request.object;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+    user.id = workspaceFollower.get("user").id;
+
+    var sessionToken;
+
+    if (!request.user) {
+
+        if (request.master === true) {
+
+            sessionToken = user.getSessionToken();
+            console.log("sessionToken: " + JSON.stringify(sessionToken));
+        } else {
+
+            response.error("afterDelete WorkSpace masterKey or Session token is required");
+
+        }
+    } else if (request.user) {
+
+        if (request.user.getSessionToken()) {
+
+            sessionToken = request.user.getSessionToken();
+
+
+        } else {
+
+            response.error("afterDelete WorkSpace user does not have a valid sessionToken");
+
+
+        }
+    }
+
     // Get workspace
-    let workspace = request.object.get("workspace");
+    workspace.id = workspaceFollower.get("workspace").id;
     console.log("workspace in workspace_follower afterDelete: " + JSON.stringify(workspace));
 
-    // get isFollower and isMember
-    let isFollower = request.object.get("isFollower");
-    let isMember = request.object.get("isMember");
+    workspace.fetch(workspace.id, {
 
-    // remove this user as a follower or member of that workspace
-    if(isFollower === true && isMember === true) {
+        useMasterKey: true,
+        sessionToken: sessionToken
 
-        workspace.increment("followerCount", -1);
-        workspace.increment("memberCount", -1);
-        workspace.save(null, {
+    }).then((Workspace) => {
+        // The object was retrieved successfully.
 
-            useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
+        console.log("Workspace fetch: " + JSON.stringify(Workspace));
 
-        });
-        response.success();
+        if (Workspace) {
 
-    } else if (isFollower === true && (isMember === false || !isMember)) {
+            // get isFollower and isMember
+            let isFollower = request.object.get("isFollower");
+            let isMember = request.object.get("isMember");
 
-        workspace.increment("followerCount", -1);
-        workspace.save(null, {
+            // remove this user as a follower or member of that workspace
+            if(isFollower === true && isMember === true) {
 
-            useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
+                workspace.increment("followerCount", -1);
+                workspace.increment("memberCount", -1);
+                workspace.save(null, {
 
-        });
-        response.success();
+                    useMasterKey: true,
+                    sessionToken: sessionToken
+
+                });
+                response.success();
+
+            }
+            else if (isFollower === true && (isMember === false || !isMember)) {
+
+                workspace.increment("followerCount", -1);
+                workspace.save(null, {
+
+                    useMasterKey: true,
+                    sessionToken: sessionToken
+
+                });
+                response.success();
 
 
-    } else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
+            }
+            else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
 
-        // do nothing since this user should not be a follower or member for that workspace
-        response.success();
+                // do nothing since this user should not be a follower or member for that workspace
+                response.success();
 
 
-    } else if (isMember === true && (isFollower === false || !isFollower)) {
+            }
+            else if (isMember === true && (isFollower === false || !isFollower)) {
 
-        // this case should never exist since a member is always also a follower
-        workspace.increment("memberCount", -1);
-        workspace.save(null, {
+                // this case should never exist since a member is always also a follower
+                workspace.increment("memberCount", -1);
+                workspace.save(null, {
 
-            useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
+                    useMasterKey: true,
+                    sessionToken: sessionToken
 
-        });
-        response.success();
-    } else {
+                });
+                response.success();
+            }
+            else {
 
-        // do nothing
-        response.success();
-    }
+                // do nothing
+                response.success();
+            }
+
+
+        } else {
+
+            response.success();
+        }
+
+
+
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        response.error(error);
+    }, {
+        useMasterKey: true,
+        sessionToken: sessionToken
+
+    });
 
 
 }, {useMasterKey: true});
