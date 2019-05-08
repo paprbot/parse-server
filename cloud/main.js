@@ -10289,10 +10289,11 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 Parse.Cloud.afterSave('Skill', function(request) {
 
     // Convert Parse.Object to JSON
-    var objectToSave = request.object.toJSON();
+    let objectToSave = request.object.toJSON();
 
     // Specify Algolia's objectID with the Parse.Object unique ID
     objectToSave.objectID = objectToSave.objectId;
+    objectToSave._tags = ['*'];
 
     // Add or update object
     indexSkills.saveObject(objectToSave, function(err, content) {
@@ -11322,17 +11323,20 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
  });*/
 
 // Delete AlgoliaSearch workspace object if it's deleted from Parse
-Parse.Cloud.afterDelete('WorkSpace', function(request) {
+Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
     // Get Algolia objectID
-    var objectID = request.object.id;
+    let objectID = request.object.id;
 
     // Remove the object from Algolia
     indexWorkspaces.deleteObject(objectID, function(err, content) {
         if (err) {
             throw err;
         }
+
         console.log('Parse<>Algolia object deleted');
+
+        response.success();
     });
 });
 
