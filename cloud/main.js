@@ -1761,6 +1761,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         object = object.toJSON();
                         // Specify Algolia's objectID with the Parse.Object unique ID
                         object.objectID = object.objectId;
+                        object._tags = ['*']
 
                         return cb(null, object);
                     }
