@@ -11344,21 +11344,36 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
         queryWorksapceFollower.limit(10000);
         queryWorksapceFollower.find({
             useMasterKey: true
-        }).then(Parse.Object.destroyAll)
-                .catch(function(error, result) {
+        }).then((workspacefollowers) => {
+
+
+            if (workspacefollowers) {
+
+                Parse.Object.destroyAll(workspacefollowers, {useMasterKey: true}).catch(function(error, result) {
 
                     if (error) {
 
-                        console.error("Error finding related comments " + error.code + ": " + error.message);
-                        return callback (error);
+                        console.error("Error deleteWorkspaceFollowers " + error.code + ": " + error.message);
+                        return callback(error);
 
 
                     }
 
                     if (result) {
 
-                        return callback (null, result);
+                        return callback(null, result);
                     }
+                });
+
+
+            } else {
+
+                workspacefollowers = [];
+                // no workspaceFollowers to delete return
+                return callback(null, workspacefollowers);
+
+            }
+
 
 
         }, (error) => {
@@ -11381,22 +11396,35 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
         queryChannel.limit(1000);
         queryChannel.find({
             useMasterKey: true
-        }).then(Parse.Object.destroyAll)
-            .catch(function(error, result) {
-
-                if (error) {
-
-                    console.error("Error finding related comments " + error.code + ": " + error.message);
-                    return callback (error);
+        }).then((channels) => {
 
 
-                }
+            if (channels) {
 
-                if (result) {
+                Parse.Object.destroyAll(channels, {useMasterKey: true}).catch(function(error, result) {
 
-                    return callback (null, result);
-                }
+                    if (error) {
 
+                        console.error("Error deleteChannels " + error.code + ": " + error.message);
+                        return callback(error);
+
+
+                    }
+
+                    if (result) {
+
+                        return callback(null, result);
+                    }
+                });
+
+
+            } else {
+
+                channels = [];
+                // no workspaceFollowers to delete return
+                return callback(null, channels);
+
+            }
 
             }, (error) => {
                 // The object was not retrieved successfully.
@@ -11466,11 +11494,12 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
     // todo remove ACL for users who unfollow or are not members anymore
 
     // Get workspace
-    var workspace = request.object.get("workspace");
+    let workspace = request.object.get("workspace");
+    console.log("workspace in workspace_follower afterDelete: " + JSON.stringify(workspace));
 
     // get isFollower and isMember
-    var isFollower = request.object.get("isFollower");
-    var isMember = request.object.get("isMember");
+    let isFollower = request.object.get("isFollower");
+    let isMember = request.object.get("isMember");
 
     // remove this user as a follower or member of that workspace
     if(isFollower === true && isMember === true) {
@@ -11479,8 +11508,8 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
         workspace.increment("memberCount", -1);
         workspace.save(null, {
 
-            useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
+            useMasterKey: true
+            //sessionToken: request.user.getSessionToken()
 
         });
         response.success();
@@ -11490,8 +11519,8 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
         workspace.increment("followerCount", -1);
         workspace.save(null, {
 
-            useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
+            useMasterKey: true
+            //sessionToken: request.user.getSessionToken()
 
         });
         response.success();
@@ -11509,8 +11538,8 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
         workspace.increment("memberCount", -1);
         workspace.save(null, {
 
-            useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
+            useMasterKey: true
+            //sessionToken: request.user.getSessionToken()
 
         });
         response.success();
@@ -11521,7 +11550,7 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
     }
 
 
-});
+}, {useMasterKey: true});
 
 // Update followers list in Channel after deleting workspace_follower row
 Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
