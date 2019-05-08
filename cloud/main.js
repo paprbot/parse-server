@@ -11159,7 +11159,7 @@ Parse.Cloud.afterDelete('Post', function(request) {
 Parse.Cloud.afterDelete('Channel', function(request) {
 
     // Get Algolia objectID
-    var objectID = request.object.id;
+    let objectID = request.object.id;
 
     // Remove the object from Algolia
     indexChannel.deleteObject(objectID, function(err, content) {
@@ -11445,6 +11445,10 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
         }
 
         if (results) {
+
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took afterDelete WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
             response.success();
 
