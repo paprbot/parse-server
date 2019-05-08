@@ -11156,22 +11156,245 @@ Parse.Cloud.afterDelete('Post', function(request) {
 });
 
 // Delete AlgoliaSearch channel object if it's deleted from Parse
-Parse.Cloud.afterDelete('Channel', function(request) {
+Parse.Cloud.afterDelete('Channel', function(request, response) {
 
-    // Get Algolia objectID
-    let objectID = request.object.id;
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
 
-    // Remove the object from Algolia
-    indexChannel.deleteObject(objectID, function(err, content) {
-        if (err) {
-            throw err;
+    let CHANNEL = Parse.Object.extend("Channel");
+    let channel = new CHANNEL();
+    channel.id = request.object.id;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = request.object.id;
+
+    console.log("request afterDelete WorkSpace: " + JSON.stringify(request));
+
+    let USER = Parse.Object.extend("_User");
+    let owner = new USER();
+    owner.id = workspace.get("user");
+
+    var sessionToken;
+
+    if (!request.user) {
+
+        if (request.master === true) {
+
+            sessionToken = owner.getSessionToken();
+            console.log("sessionToken: " + JSON.stringify(sessionToken));
+        } else {
+
+            response.error("afterDelete WorkSpace masterKey or Session token is required");
+
         }
-        console.log('Parse<>Algolia object deleted');
+    } else if (request.user) {
+
+        if (request.user.getSessionToken()) {
+
+            sessionToken = request.user.getSessionToken();
+
+
+        } else {
+
+            response.error("afterDelete WorkSpace user does not have a valid sessionToken");
+
+
+        }
+    }
+
+
+    function deleteChannelFollowers (callback) {
+
+        let CHANNELFOLLOWER = Parse.Object.extend("ChannelFollow");
+
+        let queryChannelFollower = new Parse.Query(CHANNELFOLLOWER);
+        queryChannelFollower.equalTo("channel", channel);
+        queryChannelFollower.limit(10000);
+        queryChannelFollower.find({
+            useMasterKey: true,
+            sessionToken: sessionToken
+        }).then((Channel_Followers) => {
+
+
+            if (Channel_Followers) {
+
+                Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
+
+                    if (error) {
+
+                        console.error("Error deleteChannelFollowers " + error.code + ": " + error.message);
+                        return callback(error);
+
+
+                    }
+
+                    if (result) {
+
+                        return callback(null, result);
+                    }
+                });
+
+
+            } else {
+
+                Channel_Followers = [];
+                // no workspaceFollowers to delete return
+                return callback(null, Channel_Followers);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true,
+            sessionToken: sessionToken
+
+        });
+
+    }
+
+    function deletePosts (callback) {
+
+        let POST = Parse.Object.extend("Post");
+
+        let queryPost = new Parse.Query(POST);
+        queryPost.equalTo("channel", channel);
+        queryPost.limit(1000);
+        queryPost.find({
+            useMasterKey: true,
+            sessionToken: sessionToken
+        }).then((posts) => {
+
+
+            if (posts) {
+
+                Parse.Object.destroyAll(posts, {sessionToken: sessionToken}).catch(function(error, result) {
+
+                    if (error) {
+
+                        console.error("Error deletePosts " + error.code + ": " + error.message);
+                        return callback(error);
+
+
+                    }
+
+                    if (result) {
+
+                        return callback(null, result);
+                    }
+                });
+
+
+            } else {
+
+                posts = [];
+                // no workspaceFollowers to delete return
+                return callback(null, posts);
+
+            }
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true,
+            sessionToken: sessionToken
+
+        });
+
+
+
+    }
+
+    function deleteChannelAlgolia (callback) {
+
+        // Remove the object from Algolia
+        indexChannel.deleteObject(channel.id, function(err, content) {
+            if (err) {
+                response.error(err);
+            }
+
+            if (content) {
+
+                console.log('Parse<>Algolia WorkSpace object deleted');
+
+                return callback (null, content);
+
+            }
+
+
+        });
+
+
+    }
+
+
+    async.parallel([
+        async.apply(deleteChannelAlgolia),
+        async.apply(deletePosts),
+        async.apply(deleteChannelFollowers)
+
+    ], function (err, results) {
+        if (err) {
+            return response.error(err);
+        }
+
+        if (results) {
+
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took afterDelete Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();
+
+
+        }
+
     });
+
+
 });
 
 // Delete AlgoliaSearch channel object if it's deleted from Parse
 Parse.Cloud.beforeDelete('Channel', function(request, response) {
+
+    var sessionToken;
+
+    if (!request.user) {
+
+        if (request.master === true) {
+
+            sessionToken = owner.getSessionToken();
+            console.log("sessionToken: " + JSON.stringify(sessionToken));
+        } else {
+
+            response.error("afterDelete WorkSpace masterKey or Session token is required");
+
+        }
+    } else if (request.user) {
+
+        if (request.user.getSessionToken()) {
+
+            sessionToken = request.user.getSessionToken();
+
+
+        } else {
+
+            response.error("afterDelete WorkSpace user does not have a valid sessionToken");
+
+
+        }
+    }
+
 
     // get objects
     let channel = request.object;
@@ -11183,7 +11406,7 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
     workspace.save(null, {
 
         useMasterKey: true,
-        sessionToken: request.user.getSessionToken()
+        sessionToken: sessionToken
 
     });
 
@@ -11502,212 +11725,8 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
 
     async.parallel([
-        //async.apply(deleteWorkspaceAlgolia),
-        async.apply(deleteChannels),
-        //async.apply(deleteWorkspaceFollowers)
-
-    ], function (err, results) {
-        if (err) {
-            return response.error(err);
-        }
-
-        if (results) {
-
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime took afterDelete WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-            response.success();
-
-
-        }
-
-    });
-
-
-}, {useMasterKey: true});
-
-// Delete AlgoliaSearch workspace object if it's deleted from Parse
-Parse.Cloud.beforeDelete('WorkSpace', function(request, response) {
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let WORKSPACE = Parse.Object.extend("WorkSpace");
-    let workspace = new WORKSPACE();
-    workspace.id = request.object.id;
-
-    console.log("request afterDelete WorkSpace: " + JSON.stringify(request));
-
-    let USER = Parse.Object.extend("_User");
-    let owner = new USER();
-    owner.id = workspace.get("user");
-
-    var sessionToken;
-
-    if (!request.user) {
-
-        if (request.master === true) {
-
-            sessionToken = owner.getSessionToken();
-            console.log("sessionToken: " + JSON.stringify(sessionToken));
-        } else {
-
-            response.error("afterDelete WorkSpace masterKey or Session token is required");
-
-        }
-    } else if (request.user) {
-
-        if (request.user.getSessionToken()) {
-
-            sessionToken = request.user.getSessionToken();
-
-
-        } else {
-
-            response.error("afterDelete WorkSpace user does not have a valid sessionToken");
-
-
-        }
-    }
-
-
-
-
-    function deleteWorkspaceFollowers (callback) {
-
-        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-
-        let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
-        queryWorksapceFollower.equalTo("workspace", workspace);
-        queryWorksapceFollower.limit(10000);
-        queryWorksapceFollower.find({
-            useMasterKey: true
-        }).then((workspacefollowers) => {
-
-
-            if (workspacefollowers) {
-
-                Parse.Object.destroyAll(workspacefollowers, {sessionToken: sessionToken}).catch(function(error, result) {
-
-                    if (error) {
-
-                        console.error("Error deleteWorkspaceFollowers " + error.code + ": " + error.message);
-                        return callback(error);
-
-
-                    }
-
-                    if (result) {
-
-                        return callback(null, result);
-                    }
-                });
-
-
-            } else {
-
-                workspacefollowers = [];
-                // no workspaceFollowers to delete return
-                return callback(null, workspacefollowers);
-
-            }
-
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {
-
-            useMasterKey: true
-        });
-
-    }
-
-    function deleteChannels (callback) {
-
-        let CHANNEL = Parse.Object.extend("Channel");
-
-        let queryChannel = new Parse.Query(CHANNEL);
-        queryChannel.equalTo("workspace", workspace);
-        queryChannel.limit(1000);
-        queryChannel.find({
-
-            sessionToken: sessionToken
-        }).then((channels) => {
-
-
-            if (channels) {
-
-                Parse.Object.destroyAll(channels, {sessionToken: sessionToken}).catch(function(error, result) {
-
-                    if (error) {
-
-                        console.error("Error deleteChannels " + error.code + ": " + error.message);
-                        return callback(error);
-
-
-                    }
-
-                    if (result) {
-
-                        return callback(null, result);
-                    }
-                });
-
-
-            } else {
-
-                channels = [];
-                // no workspaceFollowers to delete return
-                return callback(null, channels);
-
-            }
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {
-
-
-            sessionToken: sessionToken
-
-        });
-
-
-
-    }
-
-    function deleteWorkspaceAlgolia (callback) {
-
-        // Remove the object from Algolia
-        indexWorkspaces.deleteObject(workspace.id, function(err, content) {
-            if (err) {
-                response.error(err);
-            }
-
-            if (content) {
-
-                console.log('Parse<>Algolia WorkSpace object deleted');
-
-                return callback (null, content);
-
-            }
-
-
-        });
-
-
-    }
-
-
-    async.parallel([
         async.apply(deleteWorkspaceAlgolia),
-        //async.apply(deleteChannels),
+        async.apply(deleteChannels),
         async.apply(deleteWorkspaceFollowers)
 
     ], function (err, results) {
@@ -11877,360 +11896,393 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
     var CHANNEL = request.object.get("channel");
     console.log("channel afterDelete: " + JSON.stringify(CHANNEL));
 
-    if (!request.user.getSessionToken()) {
+    var sessionToken;
 
-        response.error("beforeSave ChannelFollow Session token: X-Parse-Session-Token is required");
+    if (!request.user) {
 
-    } else {
+        if (request.master === true) {
 
-        CHANNEL.fetch(CHANNEL.toJSON().objectId, {
+            sessionToken = user.getSessionToken();
+            console.log("sessionToken: " + JSON.stringify(sessionToken));
+        } else {
+
+            response.error("afterDelete WorkSpace masterKey or Session token is required");
+
+        }
+    } else if (request.user) {
+
+        if (request.user.getSessionToken()) {
+
+            sessionToken = request.user.getSessionToken();
+
+
+        } else {
+
+            response.error("afterDelete WorkSpace user does not have a valid sessionToken");
+
+
+        }
+    }
+
+
+    CHANNEL.fetch(CHANNEL.toJSON().objectId, {
 
             //useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
+            sessionToken: sessionToken
 
         }).then((channel) => {
             // The object was retrieved successfully.
 
-            // get isFollower and isMember
-            var isFollower = channelfollow.get("isFollower");
-            var isMember = channelfollow.get("isMember");
-            let user = channelfollow.get("user");
-            let Channel = channel;
-            let channelACL = Channel.getACL();
+            if (channel) {
+
+                // get isFollower and isMember
+                var isFollower = channelfollow.get("isFollower");
+                var isMember = channelfollow.get("isMember");
+                let user = channelfollow.get("user");
+                let Channel = channel;
+                let channelACL = Channel.getACL();
 
 
-            var userRoleRelation = user.relation("roles");
-            var expertChannelRelation = Channel.relation("experts");
-            //console.log("userRole: " + JSON.stringify(userRoleRelation));
+                var userRoleRelation = user.relation("roles");
+                var expertChannelRelation = Channel.relation("experts");
+                //console.log("userRole: " + JSON.stringify(userRoleRelation));
 
-            var expertRoleName = "expert-" + Channel.get("workspace").id;
+                var expertRoleName = "expert-" + Channel.get("workspace").id;
 
-            var userRoleRelationQuery = userRoleRelation.query();
-            userRoleRelationQuery.equalTo("name", expertRoleName);
-            userRoleRelationQuery.first({
+                var userRoleRelationQuery = userRoleRelation.query();
+                userRoleRelationQuery.equalTo("name", expertRoleName);
+                userRoleRelationQuery.first({
 
-                useMasterKey: true,
-                sessionToken: request.user.getSessionToken()
+                    useMasterKey: true,
+                    sessionToken: sessionToken
 
-            }).then((results) => {
-                // The object was retrieved successfully.
+                }).then((results) => {
+                    // The object was retrieved successfully.
 
-                if (results) {
+                    if (results) {
 
-                    // expert role exists, add as channel expert
-                    //console.log("channelExpert: " + JSON.stringify(results));
+                        // expert role exists, add as channel expert
+                        //console.log("channelExpert: " + JSON.stringify(results));
 
-                    // remove this user as a follower or member of that workspace
-                    if(isFollower === true && isMember === true) {
+                        // remove this user as a follower or member of that workspace
+                        if(isFollower === true && isMember === true) {
 
-                        channel.increment("followerCount", -1);
-                        channel.increment("memberCount", -1);
+                            channel.increment("followerCount", -1);
+                            channel.increment("memberCount", -1);
 
-                        // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
-                        expertChannelRelation.remove(user);
+                            // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
+                            expertChannelRelation.remove(user);
 
-                        let expertOwner = simplifyUser(user);
+                            let expertOwner = simplifyUser(user);
 
-                        Channel.remove("expertsArray", expertOwner);
+                            Channel.remove("expertsArray", expertOwner);
 
-                        if (channel.get("type") === 'private') {
-
-
-                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
-
-                            if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
-
-                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
+                            if (channel.get("type") === 'private') {
 
 
+                                // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                            } else {
+                                if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
 
-                                // this user is not the channel owner it's ok to remove his/her ACL
+                                    // this user who is unfollowing is also the channel owner, don't remove his ACL.
 
-                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                // user will need to be added again by channel owner since it's a private channel
 
-                                channelACL.setReadAccess(user, false);
-                                channelACL.setWriteAccess(user, false);
-                                Channel.setACL(channelACL);
+
+                                } else {
+
+                                    // this user is not the channel owner it's ok to remove his/her ACL
+
+                                    // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                    // user will need to be added again by channel owner since it's a private channel
+
+                                    channelACL.setReadAccess(user, false);
+                                    channelACL.setWriteAccess(user, false);
+                                    Channel.setACL(channelACL);
+
+
+                                }
+
+
+
+
+
+                            }
+                            channel.save(null, {
+
+                                //useMasterKey: true,
+                                sessionToken: sessionToken
+
+                            });
+                            response.success();
+
+                        }
+                        else if (isFollower === true && (isMember === false || !isMember)) {
+
+                            channel.increment("followerCount", -1);
+
+                            // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
+                            expertChannelRelation.remove(user);
+
+                            let expertOwner = simplifyUser(user);
+
+
+                            Channel.remove("expertsArray", expertOwner);
+
+                            if (channel.get("type") === 'private') {
+
+
+                                // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
+
+                                if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
+
+                                    // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                                } else {
+
+                                    // this user is not the channel owner it's ok to remove his/her ACL
+
+                                    // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                    // user will need to be added again by channel owner since it's a private channel
+
+                                    channelACL.setReadAccess(user, false);
+                                    channelACL.setWriteAccess(user, false);
+                                    Channel.setACL(channelACL);
+
+
+                                }
+
+
 
 
                             }
+                            channel.save(null, {
+
+                                //useMasterKey: true,
+                                sessionToken: sessionToken
+
+                            });
+                            response.success();
 
 
+                        } else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
 
+                            // do nothing since this user should not be a follower or member for that workspace
+                            response.success();
 
 
                         }
-                        channel.save(null, {
+                        else if (isMember === true && (isFollower === false || !isFollower)) {
 
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
+                            // this case should never exist since a member is always also a follower
+                            channel.increment("memberCount", -1);
 
-                        });
-                        response.success();
+                            // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
+                            expertChannelRelation.remove(user);
 
-                    }
-                    else if (isFollower === true && (isMember === false || !isMember)) {
-
-                        channel.increment("followerCount", -1);
-
-                        // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
-                        expertChannelRelation.remove(user);
-
-                        let expertOwner = simplifyUser(user);
+                            let expertOwner = simplifyUser(user);
 
 
-                        Channel.remove("expertsArray", expertOwner);
+                            Channel.remove("expertsArray", expertOwner);
 
-                        if (channel.get("type") === 'private') {
-
-
-                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
-
-                            if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
-
-                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
+                            if (channel.get("type") === 'private') {
 
 
 
-                            } else {
+                                // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                                // this user is not the channel owner it's ok to remove his/her ACL
+                                if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
 
-                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                // user will need to be added again by channel owner since it's a private channel
+                                    // this user who is unfollowing is also the channel owner, don't remove his ACL.
 
-                                channelACL.setReadAccess(user, false);
-                                channelACL.setWriteAccess(user, false);
-                                Channel.setACL(channelACL);
+
+
+                                } else {
+
+                                    // this user is not the channel owner it's ok to remove his/her ACL
+
+                                    // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                    // user will need to be added again by channel owner since it's a private channel
+
+                                    channelACL.setReadAccess(user, false);
+                                    channelACL.setWriteAccess(user, false);
+                                    Channel.setACL(channelACL);
+
+
+                                }
+
 
 
                             }
+                            channel.save(null, {
 
+                                //useMasterKey: true,
+                                sessionToken: sessionToken
 
-
-
+                            });
+                            response.success();
                         }
-                        channel.save(null, {
+                        else {
 
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-                        response.success();
-
-
-                    } else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
-
-                        // do nothing since this user should not be a follower or member for that workspace
-                        response.success();
-
-
-                    } else if (isMember === true && (isFollower === false || !isFollower)) {
-
-                        // this case should never exist since a member is always also a follower
-                        channel.increment("memberCount", -1);
-
-                        // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
-                        expertChannelRelation.remove(user);
-
-                        let expertOwner = simplifyUser(user);
-
-
-                        Channel.remove("expertsArray", expertOwner);
-
-                        if (channel.get("type") === 'private') {
-
-
-
-                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
-
-                            if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
-
-                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
-
-
-
-                            } else {
-
-                                // this user is not the channel owner it's ok to remove his/her ACL
-
-                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                // user will need to be added again by channel owner since it's a private channel
-
-                                channelACL.setReadAccess(user, false);
-                                channelACL.setWriteAccess(user, false);
-                                Channel.setACL(channelACL);
-
-
-                            }
-
-
-
+                            // do nothing
+                            response.success();
                         }
-                        channel.save(null, {
 
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-                        response.success();
                     } else {
+                        // no role exists don't add or remove experts from channel
 
-                        // do nothing
-                        response.success();
-                    }
+                        // remove this user as a follower or member of that workspace
+                        if(isFollower === true && isMember === true) {
 
+                            channel.increment("followerCount", -1);
+                            channel.increment("memberCount", -1);
 
+                            if (channel.get("type") === 'private') {
 
+                                // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                } else {
-                    // no role exists don't add or remove experts from channel
+                                if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
 
-                    // remove this user as a follower or member of that workspace
-                    if(isFollower === true && isMember === true) {
-
-                        channel.increment("followerCount", -1);
-                        channel.increment("memberCount", -1);
-
-                        if (channel.get("type") === 'private') {
-
-                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
-
-                            if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
-
-                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
+                                    // this user who is unfollowing is also the channel owner, don't remove his ACL.
 
 
 
-                            } else {
+                                } else {
 
-                                // this user is not the channel owner it's ok to remove his/her ACL
+                                    // this user is not the channel owner it's ok to remove his/her ACL
 
-                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                // user will need to be added again by channel owner since it's a private channel
+                                    // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                    // user will need to be added again by channel owner since it's a private channel
 
-                                channelACL.setReadAccess(user, false);
-                                channelACL.setWriteAccess(user, false);
-                                Channel.setACL(channelACL);
+                                    channelACL.setReadAccess(user, false);
+                                    channelACL.setWriteAccess(user, false);
+                                    Channel.setACL(channelACL);
+
+
+                                }
+
 
 
                             }
+                            channel.save(null, {
 
+                                //useMasterKey: true,
+                                sessionToken: sessionToken
 
+                            });
+                            response.success();
 
                         }
-                        channel.save(null, {
+                        else if (isFollower === true && (isMember === false || !isMember)) {
 
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-                        response.success();
-
-                    }
-                    else if (isFollower === true && (isMember === false || !isMember)) {
-
-                        channel.increment("followerCount", -1);
+                            channel.increment("followerCount", -1);
 
 
-                        if (channel.get("type") === 'private') {
+                            if (channel.get("type") === 'private') {
 
-                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
+                                // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                            if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
+                                if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
 
-                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
+                                    // this user who is unfollowing is also the channel owner, don't remove his ACL.
 
 
 
-                            } else {
+                                } else {
 
-                                // this user is not the channel owner it's ok to remove his/her ACL
+                                    // this user is not the channel owner it's ok to remove his/her ACL
 
-                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                // user will need to be added again by channel owner since it's a private channel
+                                    // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                    // user will need to be added again by channel owner since it's a private channel
 
-                                channelACL.setReadAccess(user, false);
-                                channelACL.setWriteAccess(user, false);
-                                Channel.setACL(channelACL);
+                                    channelACL.setReadAccess(user, false);
+                                    channelACL.setWriteAccess(user, false);
+                                    Channel.setACL(channelACL);
+
+
+                                }
 
 
                             }
+                            channel.save(null, {
+
+                                //useMasterKey: true,
+                                sessionToken: sessionToken
+
+                            });
+                            response.success();
+
+
+                        } else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
+
+                            // do nothing since this user should not be a follower or member for that workspace
+                            response.success();
 
 
                         }
-                        channel.save(null, {
+                        else if (isMember === true && (isFollower === false || !isFollower)) {
 
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-                        response.success();
+                            // this case should never exist since a member is always also a follower
+                            channel.increment("memberCount", -1);
 
 
-                    } else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
+                            if (channel.get("type") === 'private') {
 
-                        // do nothing since this user should not be a follower or member for that workspace
-                        response.success();
+                                // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
+                                if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
 
-                    } else if (isMember === true && (isFollower === false || !isFollower)) {
-
-                        // this case should never exist since a member is always also a follower
-                        channel.increment("memberCount", -1);
-
-
-                        if (channel.get("type") === 'private') {
-
-                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
-
-                            if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
-
-                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
+                                    // this user who is unfollowing is also the channel owner, don't remove his ACL.
 
 
 
-                            } else {
+                                } else {
 
-                                // this user is not the channel owner it's ok to remove his/her ACL
+                                    // this user is not the channel owner it's ok to remove his/her ACL
 
-                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                // user will need to be added again by channel owner since it's a private channel
+                                    // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                    // user will need to be added again by channel owner since it's a private channel
 
-                                channelACL.setReadAccess(user, false);
-                                channelACL.setWriteAccess(user, false);
-                                Channel.setACL(channelACL);
+                                    channelACL.setReadAccess(user, false);
+                                    channelACL.setWriteAccess(user, false);
+                                    Channel.setACL(channelACL);
+
+
+                                }
 
 
                             }
+                            channel.save(null, {
 
+                                //useMasterKey: true,
+                                sessionToken: sessionToken
 
+                            });
+                            response.success();
                         }
-                        channel.save(null, {
+                        else {
 
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-                        response.success();
-                    } else {
-
-                        // do nothing
-                        response.success();
+                            // do nothing
+                            response.success();
+                        }
                     }
-                }
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {
-                //useMasterKey: true,
-                sessionToken: request.user.getSessionToken()
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+                    //useMasterKey: true,
+                    sessionToken: sessionToken
 
-            });
+                });
+
+            } else {
+
+                response.success();
+            }
+
+
 
         }, (error) => {
             // No Channel, maybe was delete so ignore removing the channel experts and updating follower/member count for channel
@@ -12240,13 +12292,9 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
         }, {
 
             //useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
+            sessionToken: sessionToken
 
         });
-
-
-
-    }
 
 
 
