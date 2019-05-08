@@ -1761,7 +1761,7 @@ Parse.Cloud.define("indexCollection", function(request, response) {
                         object = object.toJSON();
                         // Specify Algolia's objectID with the Parse.Object unique ID
                         object.objectID = object.objectId;
-                        object._tags = ['*']
+                        object._tags = ['*'];
 
                         return cb(null, object);
                     }
@@ -10753,7 +10753,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                             }, (error) => {
                                 // The object was not retrieved successfully.
                                 // error is a Parse.Error with an error code and message.
-                                return callback (null, error);
+                                return callback (error);
                             }, {
 
                                 useMasterKey: true,
@@ -10765,7 +10765,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         }, (error) => {
                             // The object was not retrieved successfully.
                             // error is a Parse.Error with an error code and message.
-                            return callback (null, error);
+                            return callback (error);
                         }, {
 
                             useMasterKey: true,
@@ -10874,7 +10874,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     }, (error) => {
                         // The object was not retrieved successfully.
                         // error is a Parse.Error with an error code and message.
-                        return callback (null, error);
+                        return callback (error);
                     }, {
 
                         useMasterKey: true,
@@ -11326,20 +11326,135 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
 // Delete AlgoliaSearch workspace object if it's deleted from Parse
 Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
-    // Get Algolia objectID
-    let objectID = request.object.id;
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
 
-    // Remove the object from Algolia
-    indexWorkspaces.deleteObject(objectID, function(err, content) {
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = request.object.id;
+
+
+    function deleteWorkspaceFollowers (callback) {
+
+        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+
+        let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+        queryWorksapceFollower.equalTo("workspace", workspace);
+        queryWorksapceFollower.limit(10000);
+        queryWorksapceFollower.find({
+            useMasterKey: true
+        }).then(Parse.Object.destroyAll)
+                .catch(function(error, result) {
+
+                    if (error) {
+
+                        console.error("Error finding related comments " + error.code + ": " + error.message);
+                        return callback (error);
+
+
+                    }
+
+                    if (result) {
+
+                        return callback (null, result);
+                    }
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+        });
+
+    }
+
+    function deleteChannels (callback) {
+
+        let CHANNEL = Parse.Object.extend("Channel");
+
+        let queryChannel = new Parse.Query(CHANNEL);
+        queryChannel.equalTo("workspace", workspace);
+        queryChannel.limit(1000);
+        queryChannel.find({
+            useMasterKey: true
+        }).then(Parse.Object.destroyAll)
+            .catch(function(error, result) {
+
+                if (error) {
+
+                    console.error("Error finding related comments " + error.code + ": " + error.message);
+                    return callback (error);
+
+
+                }
+
+                if (result) {
+
+                    return callback (null, result);
+                }
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error(error);
+            }, {
+
+                useMasterKey: true
+            });
+
+
+
+    }
+
+    function deleteWorkspaceAlgolia (callback) {
+
+        // Remove the object from Algolia
+        indexWorkspaces.deleteObject(workspace.id, function(err, content) {
+            if (err) {
+                response.error(err);
+            }
+
+            if (content) {
+
+                console.log('Parse<>Algolia WorkSpace object deleted');
+
+                return callback (null, content);
+
+            }
+
+
+        });
+
+
+    }
+
+
+    async.parallel([
+        async.apply(deleteWorkspaceAlgolia),
+        async.apply(deleteChannels),
+        async.apply(deleteWorkspaceFollowers)
+
+    ], function (err, results) {
         if (err) {
-            throw err;
+            return response.error(err);
         }
 
-        console.log('Parse<>Algolia object deleted');
+        if (results) {
 
-        response.success();
+            response.success();
+
+
+        }
+
     });
-});
+
+
+}, {useMasterKey: true});
 
 // Update followers list in Workspace after deleting workspace_follower row
 Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
