@@ -11075,6 +11075,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                 delete workspaceToSave.isDirtySkills;
                 delete workspaceToSave.isDirtyExperts;
                 delete workspaceToSave.isNew;
+                //delete workspaceToSave.expertsArray;
 
                 if (workspace.get("isNew") === true) {
 
@@ -11213,28 +11214,39 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
         queryChannelFollower.equalTo("channel", channel);
         queryChannelFollower.limit(10000);
         queryChannelFollower.find({
-            useMasterKey: true,
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
         }).then((Channel_Followers) => {
 
 
             if (Channel_Followers) {
 
-                Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
+                /*Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
 
-                    if (error) {
+                 if (error) {
 
-                        console.error("Error deleteChannelFollowers " + error.code + ": " + error.message);
-                        return callback(error);
+                 console.error("Error deleteChannelFollowers " + error.code + ": " + error.message);
+                 return callback(error);
 
 
-                    }
+                 }
 
-                    if (result) {
+                 if (result) {
 
-                        return callback(null, result);
-                    }
+                 return callback(null, result);
+                 }
+                 });*/
+
+                Parse.Object.destroyAll(Channel_Followers, {
+                    success: function() {
+                        console.log('Did successfully delete channelFollowers in afterDeleteChannel Cloud Function');
+                    },
+                    error: function(error) {
+                        console.error("Error deleting related workout stations " + error.code + ": " + error.message);
+                    },
+                    useMasterKey: true
                 });
+
 
 
             } else {
@@ -11253,8 +11265,8 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
             response.error(error);
         }, {
 
-            useMasterKey: true,
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
 
         });
 
@@ -11268,14 +11280,14 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
         queryPost.equalTo("channel", channel);
         queryPost.limit(1000);
         queryPost.find({
-            useMasterKey: true,
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
         }).then((posts) => {
 
 
             if (posts) {
 
-                Parse.Object.destroyAll(posts, {sessionToken: sessionToken}).catch(function(error, result) {
+                /*Parse.Object.destroyAll(posts, {sessionToken: sessionToken}).catch(function(error, result) {
 
                     if (error) {
 
@@ -11289,6 +11301,16 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
 
                         return callback(null, result);
                     }
+                });*/
+
+                Parse.Object.destroyAll(posts, {
+                    success: function() {
+                        console.log('Did successfully delete posts in afterDeleteChannel Cloud Function');
+                    },
+                    error: function(error) {
+                        console.error("Error delete posts in afterDeleteChannel Cloud Function " + error.code + ": " + error.message);
+                    },
+                    useMasterKey: true
                 });
 
 
@@ -11362,7 +11384,7 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
     });
 
 
-});
+}, {useMasterKey: true});
 
 // Delete AlgoliaSearch channel object if it's deleted from Parse
 Parse.Cloud.beforeDelete('Channel', function(request, response) {
@@ -11405,7 +11427,7 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
     workspace.increment("channelCount", -1);
     workspace.save(null, {
 
-        useMasterKey: true,
+        //useMasterKey: true,
         sessionToken: sessionToken
 
     });
@@ -11620,7 +11642,7 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
             if (workspacefollowers) {
 
-                Parse.Object.destroyAll(workspacefollowers, {sessionToken: sessionToken}).catch(function(error, result) {
+                /*Parse.Object.destroyAll(workspacefollowers, {sessionToken: sessionToken}).catch(function(error, result) {
 
                     if (error) {
 
@@ -11634,6 +11656,16 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
                         return callback(null, result);
                     }
+                });*/
+
+                Parse.Object.destroyAll(workspacefollowers, {
+                    success: function() {
+                        console.log('Did successfully delete posts in afterDeleteChannel Cloud Function');
+                    },
+                    error: function(error) {
+                        console.error("Error delete posts in afterDeleteChannel Cloud Function " + error.code + ": " + error.message);
+                    },
+                    useMasterKey: true
                 });
 
 
