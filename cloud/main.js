@@ -11328,8 +11328,8 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
             response.error(error);
         }, {
 
-            useMasterKey: true,
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
 
         });
 
@@ -11636,13 +11636,13 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
         queryWorksapceFollower.equalTo("workspace", workspace);
         queryWorksapceFollower.limit(10000);
         queryWorksapceFollower.find({
-            useMasterKey: true
+            sessionToken: sessionToken
         }).then((workspacefollowers) => {
 
 
             if (workspacefollowers) {
 
-                /*Parse.Object.destroyAll(workspacefollowers, {sessionToken: sessionToken}).catch(function(error, result) {
+                Parse.Object.destroyAll(workspacefollowers, {sessionToken: sessionToken}).catch(function(error, result) {
 
                     if (error) {
 
@@ -11656,9 +11656,9 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
                         return callback(null, result);
                     }
-                });*/
+                });
 
-                Parse.Object.destroyAll(workspacefollowers, {
+                /*Parse.Object.destroyAll(workspacefollowers, {
                     success: function() {
                         console.log('Did successfully delete posts in afterDeleteChannel Cloud Function');
                     },
@@ -11666,7 +11666,7 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
                         console.error("Error delete posts in afterDeleteChannel Cloud Function " + error.code + ": " + error.message);
                     },
                     useMasterKey: true
-                });
+                });*/
 
 
             } else {
@@ -11685,7 +11685,7 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
             response.error(error);
         }, {
 
-            useMasterKey: true
+            sessionToken: sessionToken
         });
 
     }
@@ -11846,7 +11846,7 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 
     workspace.fetch(workspace.id, {
 
-        useMasterKey: true,
+        //useMasterKey: true,
         sessionToken: sessionToken
 
     }).then((Workspace) => {
@@ -11867,7 +11867,7 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
                 workspace.increment("memberCount", -1);
                 workspace.save(null, {
 
-                    useMasterKey: true,
+                    //useMasterKey: true,
                     sessionToken: sessionToken
 
                 });
@@ -11879,7 +11879,7 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
                 workspace.increment("followerCount", -1);
                 workspace.save(null, {
 
-                    useMasterKey: true,
+                    //useMasterKey: true,
                     sessionToken: sessionToken
 
                 });
@@ -11900,7 +11900,7 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
                 workspace.increment("memberCount", -1);
                 workspace.save(null, {
 
-                    useMasterKey: true,
+                    //useMasterKey: true,
                     sessionToken: sessionToken
 
                 });
@@ -11925,7 +11925,7 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
         // error is a Parse.Error with an error code and message.
         response.error(error);
     }, {
-        useMasterKey: true,
+        //useMasterKey: true,
         sessionToken: sessionToken
 
     });
