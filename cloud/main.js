@@ -3808,9 +3808,9 @@ Parse.Cloud.beforeSave('Skill', function(req, response) {
 // Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
 Parse.Cloud.beforeSave('Post', function(req, response) {
 
-    var NS_PER_SEC = 1e9;
+    const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
-    var time = process.hrtime();
+    let time = process.hrtime();
 
     var post = req.object;
     var text = post.get("text");
@@ -4060,16 +4060,6 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
     }
 
-    // todo function get qna for question posts
-
-    function getQnA (callback) {}
-
-    // todo function get messages for posts
-
-    function getMessages (callback) {}
-
-
-
 
     // Function to identify if a text post hasURL
     function getURL (callback) {
@@ -4250,7 +4240,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
         //console.log("final post: " + JSON.stringify(post));
 
-        var beforeSave_Time = process.hrtime(time);
+        let beforeSave_Time = process.hrtime(time);
         console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
         response.success();
@@ -8963,7 +8953,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     });
 
-    var diff = process.hrtime(time);
+    let diff = process.hrtime(time);
     console.log(`PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
     response.success();
 
@@ -8973,21 +8963,27 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 // Add and Update AlgoliaSearch post object if it's deleted from Parse
 Parse.Cloud.afterSave('Post', function(request, response) {
 
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
     // Convert Parse.Object to JSON
-    var objectToSave = request.object.toJSON();
+    let post = request.object;
+    let postToSave = post.toJSON();
 
     //var Post = Parse.Object.extend("Post");
-    var queryPost = new Parse.Query("Post");
+    let POST = new Parse.Object.extend("Post");
+    let queryPost = new Parse.Query(POST);
     queryPost.include( ["user", "workspace", "channel"] );
-    queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
-    queryPost.equalTo("objectId", objectToSave.objectId);
+    //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
+    queryPost.equalTo("objectId", post.id);
 
     //console.log("Request: " + JSON.stringify(request));
     //console.log("objectID: " + objectToSave.objectId);
     //console.log("objectID: " + objectToSave.user.objectId);
 
     queryPost.first({
-        success: function(post) {
+        success: function(Post) {
 
             function prepIndex (callback) {
 
@@ -8995,14 +8991,19 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 //console.log("ObjectToSave: " + JSON.stringify(post));
 
                 // Convert Parse.Object to JSON
-                post = post.toJSON();
+                Post = Post.toJSON();
 
                 // Specify Algolia's objectID with the Parse.Object unique ID
-                post.objectID = post.objectId;
+                Post.objectID = Post.objectId;
+
+                // set _tags depending on the post ACL
+
+                let postACL = Post.getACL();
+                console.log("postACL: " + JSON.stringify(postACL));
 
                 return callback(null, post);
 
-            };
+            }
 
 
             function addObjectAlgolia (post, callback) {
@@ -9019,7 +9020,15 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 });
 
-            };
+            }
+
+            // todo function get qna for question posts
+
+            function getQnA (callback) {}
+
+            // todo function get messages for posts
+
+            function getMessages (callback) {}
 
             async.waterfall([
                 async.apply(prepIndex),
@@ -9031,6 +9040,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 }
 
                 //console.log("final meeting: " + JSON.stringify(post));
+                let diff = process.hrtime(time);
+                console.log(`afterSave Post took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
                 response.success();
             });
 
