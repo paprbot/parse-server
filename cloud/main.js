@@ -11557,97 +11557,146 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
     let workspace = new WORKSPACE();
     workspace.id = request.object.id;
 
-    console.log("request afterDelete WorkSpace: " + JSON.stringify(request));
+    let workspaceObject = request.object;
+    //console.log("workspace: " + JSON.stringify(workspace));
+
+    //console.log("request afterDelete WorkSpace: " + JSON.stringify(request));
 
     let USER = Parse.Object.extend("_User");
     let owner = new USER();
-    owner.id = workspace.get("user");
+    owner.id = workspaceObject.get("user").id;
 
-    var sessionToken;
-
-    owner.fetch(owner.id, {
-        useMasterKey: true
-    }).then((user) => {
-
-        if (!request.user) {
-
-            if (request.master === true) {
-
-                //sessionToken = owner.fetch(owner.id, {userMasterKey:true})
+    //console.log("owner: " + JSON.stringify(owner));
 
 
+    if (!request.user) {
 
-                        sessionToken = user.getSessionToken();
-                        console.log("sessionToken no user sessionToken-1: " + JSON.stringify(sessionToken));
+        if (request.master === true) {
 
-                        //use that token
+            //sessionToken = owner.fetch(owner.id, {userMasterKey:true})
+
+            sessionToken = owner.getSessionToken();
+            console.log("sessionToken no user sessionToken-1: " + JSON.stringify(sessionToken));
+
+            //use that token
 
 
-                console.log("sessionToken no user sessionToken: " + JSON.stringify(sessionToken));
-            }
-            else {
-
-                response.error("afterDelete WorkSpace masterKey or Session token is required");
-
-            }
+            console.log("sessionToken no user sessionToken: " + JSON.stringify(sessionToken));
         }
-        else if (request.user) {
+        else {
 
-            if (request.user.getSessionToken()) {
+            response.error("afterDelete WorkSpace masterKey or Session token is required");
 
-                sessionToken = request.user.getSessionToken();
-
-
-            }
-            else {
-
-                response.error("afterDelete WorkSpace user does not have a valid sessionToken");
-
-
-            }
         }
-        
+    }
+    else if (request.user) {
 
-        function deleteWorkspaceFollowers (callback) {
+        if (request.user.getSessionToken()) {
 
-            let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-
-            let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
-            queryWorksapceFollower.equalTo("workspace", workspace);
-            queryWorksapceFollower.limit(10000);
-            queryWorksapceFollower.find({
-                useMasterKey: true
-            }).then((workspacefollowers) => {
+            sessionToken = request.user.getSessionToken();
 
 
-                if (workspacefollowers) {
+        }
+        else {
 
-                    Parse.Object.destroyAll(workspacefollowers, {sessionToken: sessionToken}).catch(function(error, result) {
-
-                        if (error) {
-
-                            console.error("Error deleteWorkspaceFollowers " + error.code + ": " + error.message);
-                            return callback(error);
+            response.error("afterDelete WorkSpace user does not have a valid sessionToken");
 
 
-                        }
-
-                        if (result) {
-
-                            return callback(null, result);
-                        }
-                    });
+        }
+    }
 
 
-                } else {
+    function deleteWorkspaceFollowers (callback) {
 
-                    workspacefollowers = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, workspacefollowers);
+        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
 
-                }
+        let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+        queryWorksapceFollower.equalTo("workspace", workspace);
+        queryWorksapceFollower.limit(10000);
+        queryWorksapceFollower.find({
+            useMasterKey: true
+        }).then((workspacefollowers) => {
 
 
+            if (workspacefollowers) {
+
+                Parse.Object.destroyAll(workspacefollowers, {sessionToken: sessionToken}).catch(function(error, result) {
+
+                    if (error) {
+
+                        console.error("Error deleteWorkspaceFollowers " + error.code + ": " + error.message);
+                        return callback(error);
+
+
+                    }
+
+                    if (result) {
+
+                        return callback(null, result);
+                    }
+                });
+
+
+            } else {
+
+                workspacefollowers = [];
+                // no workspaceFollowers to delete return
+                return callback(null, workspacefollowers);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+        });
+
+    }
+
+    function deleteChannels (callback) {
+
+        let CHANNEL = Parse.Object.extend("Channel");
+
+        let queryChannel = new Parse.Query(CHANNEL);
+        queryChannel.equalTo("workspace", workspace);
+        queryChannel.limit(1000);
+        queryChannel.find({
+
+            sessionToken: sessionToken
+        }).then((channels) => {
+
+
+            if (channels) {
+
+                Parse.Object.destroyAll(channels, {sessionToken: sessionToken}).catch(function(error, result) {
+
+                    if (error) {
+
+                        console.error("Error deleteChannels " + error.code + ": " + error.message);
+                        return callback(error);
+
+
+                    }
+
+                    if (result) {
+
+                        return callback(null, result);
+                    }
+                });
+
+
+            } else {
+
+                channels = [];
+                // no workspaceFollowers to delete return
+                return callback(null, channels);
+
+            }
 
             }, (error) => {
                 // The object was not retrieved successfully.
@@ -11655,118 +11704,59 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
                 response.error(error);
             }, {
 
-                useMasterKey: true
-            });
-
-        }
-
-        function deleteChannels (callback) {
-
-            let CHANNEL = Parse.Object.extend("Channel");
-
-            let queryChannel = new Parse.Query(CHANNEL);
-            queryChannel.equalTo("workspace", workspace);
-            queryChannel.limit(1000);
-            queryChannel.find({
 
                 sessionToken: sessionToken
-            }).then((channels) => {
-
-
-                if (channels) {
-
-                    Parse.Object.destroyAll(channels, {sessionToken: sessionToken}).catch(function(error, result) {
-
-                        if (error) {
-
-                            console.error("Error deleteChannels " + error.code + ": " + error.message);
-                            return callback(error);
-
-
-                        }
-
-                        if (result) {
-
-                            return callback(null, result);
-                        }
-                    });
-
-
-                } else {
-
-                    channels = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, channels);
-
-                }
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    response.error(error);
-                }, {
-
-
-                    sessionToken: sessionToken
-
-            });
-
-
-
-        }
-
-        function deleteWorkspaceAlgolia (callback) {
-
-            // Remove the object from Algolia
-            indexWorkspaces.deleteObject(workspace.id, function(err, content) {
-                if (err) {
-                    response.error(err);
-                }
-
-                if (content) {
-
-                    console.log('Parse<>Algolia WorkSpace object deleted');
-
-                    return callback (null, content);
-
-                }
-
-
-            });
-
-
-        }
-
-
-        async.parallel([
-            async.apply(deleteWorkspaceAlgolia),
-            async.apply(deleteChannels),
-            async.apply(deleteWorkspaceFollowers)
-
-        ], function (err, results) {
-            if (err) {
-                return response.error(err);
-            }
-
-            if (results) {
-
-
-                let finalTime = process.hrtime(time);
-                console.log(`finalTime took afterDelete WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                response.success();
-
-
-            }
 
         });
 
-    }, (error) => {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
-        response.error(error);
-    }, {
-        useMasterKey: true
+
+
+    }
+
+    function deleteWorkspaceAlgolia (callback) {
+
+        // Remove the object from Algolia
+        indexWorkspaces.deleteObject(workspace.id, function(err, content) {
+            if (err) {
+                response.error(err);
+            }
+
+            if (content) {
+
+                console.log('Parse<>Algolia WorkSpace object deleted');
+
+                return callback (null, content);
+
+            }
+
+
+        });
+
+
+    }
+
+
+    async.parallel([
+        async.apply(deleteWorkspaceAlgolia),
+        async.apply(deleteChannels),
+        async.apply(deleteWorkspaceFollowers)
+
+    ], function (err, results) {
+        if (err) {
+            return response.error(err);
+        }
+
+        if (results) {
+
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took afterDelete WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();
+
+
+        }
+
     });
 
 
