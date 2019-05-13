@@ -2652,10 +2652,10 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         }).then((User) => {
                             // The object was retrieved successfully.
 
-                            console.log("user object: " + JSON.stringify(User));
+                            //console.log("user object: " + JSON.stringify(User));
                             let userRoleRelation = User.relation("roles");
                             //let expertChannelRelation = channelObject.relation("experts");
-                            console.log("userRole: " + JSON.stringify(userRoleRelation));
+                            //console.log("userRole: " + JSON.stringify(userRoleRelation));
                             //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
 
                             let expertRoleName = "expert-" + workspace.id;
@@ -2673,10 +2673,11 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 if (results) {
 
                                     // expert role exists, add as channel expert
-                                    //console.log("channelExpert: " + JSON.stringify(results));
+                                    console.log("channelExpert: " + JSON.stringify(results));
 
 
                                     let expertOwner = simplifyUser(User);
+                                    console.log("expertOnwer: " + JSON.stringify(expertOwner));
 
 
                                     channel.addUnique("expertsArray", expertOwner);
@@ -9497,7 +9498,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 
             }).then((channel) => {
                 // The object was retrieved successfully.
-                //console.log("Result from get channel" + JSON.stringify(channel));
+                console.log("Result from get channel" + JSON.stringify(channel));
 
                 let WORKSPACE = Parse.Object.extend("WorkSpace");
                 let workspace = new WORKSPACE();
@@ -9548,7 +9549,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                         channelFollow.set("isMember", true);
                         channelFollow.set("isFollower", true);
 
-                        //console.log("channelFollow: " + JSON.stringify(channelFollow));
+                        console.log("channelFollow: " + JSON.stringify(channelFollow));
 
                         channelFollow.save(null, {
 
@@ -9613,14 +9614,14 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                     if (err) {
 
                         let finalTime = process.hrtime(time);
-                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                        console.log(`finalTime took  afterSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                         response.error(err);
                     }
 
-                    //console.log("results length: " + JSON.stringify(results));
+                    console.log("results length: " + JSON.stringify(results));
 
                     let finalTime = process.hrtime(time);
-                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    console.log(`finalTime took afterSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                     response.success(results);
 
 
@@ -9629,7 +9630,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
             }, (error) => {
                 // The object was not retrieved successfully.
                 // error is a Parse.Error with an error code and message.
-                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                console.log(`finalTime took  afterSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                 response.error(error);
             }, {
 
