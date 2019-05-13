@@ -9355,6 +9355,10 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
     let user = new USER();
     user.id = workspace_follow.get("user").id;
 
+    let WORKSPACEFOLLOW = Parse.Object.extend("workspace_follower");
+    let workspace_follower = new WORKSPACEFOLLOW();
+    workspace_follower.id = workspace_follow.id;
+
 
     console.log("afterSave workspace_follower: " + JSON.stringify(workspace_follow));
 
@@ -9377,56 +9381,27 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
 
                 if (workspace_follow.get("isNew") === true && workspace_follow.toJSON().isSelected === true) {
 
-                    // add selected ChannelFollow as pointer to workspace_follower
-                    let queryWorkspaceFollow = new Parse.Query("workspace_follower");
+                    console.log("workspaceFollow aftersave user: " + JSON.stringify(user));
 
-                    queryWorkspaceFollow.get(workspace_follow.id, {
+                    user.set("isSelectedWorkspaceFollower", workspace_follower);
+                    user.save(null, {
 
-                        //useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                            //useMasterKey: true,
+                            sessionToken: request.user.getSessionToken()
 
-                    }).then((workspaceFollow) => {
-                        // The object was retrieved successfully.
+                        }
 
-                        let WORKSPACEFOLLOW = Parse.Object.extend("workspace_follower");
-                        let workspace_follower = new WORKSPACEFOLLOW();
-                        workspace_follower.id = workspaceFollow.id;
+                    );
 
-                        console.log("workspaceFollow: " + JSON.stringify(workspaceFollow));
-
-                        user.id = workspaceFollow.get("user").id;
-
-                        console.log("workspaceFollow aftersave user: " + JSON.stringify(user));
-
-
-                        user.set("isSelectedWorkspaceFollower", workspace_follower);
-                        user.save(null, {
-
-                                //useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
-
-                            }
-
-                        );
-
-                        return callback (null, workspaceFollow);
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        //console.log("channelfollowisSelected not found");
-                        response.error(error);
-                    }, {
-
-                        //useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
-
-                    });
+                    return callback (null, workspace_follow);
 
 
 
-                } else {
+
+
+
+                }
+                else {
 
 
 
