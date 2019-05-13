@@ -23,11 +23,11 @@ var fs = require('fs');
 Parse.initialize('671e705a-f735-4ec0-8474-15899a475440', '', 'f24d6630-a35a-4db8-9fc7-6a851042bfd6');
 
 let simplifyUser = require('./simplifyClass/_User/simplifyUser');
-let simplifyPost = require('./simplifyPost/Post/simplifyPost');
-let simplifyPostQnA = require('./simplifyPost/Post/simplifyPostQnA');
-let simplifyPostText = require('./simplifyPost/Post/simplifyPostText');
-let simplifyPostVideo = require('./simplifyPost/Post/simplifyPostVideo');
-let simplifyPostAudio = require('./simplifyPost/Post/simplifyPostAudio');
+let simplifyPost = require('./simplifyClass/Post/simplifyPost');
+let simplifyPostQnA = require('./simplifyClass/Post/simplifyPostQnA');
+let simplifyPostText = require('./simplifyClass/Post/simplifyPostText');
+let simplifyPostVideo = require('./simplifyClass/Post/simplifyPostVideo');
+let simplifyPostAudio = require('./simplifyClass/Post/simplifyPostAudio');
 
 
 
@@ -6394,7 +6394,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                 // check to make sure that the workspace_follower for a user - workspace is unique
                 queryChannelFollow.first({
 
-                    //useMasterKey: true,
+                    useMasterKey: true,
                     sessionToken: req.user.getSessionToken()
 
                 }).then((results) => {
@@ -6445,72 +6445,89 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                             function addExpertsArrayToChannel (callback) {
 
-                                //var userRole = user.get("roles");
-                                user.fetch(user.id, {
+                                if (channelObject.get("name") === 'general') {
 
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
+                                    return callback (null, channelObject);
+                                } else if (channelObject.get("name") !== 'general') {
 
-                                }).then((User) => {
-                                    // The object was retrieved successfully.
-
-                                    console.log("user object: " + JSON.stringify(User));
-                                    let userRoleRelation = User.relation("roles");
-                                    let expertChannelRelation = channelObject.relation("experts");
-                                    console.log("userRole: " + JSON.stringify(userRoleRelation));
-                                    console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
-
-
-                                    let expertRoleName = "expert-" + workspace.id;
-
-                                    let userRoleRelationQuery = userRoleRelation.query();
-                                    userRoleRelationQuery.equalTo("name", expertRoleName);
-                                    userRoleRelationQuery.first({
+                                    //var userRole = user.get("roles");
+                                    user.fetch(user.id, {
 
                                         useMasterKey: true,
                                         sessionToken: req.user.getSessionToken()
 
-                                    }).then((results) => {
+                                    }).then((User) => {
                                         // The object was retrieved successfully.
 
-                                        if (results) {
-
-                                            // expert role exists, add as channel expert
-                                            //console.log("channelExpert: " + JSON.stringify(results));
-
-
-                                            let expertOwner = simplifyUser(User);
+                                        console.log("user object: " + JSON.stringify(User));
+                                        let userRoleRelation = User.relation("roles");
+                                        //let expertChannelRelation = channelObject.relation("experts");
+                                        console.log("userRole: " + JSON.stringify(userRoleRelation));
+                                        //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
 
 
-                                            channelObject.addUnique("expertsArray", expertOwner);
-                                            expertChannelRelation.add(user);
+                                        let expertRoleName = "expert-" + workspace.id;
 
-                                            /*channelObject.save(null, {
+                                        let userRoleRelationQuery = userRoleRelation.query();
+                                        userRoleRelationQuery.equalTo("name", expertRoleName);
+                                        userRoleRelationQuery.first({
 
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
 
-                                                }
-                                            );*/
+                                        }).then((results) => {
+                                            // The object was retrieved successfully.
 
-                                            //expertChannelRelation.add(user);
+                                            if (results) {
 
-                                            console.log("addExpertsArrayToChannel channel: " + JSON.stringify(channelObject));
-
-
-                                            return callback (null, channelObject);
-
+                                                // expert role exists, add as channel expert
+                                                //console.log("channelExpert: " + JSON.stringify(results));
 
 
-                                        }
-                                        else {
-                                            // no role exists don't add experts to channel
+                                                let expertOwner = simplifyUser(User);
 
+
+                                                channelObject.addUnique("expertsArray", expertOwner);
+                                                expertChannelRelation.add(user);
+
+                                                /*channelObject.save(null, {
+
+                                                 //useMasterKey: true,
+                                                 sessionToken: req.user.getSessionToken()
+
+                                                 }
+                                                 );*/
+
+                                                //expertChannelRelation.add(user);
+
+                                                console.log("addExpertsArrayToChannel channel in beforeSave ChannelFollow: " + JSON.stringify(channelObject));
+
+
+                                                return callback (null, channelObject);
+
+
+
+                                            }
+                                            else {
+                                                // no role exists don't add experts to channel
+
+                                                console.log("userRoleRelationQuery no result");
+
+
+                                                return callback (null, channel);
+                                            }
+                                        }, (error) => {
+                                            // The object was not retrieved successfully.
+                                            // error is a Parse.Error with an error code and message.
                                             console.log("userRoleRelationQuery no result");
+                                            return callback (error);
+                                        }, {
 
+                                            useMasterKey: true,
+                                            sessionToken: req.user.getSessionToken()
 
-                                            return callback (null, channel);
-                                        }
+                                        });
+
                                     }, (error) => {
                                         // The object was not retrieved successfully.
                                         // error is a Parse.Error with an error code and message.
@@ -6523,17 +6540,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                     });
 
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("userRoleRelationQuery no result");
-                                    return callback (error);
-                                }, {
 
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
+                                }
 
 
                             }
@@ -6549,7 +6557,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 queryChannelFollowIsSelected.first({
 
-                                    //useMasterKey: true,
+                                    useMasterKey: true,
                                     sessionToken: req.user.getSessionToken()
 
                                 }).then((ChannelFollowIsSelected) => {
@@ -7226,7 +7234,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     response.error(error);
                                 }, {
 
-                                    //useMasterKey: true,
+                                    useMasterKey: true,
                                     sessionToken: req.user.getSessionToken()
 
                                 });
