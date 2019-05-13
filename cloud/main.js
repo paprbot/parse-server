@@ -7242,53 +7242,60 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     response.error(err);
                                 }
 
-                                 let FinalChannelToSave = Parse.Object.extend("Channel");
-                                 let finalChannelToSave = new FinalChannelToSave();
-                                 finalChannelToSave.id = channel.id;
+                                if (channelObject.get("name") !== 'general') {
 
-                                 let FIRSTCHANNELRESULT = Parse.Object.extend("Channel");
-                                 let firstChannelResult = new Parse.Object(FIRSTCHANNELRESULT);
-                                 firstChannelResult = results[0];
+                                    let FinalChannelToSave = Parse.Object.extend("Channel");
+                                    let finalChannelToSave = new FinalChannelToSave();
+                                    finalChannelToSave.id = channel.id;
 
-                                 let SecondChannelResult = Parse.Object.extend("Channel");
-                                 let secondChannelResult = new SecondChannelResult();
-                                 secondChannelResult = results[1];
+                                    let FIRSTCHANNELRESULT = Parse.Object.extend("Channel");
+                                    let firstChannelResult = new Parse.Object(FIRSTCHANNELRESULT);
+                                    firstChannelResult = results[0];
 
-                                 console.log("firstChannelResult: " + JSON.stringify(firstChannelResult));
-                                 console.log("secondChannelResult: " + JSON.stringify(secondChannelResult));
+                                    let SecondChannelResult = Parse.Object.extend("Channel");
+                                    let secondChannelResult = new SecondChannelResult();
+                                    secondChannelResult = results[1];
 
-                                 if (firstChannelResult) {
+                                    console.log("firstChannelResult: " + JSON.stringify(firstChannelResult));
+                                    console.log("secondChannelResult: " + JSON.stringify(secondChannelResult));
 
-                                     if (firstChannelResult.get("expertsArray")) {
+                                    if (firstChannelResult) {
 
-                                         finalChannelToSave.set("expertsArray", firstChannelResult.get("expertsArray"));
-                                         console.log("expertsArray: " + JSON.stringify(firstChannelResult.get("expertsArray")));
+                                        if (firstChannelResult.get("expertsArray")) {
 
-                                     }
-                                 }
+                                            finalChannelToSave.set("expertsArray", firstChannelResult.get("expertsArray"));
+                                            console.log("expertsArray: " + JSON.stringify(firstChannelResult.get("expertsArray")));
 
-                                 if (secondChannelResult) {
+                                        }
+                                    }
 
-                                     if (secondChannelResult.get("followerCount")) {
-                                         finalChannelToSave.set("followerCount", secondChannelResult.get("followerCount"));
-                                     }
-                                     if (secondChannelResult.get("memberCount")) {
+                                    if (secondChannelResult) {
 
-                                     finalChannelToSave.set("memberCount", secondChannelResult.get("memberCount"));
+                                        if (secondChannelResult.get("followerCount")) {
+                                            finalChannelToSave.set("followerCount", secondChannelResult.get("followerCount"));
+                                        }
+                                        if (secondChannelResult.get("memberCount")) {
 
+                                            finalChannelToSave.set("memberCount", secondChannelResult.get("memberCount"));
+
+
+                                        }
 
                                     }
 
-                                 }
+                                    console.log("Channel async.Parallels: " + JSON.stringify(finalChannelToSave));
 
-                                 console.log("Channel async.Parallels: " + JSON.stringify(finalChannelToSave));
+                                    finalChannelToSave.save(null, {
 
-                                 finalChannelToSave.save(null, {
+                                        //useMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
 
-                                 //useMasterKey: true,
-                                 sessionToken: req.user.getSessionToken()
+                                    });
 
-                                 });
+
+
+                                }
+
 
 
                                 let beforeSave_Time = process.hrtime(time);
