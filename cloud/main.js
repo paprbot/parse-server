@@ -4340,6 +4340,12 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 if (!workspace_follower.get("isUnRead")) {
                     workspace_follower.set("isUnRead", false);
                 }
+                if (!workspace_follower.get("notificationCount")) {
+                    workspace_follower.set("notificationCount", 0);
+                }
+                if (!workspace_follower.get("isNewWorkspace")) {
+                    workspace_follower.set("isNewWorkspace", false);
+                }
 
 
                 queryWorkspaceFollower.equalTo("name", workspaceFollowerName);
@@ -6489,7 +6495,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
 
                                                 channelObject.addUnique("expertsArray", expertOwner);
-                                                expertChannelRelation.add(user);
+                                                //expertChannelRelation.add(user);
 
                                                 /*channelObject.save(null, {
 
@@ -7162,9 +7168,10 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                                         sessionToken: req.user.getSessionToken()
                                                     }
                                                 );
+                                                console.log("channelFollowIsSelectedSave: " + JSON.stringify(channelFollowIsSelectedSave));
+
 
                                             }
-                                            console.log("channelFollowIsSelectedSave: " + JSON.stringify(channelFollowIsSelectedSave));
                                             return callback (null, channel);
 
                                         }
@@ -7311,7 +7318,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 console.log(`beforeSave_Time ChannelFollow took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
                                 response.success();
-                                //return callback (null, resultsToMap);
 
                             });
 
@@ -9181,8 +9187,14 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
     // Convert Parse.Object to JSON
     let channelfollow = request.object;
 
-    let user = channelfollow.get("user");
-    let workspace = channelfollow.get("workspace");
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+    user.id = channelfollow.get("user").id;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = channelfollow.get("workspace").id;
+
 
     console.log("afterSave ChannelFollow: " + JSON.stringify(channelfollow));
 
@@ -9212,7 +9224,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                     queryWorkspaceFollow.first({
 
-                        useMasterKey: true,
+                        //useMasterKey: true,
                         sessionToken: request.user.getSessionToken()
 
                     }).then((workspaceFollow) => {
@@ -9240,7 +9252,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                         response.error(error);
                     }, {
 
-                        useMasterKey: true,
+                        //useMasterKey: true,
                         sessionToken: request.user.getSessionToken()
 
                     });
@@ -9254,7 +9266,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                     queryWorkspaceFollow.first({
 
-                        useMasterKey: true,
+                        //useMasterKey: true,
                         sessionToken: request.user.getSessionToken()
 
                     }).then((workspaceFollow) => {
@@ -9280,7 +9292,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                         response.error(error);
                     }, {
 
-                        useMasterKey: true,
+                        //useMasterKey: true,
                         sessionToken: request.user.getSessionToken()
 
                     });
@@ -9306,15 +9318,15 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
             ], function (err, results) {
                 if (err) {
 
-                    var finalTime = process.hrtime(time);
-                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took afterSave ChannelFollow ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                     response.error(err);
                 }
 
                 //console.log("results length: " + JSON.stringify(results));
 
-                var finalTime = process.hrtime(time);
-                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took afterSave ChannelFollow${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                 response.success(results);
 
 
@@ -9348,13 +9360,13 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
 
     if (!request.user) {
 
-        response.error("afterSave ChannelFollow Session token: X-Parse-Session-Token is required");
+        response.error("afterSave workspace_follower Session token: X-Parse-Session-Token is required");
 
     } else if (request.user) {
 
         if (!request.user.getSessionToken()) {
 
-            response.error("afterSave ChannelFollow Session token: X-Parse-Session-Token is required");
+            response.error("afterSave workspace_follower Session token: X-Parse-Session-Token is required");
 
         } else {
 
@@ -9435,14 +9447,14 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
                 if (err) {
 
                     let finalTime = process.hrtime(time);
-                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    console.log(`finalTime took afterSave workspace_follower ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                     response.error(err);
                 }
 
                 //console.log("results length: " + JSON.stringify(results));
 
                 let finalTime = process.hrtime(time);
-                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                console.log(`finalTime took afterSave workspace_follower ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                 response.success();
 
 
@@ -9467,7 +9479,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     // Convert Parse.Object to JSON
     let Channel = request.object;
 
-    //console.log("afterSaveChannel req.user: " + JSON.stringify(request.user));
+    console.log("afterSaveChannel req.user: " + JSON.stringify(request.user));
 
     if (!request.user) {
 
@@ -9489,7 +9501,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 
             //console.log("Request: " + JSON.stringify(request));
             //console.log("objectID: " + objectToSave.objectId);
-            //console.log("objectID: " + objectToSave.user.objectId);
+            console.log("Channel.id: " + JSON.stringify(Channel.id));
 
             queryChannel.get(Channel.id, {
 
