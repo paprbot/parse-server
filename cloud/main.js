@@ -729,6 +729,267 @@ Parse.Cloud.define("addSkills", function(request, response) {
 
 });
 
+// cloud API and function to add one or multiple skills to skills table.
+Parse.Cloud.define("createWorkspace", function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+
+    let workspaceToSave = new WORKSPACE();
+    workspaceToSave = request.params;
+
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+    user.id = workspaceToSave.get("user").id;
+
+    var sessionToken;
+
+    if (!request.user) {
+
+        if (request.master === true) {
+
+            sessionToken = user.getSessionToken();
+            console.log("sessionToken: " + JSON.stringify(sessionToken));
+        } else {
+
+            response.error("afterDelete WorkSpace masterKey or Session token is required");
+
+        }
+    } else if (request.user) {
+
+        if (request.user.getSessionToken()) {
+
+            sessionToken = request.user.getSessionToken();
+
+
+        } else {
+
+            response.error("afterDelete WorkSpace user does not have a valid sessionToken");
+
+
+        }
+    }
+
+    // set required fields
+    if (!workspaceToSave.toJSON().image) {
+
+        return response.error("Please attach a picture for your workspace its required.");
+
+    }
+    if (!workspaceToSave.toJSON().name) {
+
+        return response.error("Please enter a workspace name it's a required field.");
+
+    }
+    if (!workspaceToSave.toJSON().url) {
+
+        return response.error("Please enter a workspace url it's a required field.");
+
+    }
+
+
+    function createWorkspace (callback) {
+
+        let expertsArray = [];
+
+        if (workspaceToSave.toJSON().archive) {workspace.set("archive", workspaceToSave.toJSON().archive);}
+        if (workspaceToSave.toJSON().user) {workspace.set("user", workspaceToSave.toJSON().user); workspace.set("expertsArray", expertsArray.push(workspaceToSave.toJSON().user))}
+        if (workspaceToSave.toJSON().workspace_name) {workspace.set("workspace_name", workspaceToSave.toJSON().workspace_name);}
+        if (workspaceToSave.toJSON().workspace_url) {workspace.set("workspace_url", workspaceToSave.toJSON().workspace_url);}
+        if (workspaceToSave.toJSON().mission) {workspace.set("mission", workspaceToSave.toJSON().mission);}
+        if (workspaceToSave.toJSON().description) {workspace.set("description", workspaceToSave.toJSON().description);}
+        if (workspaceToSave.toJSON().type) {workspace.set("type", workspaceToSave.toJSON().type);}
+        if (workspaceToSave.toJSON().name) {workspace.set("name", workspaceToSave.toJSON().name);}
+        if (workspaceToSave.toJSON().skills) {workspace.set("skills", workspaceToSave.toJSON().skills);}
+
+
+        workspaceToSave.save(null, {
+
+            //useMasterKey: true,
+            sessionToken: sessionToken
+
+        }).then((workspaceResult) => {
+
+            // save was successful
+            if(workspaceResult) {
+
+                console.log("result leaveWorkspace query: " + JSON.stringify(workspaceResult));
+
+                return callback (null, workspaceResult);
+
+
+            } else {
+
+                console.log("no result from createWorkspace cloud function " + JSON.stringify(workspaceResult));
+
+
+                return callback (null, workspaceResult);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            //useMasterKey: true,
+            sessionToken: sessionToken
+
+        });
+
+
+
+    }
+
+    function createOwnerWorkspaceFollower (callback, workspaceResult) {
+
+        if (workspaceResult) {
+
+            console.log("createWorkspace Result: " + JSON.stringify(workspaceResult));
+
+            workspace.id = workspaceResult.id;
+
+
+            if (workspaceResult.get("isNew") === true) {
+
+                let viewableBy = [];
+                let followersArray = [];
+
+                let workspaceFollower = new Parse.Object("workspace_follower");
+
+                //console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(workspace));
+
+                workspaceFollower.set("archive", false);
+                workspaceFollower.set("user", user);
+                workspaceFollower.set("workspace", workspace);
+                workspaceFollower.set("notificationCount", 0);
+                workspaceFollower.set("isSelected", true);
+                workspaceFollower.set("isNewWorkspace", true);
+                workspaceFollower.set("isMember", true);
+                workspaceFollower.set("isFollower", true);
+                workspaceFollower.set("isMemberRequestedByWorkspaceAdmin", false);
+                workspaceFollower.set("isMemberRequestedByUser", false);
+
+                console.log("createOwnerWorkspaceFollower workspaceFollower: " + JSON.stringify(workspaceFollower));
+
+                workspaceFollower.save(null, {
+
+                    //useMasterKey: true,
+                    sessionToken: request.user.getSessionToken()
+
+                }).then((result) => {
+
+                    // save was successful
+
+                    //console.log("workspace new workspace: " + JSON.stringify(result));
+
+                    workspaceFollower = result;
+
+                    console.log("createOwnerWorkspaceFollower workspace new workspace to save: " + JSON.stringify(workspaceFollower));
+
+
+                    workspaceToSave.objectID = workspaceToSave.objectId;
+                    followersArray.push(workspaceFollower);
+                    workspaceToSave['followers'] = followersArray;
+
+                    console.log("createOwnerWorkspaceFollower workspaceToSave with followers: " + JSON.stringify(workspaceToSave));
+
+
+                    // add _tags for this workspacefollower so it's visible in algolia
+
+                    if (workspaceToSave.get("type") === 'private') {
+                        viewableBy.push(workspaceFollower.toJSON().user.objectId);
+                        //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
+                    }
+
+
+                    if (workspaceToSave.get("type") === 'private') {
+
+                        workspaceToSave._tags= viewableBy;
+                        //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
+
+                    } else if (workspaceToSave.get("type")=== 'public') {
+
+                        workspaceToSave._tags = ['*'];
+
+                    }
+
+
+
+                    return callback(null, workspaceToSave);
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback(error);
+                }, {
+
+                    //useMasterKey: true,
+                    sessionToken: sessionToken
+
+                });
+
+
+            } else {
+
+                return callback (null);
+            }
+
+
+        } else {
+
+
+            return callback (null);
+        }
+
+
+
+    }
+
+
+
+    async.waterfall([
+        async.apply(createWorkspace),
+        async.apply(createOwnerWorkspaceFollower)
+
+    ], function (err, results) {
+        if (err) {
+            response.error(err);
+        }
+
+        if (results) {
+
+            workspaceToSave = results[1];
+
+            indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
+                if (err) return response.error(err);
+
+                console.log("Parse<>Algolia workspace saved from AfterSave Workspace function ");
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took createWorkspace Cloud Function ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                return response.success(results);
+
+            });
+
+
+        }
+
+
+    });
+
+
+});
+
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
 Parse.Cloud.define("QueryLeftNavigationStartup", function(request, response) {
 
