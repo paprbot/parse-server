@@ -2299,6 +2299,176 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
         }
 
 
+        function archiveWorkspaceFollowers (callback) {
+
+            let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+
+            let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+            queryWorksapceFollower.equalTo("workspace", workspace);
+            queryWorksapceFollower.limit(10000);
+            queryWorksapceFollower.find({
+                sessionToken: req.user.getSessionToken()
+            }).then((workspacefollowers) => {
+
+
+                if (workspacefollowers) {
+
+                    async.map(workspacefollowers, function (object, cb) {
+
+                        let workspaceFollower = new WORKSPACEFOLLOWER();
+                        workspaceFollower.id = object.id;
+
+                        workspaceFollower.set("archive", true);
+
+                        object = workspaceFollower;
+
+                        console.log("workspacefollowerobject: " + JSON.stringify(object));
+
+                        return cb (null, object);
+
+                        //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+
+
+                    }, function (err, workspacefollowers) {
+
+                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                        if (err) {response.error(err);} else {
+
+
+
+                            Parse.Object.saveAll(workspacefollowers, {
+
+                                //useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((savedWorkspaceFollowers) => {
+
+                                //console.log("savedWorkspaceFollowers: " + JSON.stringify(savedWorkspaceFollowers));
+
+
+                                return callback (null, savedWorkspaceFollowers);
+
+
+                            });
+
+
+                        }
+
+                    });
+
+
+
+
+
+                } else {
+
+                    workspacefollowers = [];
+                    // no workspaceFollowers to delete return
+                    return callback(null, workspacefollowers);
+
+                }
+
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error(error);
+            }, {
+
+                sessionToken: req.user.getSessionToken()
+            });
+
+        }
+
+        function unarchiveWorkspaceFollowers (callback) {
+
+            let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+
+            let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+            queryWorksapceFollower.equalTo("workspace", workspace);
+            queryWorksapceFollower.limit(10000);
+            queryWorksapceFollower.find({
+                sessionToken: req.user.getSessionToken()
+            }).then((workspacefollowers) => {
+
+
+                if (workspacefollowers) {
+
+                    async.map(workspacefollowers, function (object, cb) {
+
+                        let workspaceFollower = new WORKSPACEFOLLOWER();
+                        workspaceFollower.id = object.id;
+
+                        workspaceFollower.set("archive", false);
+
+                        object = workspaceFollower;
+
+                        console.log("workspacefollowerobject: " + JSON.stringify(object));
+
+                        return cb (null, object);
+
+                        //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+
+
+                    }, function (err, workspacefollowers) {
+
+                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                        if (err) {response.error(err);} else {
+
+
+
+                            Parse.Object.saveAll(workspacefollowers, {
+
+                                //useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((savedWorkspaceFollowers) => {
+
+                                //console.log("savedWorkspaceFollowers: " + JSON.stringify(savedWorkspaceFollowers));
+
+
+                                return callback (null, savedWorkspaceFollowers);
+
+
+
+                            });
+
+
+                        }
+
+                    });
+
+
+
+
+
+                } else {
+
+                    workspacefollowers = [];
+                    // no workspaceFollowers to delete return
+                    return callback(null, workspacefollowers);
+
+                }
+
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error(error);
+            }, {
+
+                sessionToken: req.user.getSessionToken()
+            });
+
+        }
+
+
         if (workspace.isNew()) {
 
 
@@ -2573,10 +2743,92 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                         workspace.set("isDirtyExperts", false);
 
-                        let finalTime = process.hrtime(time);
-                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                        if (workspace.dirty("archive")) {
 
-                        response.success();
+                            queryWorkspace.fetch(workspace.id, {
+
+                                //useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            }).then((Workspace) => {
+                                // The object was retrieved successfully.
+
+                                if (Workspace) {
+
+                                    if (Workspace.get("archive") === false && workspace.get("archive") === true) {
+
+                                        // user wants to archive a workspace then archive it
+
+                                        async.parallel([
+                                            async.apply(archiveWorkspaceFollowers)
+                                        ], function (err, results) {
+                                            if (err) {
+                                                response.error(err);
+                                            }
+
+                                            //console.log("final results: " + JSON.stringify(results));
+
+                                            let beforeSave_Time = process.hrtime(time);
+                                            console.log(`beforeSave_Time beforeSave Workspace Follower took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                                            response.success();
+                                        });
+
+                                    } else if (Workspace.get("archive") === true && workspace.get("archive") === false) {
+
+                                        // user wants to un-archive a workspace then un-archive it
+
+                                        async.parallel([
+                                            async.apply(unarchiveWorkspaceFollowers)
+                                        ], function (err, results) {
+                                            if (err) {
+                                                response.error(err);
+                                            }
+
+                                            //console.log("final results: " + JSON.stringify(results));
+
+                                            let beforeSave_Time = process.hrtime(time);
+                                            console.log(`beforeSave_Time beforeSave Workspace Follower took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                                            response.success();
+                                        });
+
+                                    }
+
+
+                                } else {
+
+                                    response.error("No Workspace Found when user was trying to archive it.")
+
+
+                                }
+
+
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                response.error(error);
+                            }, {
+
+                                //useMasterKey: true,
+                                sessionToken: req.user.getSessionToken()
+
+                            });
+
+
+
+
+                        } else {
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+
+                        }
                     }
 
 
@@ -2771,14 +3023,98 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
 
 
-            } else {
+            }
+            else {
 
                 workspace.set("isDirtyExperts", false);
 
-                let finalTime = process.hrtime(time);
-                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                if (workspace.dirty("archive")) {
 
-                response.success();
+                    queryWorkspace.fetch(workspace.id, {
+
+                        //useMasterKey: true,
+                        sessionToken: req.user.getSessionToken()
+
+                    }).then((Workspace) => {
+                        // The object was retrieved successfully.
+
+                        if (Workspace) {
+
+                            if (Workspace.get("archive") === false && workspace.get("archive") === true) {
+
+                                // user wants to archive a workspace then archive it
+
+                                async.parallel([
+                                    async.apply(archiveWorkspaceFollowers)
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    //console.log("final results: " + JSON.stringify(results));
+
+                                    let beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time beforeSave Workspace Follower took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+                                });
+
+                            } else if (Workspace.get("archive") === true && workspace.get("archive") === false) {
+
+                                // user wants to un-archive a workspace then un-archive it
+
+                                async.parallel([
+                                    async.apply(unarchiveWorkspaceFollowers)
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    //console.log("final results: " + JSON.stringify(results));
+
+                                    let beforeSave_Time = process.hrtime(time);
+                                    console.log(`beforeSave_Time beforeSave Workspace Follower took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+                                });
+
+                            }
+
+
+                        } else {
+
+                            response.error("No Workspace Found when user was trying to archive it.")
+
+
+                        }
+
+
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        //useMasterKey: true,
+                        sessionToken: req.user.getSessionToken()
+
+                    });
+
+
+
+
+                } else {
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                    response.success();
+
+
+                }
+
             }
 
 
@@ -2787,7 +3123,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
 
             let finalTime = process.hrtime(time);
-            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
             response.success();
 
@@ -4804,6 +5140,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                         }
 
+
                         function removeAllPreviousSelectedWorkspaceFollowerJoin (callback) {
 
                             previousQueryWorkspaceFollowerJoin.find( {
@@ -5264,6 +5601,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                     });
 
                 }
+
+
 
                 function getPreviousSelectedWorkspaceFollowerLeave (callback) {
 
@@ -11338,10 +11677,15 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
         }
     }
 
+    let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+    let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
+    previousQueryWorkspaceFollowerLeave.include("workspace");
+    previousQueryWorkspaceFollowerLeave.equalTo("user", user);
+    previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
+    previousQueryWorkspaceFollowerLeave.equalTo("isFollower", true);
+    previousQueryWorkspaceFollowerLeave.descending("updatedAt");
 
     function deleteWorkspaceFollowers (callback) {
-
-        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
 
         let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
         queryWorksapceFollower.equalTo("workspace", workspace);
@@ -11478,11 +11822,60 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
     }
 
+    function selectPreviouslySelectedWorkspace (callback) {
+
+        previousQueryWorkspaceFollowerLeave.first( {
+
+            //useMasterKey: true,
+            sessionToken: req.user.getSessionToken()
+
+        }).then((WorkspaceToSelect) => {
+            // The object was retrieved successfully.
+
+            if (WorkspaceToSelect) {
+
+                let WORKSPACE = Parse.Object.extend("WorkSpace");
+                let WorkspaceToSelectSave = new WORKSPACE();
+                WorkspaceToSelectSave.id = WorkspaceToSelect.id;
+
+                WorkspaceToSelectSave.set("isSelected", true);
+                WorkspaceToSelectSave.save(null, {
+
+                    //useMasterKey: true,
+                    sessionToken: req.user.getSessionToken()
+
+                });
+                // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
+                return callback (null, WorkspaceToSelectSave);
+
+            } else {
+
+                // there was no workspace that was previously selected, return empty
+
+                return callback (null, WorkspaceToSelect);
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            //useMasterKey: true,
+            sessionToken: req.user.getSessionToken()
+
+        });
+
+    }
+
 
     async.parallel([
         async.apply(deleteWorkspaceAlgolia),
         async.apply(deleteChannels),
-        async.apply(deleteWorkspaceFollowers)
+        async.apply(deleteWorkspaceFollowers),
+        async.apply(selectPreviouslySelectedWorkspace)
 
     ], function (err, results) {
         if (err) {
