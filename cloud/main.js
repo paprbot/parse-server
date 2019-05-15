@@ -11264,8 +11264,8 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
         queryChannelFollower.equalTo("channel", channel);
         queryChannelFollower.limit(10000);
         queryChannelFollower.find({
-            useMasterKey: true
-            //sessionToken: sessionToken
+            //useMasterKey: true
+            sessionToken: sessionToken
         }).then((Channel_Followers) => {
 
 
@@ -11292,9 +11292,11 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
                         console.log('Did successfully delete channelFollowers in afterDeleteChannel Cloud Function');
                     },
                     error: function(error) {
-                        console.error("Error deleting related workout stations " + error.code + ": " + error.message);
+                        console.error("Error  deleteChannelFollowers " + error.code + ": " + error.message);
                     },
-                    useMasterKey: true
+                    //useMasterKey: true,
+                    sessionToken: sessionToken
+
                 });
 
 
@@ -11315,8 +11317,8 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
             response.error(error);
         }, {
 
-            useMasterKey: true
-            //sessionToken: sessionToken
+            //useMasterKey: true
+            sessionToken: sessionToken
 
         });
 
@@ -11639,6 +11641,8 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
     owner.id = workspaceObject.get("user").id;
 
     //console.log("owner: " + JSON.stringify(owner));
+
+    var sessionToken;
 
 
     if (!request.user) {
