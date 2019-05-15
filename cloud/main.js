@@ -11680,7 +11680,7 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
     let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
     let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
     previousQueryWorkspaceFollowerLeave.include("workspace");
-    previousQueryWorkspaceFollowerLeave.equalTo("user", user);
+    previousQueryWorkspaceFollowerLeave.equalTo("user", owner);
     previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
     previousQueryWorkspaceFollowerLeave.equalTo("isFollower", true);
     previousQueryWorkspaceFollowerLeave.descending("updatedAt");
@@ -11827,7 +11827,7 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
         previousQueryWorkspaceFollowerLeave.first( {
 
             //useMasterKey: true,
-            sessionToken: req.user.getSessionToken()
+            sessionToken: sessionToken
 
         }).then((WorkspaceToSelect) => {
             // The object was retrieved successfully.
@@ -11839,14 +11839,41 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
                 WorkspaceToSelectSave.id = WorkspaceToSelect.id;
 
                 WorkspaceToSelectSave.set("isSelected", true);
+
                 WorkspaceToSelectSave.save(null, {
 
                     //useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                    sessionToken: sessionToken
+
+                }).then((result) => {
+
+                    // save was successful
+                    if(result) {
+
+                        // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
+                        return callback (null, result);
+
+
+
+
+                    } else {
+
+                        return callback (null, result);
+
+                    }
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback (error);
+                }, {
+
+                    //useMasterKey: true,
+                    sessionToken: sessionToken
 
                 });
-                // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
-                return callback (null, WorkspaceToSelectSave);
 
             } else {
 
@@ -11864,7 +11891,7 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
         }, {
 
             //useMasterKey: true,
-            sessionToken: req.user.getSessionToken()
+            sessionToken: sessionToken
 
         });
 
