@@ -4874,6 +4874,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
     let time = process.hrtime();
 
     let workspace_follower = req.object;
+    console.log("req beforeSave Workspace_follower: " + JSON.stringify(req));
 
     let currentUser = req.user;
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
@@ -4894,16 +4895,15 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
     //let USER = Parse.Object.extend("_User");
     let user = new Parse.Object("_User");
-    if (workspace_follower.user) {
+    if (workspace_follower.get("user")) {
 
-        user.id = workspace_follower.user.id;
+        user.id = workspace_follower.get("user").id;
         console.log("user beforeSave workspace_follower userRoleRelation: " + JSON.stringify(user));
 
-    } else (!workspace_follower.user) {
+    } else if (!workspace_follower.get("user")) {
 
         return response.error("please add _User it's required when adding new or updating workspace follower");
     }
-
 
 
     let queryMemberRole = new Parse.Query(Parse.Role);
@@ -6686,7 +6686,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
         return;
     }
 
-
     let queryChannelFollow = new Parse.Query("ChannelFollow");
     let queryChannel = new Parse.Query(CHANNEL);
 
@@ -6704,6 +6703,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
         if (!channelfollow.get("workspace")) {
             return response.error("Workspace is required when creating a new channel");
         }
+
+
 
         let channelFollowName = channelfollow.get("user").id + "-" + channelfollow.get("workspace").id + "-" + channelfollow.get("channel").id;
         console.log("channelFollowName user: " + JSON.stringify(channelFollowName));
@@ -6757,6 +6758,19 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                     //let Channel = channelObject;
 
+                    if(!channelfollow.get("isNewChannel")) {
+
+                        if (channelObject.get("name") === 'general') {
+
+                            channelfollow.set("isNewChannel", true);
+
+                        } else {
+                            channelfollow.set("isNewChannel", false);
+
+                        }
+
+                    }
+
                     let OWNERUSER = Parse.Object.extend("_User");
                     let ownerUser = new OWNERUSER();
                     ownerUser.id = channelObject.get("user").id;
@@ -6766,10 +6780,11 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                     function addExpertsArrayToChannel (callback) {
 
-                        if (channelObject.get("name") === 'general') {
+                        if (channelfollow.get("isNewChannel") === true) {
+
 
                             return callback (null, channelObject);
-                        } else if (channelObject.get("name") !== 'general') {
+                        } else if (channelfollow.get("isNewChannel") === false || !channelfollow.get("isNewChannel")) {
 
                             //var userRole = user.get("roles");
                             user.fetch(user.id, {
@@ -6884,6 +6899,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                         }).then((ChannelFollowIsSelected) => {
                             // The object was retrieved successfully.
 
+
+
                             let ChannelFollowISSELECTED = Parse.Object.extend("ChannelFollow");
                             let channelFollowIsSelectedSave = new ChannelFollowISSELECTED();
 
@@ -6933,6 +6950,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                     if (ChannelFollowIsSelected) {
 
+                                        console.log("ChannelFollowIsSelected: " + JSON.stringify(ChannelFollowIsSelected));
+
                                         channelFollowIsSelectedSave.set("isSelected", false);
                                         channelFollowIsSelectedSave.save(null, {
 
@@ -6957,6 +6976,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     if (ChannelFollowIsSelected) {
 
                                         channelFollowIsSelectedSave.set("isSelected", false);
+
                                         channelFollowIsSelectedSave.save(null, {
 
                                                 useMasterKey: true
@@ -7569,7 +7589,22 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             response.error(err);
                         }
 
-                        if (channelObject.get("name") !== 'general') {
+                        if (channelfollow.get("isNewChannel") === true) {
+
+                            if (channelfollow.get("isNewChannel") === true) {
+
+                                channelfollow.set("isNewChannel", false);
+
+                            }
+
+                            let beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time ChannelFollow took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+                        }
+                        else if (channelfollow.get("isNewChannel") === false) {
+
 
                             let FinalChannelToSave = Parse.Object.extend("Channel");
                             let finalChannelToSave = new FinalChannelToSave();
@@ -7619,16 +7654,14 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                             });
 
+                            let beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time ChannelFollow took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
+                            response.success();
 
                         }
 
 
-
-                        let beforeSave_Time = process.hrtime(time);
-                        console.log(`beforeSave_Time ChannelFollow took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
-
-                        response.success();
 
                     });
 
@@ -9582,6 +9615,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
 
                 workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+                workspaceFollow.set("user", user);
                 workspaceFollow.save(null, {
 
                         useMasterKey: true
@@ -9606,7 +9640,8 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
             });
 
-        } else if (channelfollow.toJSON().isSelected === false) {
+        }
+        else if (channelfollow.toJSON().isSelected === false) {
 
             // add selected ChannelFollow as pointer to workspace_follower
             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
@@ -9622,9 +9657,11 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                 // The object was retrieved successfully.
 
                 workspaceFollow.set("isSelectedChannelFollow", null);
+                workspaceFollow.set("user", user);
+
                 workspaceFollow.save(null, {
 
-                        //useMasterKey: true
+                        useMasterKey: true
                         //sessionToken: sessionToken
 
                     }
@@ -9849,6 +9886,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                 channelFollow.set("channel", Channel);
                 channelFollow.set("notificationCount", 0);
                 channelFollow.set("isSelected", false);
+                channelFollow.set("isNewChannel", true);
 
 
                 // set correct ACL for channelFollow
