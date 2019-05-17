@@ -11783,8 +11783,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
         return;
     }
 
-    var channelfollow = request.object;
-    var CHANNEL = request.object.get("channel");
+    let channelfollow = request.object;
+    let CHANNEL = request.object.get("channel");
     console.log("channel afterDelete: " + JSON.stringify(CHANNEL));
 
     /*var sessionToken;
@@ -11827,20 +11827,19 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
             if (channel) {
 
                 // get isFollower and isMember
-                var isFollower = channelfollow.get("isFollower");
-                var isMember = channelfollow.get("isMember");
+                let isFollower = channelfollow.get("isFollower");
+                let isMember = channelfollow.get("isMember");
                 let user = channelfollow.get("user");
-                let Channel = channel;
-                let channelACL = Channel.getACL();
+                let Channel = new CHANNEL();
+                Channel.id = channel.id;
+                let channelACL = channel.getACL();
 
 
-                var userRoleRelation = user.relation("roles");
-                var expertChannelRelation = Channel.relation("experts");
-                //console.log("userRole: " + JSON.stringify(userRoleRelation));
+                let userRoleRelation = user.relation("roles");
 
-                var expertRoleName = "expert-" + Channel.get("workspace").id;
+                let expertRoleName = "expert-" + channel.get("workspace").id;
 
-                var userRoleRelationQuery = userRoleRelation.query();
+                let userRoleRelationQuery = userRoleRelation.query();
                 userRoleRelationQuery.equalTo("name", expertRoleName);
                 userRoleRelationQuery.first({
 
@@ -11858,11 +11857,11 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                         // remove this user as a follower or member of that workspace
                         if(isFollower === true && isMember === true) {
 
-                            channel.increment("followerCount", -1);
-                            channel.increment("memberCount", -1);
+                            Channel.increment("followerCount", -1);
+                            Channel.increment("memberCount", -1);
 
                             // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
-                            expertChannelRelation.remove(user);
+
 
                             let expertOwner = simplifyUser(user);
 
@@ -11873,7 +11872,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                                 // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                                if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
+                                if (channel.get("user").toJSON().objectId === expertOwner.objectId) {
 
                                     // this user who is unfollowing is also the channel owner, don't remove his ACL.
 
@@ -11898,7 +11897,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
 
                             }
-                            channel.save(null, {
+                            Channel.save(null, {
 
                                 useMasterKey: true
                                 //sessionToken: sessionToken
@@ -11909,13 +11908,11 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                         }
                         else if (isFollower === true && (isMember === false || !isMember)) {
 
-                            channel.increment("followerCount", -1);
+                            Channel.increment("followerCount", -1);
 
                             // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
-                            expertChannelRelation.remove(user);
 
                             let expertOwner = simplifyUser(user);
-
 
                             Channel.remove("expertsArray", expertOwner);
 
@@ -11924,7 +11921,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                                 // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                                if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
+                                if (channel.get("user").toJSON().objectId === expertOwner.objectId) {
 
                                     // this user who is unfollowing is also the channel owner, don't remove his ACL.
 
@@ -11948,7 +11945,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
 
                             }
-                            channel.save(null, {
+                            Channel.save(null, {
 
                                 useMasterKey: true
                                 //sessionToken: sessionToken
@@ -11967,10 +11964,9 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                         else if (isMember === true && (isFollower === false || !isFollower)) {
 
                             // this case should never exist since a member is always also a follower
-                            channel.increment("memberCount", -1);
+                            Channel.increment("memberCount", -1);
 
                             // remove this user as channel expert since he/she is a workspace expert and now either un-followed or un-joined this channel
-                            expertChannelRelation.remove(user);
 
                             let expertOwner = simplifyUser(user);
 
@@ -11979,11 +11975,9 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                             if (channel.get("type") === 'private') {
 
-
-
                                 // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                                if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
+                                if (channel.get("user").toJSON().objectId === user.toJSON().objectId) {
 
                                     // this user who is unfollowing is also the channel owner, don't remove his ACL.
 
@@ -12006,7 +12000,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
 
                             }
-                            channel.save(null, {
+                            Channel.save(null, {
 
                                 useMasterKey: true
                                 //sessionToken: sessionToken
@@ -12026,14 +12020,14 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                         // remove this user as a follower or member of that workspace
                         if(isFollower === true && isMember === true) {
 
-                            channel.increment("followerCount", -1);
-                            channel.increment("memberCount", -1);
+                            Channel.increment("followerCount", -1);
+                            Channel.increment("memberCount", -1);
 
                             if (channel.get("type") === 'private') {
 
                                 // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                                if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
+                                if (channel.get("user").toJSON().objectId === user.toJSON().objectId) {
 
                                     // this user who is unfollowing is also the channel owner, don't remove his ACL.
 
@@ -12074,7 +12068,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
                                 // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                                if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
+                                if (channel.get("user").toJSON().objectId === user.toJSON().objectId) {
 
                                     // this user who is unfollowing is also the channel owner, don't remove his ACL.
 
@@ -12096,7 +12090,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
 
                             }
-                            channel.save(null, {
+                            Channel.save(null, {
 
                                 useMasterKey: true
                                 //sessionToken: sessionToken
@@ -12116,14 +12110,14 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                         else if (isMember === true && (isFollower === false || !isFollower)) {
 
                             // this case should never exist since a member is always also a follower
-                            channel.increment("memberCount", -1);
+                            Channel.increment("memberCount", -1);
 
 
                             if (channel.get("type") === 'private') {
 
                                 // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
 
-                                if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
+                                if (channel.get("user").toJSON().objectId === user.toJSON().objectId) {
 
                                     // this user who is unfollowing is also the channel owner, don't remove his ACL.
 
@@ -12145,7 +12139,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
 
                             }
-                            channel.save(null, {
+                            Channel.save(null, {
 
                                 useMasterKey: true
                                 //sessionToken: sessionToken
@@ -12178,6 +12172,7 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
         }, (error) => {
             // No Channel, maybe was delete so ignore removing the channel experts and updating follower/member count for channel
+            console.log("no channel found in afterDelete channelFollow maybe we are deleting a channel or workspace");
 
             response.success();
 
