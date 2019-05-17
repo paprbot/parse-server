@@ -54,10 +54,10 @@ const isProduction = true;
 var fileForPushNotification;
 var keyFileForPushNotification;
 if( isProduction ){
-    fileForPushNotification = 'Papr-Distribution-APNS.pem';
+    fileForPushNotification = 'apns-prod-cert.pem';
     keyFileForPushNotification = 'Key-Distribution.pem';
 } else {
-    fileForPushNotification = 'Papr-Development-APNS.pem';
+    fileForPushNotification = 'apns-dev-cert.pem';
     keyFileForPushNotification = 'Key-Development.pem';
 }
 var options = {
@@ -2074,6 +2074,17 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!req.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.009.beforeSave-User.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
     let user = req.object;
     let socialProfilePicURL = user.get("socialProfilePicURL");
     let profileImage = user.get("profileimage");
@@ -2272,245 +2283,615 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
     //console.log("WorkSpace request.object: " + JSON.stringify(req.object));
 
-
-
     //console.log("request: " + JSON.stringify(req));
     //console.log("workspaceExperts__op: " + JSON.stringify(workspaceExpertObjects));
 
     let expertRelation = workspace.relation("experts");
     let expertArray = [];
 
-    if (
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
-        !req.user || !req.user.getSessionToken()) {response.error("beforeSave WorkSpace Session token: X-Parse-Session-Token is required");
+    if (!req.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.007.beforeSave-WorkSpace.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
 
-    } else {
+    //var WORKSPACE = Parse.Object.extend("WorkSpace");
+    let WORKspace = new Parse.Object("WorkSpace");
 
-        //var WORKSPACE = Parse.Object.extend("WorkSpace");
-        let WORKspace = new Parse.Object("WorkSpace");
+    let queryWorkspace = new Parse.Query(WORKspace);
 
-        let queryWorkspace = new Parse.Query(WORKspace);
+    if (workspace.dirty("skills")) {
+        workspace.set("isDirtySkills", true);
+    } else if (!workspace.dirty("skills")) {
+        workspace.set("isDirtySkills", false);
 
-        if (workspace.dirty("skills")) {
-            workspace.set("isDirtySkills", true);
-        } else if (!workspace.dirty("skills")) {
-            workspace.set("isDirtySkills", false);
+    }
 
-        }
+    function archiveWorkspaceFollowers (callback) {
 
+        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
 
-        function archiveWorkspaceFollowers (callback) {
+        let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+        queryWorksapceFollower.equalTo("workspace", workspace);
+        queryWorksapceFollower.limit(10000);
+        queryWorksapceFollower.find({
+            useMasterKey: true
 
-            let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-
-            let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
-            queryWorksapceFollower.equalTo("workspace", workspace);
-            queryWorksapceFollower.limit(10000);
-            queryWorksapceFollower.find({
-                sessionToken: req.user.getSessionToken()
-            }).then((workspacefollowers) => {
-
-
-                if (workspacefollowers) {
-
-                    async.map(workspacefollowers, function (object, cb) {
-
-                        let workspaceFollower = new WORKSPACEFOLLOWER();
-                        workspaceFollower.id = object.id;
-
-                        workspaceFollower.set("archive", true);
-
-                        object = workspaceFollower;
-
-                        console.log("workspacefollowerobject: " + JSON.stringify(object));
-
-                        return cb (null, object);
-
-                        //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+        }).then((workspacefollowers) => {
 
 
+            if (workspacefollowers) {
 
-                    }, function (err, workspacefollowers) {
+                async.map(workspacefollowers, function (object, cb) {
 
-                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+                    let workspaceFollower = new WORKSPACEFOLLOWER();
+                    workspaceFollower.id = object.id;
 
-                        if (err) {response.error(err);} else {
+                    workspaceFollower.set("archive", true);
+
+                    object = workspaceFollower;
+
+                    console.log("workspacefollowerobject: " + JSON.stringify(object));
+
+                    return cb (null, object);
+
+                    //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
 
 
-                            Parse.Object.saveAll(workspacefollowers, {
+                }, function (err, workspacefollowers) {
 
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
+                    //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
-                            }).then((savedWorkspaceFollowers) => {
-
-                                //console.log("savedWorkspaceFollowers: " + JSON.stringify(savedWorkspaceFollowers));
+                    if (err) {response.error(err);} else {
 
 
-                                return callback (null, savedWorkspaceFollowers);
 
+                        Parse.Object.saveAll(workspacefollowers, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((savedWorkspaceFollowers) => {
+
+                            //console.log("savedWorkspaceFollowers: " + JSON.stringify(savedWorkspaceFollowers));
+
+
+                            return callback (null, savedWorkspaceFollowers);
+
+
+                        });
+
+
+                    }
+
+                });
+
+
+
+
+
+            } else {
+
+                workspacefollowers = [];
+                // no workspaceFollowers to delete return
+                return callback(null, workspacefollowers);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+        });
+
+    }
+
+    function unarchiveWorkspaceFollowers (callback) {
+
+        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+
+        let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+        queryWorksapceFollower.equalTo("workspace", workspace);
+        queryWorksapceFollower.limit(10000);
+        queryWorksapceFollower.find({
+            useMasterKey: true
+            //sessionToken: sessionToken
+        }).then((workspacefollowers) => {
+
+
+            if (workspacefollowers) {
+
+                async.map(workspacefollowers, function (object, cb) {
+
+                    let workspaceFollower = new WORKSPACEFOLLOWER();
+                    workspaceFollower.id = object.id;
+
+                    workspaceFollower.set("archive", false);
+                    if (object.get("user").id === req.user.toJSON().objectId) {
+
+                        workspaceFollower.set("isSelected", true);
+
+
+                    }
+
+                    object = workspaceFollower;
+
+                    console.log("workspacefollowerobject: " + JSON.stringify(object));
+
+                    return cb (null, object);
+
+                    //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+
+
+                }, function (err, workspacefollowers) {
+
+                    //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                    if (err) {response.error(err);} else {
+
+
+
+                        Parse.Object.saveAll(workspacefollowers, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((savedWorkspaceFollowers) => {
+
+                            //console.log("savedWorkspaceFollowers: " + JSON.stringify(savedWorkspaceFollowers));
+
+
+                            return callback (null, savedWorkspaceFollowers);
+
+
+
+                        });
+
+
+                    }
+
+                });
+
+
+
+
+
+            } else {
+
+                workspacefollowers = [];
+                // no workspaceFollowers to delete return
+                return callback(null, workspacefollowers);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+            useMasterKey: true
+            //sessionToken: sessionToken
+        });
+
+    }
+
+    if (workspace.isNew()) {
+
+
+        queryWorkspace.equalTo("workspace_url", workspace.get("workspace_url"));
+
+        queryWorkspace.first({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }).then((results) => {
+            // The object was retrieved successfully.
+
+            if (results) {
+
+                // workspace url is not unique return error
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                return response.error(results);
+
+            } else {
+
+                // set the workspace owner as an expert
+                expertRelation.add(owner);
+
+                workspace.set("isNew", true);
+                workspace.set("followerCount", 0);
+                workspace.set("memberCount", 0);
+                workspace.set("channelCount", 0);
+                workspace.set("isDirtyExperts", false);
+                workspace.increment("followerCount");
+                workspace.increment("memberCount");
+                workspace.increment("channelCount");
+
+                workspace.set("isDirtySkills", false);
+
+                owner.fetch(owner.id, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((expert) => {
+
+                    let expertOwner = simplifyUser(expert);
+
+                    //expertArray.push(expertOwner);
+                    workspace.addUnique("expertsArray", expertOwner);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                    return response.success();
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                //console.log("request: " + JSON.stringify(req));
+
+            }
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+
+    }
+    else if (!workspace.isNew() && workspace.dirty("workspace_url")) {
+
+        workspace.set("isNew", false);
+
+        queryWorkspace.equalTo("workspace_url", workspace.get("workspace_url"));
+
+        queryWorkspace.first({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }).then((results) => {
+            // The object was retrieved successfully.
+
+            if (results) {
+
+                // workspace url is not unique return error
+
+                return response.error(results);
+
+            } else {
+
+                if (workspace.dirty("experts")) {
+
+                    let workspaceExpertObjects = req.object.toJSON().experts.objects;
+                    let exp__op = req.object.toJSON().experts.__op;
+
+                    workspace.set("isDirtyExperts", true);
+
+                    if (exp__op === "AddRelation") {
+
+                        // add expert to expertsArray
+
+                        async.map(workspaceExpertObjects, function (object, cb) {
+
+                            let workspaceExpertObject = new Parse.Object("_User");
+                            workspaceExpertObject.set("objectId", object.objectId);
+
+                            //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                            workspaceExpertObject.fetch(workspaceExpertObject.id, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            }).then((expert) => {
+
+                                let expertOwner = simplifyUser(expert);
+
+                                //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                                //o[key] = expertOwner;
+
+                                workspace.addUnique("expertsArray", expertOwner);
+                                /*workspace.save(null, {
+
+                                 useMasterKey: true,
+                                 sessionToken: req.user.getSessionToken()
+
+                                 });*/
+
+                                object = expertOwner;
+                                //expertArray.push(expertOwner);
+
+                                return cb (null, object);
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                response.error(error);
+                            }, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
 
                             });
 
+                        }, function (err, workspaceExpertObjects) {
 
-                        }
+                            //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
-                    });
+                            if (err) {response.error(err);} else {
 
+                                //expertArray = result.get("expertsArray");
+                                //console.log("result: " + JSON.stringify(result));
 
+                                //result.Add("expertsArray", JSON.stringify(workspaceExpertObjects[0]));
+                                //console.log("expertsArray: " + JSON.stringify(result.get("expertsArray")));
 
+                                //workspace.addUnique("expertsArray", workspaceExpertObjects[0]);
+                                //console.log("expertsArray Result: " + JSON.stringify(workspace.get("expertsArray")));
 
+                                //workspace.set("expertsArray", workspaceExpertObjects);
+                                //console.log("workspace 2: " + JSON.stringify(workspace));
 
-                } else {
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
-                    workspacefollowers = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, workspacefollowers);
+                                response.success();
 
-                }
+                            }
 
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {
-
-                sessionToken: req.user.getSessionToken()
-            });
-
-        }
-
-        function unarchiveWorkspaceFollowers (callback) {
-
-            let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-
-            let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
-            queryWorksapceFollower.equalTo("workspace", workspace);
-            queryWorksapceFollower.limit(10000);
-            queryWorksapceFollower.find({
-                sessionToken: req.user.getSessionToken()
-            }).then((workspacefollowers) => {
-
-
-                if (workspacefollowers) {
-
-                    async.map(workspacefollowers, function (object, cb) {
-
-                        let workspaceFollower = new WORKSPACEFOLLOWER();
-                        workspaceFollower.id = object.id;
-
-                        workspaceFollower.set("archive", false);
-                        if (object.get("user").id === req.user.toJSON().objectId) {
-
-                            workspaceFollower.set("isSelected", true);
-
-
-                        }
-
-                        object = workspaceFollower;
-
-                        console.log("workspacefollowerobject: " + JSON.stringify(object));
-
-                        return cb (null, object);
-
-                        //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+                        });
 
 
 
-                    }, function (err, workspacefollowers) {
+                    }
+                    else if (exp__op === "RemoveRelation") {
 
-                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+                        // remove expert from expertsArray
 
-                        if (err) {response.error(err);} else {
+                        async.map(workspaceExpertObjects, function (object, cb) {
 
+                            let workspaceExpertObject = new Parse.Object("_User");
+                            workspaceExpertObject.set("objectId", object.objectId);
 
+                            //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
-                            Parse.Object.saveAll(workspacefollowers, {
+                            workspaceExpertObject.fetch(workspaceExpertObject.id, {
 
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
+                                useMasterKey: true
+                                //sessionToken: sessionToken
 
-                            }).then((savedWorkspaceFollowers) => {
+                            }).then((expert) => {
 
-                                //console.log("savedWorkspaceFollowers: " + JSON.stringify(savedWorkspaceFollowers));
+                                let expertOwner = simplifyUser(expert);
 
+                                //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
 
-                                return callback (null, savedWorkspaceFollowers);
+                                object = expertOwner;
+                                workspace.remove("expertsArray", expertOwner);
+                                //expertArray.push(expertOwner);
 
+                                return cb (null, object);
 
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                response.error(error);
+                            }, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
 
                             });
 
+                        }, function (err, workspaceExpertObjects) {
 
-                        }
+                            //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
-                    });
+                            if (err) {response.error(err);} else {
+
+                                //workspace.set("expertsArray", workspaceExpertObjects);
+                                //workspace.remove("expertsArray", workspaceExpertObjects);
+                                //console.log("workspace 2: " + JSON.stringify(workspace));
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                                response.success();
+
+
+                            }
+
+                        });
 
 
 
+                    }
+                    else {
+
+                        // do nothing to expertArray
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                        response.success();
+                    }
 
 
-                } else {
 
-                    workspacefollowers = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, workspacefollowers);
 
                 }
+                else {
 
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {
-
-                sessionToken: req.user.getSessionToken()
-            });
-
-        }
-
-
-        if (workspace.isNew()) {
-
-
-            queryWorkspace.equalTo("workspace_url", workspace.get("workspace_url"));
-
-            queryWorkspace.first({
-
-                useMasterKey: true,
-                sessionToken: req.user.getSessionToken()
-
-            }).then((results) => {
-                // The object was retrieved successfully.
-
-                if (results) {
-
-                    // workspace url is not unique return error
-
-                    response.error(results);
-
-                } else {
-
-                    // set the workspace owner as an expert
-                    expertRelation.add(owner);
-
-                    workspace.set("isNew", true);
-                    workspace.set("followerCount", 0);
-                    workspace.set("memberCount", 0);
-                    workspace.set("channelCount", 0);
                     workspace.set("isDirtyExperts", false);
-                    workspace.increment("followerCount");
-                    workspace.increment("memberCount");
-                    workspace.increment("channelCount");
 
-                    workspace.set("isDirtySkills", false);
+                    if (workspace.dirty("archive")) {
 
-                    owner.fetch(owner.id, {
+                        queryWorkspace.get(workspace.id, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((Workspace) => {
+                            // The object was retrieved successfully.
+
+                            if (Workspace) {
+
+                                if (Workspace.get("archive") === false && workspace.get("archive") === true) {
+
+                                    // user wants to archive a workspace then archive it
+
+                                    async.parallel([
+                                        async.apply(archiveWorkspaceFollowers)
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        //console.log("final results: " + JSON.stringify(results));
+
+                                        let beforeSave_Time = process.hrtime(time);
+                                        console.log(`beforeSave_Time beforeSave Workspace took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                                        response.success();
+                                    });
+
+                                } else if (Workspace.get("archive") === true && workspace.get("archive") === false) {
+
+                                    // user wants to un-archive a workspace then un-archive it
+
+                                    async.parallel([
+                                        async.apply(unarchiveWorkspaceFollowers)
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        //console.log("final results: " + JSON.stringify(results));
+
+                                        let beforeSave_Time = process.hrtime(time);
+                                        console.log(`beforeSave_Time beforeSave Workspace Follower took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                                        response.success();
+                                    });
+
+                                }
+
+
+                            } else {
+                                let beforeSave_Time = process.hrtime(time);
+                                console.log(`beforeSave_Time beforeSave Workspace Follower took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                                response.error("No Workspace Found when user was trying to archive it.")
+
+                            }
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            response.error(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+
+
+
+                    } else {
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+
+                    }
+                }
+
+
+            }
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+
+    }
+    else if (!workspace.isNew() && !workspace.dirty("workspace_url")) {
+
+
+        workspace.set("isNew", false);
+
+        console.log("workspace.dirty: " + workspace.dirty("experts"));
+
+        if (workspace.dirty("experts")) {
+
+            workspace.set("isDirtyExperts", true);
+
+            let workspaceExpertObjects = req.object.toJSON().experts.objects;
+            let exp__op = req.object.toJSON().experts.__op;
+
+            if (exp__op === "AddRelation") {
+
+                // add expert to expertsArray
+
+                async.map(workspaceExpertObjects, function (object, cb) {
+
+
+                    let workspaceExpertObject = new Parse.Object("_User");
+                    workspaceExpertObject.set("objectId", object.objectId);
+
+                    //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                    workspaceExpertObject.fetch(workspaceExpertObject.id, {
 
                         useMasterKey: true,
                         sessionToken: req.user.getSessionToken()
@@ -2519,14 +2900,22 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                         let expertOwner = simplifyUser(expert);
 
-                        //expertArray.push(expertOwner);
+                        //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                        //o[key] = expertOwner;
+
                         workspace.addUnique("expertsArray", expertOwner);
+                        /*workspace.save(null, {
 
-                        let finalTime = process.hrtime(time);
-                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                         useMasterKey: true,
+                         sessionToken: req.user.getSessionToken()
 
+                         });*/
 
-                        return response.success();
+                        object = expertOwner;
+                        //expertArray.push(expertOwner);
+
+                        return cb (null, object);
 
                     }, (error) => {
                         // The object was not retrieved successfully.
@@ -2539,563 +2928,64 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                     });
 
-                    //console.log("request: " + JSON.stringify(req));
+                }, function (err, workspaceExpertObjects) {
 
+                    //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
-                }
+                    if (err) {response.error(err);} else {
 
 
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {
 
-                useMasterKey: true,
-                sessionToken: req.user.getSessionToken()
+                        //expertArray = result.get("expertsArray");
+                        //console.log("result: " + JSON.stringify(result));
 
-            });
+                        //result.Add("expertsArray", JSON.stringify(workspaceExpertObjects[0]));
+                        //console.log("expertsArray: " + JSON.stringify(result.get("expertsArray")));
 
+                        //workspace.addUnique("expertsArray", workspaceExpertObjects[0]);
+                        //console.log("expertsArray Result: " + JSON.stringify(workspace.get("expertsArray")));
 
-        }
-        else if (!workspace.isNew() && workspace.dirty("workspace_url")) {
+                        //workspace.set("expertsArray", workspaceExpertObjects);
+                        //console.log("workspace 2: " + JSON.stringify(workspace));
 
-            workspace.set("isNew", false);
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
-            queryWorkspace.equalTo("workspace_url", workspace.get("workspace_url"));
+                        response.success();
 
-            queryWorkspace.first({
 
-                useMasterKey: true,
-                sessionToken: req.user.getSessionToken()
-
-            }).then((results) => {
-                // The object was retrieved successfully.
-
-                if (results) {
-
-                    // workspace url is not unique return error
-
-                    response.error(results);
-
-                } else {
-
-                    if (workspace.dirty("experts")) {
-
-                        let workspaceExpertObjects = req.object.toJSON().experts.objects;
-                        let exp__op = req.object.toJSON().experts.__op;
-
-                        workspace.set("isDirtyExperts", true);
-
-                        if (exp__op === "AddRelation") {
-
-                            // add expert to expertsArray
-
-                            async.map(workspaceExpertObjects, function (object, cb) {
-
-
-                                let workspaceExpertObject = new Parse.Object("_User");
-                                workspaceExpertObject.set("objectId", object.objectId);
-
-                                //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
-
-                                workspaceExpertObject.fetch(workspaceExpertObject.id, {
-
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                }).then((expert) => {
-
-                                    let expertOwner = simplifyUser(expert);
-
-                                    //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
-
-                                    //o[key] = expertOwner;
-
-                                    workspace.addUnique("expertsArray", expertOwner);
-                                    /*workspace.save(null, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });*/
-
-                                    object = expertOwner;
-                                    //expertArray.push(expertOwner);
-
-                                    return cb (null, object);
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    response.error(error);
-                                }, {
-
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
-
-                            }, function (err, workspaceExpertObjects) {
-
-                                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-                                if (err) {response.error(err);} else {
-
-
-
-                                    //expertArray = result.get("expertsArray");
-                                    //console.log("result: " + JSON.stringify(result));
-
-                                    //result.Add("expertsArray", JSON.stringify(workspaceExpertObjects[0]));
-                                    //console.log("expertsArray: " + JSON.stringify(result.get("expertsArray")));
-
-                                    //workspace.addUnique("expertsArray", workspaceExpertObjects[0]);
-                                    //console.log("expertsArray Result: " + JSON.stringify(workspace.get("expertsArray")));
-
-                                    //workspace.set("expertsArray", workspaceExpertObjects);
-                                    //console.log("workspace 2: " + JSON.stringify(workspace));
-
-                                    let finalTime = process.hrtime(time);
-                                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                                    response.success();
-
-
-
-                                }
-
-                            });
-
-
-
-                        }
-                        else if (exp__op === "RemoveRelation") {
-
-                            // remove expert from expertsArray
-
-                            async.map(workspaceExpertObjects, function (object, cb) {
-
-                                let workspaceExpertObject = new Parse.Object("_User");
-                                workspaceExpertObject.set("objectId", object.objectId);
-
-                                //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
-
-                                workspaceExpertObject.fetch(workspaceExpertObject.id, {
-
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                }).then((expert) => {
-
-                                    let expertOwner = simplifyUser(expert);
-
-                                    //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
-
-                                    object = expertOwner;
-                                    workspace.remove("expertsArray", expertOwner);
-                                    //expertArray.push(expertOwner);
-
-                                    return cb (null, object);
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    response.error(error);
-                                }, {
-
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
-
-                            }, function (err, workspaceExpertObjects) {
-
-                                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-                                if (err) {response.error(err);} else {
-
-                                    //workspace.set("expertsArray", workspaceExpertObjects);
-                                    //workspace.remove("expertsArray", workspaceExpertObjects);
-                                    //console.log("workspace 2: " + JSON.stringify(workspace));
-
-                                    let finalTime = process.hrtime(time);
-                                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                                    response.success();
-
-
-                                }
-
-                            });
-
-
-
-                        }
-                        else {
-
-                            // do nothing to expertArray
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                            response.success();
-                        }
-
-
-
-
-                    } else {
-
-                        workspace.set("isDirtyExperts", false);
-
-                        if (workspace.dirty("archive")) {
-
-                            queryWorkspace.get(workspace.id, {
-
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            }).then((Workspace) => {
-                                // The object was retrieved successfully.
-
-                                if (Workspace) {
-
-                                    if (Workspace.get("archive") === false && workspace.get("archive") === true) {
-
-                                        // user wants to archive a workspace then archive it
-
-                                        async.parallel([
-                                            async.apply(archiveWorkspaceFollowers)
-                                        ], function (err, results) {
-                                            if (err) {
-                                                response.error(err);
-                                            }
-
-                                            //console.log("final results: " + JSON.stringify(results));
-
-                                            let beforeSave_Time = process.hrtime(time);
-                                            console.log(`beforeSave_Time beforeSave Workspace Follower took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-                                        });
-
-                                    } else if (Workspace.get("archive") === true && workspace.get("archive") === false) {
-
-                                        // user wants to un-archive a workspace then un-archive it
-
-                                        async.parallel([
-                                            async.apply(unarchiveWorkspaceFollowers)
-                                        ], function (err, results) {
-                                            if (err) {
-                                                response.error(err);
-                                            }
-
-                                            //console.log("final results: " + JSON.stringify(results));
-
-                                            let beforeSave_Time = process.hrtime(time);
-                                            console.log(`beforeSave_Time beforeSave Workspace Follower took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-                                        });
-
-                                    }
-
-
-                                } else {
-
-                                    response.error("No Workspace Found when user was trying to archive it.")
-
-
-                                }
-
-
-
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                response.error(error);
-                            }, {
-
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
-
-
-
-
-                        } else {
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                            response.success();
-
-
-                        }
                     }
 
-
-                }
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {
-
-                useMasterKey: true,
-                sessionToken: req.user.getSessionToken()
-
-            });
-
-
-        }
-        else if (!workspace.isNew() && !workspace.dirty("workspace_url")) {
-
-
-            workspace.set("isNew", false);
-
-            console.log("workspace.dirty: " + workspace.dirty("experts"));
-
-            if (workspace.dirty("experts")) {
-
-                workspace.set("isDirtyExperts", true);
-
-                let workspaceExpertObjects = req.object.toJSON().experts.objects;
-                let exp__op = req.object.toJSON().experts.__op;
-
-                if (exp__op === "AddRelation") {
-
-                    // add expert to expertsArray
-
-                    async.map(workspaceExpertObjects, function (object, cb) {
-
-
-                        let workspaceExpertObject = new Parse.Object("_User");
-                        workspaceExpertObject.set("objectId", object.objectId);
-
-                        //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
-
-                        workspaceExpertObject.fetch(workspaceExpertObject.id, {
-
-                            useMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
-
-                        }).then((expert) => {
-
-                            let expertOwner = simplifyUser(expert);
-
-                            //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
-
-                            //o[key] = expertOwner;
-
-                            workspace.addUnique("expertsArray", expertOwner);
-                            /*workspace.save(null, {
-
-                             useMasterKey: true,
-                             sessionToken: req.user.getSessionToken()
-
-                             });*/
-
-                            object = expertOwner;
-                            //expertArray.push(expertOwner);
-
-                            return cb (null, object);
-
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            response.error(error);
-                        }, {
-
-                            useMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
-
-                        });
-
-                    }, function (err, workspaceExpertObjects) {
-
-                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-                        if (err) {response.error(err);} else {
-
-
-
-                            //expertArray = result.get("expertsArray");
-                            //console.log("result: " + JSON.stringify(result));
-
-                            //result.Add("expertsArray", JSON.stringify(workspaceExpertObjects[0]));
-                            //console.log("expertsArray: " + JSON.stringify(result.get("expertsArray")));
-
-                            //workspace.addUnique("expertsArray", workspaceExpertObjects[0]);
-                            //console.log("expertsArray Result: " + JSON.stringify(workspace.get("expertsArray")));
-
-                            //workspace.set("expertsArray", workspaceExpertObjects);
-                            //console.log("workspace 2: " + JSON.stringify(workspace));
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                            response.success();
-
-
-
-                        }
-
-                    });
-
-
-
-
-
-
-
-                }
-                else if (exp__op === "RemoveRelation") {
-
-
-
-                    async.map(workspaceExpertObjects, function (object, cb) {
-
-                        let workspaceExpertObject = new Parse.Object("_User");
-                        workspaceExpertObject.set("objectId", object.objectId);
-
-                        //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
-
-                        workspaceExpertObject.fetch(workspaceExpertObject.id, {
-
-                            useMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
-
-                        }).then((expert) => {
-
-                            let expertOwner = simplifyUser(expert);
-
-                            //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
-
-                            object = expertOwner;
-                            workspace.remove("expertsArray", expertOwner);
-                            //expertArray.push(expertOwner);
-
-                            return cb (null, object);
-
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            response.error(error);
-                        }, {
-
-                            useMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
-
-                        });
-
-                    }, function (err, workspaceExpertObjects) {
-
-                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-                        if (err) {response.error(err);} else {
-
-                            //workspace.set("expertsArray", workspaceExpertObjects);
-                            //workspace.remove("expertsArray", workspaceExpertObjects);
-                            //console.log("workspace 2: " + JSON.stringify(workspace));
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                            response.success();
-
-
-                        }
-
-                    });
-
-
-                }
-
-                else {
-
-                    // do nothing to expertArray
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                    response.success();
-                }
-
-
+                });
 
             }
-            else {
-
-                workspace.set("isDirtyExperts", false);
-
-                if (workspace.dirty("archive")) {
-
-                    queryWorkspace.get(workspace.id, {
-
-                        //useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    }).then((Workspace) => {
-                        // The object was retrieved successfully.
-
-                        if (Workspace) {
-
-                            if (Workspace.get("archive") === false && workspace.get("archive") === true) {
-
-                                // user wants to archive a workspace then archive it
-
-                                async.parallel([
-                                    async.apply(archiveWorkspaceFollowers)
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    //console.log("final results: " + JSON.stringify(results));
-
-                                    let beforeSave_Time = process.hrtime(time);
-                                    console.log(`beforeSave_Time beforeSave Workspace Follower took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-                                    response.success();
-                                });
-
-                            } else if (Workspace.get("archive") === true && workspace.get("archive") === false) {
-
-                                // user wants to un-archive a workspace then un-archive it
-
-                                async.parallel([
-                                    async.apply(unarchiveWorkspaceFollowers)
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    //console.log("final results: " + JSON.stringify(results));
-
-                                    let beforeSave_Time = process.hrtime(time);
-                                    console.log(`beforeSave_Time beforeSave Workspace Follower took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-                                    response.success();
-                                });
-
-                            }
-
-
-                        } else {
-
-                            response.error("No Workspace Found when user was trying to archive it.")
-
-
-                        }
+            else if (exp__op === "RemoveRelation") {
 
 
 
+                async.map(workspaceExpertObjects, function (object, cb) {
+
+                    let workspaceExpertObject = new Parse.Object("_User");
+                    workspaceExpertObject.set("objectId", object.objectId);
+
+                    //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                    workspaceExpertObject.fetch(workspaceExpertObject.id, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((expert) => {
+
+                        let expertOwner = simplifyUser(expert);
+
+                        //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                        object = expertOwner;
+                        workspace.remove("expertsArray", expertOwner);
+                        //expertArray.push(expertOwner);
+
+                        return cb (null, object);
 
                     }, (error) => {
                         // The object was not retrieved successfully.
@@ -3103,41 +2993,153 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                         response.error(error);
                     }, {
 
-                        //useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
                     });
 
+                }, function (err, workspaceExpertObjects) {
 
+                    //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
+                    if (err) {response.error(err);} else {
 
-                } else {
+                        //workspace.set("expertsArray", workspaceExpertObjects);
+                        //workspace.remove("expertsArray", workspaceExpertObjects);
+                        //console.log("workspace 2: " + JSON.stringify(workspace));
 
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
-                    response.success();
+                        response.success();
 
+                    }
 
-                }
+                });
+
 
             }
+
+            else {
+
+                // do nothing to expertArray
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                response.success();
+            }
+
 
 
         }
         else {
 
+            workspace.set("isDirtyExperts", false);
 
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            if (workspace.dirty("archive")) {
 
-            response.success();
+                queryWorkspace.get(workspace.id, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((Workspace) => {
+                    // The object was retrieved successfully.
+
+                    if (Workspace) {
+
+                        if (Workspace.get("archive") === false && workspace.get("archive") === true) {
+
+                            // user wants to archive a workspace then archive it
+
+                            async.parallel([
+                                async.apply(archiveWorkspaceFollowers)
+                            ], function (err, results) {
+                                if (err) {
+                                    response.error(err);
+                                }
+
+                                //console.log("final results: " + JSON.stringify(results));
+
+                                let beforeSave_Time = process.hrtime(time);
+                                console.log(`beforeSave_Time beforeSave Workspace ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                                response.success();
+                            });
+
+                        } else if (Workspace.get("archive") === true && workspace.get("archive") === false) {
+
+                            // user wants to un-archive a workspace then un-archive it
+
+                            async.parallel([
+                                async.apply(unarchiveWorkspaceFollowers)
+                            ], function (err, results) {
+                                if (err) {
+                                    response.error(err);
+                                }
+
+                                //console.log("final results: " + JSON.stringify(results));
+
+                                let beforeSave_Time = process.hrtime(time);
+                                console.log(`beforeSave_Time beforeSave Workspace took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                                response.success();
+                            });
+
+                        }
+
+
+                    } else {
+
+                        let beforeSave_Time = process.hrtime(time);
+                        console.log(`beforeSave_Time beforeSave Workspace took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                        response.error("No Workspace Found when user was trying to archive it.")
+
+
+                    }
+
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+
+
+            } else {
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                response.success();
+
+
+            }
 
         }
 
 
     }
+    else {
 
+
+        let finalTime = process.hrtime(time);
+        console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+
+    }
 
 }, {useMasterKey: true});
 
@@ -3151,671 +3153,153 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
     let channelACL = new Parse.ACL();
 
-    if (!req.user) {
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
-        response.error("beforeSave Channel Session token: X-Parse-Session-Token is required");
+    if (!req.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.003.beforeSave-Channel.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
 
-    } else if (req.user) {
+    //console.log("req.user SessionToken: " + JSON.stringify(req.user.getSessionToken()));
+    let CHANNEL = Parse.Object.extend("Channel");
+    let Channel =  new CHANNEL();
+    Channel.id = channel.id;
 
-        if (!req.user.getSessionToken()) {
-
-
-            response.error("beforeSave Channel Session token: X-Parse-Session-Token is required");
-
-        } else {
-
-            //console.log("req.user SessionToken: " + JSON.stringify(req.user.getSessionToken()));
-            let CHANNEL = Parse.Object.extend("Channel");
-            let Channel =  new CHANNEL();
-            Channel.id = channel.id;
-
-            //var owner = new Parse.Object("_User");
-            let owner = channel.get("user");
-            //let expertRelation = Channel.relation("experts");
-            //console.log("expertRelation in beforeSave Channel: " + JSON.stringify(expertRelation));
+    //var owner = new Parse.Object("_User");
+    let owner = channel.get("user");
+    //let expertRelation = Channel.relation("experts");
+    //console.log("expertRelation in beforeSave Channel: " + JSON.stringify(expertRelation));
 
 
-            //var WORKSPACE = new Parse.Object("WORKSPACE");
-            let workspace = channel.get("workspace");
+    //var WORKSPACE = new Parse.Object("WORKSPACE");
+    let workspace = channel.get("workspace");
 
-            let channelName = channel.get("name");
-            channelName = channelName.toLowerCase().trim();
-            channel.set("name", channelName);
+    let channelName = channel.get("name");
+    channelName = channelName.toLowerCase().trim();
+    channel.set("name", channelName);
 
-            //var CHANNEL = new Parse.Object("Channel");
-            let queryChannel = new Parse.Query(CHANNEL);
+    //var CHANNEL = new Parse.Object("Channel");
+    let queryChannel = new Parse.Query(CHANNEL);
 
-            //console.log("channel.isNew: " + channel.isNew());
+    //console.log("channel.isNew: " + channel.isNew());
 
-            if (channel.isNew()) {
+    if (channel.isNew()) {
 
-                //console.log("channel isNew: " + channel.isNew());
+        //console.log("channel isNew: " + channel.isNew());
 
-                if (!channel.get("name")) {
-                    response.error("Channel name is required.");
+        if (!channel.get("name")) {
+            response.error("Channel name is required.");
+        }
+        if (!channel.get("user")) {
+            response.error("User who is the channel creator is required when creating a new channel");
+        }
+        if (!channel.get("workspace")) {
+            response.error("Workspace is required when creating a new channel");
+        }
+        if (!channel.get("type")) {
+            response.error("Channel type field is required.");
+        }
+
+        let nameWorkspaceID = channel.get("name") + '-' + channel.get("workspace").id;
+        channel.set("nameWorkspaceID", nameWorkspaceID);
+        //console.log("nameWorkspaceID: " + nameWorkspaceID);
+
+        queryChannel.equalTo("nameWorkspaceID", nameWorkspaceID);
+        queryChannel.include("user");
+
+        queryChannel.first({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }).then((results) => {
+            // The object was retrieved successfully.
+            //console.log("results beforeSave Channel: " + JSON.stringify(results));
+            if (results) {
+
+                // channel is not unique return error
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                response.error("There is already a channel with this name: " + channel.get("name") + ' ' + "please use a channel name that isn't already taken.");
+
+            } else {
+
+                //console.log("nice no channel with this name, create it!");
+
+                // set isNew to true so we can use this in afterSave Channel if needed.
+                channel.set("isNew", true);
+
+                // set channel to not be default if user didn't specify it
+                if (!channel.get("default")) {
+                    channel.set("default", false);
                 }
-                if (!channel.get("user")) {
-                    response.error("User who is the channel creator is required when creating a new channel");
-                }
-                if (!channel.get("workspace")) {
-                    response.error("Workspace is required when creating a new channel");
-                }
-                if (!channel.get("type")) {
-                    response.error("Channel type field is required.");
-                }
 
-                let nameWorkspaceID = channel.get("name") + '-' + channel.get("workspace").id;
-                channel.set("nameWorkspaceID", nameWorkspaceID);
-                //console.log("nameWorkspaceID: " + nameWorkspaceID);
+                // set 0 for countPosts, countFollowers and countMembers
+                channel.set("postCount", 0);
+                channel.set("memberCount", 0);
+                channel.set("followerCount", 0);
 
-                queryChannel.equalTo("nameWorkspaceID", nameWorkspaceID);
-                queryChannel.include("user");
+                // since this is a new channel then by default the channel creator is both a member and follower increment member/follower for this channel
+                channel.increment("memberCount");
+                channel.increment("followerCount");
 
-                queryChannel.first({
+                owner.fetch(owner.id, {
 
-                    //useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
-                }).then((results) => {
-                    // The object was retrieved successfully.
-                    //console.log("results beforeSave Channel: " + JSON.stringify(results));
-                    if (results) {
-
-                        // channel is not unique return error
-                        let finalTime = process.hrtime(time);
-                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                        response.error("There is already a channel with this name: " + channel.get("name") + ' ' + "please use a channel name that isn't already taken.");
-
-                    } else {
-
-                        //console.log("nice no channel with this name, create it!");
-
-                        // set isNew to true so we can use this in afterSave Channel if needed.
-                        channel.set("isNew", true);
-
-                        // set channel to not be default if user didn't specify it
-                        if (!channel.get("default")) {
-                            channel.set("default", false);
-                        }
-
-                        // set 0 for countPosts, countFollowers and countMembers
-                        channel.set("postCount", 0);
-                        channel.set("memberCount", 0);
-                        channel.set("followerCount", 0);
-
-                        // since this is a new channel then by default the channel creator is both a member and follower increment member/follower for this channel
-                        channel.increment("memberCount");
-                        channel.increment("followerCount");
-
-                        owner.fetch(owner.id, {
-
-                            useMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
-
-                        }).then((User) => {
-                            // The object was retrieved successfully.
-
-                            //console.log("user object: " + JSON.stringify(User));
-                            let userRoleRelation = User.relation("roles");
-                            //let expertChannelRelation = channelObject.relation("experts");
-                            //console.log("userRole: " + JSON.stringify(userRoleRelation));
-                            //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
-
-                            let expertRoleName = "expert-" + workspace.id;
-
-                            let userRoleRelationQuery = userRoleRelation.query();
-                            userRoleRelationQuery.equalTo("name", expertRoleName);
-                            userRoleRelationQuery.first({
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            }).then((results) => {
-                                // The object was retrieved successfully.
-
-                                if (results) {
-
-                                    // expert role exists, add as channel expert
-                                    console.log("channelExpert: " + JSON.stringify(results));
-
-
-                                    let expertOwner = simplifyUser(User);
-                                    console.log("expertOnwer: " + JSON.stringify(expertOwner));
-
-
-                                    channel.addUnique("expertsArray", expertOwner);
-
-
-                                    console.log("addExpertsArrayToChannel channel: " + JSON.stringify(channel));
-
-                                    // by default archive needs to be set to false
-                                    channel.set("archive", false);
-
-                                    // By default allowMemberPostCreation is set to false
-                                    if (!channel.get("allowMemberPostCreation")) {
-                                        channel.set("allowMemberPostCreation", false);
-
-                                        // todo add role ACL to members to be able to create posts in this workspace
-
-                                    }
-
-                                    //console.log("channel: " + JSON.stringify(channel));
-
-                                    // If this is a private channel, set ACL for owner to read and write
-                                    if (channel.get("type") === 'private') {
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(owner, true);
-                                        channelACL.setWriteAccess(owner, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-                                    }
-                                    else if (channel.get("type") === 'privateMembers') {
-
-                                        // get member role for this workspace
-                                        let queryMemberRole = new Parse.Query(Parse.Role);
-                                        let memberName = 'member-' + workspace.id;
-
-                                        queryMemberRole.equalTo('name', memberName);
-                                        queryMemberRole.first({useMasterKey: true})
-                                            .then((memberRole) => {
-                                                // The object was retrieved successfully.
-
-                                                //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                                channelACL.setPublicReadAccess(false);
-                                                channelACL.setPublicWriteAccess(false);
-                                                channelACL.setReadAccess(memberRole, true);
-                                                channelACL.setWriteAccess(memberRole, true);
-                                                channel.setACL(channelACL);
-
-                                                let finalTime = process.hrtime(time);
-                                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                                response.success();
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                response.error(error);
-                                            }, {useMasterKey: true});
-
-
-                                    }
-                                    else if (channel.get("type") === 'privateExperts') {
-
-                                        // get member role for this workspace
-                                        let queryRole = new Parse.Query(Parse.Role);
-                                        let Name = 'expert-' + workspace.id;
-
-                                        queryRole.equalTo('name', Name);
-                                        queryRole.first({useMasterKey: true})
-                                            .then((Role) => {
-                                                // The object was retrieved successfully.
-
-                                                //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                                channelACL.setPublicReadAccess(false);
-                                                channelACL.setPublicWriteAccess(false);
-                                                channelACL.setReadAccess(Role, true);
-                                                channelACL.setWriteAccess(Role, true);
-                                                channel.setACL(channelACL);
-
-                                                let finalTime = process.hrtime(time);
-                                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                                response.success();
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                response.error(error);
-                                            }, {useMasterKey: true});
-
-
-                                    }
-                                    else if (channel.get("type") === 'privateAdmins') {
-
-                                        // get member role for this workspace
-                                        let queryRole = new Parse.Query(Parse.Role);
-                                        let Name = 'admin-' + workspace.id;
-
-                                        queryRole.equalTo('name', Name);
-                                        queryRole.first({useMasterKey: true})
-                                            .then((Role) => {
-                                                // The object was retrieved successfully.
-
-                                                //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                                channelACL.setPublicReadAccess(false);
-                                                channelACL.setPublicWriteAccess(false);
-                                                channelACL.setReadAccess(Role, true);
-                                                channelACL.setWriteAccess(Role, true);
-                                                channel.setACL(channelACL);
-
-                                                let finalTime = process.hrtime(time);
-                                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                                response.success();
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                response.error(error);
-                                            }, {useMasterKey: true});
-
-
-                                    }
-                                    else if (channel.get("type") === 'privateModerators') {
-
-                                        // get member role for this workspace
-                                        let queryRole = new Parse.Query(Parse.Role);
-                                        let Name = 'moderator-' + workspace.id;
-
-                                        queryRole.equalTo('name', Name);
-                                        queryRole.first({useMasterKey: true})
-                                            .then((Role) => {
-                                                // The object was retrieved successfully.
-
-                                                //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                                channelACL.setPublicReadAccess(false);
-                                                channelACL.setPublicWriteAccess(false);
-                                                channelACL.setReadAccess(Role, true);
-                                                channelACL.setWriteAccess(Role, true);
-                                                channel.setACL(channelACL);
-
-                                                let finalTime = process.hrtime(time);
-                                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                                response.success();
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                response.error(error);
-                                            }, {useMasterKey: true});
-
-
-                                    }
-                                    else if (channel.get("type") === 'privateOwners') {
-
-                                        // get member role for this workspace
-                                        let queryRole = new Parse.Query(Parse.Role);
-                                        let Name = 'owner-' + workspace.id;
-
-                                        queryRole.equalTo('name', Name);
-                                        queryRole.first({useMasterKey: true})
-                                            .then((Role) => {
-                                                // The object was retrieved successfully.
-
-                                                //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                                channelACL.setPublicReadAccess(false);
-                                                channelACL.setPublicWriteAccess(false);
-                                                channelACL.setReadAccess(Role, true);
-                                                channelACL.setWriteAccess(Role, true);
-                                                channel.setACL(channelACL);
-
-                                                let finalTime = process.hrtime(time);
-                                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                                response.success();
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                response.error(error);
-                                            }, {useMasterKey: true});
-
-                                    }
-                                    else if (channel.get("type") === 'public') {
-
-                                        //console.log("channel is: " + JSON.stringify(channel.get("type")));
-                                        //console.log("channelACL: " + JSON.stringify(channelACL));
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(true);
-                                        channelACL.setPublicWriteAccess(true);
-                                        channelACL.setReadAccess(owner, true);
-                                        channelACL.setWriteAccess(owner, true);
-
-                                        //console.log("channelACL: " + JSON.stringify(channelACL));
-                                        channel.setACL(channelACL);
-
-                                        response.success();
-
-
-                                    }
-                                    else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
-
-                                        //var finalTime = process.hrtime(time);
-                                        //console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                                        response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
-                                    }
-                                    else {
-
-                                        //var finalTime = process.hrtime(time);
-                                        //console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                                        response.success();
-
-                                    }
-
-
-
-
-
-                                }
-                                else {
-                                    // no role exists don't add experts to channel
-
-                                    // by default archive needs to be set to false
-                                    channel.set("archive", false);
-
-                                    // By default allowMemberPostCreation is set to false
-                                    if (!channel.get("allowMemberPostCreation")) {
-                                        channel.set("allowMemberPostCreation", false);
-
-                                        // todo add role ACL to members to be able to create posts in this workspace
-
-                                    }
-
-                                    //console.log("channel: " + JSON.stringify(channel));
-
-                                    // If this is a private channel, set ACL for owner to read and write
-                                    if (channel.get("type") === 'private') {
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(owner, true);
-                                        channelACL.setWriteAccess(owner, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-                                    }
-                                    else if (channel.get("type") === 'privateMembers') {
-
-                                        // get member role for this workspace
-                                        let queryMemberRole = new Parse.Query(Parse.Role);
-                                        let memberName = 'member-' + workspace.id;
-
-                                        queryMemberRole.equalTo('name', memberName);
-                                        queryMemberRole.first({useMasterKey: true})
-                                            .then((memberRole) => {
-                                                // The object was retrieved successfully.
-
-                                                //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                                channelACL.setPublicReadAccess(false);
-                                                channelACL.setPublicWriteAccess(false);
-                                                channelACL.setReadAccess(memberRole, true);
-                                                channelACL.setWriteAccess(memberRole, true);
-                                                channel.setACL(channelACL);
-
-                                                let finalTime = process.hrtime(time);
-                                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                                response.success();
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                response.error(error);
-                                            }, {useMasterKey: true});
-
-
-                                    }
-                                    else if (channel.get("type") === 'privateExperts') {
-
-                                        // get member role for this workspace
-                                        let queryRole = new Parse.Query(Parse.Role);
-                                        let Name = 'expert-' + workspace.id;
-
-                                        queryRole.equalTo('name', Name);
-                                        queryRole.first({useMasterKey: true})
-                                            .then((Role) => {
-                                                // The object was retrieved successfully.
-
-                                                //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                                channelACL.setPublicReadAccess(false);
-                                                channelACL.setPublicWriteAccess(false);
-                                                channelACL.setReadAccess(Role, true);
-                                                channelACL.setWriteAccess(Role, true);
-                                                channel.setACL(channelACL);
-
-                                                let finalTime = process.hrtime(time);
-                                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                                response.success();
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                response.error(error);
-                                            }, {useMasterKey: true});
-
-
-                                    }
-                                    else if (channel.get("type") === 'privateAdmins') {
-
-                                        // get member role for this workspace
-                                        let queryRole = new Parse.Query(Parse.Role);
-                                        let Name = 'admin-' + workspace.id;
-
-                                        queryRole.equalTo('name', Name);
-                                        queryRole.first({useMasterKey: true})
-                                            .then((Role) => {
-                                                // The object was retrieved successfully.
-
-                                                //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                                channelACL.setPublicReadAccess(false);
-                                                channelACL.setPublicWriteAccess(false);
-                                                channelACL.setReadAccess(Role, true);
-                                                channelACL.setWriteAccess(Role, true);
-                                                channel.setACL(channelACL);
-
-                                                let finalTime = process.hrtime(time);
-                                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                                response.success();
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                response.error(error);
-                                            }, {useMasterKey: true});
-
-
-                                    }
-                                    else if (channel.get("type") === 'privateModerators') {
-
-                                        // get member role for this workspace
-                                        let queryRole = new Parse.Query(Parse.Role);
-                                        let Name = 'moderator-' + workspace.id;
-
-                                        queryRole.equalTo('name', Name);
-                                        queryRole.first({useMasterKey: true})
-                                            .then((Role) => {
-                                                // The object was retrieved successfully.
-
-                                                //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                                channelACL.setPublicReadAccess(false);
-                                                channelACL.setPublicWriteAccess(false);
-                                                channelACL.setReadAccess(Role, true);
-                                                channelACL.setWriteAccess(Role, true);
-                                                channel.setACL(channelACL);
-
-                                                let finalTime = process.hrtime(time);
-                                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                                response.success();
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                response.error(error);
-                                            }, {useMasterKey: true});
-
-
-                                    }
-                                    else if (channel.get("type") === 'privateOwners') {
-
-                                        // get member role for this workspace
-                                        let queryRole = new Parse.Query(Parse.Role);
-                                        let Name = 'owner-' + workspace.id;
-
-                                        queryRole.equalTo('name', Name);
-                                        queryRole.first({useMasterKey: true})
-                                            .then((Role) => {
-                                                // The object was retrieved successfully.
-
-                                                //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                                channelACL.setPublicReadAccess(false);
-                                                channelACL.setPublicWriteAccess(false);
-                                                channelACL.setReadAccess(Role, true);
-                                                channelACL.setWriteAccess(Role, true);
-                                                channel.setACL(channelACL);
-
-                                                let finalTime = process.hrtime(time);
-                                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                                response.success();
-
-
-                                            }, (error) => {
-                                                // The object was not retrieved successfully.
-                                                // error is a Parse.Error with an error code and message.
-                                                response.error(error);
-                                            }, {useMasterKey: true});
-
-                                    }
-                                    else if (channel.get("type") === 'public') {
-
-                                        //console.log("channel is: " + JSON.stringify(channel.get("type")));
-                                        //console.log("channelACL: " + JSON.stringify(channelACL));
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(true);
-                                        channelACL.setPublicWriteAccess(true);
-                                        channelACL.setReadAccess(owner, true);
-                                        channelACL.setWriteAccess(owner, true);
-
-                                        //console.log("channelACL: " + JSON.stringify(channelACL));
-                                        channel.setACL(channelACL);
-
-                                        response.success();
-
-
-                                    }
-                                    else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
-
-                                        //var finalTime = process.hrtime(time);
-                                        //console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                                        response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
-                                    }
-                                    else {
-
-                                        //var finalTime = process.hrtime(time);
-                                        //console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                                        response.success();
-
-                                    }
-
-
-                                }
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                console.log("userRoleRelationQuery no result");
-                                return callback (error);
-                            }, {
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
-
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            console.log("userRoleRelationQuery no result");
-                            return callback (error);
-                        }, {
-
-                            useMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
-
-                        });
-
-
-
-
-                    }
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    response.error(error);
-                }, {
-                    //useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-                });
-
-
-            }
-            else if (!channel.isNew() && channel.dirty("name")) {
-
-
-                channel.set("isNew", false);
-                //console.log("Channel is New, and name updated");
-
-                queryChannel.equalTo("workspace", channel.get("workspace"));
-                queryChannel.equalTo("name", channel.get("name"));
-
-                queryChannel.first({
-
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                }).then((results) => {
+                }).then((User) => {
                     // The object was retrieved successfully.
 
-                    if (results) {
-                        // channel name is not unique return error
-                        response.error(results);
+                    //console.log("user object: " + JSON.stringify(User));
+                    let userRoleRelation = User.relation("roles");
+                    //let expertChannelRelation = channelObject.relation("experts");
+                    //console.log("userRole: " + JSON.stringify(userRoleRelation));
+                    //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
 
-                    } else {
+                    let expertRoleName = "expert-" + workspace.id;
 
-                        // By default allowMemberPostCreation is set to false
-                        if (channel.dirty("allowMemberPostCreation")) {
+                    let userRoleRelationQuery = userRoleRelation.query();
+                    userRoleRelationQuery.equalTo("name", expertRoleName);
+                    userRoleRelationQuery.first({
 
-                            // todo add role ACL to members to be able to creat posts in this workspace
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
-                        }
+                    }).then((results) => {
+                        // The object was retrieved successfully.
 
-                        if (channel.dirty("type")) {
+                        if (results) {
 
-                            //channelACL = new Parse.ACL();
+                            // expert role exists, add as channel expert
+                            console.log("channelExpert: " + JSON.stringify(results));
+
+
+                            let expertOwner = simplifyUser(User);
+                            console.log("expertOnwer: " + JSON.stringify(expertOwner));
+
+
+                            channel.addUnique("expertsArray", expertOwner);
+
+
+                            console.log("addExpertsArrayToChannel channel: " + JSON.stringify(channel));
+
+                            // by default archive needs to be set to false
+                            channel.set("archive", false);
+
+                            // By default allowMemberPostCreation is set to false
+                            if (!channel.get("allowMemberPostCreation")) {
+                                channel.set("allowMemberPostCreation", false);
+
+                                // todo add role ACL to members to be able to create posts in this workspace
+
+                            }
+
+                            //console.log("channel: " + JSON.stringify(channel));
 
                             // If this is a private channel, set ACL for owner to read and write
                             if (channel.get("type") === 'private') {
@@ -3825,13 +3309,12 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 channelACL.setWriteAccess(owner, true);
                                 channel.setACL(channelACL);
 
-                                // todo send a notification to members and followers that now this channel is private
-
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                 response.success();
 
-                            } else if (channel.get("type") === 'privateMembers') {
-
-                                // todo send notification to all users who are not members since they won't get access to this channel anymore
+                            }
+                            else if (channel.get("type") === 'privateMembers') {
 
                                 // get member role for this workspace
                                 let queryMemberRole = new Parse.Query(Parse.Role);
@@ -3849,10 +3332,10 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                         channelACL.setPublicWriteAccess(false);
                                         channelACL.setReadAccess(memberRole, true);
                                         channelACL.setWriteAccess(memberRole, true);
-                                        channelACL.setReadAccess(owner, true);
-                                        channelACL.setWriteAccess(owner, true);
                                         channel.setACL(channelACL);
 
+                                        let finalTime = process.hrtime(time);
+                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                         response.success();
 
 
@@ -3863,10 +3346,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     }, {useMasterKey: true});
 
 
-                            } else if (channel.get("type") === 'privateExperts') {
-
-                                // todo send notification to all users who are not experts since they won't get access to this channel anymore
-
+                            }
+                            else if (channel.get("type") === 'privateExperts') {
 
                                 // get member role for this workspace
                                 let queryRole = new Parse.Query(Parse.Role);
@@ -3877,17 +3358,17 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     .then((Role) => {
                                         // The object was retrieved successfully.
 
-                                        //console.log("memberRole" + JSON.stringify(Role));
+                                        //console.log("memberRole" + JSON.stringify(memberRole));
 
                                         // private workspace, but this is a channel that is accessible to all members of this private workspace
                                         channelACL.setPublicReadAccess(false);
                                         channelACL.setPublicWriteAccess(false);
                                         channelACL.setReadAccess(Role, true);
                                         channelACL.setWriteAccess(Role, true);
-                                        channelACL.setReadAccess(owner, true);
-                                        channelACL.setWriteAccess(owner, true);
                                         channel.setACL(channelACL);
 
+                                        let finalTime = process.hrtime(time);
+                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                         response.success();
 
 
@@ -3898,10 +3379,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     }, {useMasterKey: true});
 
 
-                            } else if (channel.get("type") === 'privateAdmins') {
-
-                                // todo send notification to all users who are not admins since they won't get access to this channel anymore
-
+                            }
+                            else if (channel.get("type") === 'privateAdmins') {
 
                                 // get member role for this workspace
                                 let queryRole = new Parse.Query(Parse.Role);
@@ -3912,17 +3391,17 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     .then((Role) => {
                                         // The object was retrieved successfully.
 
-                                        //console.log("memberRole" + JSON.stringify(Role));
+                                        //console.log("memberRole" + JSON.stringify(memberRole));
 
                                         // private workspace, but this is a channel that is accessible to all members of this private workspace
                                         channelACL.setPublicReadAccess(false);
                                         channelACL.setPublicWriteAccess(false);
                                         channelACL.setReadAccess(Role, true);
                                         channelACL.setWriteAccess(Role, true);
-                                        channelACL.setReadAccess(owner, true);
-                                        channelACL.setWriteAccess(owner, true);
                                         channel.setACL(channelACL);
 
+                                        let finalTime = process.hrtime(time);
+                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                         response.success();
 
 
@@ -3932,9 +3411,9 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                         response.error(error);
                                     }, {useMasterKey: true});
 
-                            } else if (channel.get("type") === 'privateModerators') {
 
-                                // todo send notification to all users who are not moderators since they won't get access to this channel anymore
+                            }
+                            else if (channel.get("type") === 'privateModerators') {
 
                                 // get member role for this workspace
                                 let queryRole = new Parse.Query(Parse.Role);
@@ -3945,17 +3424,17 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     .then((Role) => {
                                         // The object was retrieved successfully.
 
-                                        //console.log("memberRole" + JSON.stringify(Role));
+                                        //console.log("memberRole" + JSON.stringify(memberRole));
 
                                         // private workspace, but this is a channel that is accessible to all members of this private workspace
                                         channelACL.setPublicReadAccess(false);
                                         channelACL.setPublicWriteAccess(false);
                                         channelACL.setReadAccess(Role, true);
                                         channelACL.setWriteAccess(Role, true);
-                                        channelACL.setReadAccess(owner, true);
-                                        channelACL.setWriteAccess(owner, true);
                                         channel.setACL(channelACL);
 
+                                        let finalTime = process.hrtime(time);
+                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                         response.success();
 
 
@@ -3965,10 +3444,9 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                         response.error(error);
                                     }, {useMasterKey: true});
 
-                            } else if (channel.get("type") === 'privateOwners') {
 
-                                // todo send notification to all users who are not privateOwners since they won't get access to this channel anymore
-
+                            }
+                            else if (channel.get("type") === 'privateOwners') {
 
                                 // get member role for this workspace
                                 let queryRole = new Parse.Query(Parse.Role);
@@ -3979,17 +3457,17 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                     .then((Role) => {
                                         // The object was retrieved successfully.
 
-                                        //console.log("memberRole" + JSON.stringify(Role));
+                                        //console.log("memberRole" + JSON.stringify(memberRole));
 
                                         // private workspace, but this is a channel that is accessible to all members of this private workspace
                                         channelACL.setPublicReadAccess(false);
                                         channelACL.setPublicWriteAccess(false);
                                         channelACL.setReadAccess(Role, true);
                                         channelACL.setWriteAccess(Role, true);
-                                        channelACL.setReadAccess(owner, true);
-                                        channelACL.setWriteAccess(owner, true);
                                         channel.setACL(channelACL);
 
+                                        let finalTime = process.hrtime(time);
+                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                                         response.success();
 
 
@@ -3999,50 +3477,342 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                         response.error(error);
                                     }, {useMasterKey: true});
 
-                            } else if (channel.get("type") === 'public') {
+                            }
+                            else if (channel.get("type") === 'public') {
 
+                                //console.log("channel is: " + JSON.stringify(channel.get("type")));
+                                //console.log("channelACL: " + JSON.stringify(channelACL));
                                 // private workspace, but this is a channel that is accessible to all members of this private workspace
                                 channelACL.setPublicReadAccess(true);
                                 channelACL.setPublicWriteAccess(true);
                                 channelACL.setReadAccess(owner, true);
                                 channelACL.setWriteAccess(owner, true);
+
+                                //console.log("channelACL: " + JSON.stringify(channelACL));
                                 channel.setACL(channelACL);
 
                                 let finalTime = process.hrtime(time);
-                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
                                 response.success();
 
 
-                            } else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
+                            }
+                            else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                                 response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
-                            } else {
+                            }
+                            else {
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                                 response.success();
 
                             }
 
 
-                        } else {
-                            response.success();
+
+
+
                         }
+                        else {
+                            // no role exists don't add experts to channel
+
+                            // by default archive needs to be set to false
+                            channel.set("archive", false);
+
+                            // By default allowMemberPostCreation is set to false
+                            if (!channel.get("allowMemberPostCreation")) {
+                                channel.set("allowMemberPostCreation", false);
+
+                                // todo add role ACL to members to be able to create posts in this workspace
+
+                            }
+
+                            //console.log("channel: " + JSON.stringify(channel));
+
+                            // If this is a private channel, set ACL for owner to read and write
+                            if (channel.get("type") === 'private') {
+                                channelACL.setPublicReadAccess(false);
+                                channelACL.setPublicWriteAccess(false);
+                                channelACL.setReadAccess(owner, true);
+                                channelACL.setWriteAccess(owner, true);
+                                channel.setACL(channelACL);
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                                response.success();
+
+                            }
+                            else if (channel.get("type") === 'privateMembers') {
+
+                                // get member role for this workspace
+                                let queryMemberRole = new Parse.Query(Parse.Role);
+                                let memberName = 'member-' + workspace.id;
+
+                                queryMemberRole.equalTo('name', memberName);
+                                queryMemberRole.first({useMasterKey: true})
+                                    .then((memberRole) => {
+                                        // The object was retrieved successfully.
+
+                                        //console.log("memberRole" + JSON.stringify(memberRole));
+
+                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                        channelACL.setPublicReadAccess(false);
+                                        channelACL.setPublicWriteAccess(false);
+                                        channelACL.setReadAccess(memberRole, true);
+                                        channelACL.setWriteAccess(memberRole, true);
+                                        channel.setACL(channelACL);
+
+                                        let finalTime = process.hrtime(time);
+                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                                        response.success();
 
 
-                    }
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        response.error(error);
+                                    }, {useMasterKey: true});
 
+
+                            }
+                            else if (channel.get("type") === 'privateExperts') {
+
+                                // get member role for this workspace
+                                let queryRole = new Parse.Query(Parse.Role);
+                                let Name = 'expert-' + workspace.id;
+
+                                queryRole.equalTo('name', Name);
+                                queryRole.first({useMasterKey: true})
+                                    .then((Role) => {
+                                        // The object was retrieved successfully.
+
+                                        //console.log("memberRole" + JSON.stringify(memberRole));
+
+                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                        channelACL.setPublicReadAccess(false);
+                                        channelACL.setPublicWriteAccess(false);
+                                        channelACL.setReadAccess(Role, true);
+                                        channelACL.setWriteAccess(Role, true);
+                                        channel.setACL(channelACL);
+
+                                        let finalTime = process.hrtime(time);
+                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                                        response.success();
+
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        response.error(error);
+                                    }, {useMasterKey: true});
+
+
+                            }
+                            else if (channel.get("type") === 'privateAdmins') {
+
+                                // get member role for this workspace
+                                let queryRole = new Parse.Query(Parse.Role);
+                                let Name = 'admin-' + workspace.id;
+
+                                queryRole.equalTo('name', Name);
+                                queryRole.first({useMasterKey: true})
+                                    .then((Role) => {
+                                        // The object was retrieved successfully.
+
+                                        //console.log("memberRole" + JSON.stringify(memberRole));
+
+                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                        channelACL.setPublicReadAccess(false);
+                                        channelACL.setPublicWriteAccess(false);
+                                        channelACL.setReadAccess(Role, true);
+                                        channelACL.setWriteAccess(Role, true);
+                                        channel.setACL(channelACL);
+
+                                        let finalTime = process.hrtime(time);
+                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                                        response.success();
+
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        response.error(error);
+                                    }, {useMasterKey: true});
+
+
+                            }
+                            else if (channel.get("type") === 'privateModerators') {
+
+                                // get member role for this workspace
+                                let queryRole = new Parse.Query(Parse.Role);
+                                let Name = 'moderator-' + workspace.id;
+
+                                queryRole.equalTo('name', Name);
+                                queryRole.first({useMasterKey: true})
+                                    .then((Role) => {
+                                        // The object was retrieved successfully.
+
+                                        //console.log("memberRole" + JSON.stringify(memberRole));
+
+                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                        channelACL.setPublicReadAccess(false);
+                                        channelACL.setPublicWriteAccess(false);
+                                        channelACL.setReadAccess(Role, true);
+                                        channelACL.setWriteAccess(Role, true);
+                                        channel.setACL(channelACL);
+
+                                        let finalTime = process.hrtime(time);
+                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                                        response.success();
+
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        response.error(error);
+                                    }, {useMasterKey: true});
+
+
+                            }
+                            else if (channel.get("type") === 'privateOwners') {
+
+                                // get member role for this workspace
+                                let queryRole = new Parse.Query(Parse.Role);
+                                let Name = 'owner-' + workspace.id;
+
+                                queryRole.equalTo('name', Name);
+                                queryRole.first({useMasterKey: true})
+                                    .then((Role) => {
+                                        // The object was retrieved successfully.
+
+                                        //console.log("memberRole" + JSON.stringify(memberRole));
+
+                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                        channelACL.setPublicReadAccess(false);
+                                        channelACL.setPublicWriteAccess(false);
+                                        channelACL.setReadAccess(Role, true);
+                                        channelACL.setWriteAccess(Role, true);
+                                        channel.setACL(channelACL);
+
+                                        let finalTime = process.hrtime(time);
+                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                                        response.success();
+
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        response.error(error);
+                                    }, {useMasterKey: true});
+
+                            }
+                            else if (channel.get("type") === 'public') {
+
+                                //console.log("channel is: " + JSON.stringify(channel.get("type")));
+                                //console.log("channelACL: " + JSON.stringify(channelACL));
+                                // private workspace, but this is a channel that is accessible to all members of this private workspace
+                                channelACL.setPublicReadAccess(true);
+                                channelACL.setPublicWriteAccess(true);
+                                channelACL.setReadAccess(owner, true);
+                                channelACL.setWriteAccess(owner, true);
+
+                                //console.log("channelACL: " + JSON.stringify(channelACL));
+                                channel.setACL(channelACL);
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                                response.success();
+
+
+                            }
+                            else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                                response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+                            }
+                            else {
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                                response.success();
+
+                            }
+
+
+                        }
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        console.log("userRoleRelationQuery no result");
+                        return response.error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
 
                 }, (error) => {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
-                    response.error(error);
-                }, {useMasterKey: true});
+                    console.log("userRoleRelationQuery no result");
+                    return response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+
 
             }
-            else if (!channel.isNew() && !channel.dirty("name")) {
 
-                Channel.set("isNew", false);
-                console.log("Channel is not new and name didn't change: " + JSON.stringify(channel));
 
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+            useMasterKey: true
+            //sessionToken: req.user.getSessionToken()
+        });
+
+
+    }
+    else if (!channel.isNew() && channel.dirty("name")) {
+
+
+        channel.set("isNew", false);
+        //console.log("Channel is New, and name updated");
+
+        queryChannel.equalTo("workspace", channel.get("workspace"));
+        queryChannel.equalTo("name", channel.get("name"));
+
+        queryChannel.first({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }).then((results) => {
+            // The object was retrieved successfully.
+
+            if (results) {
+                // channel name is not unique return error
+                return response.error(results);
+
+            } else {
 
                 // By default allowMemberPostCreation is set to false
                 if (channel.dirty("allowMemberPostCreation")) {
@@ -4063,14 +3833,14 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         channelACL.setWriteAccess(owner, true);
                         channel.setACL(channelACL);
 
-                        console.log("channel update, type changed, private.");
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                         // todo send a notification to members and followers that now this channel is private
 
                         response.success();
 
-                    }
-                    else if (channel.get("type") === 'privateMembers') {
+                    } else if (channel.get("type") === 'privateMembers') {
 
                         // todo send notification to all users who are not members since they won't get access to this channel anymore
 
@@ -4083,7 +3853,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             .then((memberRole) => {
                                 // The object was retrieved successfully.
 
-                                console.log("memberRole" + JSON.stringify(memberRole));
+                                //console.log("memberRole" + JSON.stringify(memberRole));
 
                                 // private workspace, but this is a channel that is accessible to all members of this private workspace
                                 channelACL.setPublicReadAccess(false);
@@ -4093,6 +3863,9 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 channelACL.setReadAccess(owner, true);
                                 channelACL.setWriteAccess(owner, true);
                                 channel.setACL(channelACL);
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                                 response.success();
 
@@ -4104,8 +3877,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             }, {useMasterKey: true});
 
 
-                    }
-                    else if (channel.get("type") === 'privateExperts') {
+                    } else if (channel.get("type") === 'privateExperts') {
 
                         // todo send notification to all users who are not experts since they won't get access to this channel anymore
 
@@ -4119,7 +3891,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             .then((Role) => {
                                 // The object was retrieved successfully.
 
-                                console.log("memberRole" + JSON.stringify(Role));
+                                //console.log("memberRole" + JSON.stringify(Role));
 
                                 // private workspace, but this is a channel that is accessible to all members of this private workspace
                                 channelACL.setPublicReadAccess(false);
@@ -4129,6 +3901,9 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 channelACL.setReadAccess(owner, true);
                                 channelACL.setWriteAccess(owner, true);
                                 channel.setACL(channelACL);
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                                 response.success();
 
@@ -4140,8 +3915,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             }, {useMasterKey: true});
 
 
-                    }
-                    else if (channel.get("type") === 'privateAdmins') {
+                    } else if (channel.get("type") === 'privateAdmins') {
 
                         // todo send notification to all users who are not admins since they won't get access to this channel anymore
 
@@ -4155,14 +3929,19 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             .then((Role) => {
                                 // The object was retrieved successfully.
 
-                                console.log("memberRole" + JSON.stringify(Role));
+                                //console.log("memberRole" + JSON.stringify(Role));
 
                                 // private workspace, but this is a channel that is accessible to all members of this private workspace
                                 channelACL.setPublicReadAccess(false);
                                 channelACL.setPublicWriteAccess(false);
                                 channelACL.setReadAccess(Role, true);
                                 channelACL.setWriteAccess(Role, true);
+                                channelACL.setReadAccess(owner, true);
+                                channelACL.setWriteAccess(owner, true);
                                 channel.setACL(channelACL);
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                                 response.success();
 
@@ -4173,8 +3952,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 response.error(error);
                             }, {useMasterKey: true});
 
-                    }
-                    else if (channel.get("type") === 'privateModerators') {
+                    } else if (channel.get("type") === 'privateModerators') {
 
                         // todo send notification to all users who are not moderators since they won't get access to this channel anymore
 
@@ -4187,14 +3965,19 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             .then((Role) => {
                                 // The object was retrieved successfully.
 
-                                console.log("memberRole" + JSON.stringify(Role));
+                                //console.log("memberRole" + JSON.stringify(Role));
 
                                 // private workspace, but this is a channel that is accessible to all members of this private workspace
                                 channelACL.setPublicReadAccess(false);
                                 channelACL.setPublicWriteAccess(false);
                                 channelACL.setReadAccess(Role, true);
                                 channelACL.setWriteAccess(Role, true);
+                                channelACL.setReadAccess(owner, true);
+                                channelACL.setWriteAccess(owner, true);
                                 channel.setACL(channelACL);
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                                 response.success();
 
@@ -4205,8 +3988,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 response.error(error);
                             }, {useMasterKey: true});
 
-                    }
-                    else if (channel.get("type") === 'privateOwners') {
+                    } else if (channel.get("type") === 'privateOwners') {
 
                         // todo send notification to all users who are not privateOwners since they won't get access to this channel anymore
 
@@ -4220,14 +4002,19 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                             .then((Role) => {
                                 // The object was retrieved successfully.
 
-                                console.log("memberRole" + JSON.stringify(Role));
+                                //console.log("memberRole" + JSON.stringify(Role));
 
                                 // private workspace, but this is a channel that is accessible to all members of this private workspace
                                 channelACL.setPublicReadAccess(false);
                                 channelACL.setPublicWriteAccess(false);
                                 channelACL.setReadAccess(Role, true);
                                 channelACL.setWriteAccess(Role, true);
+                                channelACL.setReadAccess(owner, true);
+                                channelACL.setWriteAccess(owner, true);
                                 channel.setACL(channelACL);
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                                 response.success();
 
@@ -4238,8 +4025,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                                 response.error(error);
                             }, {useMasterKey: true});
 
-                    }
-                    else if (channel.get("type") === 'public') {
+                    } else if (channel.get("type") === 'public') {
 
                         // private workspace, but this is a channel that is accessible to all members of this private workspace
                         channelACL.setPublicReadAccess(true);
@@ -4249,15 +4035,20 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         channel.setACL(channelACL);
 
                         let finalTime = process.hrtime(time);
-                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                        console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                         response.success();
 
 
-                    }
-                    else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
+                    } else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                         response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
                     } else {
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
                         response.success();
 
@@ -4265,25 +4056,293 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
 
                 } else {
-                    console.log("channel change, type is not updated.");
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
                     response.success();
                 }
 
 
             }
-            else {
-                if (!channel.get("isNew")) {
-                    channel.set("isNew", false);
-                }
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {useMasterKey: true});
+
+    }
+    else if (!channel.isNew() && !channel.dirty("name")) {
+
+        Channel.set("isNew", false);
+        console.log("Channel is not new and name didn't change: " + JSON.stringify(channel));
+
+
+        // By default allowMemberPostCreation is set to false
+        if (channel.dirty("allowMemberPostCreation")) {
+
+            // todo add role ACL to members to be able to create posts in this workspace
+
+        }
+
+        if (channel.dirty("type")) {
+
+            //channelACL = new Parse.ACL();
+
+            // If this is a private channel, set ACL for owner to read and write
+            if (channel.get("type") === 'private') {
+                channelACL.setPublicReadAccess(false);
+                channelACL.setPublicWriteAccess(false);
+                channelACL.setReadAccess(owner, true);
+                channelACL.setWriteAccess(owner, true);
+                channel.setACL(channelACL);
+
+                //console.log("channel update, type changed, private.");
+
+                // todo send a notification to members and followers that now this channel is private
 
                 let finalTime = process.hrtime(time);
-                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
                 response.success();
+
+            }
+            else if (channel.get("type") === 'privateMembers') {
+
+                // todo send notification to all users who are not members since they won't get access to this channel anymore
+
+                // get member role for this workspace
+                let queryMemberRole = new Parse.Query(Parse.Role);
+                let memberName = 'member-' + workspace.id;
+
+                queryMemberRole.equalTo('name', memberName);
+                queryMemberRole.first({useMasterKey: true})
+                    .then((memberRole) => {
+                        // The object was retrieved successfully.
+
+                        console.log("memberRole" + JSON.stringify(memberRole));
+
+                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                        channelACL.setPublicReadAccess(false);
+                        channelACL.setPublicWriteAccess(false);
+                        channelACL.setReadAccess(memberRole, true);
+                        channelACL.setWriteAccess(memberRole, true);
+                        channelACL.setReadAccess(owner, true);
+                        channelACL.setWriteAccess(owner, true);
+                        channel.setACL(channelACL);
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {useMasterKey: true});
+
+
+            }
+            else if (channel.get("type") === 'privateExperts') {
+
+                // todo send notification to all users who are not experts since they won't get access to this channel anymore
+
+
+                // get member role for this workspace
+                let queryRole = new Parse.Query(Parse.Role);
+                let Name = 'expert-' + workspace.id;
+
+                queryRole.equalTo('name', Name);
+                queryRole.first({useMasterKey: true})
+                    .then((Role) => {
+                        // The object was retrieved successfully.
+
+                        console.log("memberRole" + JSON.stringify(Role));
+
+                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                        channelACL.setPublicReadAccess(false);
+                        channelACL.setPublicWriteAccess(false);
+                        channelACL.setReadAccess(Role, true);
+                        channelACL.setWriteAccess(Role, true);
+                        channelACL.setReadAccess(owner, true);
+                        channelACL.setWriteAccess(owner, true);
+                        channel.setACL(channelACL);
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {useMasterKey: true});
+
+
+            }
+            else if (channel.get("type") === 'privateAdmins') {
+
+                // todo send notification to all users who are not admins since they won't get access to this channel anymore
+
+
+                // get member role for this workspace
+                let queryRole = new Parse.Query(Parse.Role);
+                let Name = 'admin-' + workspace.id;
+
+                queryRole.equalTo('name', Name);
+                queryRole.first({useMasterKey: true})
+                    .then((Role) => {
+                        // The object was retrieved successfully.
+
+                        console.log("memberRole" + JSON.stringify(Role));
+
+                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                        channelACL.setPublicReadAccess(false);
+                        channelACL.setPublicWriteAccess(false);
+                        channelACL.setReadAccess(Role, true);
+                        channelACL.setWriteAccess(Role, true);
+                        channel.setACL(channelACL);
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {useMasterKey: true});
+
+            }
+            else if (channel.get("type") === 'privateModerators') {
+
+                // todo send notification to all users who are not moderators since they won't get access to this channel anymore
+
+                // get member role for this workspace
+                let queryRole = new Parse.Query(Parse.Role);
+                let Name = 'moderator-' + workspace.id;
+
+                queryRole.equalTo('name', Name);
+                queryRole.first({useMasterKey: true})
+                    .then((Role) => {
+                        // The object was retrieved successfully.
+
+                        console.log("memberRole" + JSON.stringify(Role));
+
+                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                        channelACL.setPublicReadAccess(false);
+                        channelACL.setPublicWriteAccess(false);
+                        channelACL.setReadAccess(Role, true);
+                        channelACL.setWriteAccess(Role, true);
+                        channel.setACL(channelACL);
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {useMasterKey: true});
+
+            }
+            else if (channel.get("type") === 'privateOwners') {
+
+                // todo send notification to all users who are not privateOwners since they won't get access to this channel anymore
+
+
+                // get member role for this workspace
+                let queryRole = new Parse.Query(Parse.Role);
+                let Name = 'owner-' + workspace.id;
+
+                queryRole.equalTo('name', Name);
+                queryRole.first({useMasterKey: true})
+                    .then((Role) => {
+                        // The object was retrieved successfully.
+
+                        console.log("memberRole" + JSON.stringify(Role));
+
+                        // private workspace, but this is a channel that is accessible to all members of this private workspace
+                        channelACL.setPublicReadAccess(false);
+                        channelACL.setPublicWriteAccess(false);
+                        channelACL.setReadAccess(Role, true);
+                        channelACL.setWriteAccess(Role, true);
+                        channel.setACL(channelACL);
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {useMasterKey: true});
+
+            }
+            else if (channel.get("type") === 'public') {
+
+                // private workspace, but this is a channel that is accessible to all members of this private workspace
+                channelACL.setPublicReadAccess(true);
+                channelACL.setPublicWriteAccess(true);
+                channelACL.setReadAccess(owner, true);
+                channelACL.setWriteAccess(owner, true);
+                channel.setACL(channelACL);
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                response.success();
+
+
+            }
+            else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+            } else {
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                response.success();
+
             }
 
 
+        } else {
+            //console.log("channel change, type is not updated.");
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took  beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+            response.success();
         }
+
+
     }
+    else {
+        if (!channel.get("isNew")) {
+            channel.set("isNew", false);
+        }
+
+        let finalTime = process.hrtime(time);
+        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+        response.success();
+    }
+
 
 }, {useMasterKey: true});
 
@@ -4874,48 +4933,762 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
     let workspace_follower = req.object;
 
-    if (!req.user) {
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
-        response.error("beforeSave workspace_follower Session token: X-Parse-Session-Token is required");
+    if (!req.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.005.beforeSave-workspace_follower.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
 
-    } else if (req.user) {
+    let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+    let WorkspaceFollower = new WORKSPACEFOLLOWER();
+    WorkspaceFollower.id = workspace_follower.id;
+    let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+    queryWorkspaceFollower.include(["user", "workspace"]);
 
-        if (!req.user.getSessionToken()) {
+    //let USER = Parse.Object.extend("_User");
+    let user = new Parse.Object("_User");
+    user.id = req.user.id;
+    console.log("user beforeSave workspace_follower: " + JSON.stringify(user));
+    if (!user) { return response.error("please add _User it's required when adding new or updating workspace follower");} else {
+        var userRolesRelation = user.relation("roles");
+        console.log("user beforeSave workspace_follower userRoleRelation: " + JSON.stringify(user));
 
-            response.error("beforeSave workspace_follower Session token: X-Parse-Session-Token is required");
+    }
 
-        } else {
+    let queryMemberRole = new Parse.Query(Parse.Role);
+    let queryfollowerRole = new Parse.Query(Parse.Role);
 
-            let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-            let WorkspaceFollower = new WORKSPACEFOLLOWER();
-            WorkspaceFollower.id = workspace_follower.id;
-            let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
-            queryWorkspaceFollower.include(["user", "workspace"]);
 
-            //let USER = Parse.Object.extend("_User");
-            let user = new Parse.Object("_User");
-            user.id = req.user.id;
-            console.log("user beforeSave workspace_follower: " + JSON.stringify(user));
-            if (!user) { return response.error("please add _User it's required when adding new or updating workspace follower");} else {
-                var userRolesRelation = user.relation("roles");
-                console.log("user beforeSave workspace_follower userRoleRelation: " + JSON.stringify(user));
+    // if there is a new workspace_follower object increase counter for number of followers and members on a workspace
+    if (workspace_follower.isNew()) {
+
+        let workspace = workspace_follower.get("workspace");
+
+        //let WORKSPACE = Parse.Object.extend("WorkSpace");
+        let Workspace = new Parse.Object("WorkSpace");
+        Workspace.id = workspace.id;
+
+        //let Channel = Parse.Object.extend("Channel");
+        let Channel = new Parse.Object("Channel");
+
+        let CHANNEL = Parse.Object.extend("Channel");
+        let defaultChannelQuery = new Parse.Query(CHANNEL);
+        defaultChannelQuery.equalTo("default", true);
+        defaultChannelQuery.equalTo("workspace", Workspace);
+
+        let memberName = "member-" + Workspace.id;
+        let followerName = "Follower-" + Workspace.id;
+
+        let workspaceFollowerName = workspace_follower.get("user").id + "-" + workspace_follower.get("workspace").id;
+        //console.log("workspaceFollowerName user: " + JSON.stringify(workspaceFollowerName));
+
+        workspace_follower.set("name", workspaceFollowerName);
+        workspace_follower.set("archive", false);
+        if (!workspace_follower.get("isMemberRequestedByWorkspaceAdmin")) {
+            workspace_follower.set("isMemberRequestedByWorkspaceAdmin", false);
+        }
+        if (!workspace_follower.get("isMemberRequestedByUser")) {
+            workspace_follower.set("isMemberRequestedByUser", false);
+        }
+        if (!workspace_follower.get("isSelected")) {
+            workspace_follower.set("isSelected", false);
+        }
+        if (!workspace_follower.get("isNotified")) {
+            workspace_follower.set("isNotified", false);
+        }
+        if (!workspace_follower.get("isUnRead")) {
+            workspace_follower.set("isUnRead", false);
+        }
+        if (!workspace_follower.get("notificationCount")) {
+            workspace_follower.set("notificationCount", 0);
+        }
+        if (!workspace_follower.get("isNewWorkspace")) {
+            workspace_follower.set("isNewWorkspace", false);
+        }
+
+
+        queryWorkspaceFollower.equalTo("name", workspaceFollowerName);
+
+        // check to make sure that the workspace_follower for a user - workspace is unique
+        queryWorkspaceFollower.first({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }).then((results) => {
+
+            if (results) {
+
+                //Workspace_follower already exists in DB in Skill table, return an error because it needs to be unique
+                let beforeSaveElse_Time = process.hrtime(time);
+                console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                return response.error(results);
+
+            } else {
+
+                let previousQueryWorkspaceFollowerJoin = new Parse.Query(WORKSPACEFOLLOWER);
+                previousQueryWorkspaceFollowerJoin.include("workspace");
+                previousQueryWorkspaceFollowerJoin.equalTo("user", user);
+                previousQueryWorkspaceFollowerJoin.equalTo("isSelected", true);
+
+                function createDefaultChannelFollows (callback) {
+
+                    if (!workspace_follower.get("isNewWorkspace") || workspace_follower.get("isNewWorkspace") === false) {
+
+                        defaultChannelQuery.find({
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((defaultChannels) => {
+                            // The object was retrieved successfully.
+
+                            if (defaultChannels) {
+
+                                async.map(defaultChannels, function (defaultChannelObject, cb) {
+
+                                    //let ChannelFollower = Parse.Object.extend("ChannelFollow");
+                                    let channelFollower = new Parse.Object("ChannelFollow");
+                                    let ChannelObject = new Parse.Object("Channel");
+                                    ChannelObject.id = defaultChannelObject.id;
+
+                                    console.log("defaultChannelQuery: " + JSON.stringify(defaultChannelObject));
+
+                                    channelFollower.set("archive", false);
+                                    channelFollower.set("user", user);
+                                    channelFollower.set("workspace", Workspace);
+                                    channelFollower.set("channel", ChannelObject);
+                                    channelFollower.set("notificationCount", 0);
+                                    if (defaultChannelObject.get("name") === 'general') {
+                                        channelFollower.set("isSelected", true);
+                                    } else {
+                                        channelFollower.set("isSelected", false);
+                                    }
+
+                                    channelFollower.set("isMember", true);
+                                    channelFollower.set("isFollower", true);
+
+                                    console.log("channelFollow final before save: " + JSON.stringify(channelFollower));
+
+                                    channelFollower.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+
+                                    });
+
+                                    defaultChannelObject = channelFollower;
+
+                                    return cb (null, defaultChannelObject);
+
+
+                                }, function (err, defaultChannels) {
+
+                                    //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
+
+                                    if (err) {
+                                        return callback (err);
+                                    } else {
+
+                                        return callback (null, defaultChannels);
+
+
+                                    }
+
+                                });
+
+
+
+                            } else {
+
+                                return callback (null, defaultChannels);
+                            }
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                    }
+                    else if (workspace_follower.get("isNewWorkspace") === true) {
+
+                        return callback (null, workspace_follower);
+                    }
+
+                }
+
+                function addFollowerRole (callback) {
+
+                    // now add follower since a member is by default a follower
+                    queryfollowerRole.equalTo('name', followerName);
+
+                    queryfollowerRole.first({
+
+                        useMasterKey: true,
+                        //sessionToken: sessionToken
+
+                    }).then((followerRole) => {
+                        // The object was retrieved successfully.
+
+                        followerRole.getUsers().add(user);
+                        followerRole.save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                        console.log("followerRole: " + JSON.stringify(followerRole));
+
+
+                        return callback (null, followerRole);
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback (error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                }
+
+                function addMemberRole (callback) {
+
+                    queryMemberRole.equalTo('name', memberName);
+                    queryMemberRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((memberRole) => {
+                        // The object was retrieved successfully.
+
+                        //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+
+                        memberRole.getUsers().add(user);
+                        memberRole.save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                        return callback (null, memberRole);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback (error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: req.user.getSessionToken()
+
+                    });
+
+
+                }
+
+                function removeAllPreviousSelectedWorkspaceFollowerJoin (callback) {
+
+                    previousQueryWorkspaceFollowerJoin.find( {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((results) => {
+                        // The object was retrieved successfully.
+
+                        if (results) {
+
+                            let previousWorkspaceFollowers = results;
+
+                            // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
+
+                                console.log("removePreviousWorkspaceFollowSelected" );
+
+                                // joining a workspace follower, so mark previous one as false
+                                if (previousWorkspaceFollowers.length > 0) {
+
+                                    console.log("marketing previous workspacefollow that isSelected to false: " +previousWorkspaceFollowers.length );
+
+                                    async.map(previousWorkspaceFollowers, function (workspaceFollow, cb) {
+
+                                        let workspace_Follow =  new WORKSPACEFOLLOWER();
+                                        workspace_Follow.id = workspaceFollow.id;
+
+                                        workspace_Follow.set("isSelected",false);
+
+                                        workspace_Follow.save(null, {
+
+                                            useMasterKey: true
+                                            //sessionToken: sessionToken
+                                        });
+
+                                        workspaceFollow = workspace_Follow;
+
+                                        return cb (null, workspaceFollow);
+
+
+                                    }, function (err, previousWorkspaceFollowers) {
+
+                                        //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
+
+                                        if (err) {
+                                            return callback (err);
+                                        } else {
+
+                                            return callback (null, previousWorkspaceFollowers);
+
+
+                                        }
+
+                                    });
+
+
+
+                                } else {
+
+                                    return callback (null, previousWorkspaceFollowers);
+                                }
+
+
+                        } else {
+
+                            // there was no workspace that was previously selected, return empty
+
+                            return callback (null, results);
+                        }
+
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                }
+
+
+
+                if (workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === true) {
+
+                    if (workspace_follower.get("isNewWorkspace") === false || !workspace_follower.get("isNewWorkspace")) {
+
+                        Workspace.increment("followerCount");
+                        Workspace.increment("memberCount");
+
+
+                    }
+                    else if (workspace_follower.get("isNewWorkspace") === true) {
+
+                        workspace_follower.set("isNewWorkspace", false);
+                    }
+
+
+
+                    // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
+                    workspace_follower.set("isSelected", true);
+
+                    // a member is already a follower so only add member role for this user.
+
+                    //console.log("workspace.isNew() user: " + JSON.stringify(user));
+
+                    /*queryMemberRole.equalTo('name', memberName);
+                     queryMemberRole.first({
+                     success: function (memberRole) { // Role Object
+                     //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
+
+                     memberRole.getUsers().add(user);
+                     memberRole.save(null, {
+
+                     useMasterKey: true,
+                     sessionToken: req.user.getSessionToken()
+
+                     });
+
+                     userRolesRelation.add(memberRole);
+
+                     // now add follower since a member is by default a follower
+                     queryfollowerRole.equalTo('name', followerName);
+                     queryfollowerRole.first({
+                     success: function (followerRole) { // Role Object
+                     //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+
+                     followerRole.getUsers().add(user);
+                     followerRole.save(null, {
+
+                     useMasterKey: true,
+                     sessionToken: req.user.getSessionToken()
+
+                     });
+
+                     var userRolesRelation = user.relation("roles");
+                     userRolesRelation.add(followerRole);
+                     user.save(null, {
+
+                     //useMasterKey: true,
+                     sessionToken: req.user.getSessionToken()
+
+                     });
+
+                     beforeSave_Time = process.hrtime(time);
+                     console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                     response.success();
+
+                     },
+                     error: function (error) {
+                     console.log("Bruh, can't find the Admin role");
+                     response.error(error);
+                     }
+                     });
+
+                     },
+                     error: function (error) {
+                     console.log("Bruh, can't find the Admin role");
+                     response.error(error);
+                     }
+                     });*/
+
+
+                    async.parallel([
+                        async.apply(addFollowerRole),
+                        async.apply(addMemberRole),
+                        async.apply(createDefaultChannelFollows),
+                        async.apply(removeAllPreviousSelectedWorkspaceFollowerJoin)
+
+                    ], function (err, results) {
+                        if (err) {
+                            response.error(err);
+                        } else {
+
+                            let followerRole = results[0];
+                            let memberRole = results[1];
+
+                            if (followerRole) {
+                                userRolesRelation.add(followerRole);
+                            }
+
+                            if (memberRole) {
+                                userRolesRelation.add(memberRole);
+
+                            }
+
+                            user.save(null, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+
+                            Workspace.save(null, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+
+
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+                        }
+                    });
+
+
+                }
+                else if (workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === false) {
+                    Workspace.increment("followerCount");
+                    Workspace.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
+                    workspace_follower.set("isSelected", true);
+
+                    async.parallel([
+                        async.apply(addFollowerRole),
+                        async.apply(createDefaultChannelFollows),
+                        async.apply(removeAllPreviousSelectedWorkspaceFollowerJoin)
+
+
+                    ], function (err, results) {
+                        if (err) {
+                            response.error(err);
+                        } else {
+
+                            let followerRole = results[0];
+
+                            if (followerRole) {
+                                userRolesRelation.add(followerRole);
+                            }
+
+                            user.save(null, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSave workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+                        }
+                    });
+
+
+                }
+                else if (workspace_follower.get("isFollower") === false && workspace_follower.get("isMember") === true) {
+                    Workspace.increment("memberCount");
+                    Workspace.increment("followerCount");
+                    Workspace.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    // a member is already a follower so only add member role for this user.
+                    workspace_follower.set("isFollower", true);
+
+                    // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
+                    workspace_follower.set("isSelected", true);
+
+                    async.parallel([
+                        async.apply(addFollowerRole),
+                        async.apply(addMemberRole),
+                        async.apply(createDefaultChannelFollows),
+                        async.apply(removeAllPreviousSelectedWorkspaceFollowerJoin)
+
+
+                    ], function (err, results) {
+                        if (err) {
+                            response.error(err);
+                        } else {
+
+                            let followerRole = results[0];
+                            let memberRole = results[1];
+
+                            if (followerRole) {
+                                userRolesRelation.add(followerRole);
+                            }
+
+                            if (memberRole) {
+                                userRolesRelation.add(memberRole);
+
+                            }
+
+                            user.save(null, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSave workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+                        }
+                    });
+
+
+                }
+                else {
+
+                    let beforeSaveElse_Time = process.hrtime(time);
+                    console.log(`beforeSave_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                    response.error("isFollower and isMember are both required fields and one has to be set to true");
+
+                }
+
 
             }
 
-            let queryMemberRole = new Parse.Query(Parse.Role);
-            let queryfollowerRole = new Parse.Query(Parse.Role);
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            let beforeSaveElse_Time = process.hrtime(time);
+            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
 
 
-            // if there is a new workspace_follower object increase counter for number of followers and members on a workspace
-            if (workspace_follower.isNew()) {
+    }
+    else if (!workspace_follower.isNew() && (workspace_follower.dirty("isFollower") || workspace_follower.dirty("isMember"))) {
 
-                let workspace = workspace_follower.get("workspace");
+        let previousQueryWorkspaceFollowerJoin = new Parse.Query(WORKSPACEFOLLOWER);
+        previousQueryWorkspaceFollowerJoin.include("workspace");
+        previousQueryWorkspaceFollowerJoin.equalTo("user", user);
+        previousQueryWorkspaceFollowerJoin.equalTo("isSelected", true);
 
-                //let WORKSPACE = Parse.Object.extend("WorkSpace");
-                let Workspace = new Parse.Object("WorkSpace");
+        let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
+        previousQueryWorkspaceFollowerLeave.include("workspace");
+        previousQueryWorkspaceFollowerLeave.equalTo("user", user);
+        previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
+        previousQueryWorkspaceFollowerLeave.equalTo("isFollower", true);
+        previousQueryWorkspaceFollowerLeave.descending("updatedAt");
+
+        function getCurrentWorkspaceFollower (callback) {
+
+            queryWorkspaceFollower.get(WorkspaceFollower.id, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((result) => {
+                // The object was retrieved successfully.
+
+                return callback (null, result);
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+        }
+
+        function getPreviousSelectedWorkspaceFollowerJoin (callback) {
+
+            previousQueryWorkspaceFollowerJoin.find( {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((results) => {
+                // The object was retrieved successfully.
+
+                if (results) {
+
+                    // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
+                    return callback (null, results);
+
+                } else {
+
+                    // there was no workspace that was previously selected, return empty
+
+                    return callback (null, results);
+                }
+
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+        }
+
+
+
+        function getPreviousSelectedWorkspaceFollowerLeave (callback) {
+
+            previousQueryWorkspaceFollowerLeave.first( {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((result) => {
+                // The object was retrieved successfully.
+
+                if (result) {
+
+                    // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
+                    return callback (null, result);
+
+                } else {
+
+                    // there was no workspace that was previously selected, return empty
+
+                    return callback (null, result);
+                }
+
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+        }
+
+        async.parallel([
+            async.apply(getCurrentWorkspaceFollower),
+            async.apply(getPreviousSelectedWorkspaceFollowerJoin),
+            async.apply(getPreviousSelectedWorkspaceFollowerLeave)
+
+        ], function (err, results) {
+            if (err) {
+                response.error(err);
+            } else {
+
+                let result = results[0]; // current workspace_follower that is in the DB
+
+                let workspace = result.get("workspace");
+
+                let WORKSPACE = Parse.Object.extend("WorkSpace");
+                let Workspace = new WORKSPACE();
                 Workspace.id = workspace.id;
 
-                //let Channel = Parse.Object.extend("Channel");
                 let Channel = new Parse.Object("Channel");
 
                 let CHANNEL = Parse.Object.extend("Channel");
@@ -4926,404 +5699,373 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 let memberName = "member-" + Workspace.id;
                 let followerName = "Follower-" + Workspace.id;
 
-                let workspaceFollowerName = workspace_follower.get("user").id + "-" + workspace_follower.get("workspace").id;
-                //console.log("workspaceFollowerName user: " + JSON.stringify(workspaceFollowerName));
+                let currentWorkspaceFollower = new WORKSPACEFOLLOWER();
+                currentWorkspaceFollower.id = results[0].id;
 
-                workspace_follower.set("name", workspaceFollowerName);
-                workspace_follower.set("archive", false);
-                if (!workspace_follower.get("isMemberRequestedByWorkspaceAdmin")) {
-                    workspace_follower.set("isMemberRequestedByWorkspaceAdmin", false);
+
+                let previousWorkspaceFollowJoin = new WORKSPACEFOLLOWER();
+                let previousWorkspaceFollowers = results[1];
+
+                let previousWorkspaceFollowLeave = new WORKSPACEFOLLOWER();
+                previousWorkspaceFollowLeave.id = results[2].id;
+
+                console.log("workspace_follower result from query: " + JSON.stringify(result.get("name")));
+                console.log("previousWorkspaceFollowJoin result from query length of array: " + JSON.stringify(previousWorkspaceFollowers.length));
+                console.log("previousWorkspaceFollowLeave result from query: " + JSON.stringify(previousWorkspaceFollowLeave.id));
+
+                //Workspace = result.get("workspace");
+                let workspaceACL = result.get("workspace").getACL();
+                let workspaceFollowACLPrivate = result.getACL();
+
+                //user = result.get("user");
+
+                let expertWorkspaceRelation = Workspace.relation("experts");
+
+                function addFollowerRole (callback) {
+
+                    // now add follower since a member is by default a follower
+                    queryfollowerRole.equalTo('name', followerName);
+
+                    queryfollowerRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((followerRole) => {
+                        // The object was retrieved successfully.
+
+                        followerRole.getUsers().add(user);
+                        followerRole.save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                        console.log("followerRole: " + JSON.stringify(followerRole));
+
+
+                        return callback (null, followerRole);
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback (error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
                 }
-                if (!workspace_follower.get("isMemberRequestedByUser")) {
-                    workspace_follower.set("isMemberRequestedByUser", false);
+
+                function addMemberRole (callback) {
+
+                    queryMemberRole.equalTo('name', memberName);
+                    queryMemberRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((memberRole) => {
+                        // The object was retrieved successfully.
+
+                        //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+
+                        memberRole.getUsers().add(user);
+                        memberRole.save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                        return callback (null, memberRole);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback (error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
                 }
-                if (!workspace_follower.get("isSelected")) {
-                    workspace_follower.set("isSelected", false);
+
+                function removeFollowerRole (callback) {
+
+                    // now add follower since a member is by default a follower
+                    queryfollowerRole.equalTo('name', followerName);
+
+                    queryfollowerRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((followerRole) => {
+                        // The object was retrieved successfully.
+
+                        followerRole.getUsers().remove(user);
+                        followerRole.save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                        console.log("followerRole: " + JSON.stringify(followerRole));
+
+
+                        return callback (null, followerRole);
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback (error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
                 }
-                if (!workspace_follower.get("isNotified")) {
-                    workspace_follower.set("isNotified", false);
+
+                function removeMemberRole (callback) {
+
+                    queryMemberRole.equalTo('name', memberName);
+                    queryMemberRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((memberRole) => {
+                        // The object was retrieved successfully.
+
+                        //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
+
+                        memberRole.getUsers().remove(user);
+                        memberRole.save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                        return callback (null, memberRole);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback (error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
                 }
-                if (!workspace_follower.get("isUnRead")) {
-                    workspace_follower.set("isUnRead", false);
+
+                function createDefaultChannelFollows (callback) {
+
+                    defaultChannelQuery.find({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((defaultChannels) => {
+                        // The object was retrieved successfully.
+
+                        if (defaultChannels) {
+
+                            async.map(defaultChannels, function (channel, cb) {
+
+                                let ChannelFollower = Parse.Object.extend("ChannelFollow");
+                                let channelFollower = new Parse.Object(ChannelFollower);
+
+                                //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
+
+                                channelFollower.set("archive", false);
+                                channelFollower.set("user", user);
+                                channelFollower.set("workspace", Workspace);
+                                channelFollower.set("channel", channel);
+                                channelFollower.set("notificationCount", 0);
+                                if (channel.get("name") === 'general') {
+                                    channelFollower.set("isSelected", true);
+                                } else {
+                                    channelFollower.set("isSelected", false);
+                                }
+
+                                channelFollower.set("isMember", true);
+                                channelFollower.set("isFollower", true);
+
+                                //console.log("channelFollow: " + JSON.stringify(channelFollow));
+
+                                channelFollower.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: req.user.getSessionToken()
+
+                                });
+
+                                channel = channelFollower;
+
+                                return cb (null, channel);
+
+
+                            }, function (err, defaultChannels) {
+
+                                //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
+
+                                if (err) {
+                                    return callback (err);
+                                } else {
+
+                                    return callback (null, defaultChannels);
+
+
+                                }
+
+                            });
+
+
+
+
+                        } else {
+
+                            return callback (null, defaultChannels);
+                        }
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
                 }
-                if (!workspace_follower.get("notificationCount")) {
-                    workspace_follower.set("notificationCount", 0);
-                }
-                if (!workspace_follower.get("isNewWorkspace")) {
-                    workspace_follower.set("isNewWorkspace", false);
-                }
+
+                function removePreviousWorkspaceFollowSelected (callback) {
+
+                    console.log("removePreviousWorkspaceFollowSelected" );
 
 
-                queryWorkspaceFollower.equalTo("name", workspaceFollowerName);
+                    // joining a workspace follower, so mark previous one as false
+                    if (previousWorkspaceFollowers.length > 0) {
 
-                // check to make sure that the workspace_follower for a user - workspace is unique
-                queryWorkspaceFollower.first({
+                        console.log("marketing previous workspacefollow that isSelected to false: " +previousWorkspaceFollowers.length );
 
-                    //useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                        async.map(previousWorkspaceFollowers, function (workspaceFollow, cb) {
 
-                }).then((results) => {
+                            let workspace_Follow =  new WORKSPACEFOLLOWER();
+                            workspace_Follow.id = workspaceFollow.id;
 
-                    if (results) {
+                            workspace_Follow.set("isSelected",false);
 
-                        //Workspace_follower already exists in DB in Skill table, return an error because it needs to be unique
-                        let beforeSaveElse_Time = process.hrtime(time);
-                        console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                            workspace_Follow.save(null, {
 
-                        response.error(results);
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+                            });
+
+                            workspaceFollow = workspace_Follow;
+
+                            return cb (null, workspaceFollow);
+
+
+                        }, function (err, previousWorkspaceFollowers) {
+
+                            //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
+
+                            if (err) {
+                                return callback (err);
+                            } else {
+
+                                return callback (null, previousWorkspaceFollowers);
+
+
+                            }
+
+                        });
+
+
 
                     } else {
 
-                        let previousQueryWorkspaceFollowerJoin = new Parse.Query(WORKSPACEFOLLOWER);
-                        previousQueryWorkspaceFollowerJoin.include("workspace");
-                        previousQueryWorkspaceFollowerJoin.equalTo("user", user);
-                        previousQueryWorkspaceFollowerJoin.equalTo("isSelected", true);
-
-                        function createDefaultChannelFollows (callback) {
-
-                            if (!workspace_follower.get("isNewWorkspace") || workspace_follower.get("isNewWorkspace") === false) {
-
-                                defaultChannelQuery.find({
-
-                                    //useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                }).then((defaultChannels) => {
-                                    // The object was retrieved successfully.
-
-                                    if (defaultChannels) {
-
-                                        async.map(defaultChannels, function (defaultChannelObject, cb) {
-
-                                            //let ChannelFollower = Parse.Object.extend("ChannelFollow");
-                                            let channelFollower = new Parse.Object("ChannelFollow");
-                                            let ChannelObject = new Parse.Object("Channel");
-                                            ChannelObject.id = defaultChannelObject.id;
-
-                                            console.log("defaultChannelQuery: " + JSON.stringify(defaultChannelObject));
-
-                                            channelFollower.set("archive", false);
-                                            channelFollower.set("user", user);
-                                            channelFollower.set("workspace", Workspace);
-                                            channelFollower.set("channel", ChannelObject);
-                                            channelFollower.set("notificationCount", 0);
-                                            if (defaultChannelObject.get("name") === 'general') {
-                                                channelFollower.set("isSelected", true);
-                                            } else {
-                                                channelFollower.set("isSelected", false);
-                                            }
-
-                                            channelFollower.set("isMember", true);
-                                            channelFollower.set("isFollower", true);
-
-                                            console.log("channelFollow final before save: " + JSON.stringify(channelFollower));
-
-                                            channelFollower.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            defaultChannelObject = channelFollower;
-
-                                            return cb (null, defaultChannelObject);
+                        return callback (null, previousWorkspaceFollowers);
+                    }
 
 
-                                        }, function (err, defaultChannels) {
+                }
 
-                                            //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
+                //console.log("userRole: " + JSON.stringify(userRoleRelation));
 
-                                            if (err) {
-                                                return callback (err);
-                                            } else {
-
-                                                return callback (null, defaultChannels);
+                //var expertRoleName = "expert-" + workspace_follower.get("workspace").id;
 
 
-                                            }
+                //console.log("old isFollower: "+JSON.stringify(result.get("isFollower")) + " New isFollower: " + JSON.stringify(workspace_follower.get("isFollower")) + " isFollower.dirty: "+JSON.stringify(workspace_follower.dirty("isFollower")));
+                //console.log("old isMember: "+JSON.stringify(result.get("isMember")) + " New isMember: " + JSON.stringify(workspace_follower.get("isMember")) + " isMember.dirty: "+JSON.stringify(workspace_follower.dirty("isMember")));
 
-                                        });
+                //queryPTime = process.hrtime(timequeryPostFind);
+                //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
 
+                if (workspace_follower.dirty("isFollower") && workspace_follower.dirty("isMember")) {
 
+                    if ((result.get("isFollower") === false || !result.get("isFollower") ) && workspace_follower.get("isFollower") === true) {
 
-                                    } else {
+                        Workspace.increment("followerCount");
+                        console.log("increment Follower");
 
-                                        return callback (null, defaultChannels);
-                                    }
+                        let userRolesRelation = user.relation("roles");
 
+                        if (workspace.get("type") === 'private') {
 
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    return callback(error);
-                                }, {
+                            // if Workspace is private add user ACL so he/she has access to the private Workspace or workspace_follower
 
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
+                            workspaceACL.setReadAccess(user, true);
+                            workspaceACL.setWriteAccess(user, true);
+                            Workspace.setACL(workspaceACL);
 
-                                });
+                            workspaceFollowACLPrivate.setReadAccess(user, true);
+                            workspaceFollowACLPrivate.setWriteAccess(user, true);
 
-                            }
-                            else if (workspace_follower.get("isNewWorkspace") === true) {
-
-                                return callback (null, workspace_follower);
-                            }
+                            workspace_follower.setACL(workspaceFollowACLPrivate);
 
                         }
 
-                        function addFollowerRole (callback) {
+                        // set isSelected for this workspace_follower to true and set previous workspace_follower that was selected to false
+                        workspace_follower.set("isSelected", true);
+                        user.set("isSelectedWorkspaceFollower", workspace_follower);
 
-                            // now add follower since a member is by default a follower
-                            queryfollowerRole.equalTo('name', followerName);
 
-                            queryfollowerRole.first({
 
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
+                        // if isFollower === false then isMember has to also be false. but we will check anyway
+                        if ((result.get("isMember") === false || !result.get("isMember") ) && workspace_follower.get("isMember") === true) {
 
-                            }).then((followerRole) => {
-                                // The object was retrieved successfully.
+                            // user isFollow is true  && user isMember also true so make the user both a follower and member
+                            Workspace.increment("memberCount");
+                            console.log("increment  Member");
 
-                                followerRole.getUsers().add(user);
-                                followerRole.save(null, {
-
-                                    //useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
-
-                                console.log("followerRole: " + JSON.stringify(followerRole));
-
-
-                                return callback (null, followerRole);
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                return callback (error);
-                            }, {
-
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
-
-                        }
-
-                        function addMemberRole (callback) {
-
-                            queryMemberRole.equalTo('name', memberName);
-                            queryMemberRole.first({
-
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            }).then((memberRole) => {
-                                // The object was retrieved successfully.
-
-                                //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
-
-                                memberRole.getUsers().add(user);
-                                memberRole.save(null, {
-
-                                    //useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
-
-                                return callback (null, memberRole);
-
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                return callback (error);
-                            }, {
-
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
-
-
-                        }
-
-
-                        function removeAllPreviousSelectedWorkspaceFollowerJoin (callback) {
-
-                            previousQueryWorkspaceFollowerJoin.find( {
-
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            }).then((results) => {
-                                // The object was retrieved successfully.
-
-                                if (results) {
-
-                                    let previousWorkspaceFollowers = results;
-
-                                    // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
-
-                                        console.log("removePreviousWorkspaceFollowSelected" );
-
-                                        // joining a workspace follower, so mark previous one as false
-                                        if (previousWorkspaceFollowers.length > 0) {
-
-                                            console.log("marketing previous workspacefollow that isSelected to false: " +previousWorkspaceFollowers.length );
-
-                                            async.map(previousWorkspaceFollowers, function (workspaceFollow, cb) {
-
-                                                let workspace_Follow =  new WORKSPACEFOLLOWER();
-                                                workspace_Follow.id = workspaceFollow.id;
-
-                                                workspace_Follow.set("isSelected",false);
-
-                                                workspace_Follow.save(null, {
-
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                });
-
-                                                workspaceFollow = workspace_Follow;
-
-                                                return cb (null, workspaceFollow);
-
-
-                                            }, function (err, previousWorkspaceFollowers) {
-
-                                                //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
-
-                                                if (err) {
-                                                    return callback (err);
-                                                } else {
-
-                                                    return callback (null, previousWorkspaceFollowers);
-
-
-                                                }
-
-                                            });
-
-
-
-                                        } else {
-
-                                            return callback (null, previousWorkspaceFollowers);
-                                        }
-
-
-                                } else {
-
-                                    // there was no workspace that was previously selected, return empty
-
-                                    return callback (null, results);
-                                }
-
-
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                response.error(error);
-                            }, {
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
-
-                        }
-
-
-
-                        if (workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === true) {
-
-                            if (workspace_follower.get("isNewWorkspace") === false || !workspace_follower.get("isNewWorkspace")) {
-
-                                Workspace.increment("followerCount");
-                                Workspace.increment("memberCount");
-
-
-                            }
-                            else if (workspace_follower.get("isNewWorkspace") === true) {
-
-                                workspace_follower.set("isNewWorkspace", false);
-                            }
-
-
-
-                            // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
-                            workspace_follower.set("isSelected", true);
-
-                            // a member is already a follower so only add member role for this user.
-
-                            //console.log("workspace.isNew() user: " + JSON.stringify(user));
-
-                            /*queryMemberRole.equalTo('name', memberName);
-                             queryMemberRole.first({
-                             success: function (memberRole) { // Role Object
-                             //console.log("Okay, that's a start... in success 1 with memberRole: " + JSON.stringify(memberRole));
-
-                             memberRole.getUsers().add(user);
-                             memberRole.save(null, {
-
-                             useMasterKey: true,
-                             sessionToken: req.user.getSessionToken()
-
-                             });
-
-                             userRolesRelation.add(memberRole);
-
-                             // now add follower since a member is by default a follower
-                             queryfollowerRole.equalTo('name', followerName);
-                             queryfollowerRole.first({
-                             success: function (followerRole) { // Role Object
-                             //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
-
-                             followerRole.getUsers().add(user);
-                             followerRole.save(null, {
-
-                             useMasterKey: true,
-                             sessionToken: req.user.getSessionToken()
-
-                             });
-
-                             var userRolesRelation = user.relation("roles");
-                             userRolesRelation.add(followerRole);
-                             user.save(null, {
-
-                             //useMasterKey: true,
-                             sessionToken: req.user.getSessionToken()
-
-                             });
-
-                             beforeSave_Time = process.hrtime(time);
-                             console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-                             response.success();
-
-                             },
-                             error: function (error) {
-                             console.log("Bruh, can't find the Admin role");
-                             response.error(error);
-                             }
-                             });
-
-                             },
-                             error: function (error) {
-                             console.log("Bruh, can't find the Admin role");
-                             response.error(error);
-                             }
-                             });*/
-
+                            // create channelFollows for default channel for this new user
 
                             async.parallel([
                                 async.apply(addFollowerRole),
                                 async.apply(addMemberRole),
                                 async.apply(createDefaultChannelFollows),
-                                async.apply(removeAllPreviousSelectedWorkspaceFollowerJoin)
+                                async.apply(removePreviousWorkspaceFollowSelected)
 
                             ], function (err, results) {
                                 if (err) {
@@ -5344,18 +6086,319 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     user.save(null, {
 
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
 
                                     });
 
                                     Workspace.save(null, {
 
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+                                    });
+
+                                    let beforeSaveElse_Time = process.hrtime(time);
+                                    console.log(`beforeSaveElse_Time workspace_Follower join took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
+                            });
+
+
+                        }
+                        else if ((result.get("isMember") === false || !result.get("isMember") ) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
+
+                            // user isFollow is true but user is not a member, make user only follower
+
+                            async.parallel([
+                                async.apply(addFollowerRole),
+                                async.apply(createDefaultChannelFollows),
+                                async.apply(removePreviousWorkspaceFollowSelected)
+
+                            ], function (err, results) {
+                                if (err) {
+                                    response.error(err);
+                                } else {
+
+                                    let followerRole = results[0];
+
+                                    if (followerRole) {
+                                        userRolesRelation.add(followerRole);
+                                    }
+
+                                    user.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
 
                                     });
 
+                                    Workspace.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+                                    });
+
+                                    let beforeSaveElse_Time = process.hrtime(time);
+                                    console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
+                            });
+
+                            /*queryfollowerRole.equalTo('name', followerName);
+                             queryfollowerRole.first({
+
+                             useMasterKey: true,
+                             sessionToken: req.user.getSessionToken()
+
+                             }).then((followerRole) => {
+                             // The object was retrieved successfully.
+
+                             //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
+
+                             followerRole.getUsers().add(user);
+                             followerRole.save(null, {
+
+                             useMasterKey: true,
+                             sessionToken: req.user.getSessionToken()
+
+                             });
+
+                             var userRolesRelation = user.relation("roles");
+                             userRolesRelation.add(followerRole);
+                             user.save(null, {
+
+                             //useMasterKey: true,
+                             sessionToken: req.user.getSessionToken()
+
+                             });
+
+                             Workspace.save(null, {
+
+                             //useMasterKey: true,
+                             sessionToken: req.user.getSessionToken()
+                             });
+
+                             response.success();
+
+
+                             }, (error) => {
+                             // The object was not retrieved successfully.
+                             // error is a Parse.Error with an error code and message.
+                             response.error(error);
+                             },{
+
+                             useMasterKey: true,
+                             sessionToken: req.user.getSessionToken()
+
+                             });*/
+
+
+
+                        }
+                        else if ((result.get("isMember") === true) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
+
+                            // user can't be a follower and not a member, keep him a member, sand make him a follower
+                            workspace_follower.set("isMember", true);
+
+                            async.parallel([
+                                async.apply(addFollowerRole),
+                                async.apply(createDefaultChannelFollows),
+                                async.apply(removePreviousWorkspaceFollowSelected)
+
+
+                            ], function (err, results) {
+                                if (err) {
+                                    response.error(err);
+                                } else {
+
+                                    let followerRole = results[0];
+
+                                    if (followerRole) {
+                                        userRolesRelation.add(followerRole);
+                                    }
+
+                                    user.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+
+                                    });
+
+                                    Workspace.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+                                    });
+
+                                    let beforeSaveElse_Time = process.hrtime(time);
+                                    console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
+                            });
+
+
+                        }
+                        else if (result.get("isMember") === true && workspace_follower.get("isMember") === true) {
+
+                            // user can't be a member if he wasn't already a follower this really can't happen
+
+                            Workspace.save(null, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+                            });
+
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+                        }
+
+                    }
+                    else if (result.get("isFollower") === true && workspace_follower.get("isFollower") === false) {
+
+                        // User was a follower but now is not a follower
+                        workspace_follower.set("isSelected", false);
+
+                        // remove user as follower of that channel
+                        Workspace.increment("followerCount", -1);
+                        console.log("decrement Follower");
+
+                        // remove this user as workspace expert since he/she is a workspace expert and un-followed this workspace
+                        expertWorkspaceRelation.remove(user);
+
+                        let expert = simplifyUser(user);
+
+                        Workspace.remove("expertsArray", expert);
+
+                        if (workspace.get("type") === 'private') {
+
+                            // check if this user is a Workspace owner then don't remove the ACL or he won't be able to come back to his Workspace
+
+                            if (workspace.get("user").toJSON().objectId === user.toJSON().objectId) {
+
+                                // this user who is unfollowing is also the Workspace owner, don't remove his ACL.
+
+                            } else {
+
+                                // this user is not the Workspace owner it's ok to remove his/her ACL
+
+                                // if Workspace is private remove user ACL so he/she doesn't have access to the private channel or Workspacefollow
+                                // user will need to be added again by Workspace owner since it's a private Workspace
+
+                                workspaceACL.setReadAccess(user, false);
+                                workspaceACL.setWriteAccess(user, false);
+                                Workspace.setACL(workspaceACL);
+
+
+                                workspaceFollowACLPrivate.setReadAccess(user, false);
+                                workspaceFollowACLPrivate.setWriteAccess(user, false);
+
+                                workspace_follower.setACL(workspaceFollowACLPrivate);
+
+                            }
+
+
+                        }
+
+                        // joining a workspace follower, so mark previous one as selected true
+                        if (previousWorkspaceFollowLeave) {
+                            previousWorkspaceFollowLeave.set("isSelected", true);
+                            user.set("isSelectedWorkspaceFollower", previousWorkspaceFollowLeave);
+
+                            previousWorkspaceFollowLeave.save(null, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+                            });
+
+                        }
+
+
+                        if ((result.get("isMember") === false || !result.get("isMember") ) && workspace_follower.get("isMember") === true) {
+
+                            // user want's to be member but remove as follower, can't happen. remove him as member and follower
+                            workspace_follower.set("isMember", false);
+
+                            async.parallel([
+                                async.apply(removeFollowerRole),
+                                async.apply(removeMemberRole)
+                            ], function (err, results) {
+                                if (err) {
+                                    response.error(err);
+                                } else {
+
+                                    let followerRole = results[0];
+                                    let memberRole = results[1];
+
+                                    if (followerRole) {
+                                        userRolesRelation.remove(followerRole);
+                                    }
+
+                                    if (memberRole) {
+                                        userRolesRelation.remove(memberRole);
+
+                                    }
+
+                                    user.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+
+                                    });
+
+                                    Workspace.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+                                    });
+
+                                    let beforeSaveElse_Time = process.hrtime(time);
+                                    console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
+                            });
+
+                        }
+                        else if ((result.get("isMember") === false || !result.get("isMember") ) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
+
+                            // user is not a member, was a follower and now wants to un-follow
+
+                            async.parallel([
+                                async.apply(removeFollowerRole)
+                            ], function (err, results) {
+                                if (err) {
+                                    response.error(err);
+                                } else {
+
+                                    let followerRole = results[0];
+
+                                    if (followerRole) {
+                                        userRolesRelation.remove(followerRole);
+                                    }
+
+
+                                    user.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+
+                                    });
+
+                                    Workspace.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+                                    });
 
                                     let beforeSaveElse_Time = process.hrtime(time);
                                     console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
@@ -5367,44 +6410,150 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
 
                         }
-                        else if (workspace_follower.get("isFollower") === true && workspace_follower.get("isMember") === false) {
-                            Workspace.increment("followerCount");
-                            Workspace.save(null, {
+                        else if ((result.get("isMember") === true) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
 
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
+                            // user was a follower and member and now wants to both un-follow and not be a member anymore
+                            Workspace.increment("memberCount", -1);
+                            console.log("decrement Member");
 
-                            });
-
-                            // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
-                            workspace_follower.set("isSelected", true);
+                            // now remove both member and follower roles since the user is leaving the workspace and un-following it.
 
                             async.parallel([
-                                async.apply(addFollowerRole),
-                                async.apply(createDefaultChannelFollows),
-                                async.apply(removeAllPreviousSelectedWorkspaceFollowerJoin)
-
-
+                                async.apply(removeFollowerRole),
+                                async.apply(removeMemberRole)
                             ], function (err, results) {
                                 if (err) {
                                     response.error(err);
                                 } else {
 
                                     let followerRole = results[0];
+                                    let memberRole = results[1];
 
                                     if (followerRole) {
-                                        userRolesRelation.add(followerRole);
+                                        userRolesRelation.remove(followerRole);
+                                    }
+
+                                    if (memberRole) {
+                                        userRolesRelation.remove(memberRole);
+
                                     }
 
                                     user.save(null, {
 
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
 
                                     });
 
+                                    Workspace.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+                                    });
+
                                     let beforeSaveElse_Time = process.hrtime(time);
-                                    console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                                    console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
+                            });
+
+                        }
+                        else if (result.get("isMember") === true && workspace_follower.get("isMember") === true) {
+
+                            // user can't stay a member since he is un-following this workspace so make him not a member
+                            workspace_follower.set("isMember", false);
+                            Workspace.increment("memberCount", -1);
+                            console.log("decrement Member");
+
+                            // now remove both member and follower roles since the user is leaving the workspace and un-following it.
+
+                            async.parallel([
+                                async.apply(removeFollowerRole),
+                                async.apply(removeMemberRole)
+                            ], function (err, results) {
+                                if (err) {
+                                    response.error(err);
+                                } else {
+
+                                    let followerRole = results[0];
+                                    let memberRole = results[1];
+
+                                    if (followerRole) {
+                                        userRolesRelation.remove(followerRole);
+                                    }
+
+                                    if (memberRole) {
+                                        userRolesRelation.remove(memberRole);
+
+                                    }
+
+                                    user.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+
+                                    });
+
+                                    Workspace.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+                                    });
+
+                                    let beforeSaveElse_Time = process.hrtime(time);
+                                    console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
+                            });
+
+                        }
+
+
+                    }
+                    else if (result.get("isFollower") === true && workspace_follower.get("isFollower") === true) {
+
+                        // User was a follower and wants to stay a follower
+                        if ((result.get("isMember") === false || !result.get("isMember") ) && workspace_follower.get("isMember") === true) {
+
+                            // user wants to be a member now
+                            Workspace.increment("memberCount");
+                            console.log("increment  Member");
+
+                            // now add both member only since user is already a follower
+                            async.parallel([
+                                async.apply(addMemberRole)
+
+                            ], function (err, results) {
+                                if (err) {
+                                    response.error(err);
+                                } else {
+
+                                    let memberRole = results[0];
+
+                                    if (memberRole) {
+                                        userRolesRelation.add(memberRole);
+
+                                    }
+
+                                    user.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+
+                                    });
+
+                                    Workspace.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+                                    });
+
+                                    let beforeSaveElse_Time = process.hrtime(time);
+                                    console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
                                     response.success();
 
@@ -5412,64 +6561,135 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                             });
 
 
+                        }
+                        else if ((result.get("isMember") === false || !result.get("isMember") ) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
 
-                            /*queryfollowerRole.equalTo('name', followerName);
-                             queryfollowerRole.first({
-                             success: function (followerRole) { // Role Object
-                             //console.log("Okay, that's a start... in success 1 with followerRole: " + JSON.stringify(followerRole));
+                            // do nothing since isMember and isFollower did not change
 
-                             followerRole.getUsers().add(user);
-                             followerRole.save(null, {
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                             useMasterKey: true,
-                             sessionToken: req.user.getSessionToken()
-
-                             });
-
-                             var userRolesRelation = user.relation("roles");
-                             userRolesRelation.add(followerRole);
-                             user.save(null, {
-
-                             //useMasterKey: true,
-                             sessionToken: req.user.getSessionToken()
-
-                             });
-
-                             beforeSave_Time = process.hrtime(time);
-                             console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-                             response.success();
-
-                             },
-                             error: function (error) {
-                             console.log("Bruh, can't find the Admin role");
-                             response.error(error);
-                             }
-                             });*/
-
+                            response.success();
 
                         }
-                        else if (workspace_follower.get("isFollower") === false && workspace_follower.get("isMember") === true) {
-                            Workspace.increment("memberCount");
-                            Workspace.increment("followerCount");
-                            Workspace.save(null, {
+                        else if ((result.get("isMember") === true) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
 
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
+                            // user want's to stay as a follower but removed as member
+                            Workspace.increment("memberCount", -1);
+                            console.log("decrement Member");
 
+                            async.parallel([
+                                async.apply(removeMemberRole)
+
+                            ], function (err, results) {
+                                if (err) {
+                                    response.error(err);
+                                } else {
+
+                                    let memberRole = results[0];
+
+                                    if (memberRole) {
+                                        userRolesRelation.remove(memberRole);
+
+                                    }
+
+                                    user.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+
+                                    });
+
+                                    Workspace.save(null, {
+
+                                        //useMasterKey: true
+                                        sessionToken: sessionToken
+                                    });
+
+                                    let beforeSaveElse_Time = process.hrtime(time);
+                                    console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+                                }
                             });
 
-                            // a member is already a follower so only add member role for this user.
+                        }
+                        else if (result.get("isMember") === true && workspace_follower.get("isMember") === true) {
+
+                            // do nothing since isMember and isFollower did not change
+
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+                        }
+
+                    }
+                    else if ((!result.get("isFollower") || result.get("isFollower") === false) && workspace_follower.get("isFollower") === false) {
+
+                        // User wasn't a follower but now wants to be a member so make him also a follower
+                        if ((result.get("isMember") === false || !result.get("isMember") ) && workspace_follower.get("isMember") === true) {
+
+                            // user can't be a member unless isFollower === true
                             workspace_follower.set("isFollower", true);
 
-                            // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
-                            workspace_follower.set("isSelected", true);
+                            Workspace.increment("followerCount");
+                            console.log("increment Follower");
 
+                            // user wants to be a member now
+                            Workspace.increment("memberCount");
+                            console.log("increment  Member");
+
+
+                            if (workspace.get("type") === 'private') {
+
+                                // if channel is private add user ACL so he/she has access to the private channel or channelfollow
+
+                                workspaceACL.setReadAccess(user, true);
+                                workspaceACL.setWriteAccess(user, true);
+                                Workspace.setACL(workspaceACL);
+
+                                // set correct ACL for channelFollow
+
+                                workspaceFollowACLPrivate.setReadAccess(user, true);
+                                workspaceFollowACLPrivate.setWriteAccess(user, true);
+
+                                workspace_follower.setACL(workspaceFollowACLPrivate);
+
+                            }
+
+                            // joining a workspace follower, so mark previous one as false
+                            /*if (previousWorkspaceFollowJoin.length > 0) {
+
+                                for (var i = 0; i < previousWorkspaceFollowers.length; i++) {
+
+                                    previousWorkspaceFollowJoin.id = previousWorkspaceFollowers[i].id;
+
+                                    previousWorkspaceFollowJoin.set("isSelected", false);
+
+                                    previousWorkspaceFollowJoin.save(null, {
+
+                                        //useMasterKey: true,
+                                        sessionToken: req.user.getSessionToken()
+                                    });
+
+                                }
+
+
+                            }*/
+
+                            // set isSelected for this workspace_follower to true
+                            workspace_follower.set("isSelected", true);
+                            user.set("isSelectedWorkspaceFollower", workspace_follower);
+
+                            // now add both member and follower roles
                             async.parallel([
                                 async.apply(addFollowerRole),
                                 async.apply(addMemberRole),
                                 async.apply(createDefaultChannelFollows),
-                                async.apply(removeAllPreviousSelectedWorkspaceFollowerJoin)
+                                async.apply(removePreviousWorkspaceFollowSelected)
 
 
                             ], function (err, results) {
@@ -5491,1560 +6711,104 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     user.save(null, {
 
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
 
                                     });
-
-                                    let beforeSaveElse_Time = process.hrtime(time);
-                                    console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                    response.success();
-
-                                }
-                            });
-
-
-                        }
-                        else {
-
-                            let beforeSaveElse_Time = process.hrtime(time);
-                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                            response.error("isFollower and isMember are both required fields and one has to be set to true");
-
-                        }
-
-
-                    }
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    let beforeSaveElse_Time = process.hrtime(time);
-                    console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                    response.error(error);
-                }, {
-
-                    //useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                });
-
-
-            }
-            else if (!workspace_follower.isNew() && (workspace_follower.dirty("isFollower") || workspace_follower.dirty("isMember"))) {
-
-                let previousQueryWorkspaceFollowerJoin = new Parse.Query(WORKSPACEFOLLOWER);
-                previousQueryWorkspaceFollowerJoin.include("workspace");
-                previousQueryWorkspaceFollowerJoin.equalTo("user", user);
-                previousQueryWorkspaceFollowerJoin.equalTo("isSelected", true);
-
-                let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
-                previousQueryWorkspaceFollowerLeave.include("workspace");
-                previousQueryWorkspaceFollowerLeave.equalTo("user", user);
-                previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
-                previousQueryWorkspaceFollowerLeave.equalTo("isFollower", true);
-                previousQueryWorkspaceFollowerLeave.descending("updatedAt");
-
-                function getCurrentWorkspaceFollower (callback) {
-
-                    queryWorkspaceFollower.get(WorkspaceFollower.id, {
-
-                        //useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    }).then((result) => {
-                        // The object was retrieved successfully.
-
-                        return callback (null, result);
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    });
-
-                }
-
-                function getPreviousSelectedWorkspaceFollowerJoin (callback) {
-
-                    previousQueryWorkspaceFollowerJoin.find( {
-
-                        //useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    }).then((results) => {
-                        // The object was retrieved successfully.
-
-                        if (results) {
-
-                            // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
-                            return callback (null, results);
-
-                        } else {
-
-                            // there was no workspace that was previously selected, return empty
-
-                            return callback (null, results);
-                        }
-
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    });
-
-                }
-
-
-
-                function getPreviousSelectedWorkspaceFollowerLeave (callback) {
-
-                    previousQueryWorkspaceFollowerLeave.first( {
-
-                        //useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    }).then((result) => {
-                        // The object was retrieved successfully.
-
-                        if (result) {
-
-                            // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
-                            return callback (null, result);
-
-                        } else {
-
-                            // there was no workspace that was previously selected, return empty
-
-                            return callback (null, result);
-                        }
-
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    });
-
-                }
-
-                async.parallel([
-                    async.apply(getCurrentWorkspaceFollower),
-                    async.apply(getPreviousSelectedWorkspaceFollowerJoin),
-                    async.apply(getPreviousSelectedWorkspaceFollowerLeave)
-
-                ], function (err, results) {
-                    if (err) {
-                        response.error(err);
-                    } else {
-
-                        let result = results[0]; // current workspace_follower that is in the DB
-
-                        let workspace = result.get("workspace");
-
-                        let WORKSPACE = Parse.Object.extend("WorkSpace");
-                        let Workspace = new WORKSPACE();
-                        Workspace.id = workspace.id;
-
-                        let Channel = new Parse.Object("Channel");
-
-                        let CHANNEL = Parse.Object.extend("Channel");
-                        let defaultChannelQuery = new Parse.Query(CHANNEL);
-                        defaultChannelQuery.equalTo("default", true);
-                        defaultChannelQuery.equalTo("workspace", Workspace);
-
-                        let memberName = "member-" + Workspace.id;
-                        let followerName = "Follower-" + Workspace.id;
-
-                        let currentWorkspaceFollower = new WORKSPACEFOLLOWER();
-                        currentWorkspaceFollower.id = results[0].id;
-
-
-                        let previousWorkspaceFollowJoin = new WORKSPACEFOLLOWER();
-                        let previousWorkspaceFollowers = results[1];
-
-                        let previousWorkspaceFollowLeave = new WORKSPACEFOLLOWER();
-                        previousWorkspaceFollowLeave.id = results[2].id;
-
-
-                        console.log("workspace_follower result from query: " + JSON.stringify(result.get("name")));
-                        console.log("previousWorkspaceFollowJoin result from query length of array: " + JSON.stringify(previousWorkspaceFollowers.length));
-                        console.log("previousWorkspaceFollowLeave result from query: " + JSON.stringify(previousWorkspaceFollowLeave.id));
-
-                        //Workspace = result.get("workspace");
-                        let workspaceACL = result.get("workspace").getACL();
-                        let workspaceFollowACLPrivate = result.getACL();
-
-                        //user = result.get("user");
-
-                        let expertWorkspaceRelation = Workspace.relation("experts");
-
-                        function addFollowerRole (callback) {
-
-                            // now add follower since a member is by default a follower
-                            queryfollowerRole.equalTo('name', followerName);
-
-                            queryfollowerRole.first({
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            }).then((followerRole) => {
-                                // The object was retrieved successfully.
-
-                                followerRole.getUsers().add(user);
-                                followerRole.save(null, {
-
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
-
-                                console.log("followerRole: " + JSON.stringify(followerRole));
-
-
-                                return callback (null, followerRole);
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                return callback (error);
-                            }, {
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
-
-                        }
-
-                        function addMemberRole (callback) {
-
-                            queryMemberRole.equalTo('name', memberName);
-                            queryMemberRole.first({
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            }).then((memberRole) => {
-                                // The object was retrieved successfully.
-
-                                //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
-
-                                memberRole.getUsers().add(user);
-                                memberRole.save(null, {
-
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
-
-                                return callback (null, memberRole);
-
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                return callback (error);
-                            }, {
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
-
-
-                        }
-
-                        function removeFollowerRole (callback) {
-
-                            // now add follower since a member is by default a follower
-                            queryfollowerRole.equalTo('name', followerName);
-
-                            queryfollowerRole.first({
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            }).then((followerRole) => {
-                                // The object was retrieved successfully.
-
-                                followerRole.getUsers().remove(user);
-                                followerRole.save(null, {
-
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
-
-                                console.log("followerRole: " + JSON.stringify(followerRole));
-
-
-                                return callback (null, followerRole);
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                return callback (error);
-                            }, {
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
-
-                        }
-
-                        function removeMemberRole (callback) {
-
-                            queryMemberRole.equalTo('name', memberName);
-                            queryMemberRole.first({
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            }).then((memberRole) => {
-                                // The object was retrieved successfully.
-
-                                //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
-
-                                memberRole.getUsers().remove(user);
-                                memberRole.save(null, {
-
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
-
-                                });
-
-                                return callback (null, memberRole);
-
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                return callback (error);
-                            }, {
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
-
-
-                        }
-
-                        function createDefaultChannelFollows (callback) {
-
-                            defaultChannelQuery.find({
-
-                                //useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            }).then((defaultChannels) => {
-                                // The object was retrieved successfully.
-
-                                if (defaultChannels) {
-
-                                    async.map(defaultChannels, function (channel, cb) {
-
-                                        let ChannelFollower = Parse.Object.extend("ChannelFollow");
-                                        let channelFollower = new Parse.Object(ChannelFollower);
-
-                                        //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
-
-                                        channelFollower.set("archive", false);
-                                        channelFollower.set("user", user);
-                                        channelFollower.set("workspace", Workspace);
-                                        channelFollower.set("channel", channel);
-                                        channelFollower.set("notificationCount", 0);
-                                        if (channel.get("name") === 'general') {
-                                            channelFollower.set("isSelected", true);
-                                        } else {
-                                            channelFollower.set("isSelected", false);
-                                        }
-
-                                        channelFollower.set("isMember", true);
-                                        channelFollower.set("isFollower", true);
-
-                                        //console.log("channelFollow: " + JSON.stringify(channelFollow));
-
-                                        channelFollower.save(null, {
-
-                                            //useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
-
-                                        });
-
-                                        channel = channelFollower;
-
-                                        return cb (null, channel);
-
-
-                                    }, function (err, defaultChannels) {
-
-                                        //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
-
-                                        if (err) {
-                                            return callback (err);
-                                        } else {
-
-                                            return callback (null, defaultChannels);
-
-
-                                        }
-
-                                    });
-
-
-
-
-                                } else {
-
-                                    return callback (null, defaultChannels);
-                                }
-
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                return callback(error);
-                            }, {
-
-                                useMasterKey: true,
-                                sessionToken: req.user.getSessionToken()
-
-                            });
-                        }
-
-                        function removePreviousWorkspaceFollowSelected (callback) {
-
-                            console.log("removePreviousWorkspaceFollowSelected" );
-
-
-                            // joining a workspace follower, so mark previous one as false
-                            if (previousWorkspaceFollowers.length > 0) {
-
-                                console.log("marketing previous workspacefollow that isSelected to false: " +previousWorkspaceFollowers.length );
-
-                                async.map(previousWorkspaceFollowers, function (workspaceFollow, cb) {
-
-                                    let workspace_Follow =  new WORKSPACEFOLLOWER();
-                                    workspace_Follow.id = workspaceFollow.id;
-
-                                    workspace_Follow.set("isSelected",false);
-
-                                    workspace_Follow.save(null, {
-
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
-                                    });
-
-                                    workspaceFollow = workspace_Follow;
-
-                                    return cb (null, workspaceFollow);
-
-
-                                }, function (err, previousWorkspaceFollowers) {
-
-                                    //console.log("defaultChannels length: " + JSON.stringify(defaultChannels.length));
-
-                                    if (err) {
-                                        return callback (err);
-                                    } else {
-
-                                        return callback (null, previousWorkspaceFollowers);
-
-
-                                    }
-
-                                });
-
-
-
-                            } else {
-
-                                return callback (null, previousWorkspaceFollowers);
-                            }
-
-
-                        }
-
-                        //console.log("userRole: " + JSON.stringify(userRoleRelation));
-
-                        //var expertRoleName = "expert-" + workspace_follower.get("workspace").id;
-
-
-                        //console.log("old isFollower: "+JSON.stringify(result.get("isFollower")) + " New isFollower: " + JSON.stringify(workspace_follower.get("isFollower")) + " isFollower.dirty: "+JSON.stringify(workspace_follower.dirty("isFollower")));
-                        //console.log("old isMember: "+JSON.stringify(result.get("isMember")) + " New isMember: " + JSON.stringify(workspace_follower.get("isMember")) + " isMember.dirty: "+JSON.stringify(workspace_follower.dirty("isMember")));
-
-                        //queryPTime = process.hrtime(timequeryPostFind);
-                        //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
-
-                        if (workspace_follower.dirty("isFollower") && workspace_follower.dirty("isMember")) {
-
-                            if ((result.get("isFollower") === false || !result.get("isFollower") ) && workspace_follower.get("isFollower") === true) {
-
-                                Workspace.increment("followerCount");
-                                console.log("increment Follower");
-
-                                let userRolesRelation = user.relation("roles");
-
-                                if (workspace.get("type") === 'private') {
-
-                                    // if Workspace is private add user ACL so he/she has access to the private Workspace or workspace_follower
-
-                                    workspaceACL.setReadAccess(user, true);
-                                    workspaceACL.setWriteAccess(user, true);
-                                    Workspace.setACL(workspaceACL);
-
-                                    workspaceFollowACLPrivate.setReadAccess(user, true);
-                                    workspaceFollowACLPrivate.setWriteAccess(user, true);
-
-                                    workspace_follower.setACL(workspaceFollowACLPrivate);
-
-                                }
-
-                                // set isSelected for this workspace_follower to true and set previous workspace_follower that was selected to false
-                                workspace_follower.set("isSelected", true);
-                                user.set("isSelectedWorkspaceFollower", workspace_follower);
-
-
-
-                                // if isFollower === false then isMember has to also be false. but we will check anyway
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && workspace_follower.get("isMember") === true) {
-
-                                    // user isFollow is true  && user isMember also true so make the user both a follower and member
-                                    Workspace.increment("memberCount");
-                                    console.log("increment  Member");
-
-                                    // create channelFollows for default channel for this new user
-
-                                    async.parallel([
-                                        async.apply(addFollowerRole),
-                                        async.apply(addMemberRole),
-                                        async.apply(createDefaultChannelFollows),
-                                        async.apply(removePreviousWorkspaceFollowSelected)
-
-                                    ], function (err, results) {
-                                        if (err) {
-                                            response.error(err);
-                                        } else {
-
-                                            let followerRole = results[0];
-                                            let memberRole = results[1];
-
-                                            if (followerRole) {
-                                                userRolesRelation.add(followerRole);
-                                            }
-
-                                            if (memberRole) {
-                                                userRolesRelation.add(memberRole);
-
-                                            }
-
-                                            user.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            Workspace.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            let beforeSaveElse_Time = process.hrtime(time);
-                                            console.log(`beforeSaveElse_Time workspace_Follower join took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-
-                                        }
-                                    });
-
-
-                                }
-                                else if ((result.get("isMember") === false || !result.get("isMember") ) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
-
-                                    // user isFollow is true but user is not a member, make user only follower
-
-                                    async.parallel([
-                                        async.apply(addFollowerRole),
-                                        async.apply(createDefaultChannelFollows),
-                                        async.apply(removePreviousWorkspaceFollowSelected)
-
-                                    ], function (err, results) {
-                                        if (err) {
-                                            response.error(err);
-                                        } else {
-
-                                            let followerRole = results[0];
-
-                                            if (followerRole) {
-                                                userRolesRelation.add(followerRole);
-                                            }
-
-                                            user.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            Workspace.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            let beforeSaveElse_Time = process.hrtime(time);
-                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-
-                                        }
-                                    });
-
-                                    /*queryfollowerRole.equalTo('name', followerName);
-                                     queryfollowerRole.first({
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     }).then((followerRole) => {
-                                     // The object was retrieved successfully.
-
-                                     //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
-
-                                     followerRole.getUsers().add(user);
-                                     followerRole.save(null, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-                                     var userRolesRelation = user.relation("roles");
-                                     userRolesRelation.add(followerRole);
-                                     user.save(null, {
-
-                                     //useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-                                     Workspace.save(null, {
-
-                                     //useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-                                     });
-
-                                     response.success();
-
-
-                                     }, (error) => {
-                                     // The object was not retrieved successfully.
-                                     // error is a Parse.Error with an error code and message.
-                                     response.error(error);
-                                     },{
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });*/
-
-
-
-                                }
-                                else if ((result.get("isMember") === true) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
-
-                                    // user can't be a follower and not a member, keep him a member, sand make him a follower
-                                    workspace_follower.set("isMember", true);
-
-                                    async.parallel([
-                                        async.apply(addFollowerRole),
-                                        async.apply(createDefaultChannelFollows),
-                                        async.apply(removePreviousWorkspaceFollowSelected)
-
-
-                                    ], function (err, results) {
-                                        if (err) {
-                                            response.error(err);
-                                        } else {
-
-                                            let followerRole = results[0];
-
-                                            if (followerRole) {
-                                                userRolesRelation.add(followerRole);
-                                            }
-
-                                            user.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            Workspace.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            let beforeSaveElse_Time = process.hrtime(time);
-                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-
-                                        }
-                                    });
-
-
-                                }
-                                else if (result.get("isMember") === true && workspace_follower.get("isMember") === true) {
-
-                                    // user can't be a member if he wasn't already a follower this really can't happen
 
                                     Workspace.save(null, {
 
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
                                     });
 
                                     let beforeSaveElse_Time = process.hrtime(time);
-                                    console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                                    console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
                                     response.success();
 
                                 }
-
-                            }
-                            else if (result.get("isFollower") === true && workspace_follower.get("isFollower") === false) {
-
-                                // User was a follower but now is not a follower
-                                workspace_follower.set("isSelected", false);
-
-                                // remove user as follower of that channel
-                                Workspace.increment("followerCount", -1);
-                                console.log("decrement Follower");
-
-                                // remove this user as workspace expert since he/she is a workspace expert and un-followed this workspace
-                                expertWorkspaceRelation.remove(user);
-
-                                let expert = simplifyUser(user);
-
-                                Workspace.remove("expertsArray", expert);
-
-                                if (workspace.get("type") === 'private') {
-
-                                    // check if this user is a Workspace owner then don't remove the ACL or he won't be able to come back to his Workspace
-
-                                    if (workspace.get("user").toJSON().objectId === user.toJSON().objectId) {
-
-                                        // this user who is unfollowing is also the Workspace owner, don't remove his ACL.
-
-                                    } else {
-
-                                        // this user is not the Workspace owner it's ok to remove his/her ACL
-
-                                        // if Workspace is private remove user ACL so he/she doesn't have access to the private channel or Workspacefollow
-                                        // user will need to be added again by Workspace owner since it's a private Workspace
-
-                                        workspaceACL.setReadAccess(user, false);
-                                        workspaceACL.setWriteAccess(user, false);
-                                        Workspace.setACL(workspaceACL);
-
-
-                                        workspaceFollowACLPrivate.setReadAccess(user, false);
-                                        workspaceFollowACLPrivate.setWriteAccess(user, false);
-
-                                        workspace_follower.setACL(workspaceFollowACLPrivate);
-
-                                    }
-
-
-                                }
-
-                                // joining a workspace follower, so mark previous one as selected true
-                                if (previousWorkspaceFollowLeave) {
-                                    previousWorkspaceFollowLeave.set("isSelected", true);
-                                    user.set("isSelectedWorkspaceFollower", previousWorkspaceFollowLeave);
-
-                                    previousWorkspaceFollowLeave.save(null, {
-
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
-                                    });
-
-                                }
-
-
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && workspace_follower.get("isMember") === true) {
-
-                                    // user want's to be member but remove as follower, can't happen. remove him as member and follower
-                                    workspace_follower.set("isMember", false);
-
-                                    async.parallel([
-                                        async.apply(removeFollowerRole),
-                                        async.apply(removeMemberRole)
-                                    ], function (err, results) {
-                                        if (err) {
-                                            response.error(err);
-                                        } else {
-
-                                            let followerRole = results[0];
-                                            let memberRole = results[1];
-
-                                            if (followerRole) {
-                                                userRolesRelation.remove(followerRole);
-                                            }
-
-                                            if (memberRole) {
-                                                userRolesRelation.remove(memberRole);
-
-                                            }
-
-                                            user.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            Workspace.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            let beforeSaveElse_Time = process.hrtime(time);
-                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-
-                                        }
-                                    });
-
-
-                                    /*queryfollowerRole.equalTo('name', followerName);
-                                     queryfollowerRole.first({
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     }).then((followerRole) => {
-                                     // The object was retrieved successfully.
-
-                                     //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
-
-                                     followerRole.getUsers().remove(user);
-                                     followerRole.save(null, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-                                     var userRolesRelation = user.relation("roles");
-                                     userRolesRelation.remove(followerRole);
-                                     user.save(null, {
-
-                                     //useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-                                     Workspace.save(null, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-                                     });
-
-                                     let beforeSaveElse_Time = process.hrtime(time);
-                                     console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                     response.success();
-
-
-                                     }, (error) => {
-                                     // The object was not retrieved successfully.
-                                     // error is a Parse.Error with an error code and message.
-                                     let beforeSaveElse_Time = process.hrtime(time);
-                                     console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                     response.error(error);
-                                     }, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });*/
-
-
-
-                                }
-                                else if ((result.get("isMember") === false || !result.get("isMember") ) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
-
-                                    // user is not a member, was a follower and now wants to un-follow
-
-                                    async.parallel([
-                                        async.apply(removeFollowerRole)
-                                    ], function (err, results) {
-                                        if (err) {
-                                            response.error(err);
-                                        } else {
-
-                                            let followerRole = results[0];
-
-                                            if (followerRole) {
-                                                userRolesRelation.remove(followerRole);
-                                            }
-
-
-                                            user.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            Workspace.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            let beforeSaveElse_Time = process.hrtime(time);
-                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-
-                                        }
-                                    });
-
-
-                                    /*queryfollowerRole.equalTo('name', followerName);
-                                     queryfollowerRole.first({
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     }).then((followerRole) => {
-                                     // The object was retrieved successfully.
-
-                                     //console.log("queryfollowerRole result from query: "+JSON.stringify(followerRole));
-
-                                     followerRole.getUsers().remove(user);
-                                     followerRole.save(null, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-                                     var userRolesRelation = user.relation("roles");
-                                     userRolesRelation.remove(followerRole);
-                                     user.save(null, {
-
-                                     //useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-                                     Workspace.save(null, {
-
-                                     //useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-                                     });
-
-
-
-                                     response.success();
-
-
-                                     }, (error) => {
-                                     // The object was not retrieved successfully.
-                                     // error is a Parse.Error with an error code and message.
-                                     response.error(error);
-                                     }, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });*/
-
-
-                                }
-                                else if ((result.get("isMember") === true) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
-
-                                    // user was a follower and member and now wants to both un-follow and not be a member anymore
-                                    Workspace.increment("memberCount", -1);
-                                    console.log("decrement Member");
-
-                                    // now remove both member and follower roles since the user is leaving the workspace and un-following it.
-
-                                    async.parallel([
-                                        async.apply(removeFollowerRole),
-                                        async.apply(removeMemberRole)
-                                    ], function (err, results) {
-                                        if (err) {
-                                            response.error(err);
-                                        } else {
-
-                                            let followerRole = results[0];
-                                            let memberRole = results[1];
-
-                                            if (followerRole) {
-                                                userRolesRelation.remove(followerRole);
-                                            }
-
-                                            if (memberRole) {
-                                                userRolesRelation.remove(memberRole);
-
-                                            }
-
-                                            user.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            Workspace.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            let beforeSaveElse_Time = process.hrtime(time);
-                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-
-                                        }
-                                    });
-
-
-                                    /* queryMemberRole.equalTo('name', memberName);
-                                     queryMemberRole.first({
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     }).then((memberRole) => {
-                                     // The object was retrieved successfully.
-
-                                     console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
-
-                                     memberRole.getUsers().remove(user);
-                                     memberRole.save(null, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-                                     var userRolesRelation = user.relation("roles");
-
-                                     userRolesRelation.remove(memberRole);
-
-                                     // now add follower since a member is by default a follower
-                                     queryfollowerRole.equalTo('name', followerName);
-
-                                     queryfollowerRole.first({
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     }).then((followerRole) => {
-                                     // The object was retrieved successfully.
-
-                                     followerRole.getUsers().remove(user);
-                                     followerRole.save(null, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-                                     //var userRolesRelation = user.relation("roles");
-                                     userRolesRelation.remove(followerRole);
-                                     user.save(null, {
-
-                                     //useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-                                     });
-
-                                     Workspace.save(null, {
-
-                                     //useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-                                     });
-
-                                     response.success();
-
-
-                                     }, (error) => {
-                                     // The object was not retrieved successfully.
-                                     // error is a Parse.Error with an error code and message.
-                                     response.error(error);
-                                     }, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-
-                                     }, (error) => {
-                                     // The object was not retrieved successfully.
-                                     // error is a Parse.Error with an error code and message.
-                                     response.error(error);
-                                     }, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });*/
-
-
-                                }
-                                else if (result.get("isMember") === true && workspace_follower.get("isMember") === true) {
-
-                                    // user can't stay a member since he is un-following this workspace so make him not a member
-                                    workspace_follower.set("isMember", false);
-                                    Workspace.increment("memberCount", -1);
-                                    console.log("decrement Member");
-
-                                    // now remove both member and follower roles since the user is leaving the workspace and un-following it.
-
-                                    async.parallel([
-                                        async.apply(removeFollowerRole),
-                                        async.apply(removeMemberRole)
-                                    ], function (err, results) {
-                                        if (err) {
-                                            response.error(err);
-                                        } else {
-
-                                            let followerRole = results[0];
-                                            let memberRole = results[1];
-
-                                            if (followerRole) {
-                                                userRolesRelation.remove(followerRole);
-                                            }
-
-                                            if (memberRole) {
-                                                userRolesRelation.remove(memberRole);
-
-                                            }
-
-                                            user.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            Workspace.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            let beforeSaveElse_Time = process.hrtime(time);
-                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-
-                                        }
-                                    });
-
-                                    /*queryMemberRole.equalTo('name', memberName);
-                                     queryMemberRole.first({
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     }).then((memberRole) => {
-                                     // The object was retrieved successfully.
-
-                                     //console.log("queryMemberRole result from query: "+JSON.stringify(memberRole));
-
-                                     memberRole.getUsers().remove(user);
-                                     memberRole.save(null, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-                                     var userRolesRelation = user.relation("roles");
-                                     userRolesRelation.remove(memberRole);
-
-                                     // now add follower since a member is by default a follower
-                                     queryfollowerRole.equalTo('name', followerName);
-
-                                     queryfollowerRole.first({
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     }).then((followerRole) => {
-                                     // The object was retrieved successfully.
-
-                                     followerRole.getUsers().remove(user);
-                                     followerRole.save(null, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-                                     var userRolesRelation = user.relation("roles");
-                                     userRolesRelation.remove(followerRole);
-                                     user.save(null, {
-
-                                     //useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-                                     Workspace.save(null, {
-
-                                     //useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-                                     });
-
-                                     response.success();
-
-                                     }, (error) => {
-                                     // The object was not retrieved successfully.
-                                     // error is a Parse.Error with an error code and message.
-                                     response.error(error);
-                                     }, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });
-
-
-                                     }, (error) => {
-                                     // The object was not retrieved successfully.
-                                     // error is a Parse.Error with an error code and message.
-                                     response.error(error);
-                                     }, {
-
-                                     useMasterKey: true,
-                                     sessionToken: req.user.getSessionToken()
-
-                                     });*/
-
-
-                                }
-
-
-                            }
-                            else if (result.get("isFollower") === true && workspace_follower.get("isFollower") === true) {
-
-                                // User was a follower and wants to stay a follower
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && workspace_follower.get("isMember") === true) {
-
-                                    // user wants to be a member now
-                                    Workspace.increment("memberCount");
-                                    console.log("increment  Member");
-
-                                    // now add both member only since user is already a follower
-                                    async.parallel([
-                                        async.apply(addMemberRole)
-
-                                    ], function (err, results) {
-                                        if (err) {
-                                            response.error(err);
-                                        } else {
-
-                                            let memberRole = results[0];
-
-                                            if (memberRole) {
-                                                userRolesRelation.add(memberRole);
-
-                                            }
-
-                                            user.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            Workspace.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            let beforeSaveElse_Time = process.hrtime(time);
-                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-
-                                        }
-                                    });
-
-
-                                }
-                                else if ((result.get("isMember") === false || !result.get("isMember") ) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
-
-                                    // do nothing since isMember and isFollower did not change
-
-                                    response.success();
-
-                                }
-                                else if ((result.get("isMember") === true) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
-
-                                    // user want's to stay as a follower but removed as member
-                                    Workspace.increment("memberCount", -1);
-                                    console.log("decrement Member");
-
-                                    async.parallel([
-                                        async.apply(removeMemberRole)
-
-                                    ], function (err, results) {
-                                        if (err) {
-                                            response.error(err);
-                                        } else {
-
-                                            let memberRole = results[0];
-
-                                            if (memberRole) {
-                                                userRolesRelation.remove(memberRole);
-
-                                            }
-
-                                            user.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            Workspace.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            let beforeSaveElse_Time = process.hrtime(time);
-                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-
-                                        }
-                                    });
-
-                                }
-                                else if (result.get("isMember") === true && workspace_follower.get("isMember") === true) {
-
-                                    // do nothing since isMember and isFollower did not change
-
-                                    response.success();
-
-                                }
-
-                            }
-                            else if ((!result.get("isFollower") || result.get("isFollower") === false) && workspace_follower.get("isFollower") === false) {
-
-                                // User wasn't a follower but now wants to be a member so make him also a follower
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && workspace_follower.get("isMember") === true) {
-
-                                    // user can't be a member unless isFollower === true
-                                    workspace_follower.set("isFollower", true);
-
-                                    Workspace.increment("followerCount");
-                                    console.log("increment Follower");
-
-                                    // user wants to be a member now
-                                    Workspace.increment("memberCount");
-                                    console.log("increment  Member");
-
-
-                                    if (workspace.get("type") === 'private') {
-
-                                        // if channel is private add user ACL so he/she has access to the private channel or channelfollow
-
-                                        workspaceACL.setReadAccess(user, true);
-                                        workspaceACL.setWriteAccess(user, true);
-                                        Workspace.setACL(workspaceACL);
-
-                                        // set correct ACL for channelFollow
-
-                                        workspaceFollowACLPrivate.setReadAccess(user, true);
-                                        workspaceFollowACLPrivate.setWriteAccess(user, true);
-
-                                        workspace_follower.setACL(workspaceFollowACLPrivate);
-
-                                    }
-
-                                    // joining a workspace follower, so mark previous one as false
-                                    /*if (previousWorkspaceFollowJoin.length > 0) {
-
-                                        for (var i = 0; i < previousWorkspaceFollowers.length; i++) {
-
-                                            previousWorkspaceFollowJoin.id = previousWorkspaceFollowers[i].id;
-
-                                            previousWorkspaceFollowJoin.set("isSelected", false);
-
-                                            previousWorkspaceFollowJoin.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                        }
-
-
-                                    }*/
-
-                                    // set isSelected for this workspace_follower to true
-                                    workspace_follower.set("isSelected", true);
-                                    user.set("isSelectedWorkspaceFollower", workspace_follower);
-
-                                    // now add both member and follower roles
-                                    async.parallel([
-                                        async.apply(addFollowerRole),
-                                        async.apply(addMemberRole),
-                                        async.apply(createDefaultChannelFollows),
-                                        async.apply(removePreviousWorkspaceFollowSelected)
-
-
-                                    ], function (err, results) {
-                                        if (err) {
-                                            response.error(err);
-                                        } else {
-
-                                            let followerRole = results[0];
-                                            let memberRole = results[1];
-
-                                            if (followerRole) {
-                                                userRolesRelation.add(followerRole);
-                                            }
-
-                                            if (memberRole) {
-                                                userRolesRelation.add(memberRole);
-
-                                            }
-
-                                            user.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-
-                                            });
-
-                                            Workspace.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            let beforeSaveElse_Time = process.hrtime(time);
-                                            console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success();
-
-                                        }
-                                    });
-
-
-                                }
-                                else if ((result.get("isMember") === false || !result.get("isMember") ) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
-
-                                    // do nothing since isMember and isFollower did not change
-                                    response.success();
-
-
-                                }
-                                else if ((result.get("isMember") === true) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
-
-                                    // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
-
-
-                                    response.success();
-
-                                }
-                                else if (result.get("isMember") === true && workspace_follower.get("isMember") === true) {
-
-                                    // do nothing since isMember and isFollower did not change
-                                    response.success();
-
-
-                                }
-
-                            }
+                            });
 
 
                         }
-                        else if (workspace_follower.dirty("isFollower") && !workspace_follower.dirty("isMember")) {
+                        else if ((result.get("isMember") === false || !result.get("isMember") ) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
 
-                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
+                            // do nothing since isMember and isFollower did not change
 
-                        }
-                        else if (!workspace_follower.dirty("isFollower") && workspace_follower.dirty("isMember")) {
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
-
-                        }
-                        else {
-
-                            // isMember and isFollower not updated, return success.
                             response.success();
+
+
+                        }
+                        else if ((result.get("isMember") === true) && (workspace_follower.get("isMember") === false || !workspace_follower.get("isMember"))) {
+
+                            // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+                        }
+                        else if (result.get("isMember") === true && workspace_follower.get("isMember") === true) {
+
+                            // do nothing since isMember and isFollower did not change
+
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+
                         }
 
                     }
 
-                });
 
+                }
+                else if (workspace_follower.dirty("isFollower") && !workspace_follower.dirty("isMember")) {
+
+                    let beforeSaveElse_Time = process.hrtime(time);
+                    console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                    response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                }
+                else if (!workspace_follower.dirty("isFollower") && workspace_follower.dirty("isMember")) {
+
+                    let beforeSaveElse_Time = process.hrtime(time);
+                    console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                    response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                }
+                else {
+
+                    // isMember and isFollower not updated, return success.
+                    let beforeSaveElse_Time = process.hrtime(time);
+                    console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                    response.success();
+                }
 
             }
-            else {
 
-                console.log("do nothing at all");
-
-                let beforeSaveElse_Time = process.hrtime(time);
-                console.log(`beforeSaveElse_Time Posts took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                response.success();
-
-            }
+        });
 
 
-        }
     }
+    else {
 
+        console.log("do nothing at all");
 
+        let beforeSaveElse_Time = process.hrtime(time);
+        console.log(`beforeSaveElse_Time workspace_follower took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+        response.success();
+
+    }
 
 }, {useMasterKey: true});
 
@@ -7069,243 +6833,1354 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
     //console.log("channel: " + JSON.stringify(channel));
     //console.log("req.user: " + JSON.stringify(req.user));
 
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
-    if (!req.user) {
+    if (!req.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.001.beforeSave-ChannelFollow.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
 
-        response.error("beforeSave ChannelFollow Session token: X-Parse-Session-Token is required");
 
-    } else if (req.user) {
+    let queryChannelFollow = new Parse.Query("ChannelFollow");
+    let queryChannel = new Parse.Query(CHANNEL);
 
-        if (!req.user.getSessionToken()) {
+    //console.log("post: " + JSON.stringify(channelfollow));
 
-            response.error("beforeSave ChannelFollow Session token: X-Parse-Session-Token is required");
+    // if there is a post that got added, then increase counter, else ignoremyObject
+    if (channelfollow.isNew()) {
 
-        } else {
+        if (!channelfollow.get("channel")) {
+            return response.error("Channel is required.");
+        }
+        if (!channelfollow.get("user")) {
+            return response.error("User who is the channel creator is required when creating a new channel");
+        }
+        if (!channelfollow.get("workspace")) {
+            return response.error("Workspace is required when creating a new channel");
+        }
 
-            let queryChannelFollow = new Parse.Query("ChannelFollow");
-            let queryChannel = new Parse.Query(CHANNEL);
+        let channelFollowName = channelfollow.get("user").id + "-" + channelfollow.get("workspace").id + "-" + channelfollow.get("channel").id;
+        console.log("channelFollowName user: " + JSON.stringify(channelFollowName));
 
-            //console.log("post: " + JSON.stringify(channelfollow));
+        queryChannelFollow.equalTo("name", channelFollowName);
+        queryChannelFollow.include(["user", "workspace", "channel"]);
 
-            // if there is a post that got added, then increase counter, else ignoremyObject
-            if (channelfollow.isNew()) {
 
-                if (!channelfollow.get("channel")) {
-                    return response.error("Channel is required.");
+        // check to make sure that the workspace_follower for a user - workspace is unique
+        queryChannelFollow.first({
+
+            useMasterKey: true
+            //sessionToken: req.user.getSessionToken()
+
+        }).then((results) => {
+            // The object was retrieved successfully.
+
+            if (results) {
+
+                //channelfollow already exists in db, return an error because it needs to be unique
+                console.log("channelfollow already exists in db, return an error because it needs to be unique");
+                response.error(results);
+
+            } else {
+
+
+                if (!channelfollow.get("archive")) {
+                    channelfollow.set("archive", false);
                 }
-                if (!channelfollow.get("user")) {
-                    return response.error("User who is the channel creator is required when creating a new channel");
-                }
-                if (!channelfollow.get("workspace")) {
-                    return response.error("Workspace is required when creating a new channel");
+                if (!channelfollow.get("notificationCount")) {
+                    channelfollow.set("notificationCount", 0);
                 }
 
-                let channelFollowName = channelfollow.get("user").id + "-" + channelfollow.get("workspace").id + "-" + channelfollow.get("channel").id;
-                console.log("channelFollowName user: " + JSON.stringify(channelFollowName));
+                channel.id = channelfollow.get("channel").id;
 
-                queryChannelFollow.equalTo("name", channelFollowName);
-                queryChannelFollow.include(["user", "workspace", "channel"]);
+                workspace.id = channelfollow.get("workspace").id;
 
+                user.id = channelfollow.get("user").id;
 
-                // check to make sure that the workspace_follower for a user - workspace is unique
-                queryChannelFollow.first({
+                console.log("channel, workspace and user: " + JSON.stringify(channel) + JSON.stringify(workspace) + JSON.stringify(user));
 
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                queryChannel.get(channel.id, {
 
-                }).then((results) => {
+                    useMasterKey: true
+                    //sessionToken: req.user.getSessionToken()
+
+                }).then((channelObject) => {
                     // The object was retrieved successfully.
 
-                    if (results) {
+                    //let user = channelfollow.get("user");
 
-                        //channelfollow already exists in db, return an error because it needs to be unique
-                        console.log("channelfollow already exists in db, return an error because it needs to be unique");
-                        response.error(results);
+                    //let Channel = channelObject;
 
-                    } else {
+                    let OWNERUSER = Parse.Object.extend("_User");
+                    let ownerUser = new OWNERUSER();
+                    ownerUser.id = channelObject.get("user").id;
+
+                    //let ownerChannel = Channel.get("user");
+                    console.log("channelType: " + JSON.stringify(channelObject.get("type")));
+
+                    function addExpertsArrayToChannel (callback) {
+
+                        if (channelObject.get("name") === 'general') {
+
+                            return callback (null, channelObject);
+                        } else if (channelObject.get("name") !== 'general') {
+
+                            //var userRole = user.get("roles");
+                            user.fetch(user.id, {
+
+                                useMasterKey: true
+                                //sessionToken: req.user.getSessionToken()
+
+                            }).then((User) => {
+                                // The object was retrieved successfully.
+
+                                console.log("user object: " + JSON.stringify(User));
+                                let userRoleRelation = User.relation("roles");
+                                //let expertChannelRelation = channelObject.relation("experts");
+                                console.log("userRole: " + JSON.stringify(userRoleRelation));
+                                //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
 
 
-                        if (!channelfollow.get("archive")) {
-                            channelfollow.set("archive", false);
+                                let expertRoleName = "expert-" + workspace.id;
+
+                                let userRoleRelationQuery = userRoleRelation.query();
+                                userRoleRelationQuery.equalTo("name", expertRoleName);
+                                userRoleRelationQuery.first({
+
+                                    useMasterKey: true
+                                    //sessionToken: req.user.getSessionToken()
+
+                                }).then((results) => {
+                                    // The object was retrieved successfully.
+
+                                    if (results) {
+
+                                        // expert role exists, add as channel expert
+                                        //console.log("channelExpert: " + JSON.stringify(results));
+
+
+                                        let expertOwner = simplifyUser(User);
+
+
+                                        channelObject.addUnique("expertsArray", expertOwner);
+                                        //expertChannelRelation.add(user);
+
+                                        /*channelObject.save(null, {
+
+                                         //useMasterKey: true,
+                                         sessionToken: req.user.getSessionToken()
+
+                                         }
+                                         );*/
+
+                                        //expertChannelRelation.add(user);
+
+                                        console.log("addExpertsArrayToChannel channel in beforeSave ChannelFollow: " + JSON.stringify(channelObject));
+
+
+                                        return callback (null, channelObject);
+
+
+
+                                    }
+                                    else {
+                                        // no role exists don't add experts to channel
+
+                                        console.log("userRoleRelationQuery no result");
+
+
+                                        return callback (null, channel);
+                                    }
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("userRoleRelationQuery no result");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: req.user.getSessionToken()
+
+                                });
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                console.log("userRoleRelationQuery no result");
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true
+                                //sessionToken: req.user.getSessionToken()
+
+                            });
+
+
                         }
-                        if (!channelfollow.get("notificationCount")) {
-                            channelfollow.set("notificationCount", 0);
-                        }
 
-                        channel.id = channelfollow.get("channel").id;
 
-                        workspace.id = channelfollow.get("workspace").id;
+                    }
 
-                        user.id = channelfollow.get("user").id;
+                    function updateFollowersInChannel (callback) {
 
-                        console.log("channel, workspace and user: " + JSON.stringify(channel) + JSON.stringify(workspace) + JSON.stringify(user));
 
-                        queryChannel.get(channel.id, {
+                        let queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
+                        queryChannelFollowIsSelected.equalTo("user", user);
+                        //queryChannelFollowIsSelected.equalTo("channel", Channel);
+                        queryChannelFollowIsSelected.equalTo("workspace", workspace);
+                        queryChannelFollowIsSelected.equalTo("isSelected", true);
 
-                            //useMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
+                        queryChannelFollowIsSelected.first({
 
-                        }).then((channelObject) => {
+                            useMasterKey: true
+                            //sessionToken: req.user.getSessionToken()
+
+                        }).then((ChannelFollowIsSelected) => {
                             // The object was retrieved successfully.
 
-                            //let user = channelfollow.get("user");
+                            let ChannelFollowISSELECTED = Parse.Object.extend("ChannelFollow");
+                            let channelFollowIsSelectedSave = new ChannelFollowISSELECTED();
 
-                            //let Channel = channelObject;
+                            if (ChannelFollowIsSelected) {
 
-                            let OWNERUSER = Parse.Object.extend("_User");
-                            let ownerUser = new OWNERUSER();
-                            ownerUser.id = channelObject.get("user").id;
-
-                            //let ownerChannel = Channel.get("user");
-                            console.log("channelType: " + JSON.stringify(channelObject.get("type")));
-
-                            function addExpertsArrayToChannel (callback) {
-
-                                if (channelObject.get("name") === 'general') {
-
-                                    return callback (null, channelObject);
-                                } else if (channelObject.get("name") !== 'general') {
-
-                                    //var userRole = user.get("roles");
-                                    user.fetch(user.id, {
-
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
-
-                                    }).then((User) => {
-                                        // The object was retrieved successfully.
-
-                                        console.log("user object: " + JSON.stringify(User));
-                                        let userRoleRelation = User.relation("roles");
-                                        //let expertChannelRelation = channelObject.relation("experts");
-                                        console.log("userRole: " + JSON.stringify(userRoleRelation));
-                                        //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
+                                channelFollowIsSelectedSave.id = ChannelFollowIsSelected.id;
 
 
-                                        let expertRoleName = "expert-" + workspace.id;
+                            }
 
-                                        let userRoleRelationQuery = userRoleRelation.query();
-                                        userRoleRelationQuery.equalTo("name", expertRoleName);
-                                        userRoleRelationQuery.first({
+                            channelfollow.set("name", channelFollowName);
+                            //console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                            let channelACL = channelObject.getACL();
+                            let channelFollowACLPrivate = channelACL;
+                            let channelFollowACL = new Parse.ACL();
 
-                                        }).then((results) => {
-                                            // The object was retrieved successfully.
+                            // If this is a private channel, set ACL for owner to read and write
+                            if (channelObject.get("type") === 'private') {
 
-                                            if (results) {
+                                var adminRolePrivate = new Parse.Role();
+                                var adminNamePrivate = 'admin-' + workspace.id;
+                                adminRolePrivate.set("name", adminNamePrivate);
 
-                                                // expert role exists, add as channel expert
-                                                //console.log("channelExpert: " + JSON.stringify(results));
+                                channelACL.setReadAccess(user, true);
+                                channelACL.setWriteAccess(user, true);
+                                channel.setACL(channelACL);
 
+                                // set correct ACL for channelFollow
+                                //channelFollowACL.setPublicReadAccess(false);
+                                //channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACLPrivate.setReadAccess(user, true);
+                                channelFollowACLPrivate.setWriteAccess(user, true);
+                                //channelFollowACL.setReadAccess(ownerChannel, true);
+                                //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                channelfollow.setACL(channelFollowACLPrivate);
 
-                                                let expertOwner = simplifyUser(User);
-
-
-                                                channelObject.addUnique("expertsArray", expertOwner);
-                                                //expertChannelRelation.add(user);
-
-                                                /*channelObject.save(null, {
-
-                                                 //useMasterKey: true,
-                                                 sessionToken: req.user.getSessionToken()
-
-                                                 }
-                                                 );*/
-
-                                                //expertChannelRelation.add(user);
-
-                                                console.log("addExpertsArrayToChannel channel in beforeSave ChannelFollow: " + JSON.stringify(channelObject));
-
-
-                                                return callback (null, channelObject);
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
 
 
 
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+
+
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
                                             }
-                                            else {
-                                                // no role exists don't add experts to channel
+                                        );
 
-                                                console.log("userRoleRelationQuery no result");
+                                    }
+
+                                    return callback (null, channel);
 
 
-                                                return callback (null, channel);
+
+                                }
+                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
                                             }
-                                        }, (error) => {
-                                            // The object was not retrieved successfully.
-                                            // error is a Parse.Error with an error code and message.
-                                            console.log("userRoleRelationQuery no result");
-                                            return callback (error);
-                                        }, {
+                                        );
 
-                                            useMasterKey: true,
-                                            sessionToken: req.user.getSessionToken()
+                                    }
 
-                                        });
+                                    return callback (null, channel);
 
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        console.log("userRoleRelationQuery no result");
-                                        return callback (error);
-                                    }, {
 
-                                        useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
 
-                                    });
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
 
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+
+                                    return callback (null, channel);
+
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                }
+                                else {
+
+                                    return callback (null, channel);
+
+                                }
+
+                            }
+                            else if (channelObject.get("type") === 'privateMembers') {
+
+                                // get member role for this workspace
+                                //var queryMemberRole = new Parse.Query(Parse.Role);
+                                var memberRole = new Parse.Role();
+                                var memberName = 'member-' + workspace.id;
+                                memberRole.set("name", memberName);
+
+                                // set correct ACL for channelFollow
+                                channelFollowACL.setPublicReadAccess(false);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(memberRole, true);
+                                channelFollowACL.setWriteAccess(memberRole, false);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+
+                                    return callback (null, channel);
+
+                                }
+                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                }
+                                else {
+
+                                    return callback (null, channel);
+
+                                }
+
+
+
+
+                            }
+                            else if (channelObject.get("type") === 'privateExperts') {
+
+                                // get expert role for this workspace
+                                var expertRole = new Parse.Role();
+                                var expertName = 'expert-' + workspace.id;
+                                expertRole.set("name", expertName);
+
+                                // set correct ACL for channelFollow
+                                channelFollowACL.setPublicReadAccess(false);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(expertRole, true);
+                                channelFollowACL.setWriteAccess(expertRole, false);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                }
+                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    return callback (null, channel);
+                                }
+
+
+
+                            }
+                            else if (channelObject.get("type") === 'privateAdmins') {
+
+                                // get admin role for this workspace
+                                var adminRole = new Parse.Role();
+                                var adminName = 'expert-' + workspace.id;
+                                adminRole.set("name", adminName);
+
+                                // set correct ACL for channelFollow
+                                channelFollowACL.setPublicReadAccess(false);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(adminRole, true);
+                                channelFollowACL.setWriteAccess(adminRole, false);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    return callback (null, channel);
+
+                                }
+
+
+
+
+                            }
+                            else if (channelObject.get("type") === 'privateModerators') {
+
+                                // get moderator role for this workspace
+                                var moderatorRole = new Parse.Role();
+                                var moderatorName = 'expert-' + workspace.id;
+                                moderatorRole.set("name", moderatorName);
+
+                                // set correct ACL for channelFollow
+                                channelFollowACL.setPublicReadAccess(false);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(moderatorRole, true);
+                                channelFollowACL.setWriteAccess(moderatorRole, false);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                //useMasterKey: true,
+                                                sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    return callback (null, channel);
+                                }
+
+
+
+                            }
+                            else if (channelObject.get("type") === 'privateOwners') {
+
+                                // get owner role for this workspace
+                                var ownerRole = new Parse.Role();
+                                var ownerName = 'expert-' + workspace.id;
+                                ownerRole.set("name", ownerName);
+
+                                // set correct ACL for channelFollow
+                                channelFollowACL.setPublicReadAccess(false);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(ownerRole, true);
+                                channelFollowACL.setWriteAccess(ownerRole, false);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    ChannelFollowIsSelected("isSelected", false);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    return callback (null, channel);
+
+                                }
+
+
+
+
+                            }
+                            else if (channelObject.get("type") === "public") {
+
+                                // do nothing, since ACL will be public read/write by default
+                                channelFollowACL.setPublicReadAccess(true);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+                                        console.log("channelFollowIsSelectedSave: " + JSON.stringify(channelFollowIsSelectedSave));
+
+
+                                    }
+                                    return callback (null, channel);
+
+                                }
+                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    if (ChannelFollowIsSelected) {
+
+                                        channelFollowIsSelectedSave.set("isSelected", false);
+                                        channelFollowIsSelectedSave.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+                                    return callback (null, channel);
+
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                }
+                                else {
+
+                                    return callback (null, channel);
 
                                 }
 
 
                             }
+                            else if (channelObject.get("type") !== 'private' || channelObject.get("type") !== 'public' || channelObject.get("type") !== 'privateOwners' || channelObject.get("type") !== 'privateModerators' || channelObject.get("type") !== 'privateAdmins' || channelObject.get("type") !== 'privateExperts' || channelObject.get("type") !== 'privateMembers') {
 
-                            function updateFollowersInChannel (callback) {
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                                response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+                            }
 
 
-                                let queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
-                                queryChannelFollowIsSelected.equalTo("user", user);
-                                //queryChannelFollowIsSelected.equalTo("channel", Channel);
-                                queryChannelFollowIsSelected.equalTo("workspace", workspace);
-                                queryChannelFollowIsSelected.equalTo("isSelected", true);
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            console.log("channelfollowisSelected not found");
+                            return response.error(error);
+                        }, {
 
-                                queryChannelFollowIsSelected.first({
+                            useMasterKey: true
+                            //sessionToken: req.user.getSessionToken()
 
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
+                        });
 
-                                }).then((ChannelFollowIsSelected) => {
-                                    // The object was retrieved successfully.
+                    }
 
-                                    let ChannelFollowISSELECTED = Parse.Object.extend("ChannelFollow");
-                                    let channelFollowIsSelectedSave = new ChannelFollowISSELECTED();
+                    async.parallel([
+                        async.apply(addExpertsArrayToChannel),
+                        async.apply(updateFollowersInChannel)
 
-                                    if (ChannelFollowIsSelected) {
+                    ], function (err, results) {
+                        if (err) {
+                            response.error(err);
+                        }
 
-                                        channelFollowIsSelectedSave.id = ChannelFollowIsSelected.id;
+                        if (channelObject.get("name") !== 'general') {
+
+                            let FinalChannelToSave = Parse.Object.extend("Channel");
+                            let finalChannelToSave = new FinalChannelToSave();
+                            finalChannelToSave.id = channel.id;
+
+                            let FIRSTCHANNELRESULT = Parse.Object.extend("Channel");
+                            let firstChannelResult = new Parse.Object(FIRSTCHANNELRESULT);
+                            firstChannelResult = results[0];
+
+                            let SecondChannelResult = Parse.Object.extend("Channel");
+                            let secondChannelResult = new SecondChannelResult();
+                            secondChannelResult = results[1];
+
+                            console.log("firstChannelResult: " + JSON.stringify(firstChannelResult));
+                            console.log("secondChannelResult: " + JSON.stringify(secondChannelResult));
+
+                            if (firstChannelResult) {
+
+                                if (firstChannelResult.get("expertsArray")) {
+
+                                    finalChannelToSave.set("expertsArray", firstChannelResult.toJSON().expertsArray);
+                                    console.log("expertsArray: " + JSON.stringify(firstChannelResult.toJSON().expertsArray));
+
+                                }
+                            }
+
+                            if (secondChannelResult) {
+
+                                if (secondChannelResult.get("followerCount")) {
+                                    finalChannelToSave.set("followerCount", secondChannelResult.toJSON().followerCount);
+                                }
+                                if (secondChannelResult.get("memberCount")) {
+
+                                    finalChannelToSave.set("memberCount", secondChannelResult.toJSON().memberCount);
+
+
+                                }
+
+                            }
+
+                            console.log("Channel async.Parallels: " + JSON.stringify(finalChannelToSave));
+
+                            finalChannelToSave.save(null, {
+
+                                useMasterKey: true
+                                //sessionToken: req.user.getSessionToken()
+
+                            });
+
+
+
+                        }
+
+
+
+                        let beforeSave_Time = process.hrtime(time);
+                        console.log(`beforeSave_Time ChannelFollow took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+                    });
+
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    console.log("channelQuery not found");
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: req.user.getSessionToken()
+
+                });
+            }
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            console.log("channelFollowQuery not found");
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: req.user.getSessionToken()
+
+        });
+
+
+    }
+    else if (!channelfollow.isNew() && (channelfollow.dirty("isFollower") || channelfollow.dirty("isMember"))) {
+
+        console.log("channelfollow.id: " + JSON.stringify(channelfollow.id));
+
+        queryChannelFollow.include(["user", "workspace", "channel"]);
+        queryChannelFollow.get(channelfollow.id, {
+
+            useMasterKey: true
+            //sessionToken: req.user.getSessionToken()
+
+        }).then((result) => {
+            // The object was retrieved successfully.
+
+            console.log("channelfollow result from query: " + JSON.stringify(result));
+
+            //console.log("old isFollower: "+JSON.stringify(result.get("isFollower")) + " New isFollower: " + JSON.stringify(workspace_follower.get("isFollower")) + " isFollower.dirty: "+JSON.stringify(workspace_follower.dirty("isFollower")));
+            //console.log("old isMember: "+JSON.stringify(result.get("isMember")) + " New isMember: " + JSON.stringify(workspace_follower.get("isMember")) + " isMember.dirty: "+JSON.stringify(workspace_follower.dirty("isMember")));
+
+            //queryPTime = process.hrtime(timequeryPostFind);
+            //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
+
+
+            var Channel = result.get("channel");
+            var channelACL = Channel.getACL();
+            var channelFollowACLPrivate = result.getACL();
+            var user = result.get("user");
+            var workspace = result.get("workspace");
+            //var userRole = user.get("roles");
+            console.log("channelfollow user: " + JSON.stringify(user));
+
+            let expertsArray = Channel.get("expertsArray");
+            if (expertsArray === undefined || !expertsArray) { expertsArray = []; Channel.set("expertsArray", []);}
+
+            var userRoleRelation = user.relation("roles");
+            var expertChannelRelation = Channel.relation("experts");
+            //console.log("userRole: " + JSON.stringify(userRoleRelation));
+
+            var expertRoleName = "expert-" + channelfollow.get("workspace").id;
+
+            var userRoleRelationQuery = userRoleRelation.query();
+            userRoleRelationQuery.equalTo("name", expertRoleName);
+            userRoleRelationQuery.first({
+
+                useMasterKey: true
+                //sessionToken: req.user.getSessionToken()
+
+            }).then((results) => {
+                // The object was retrieved successfully.
+
+                var queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
+                queryChannelFollowIsSelected.equalTo("user", user);
+                queryChannelFollowIsSelected.equalTo("workspace", workspace);
+                queryChannelFollowIsSelected.equalTo("isSelected", true);
+
+                queryChannelFollowIsSelected.first({
+
+                    useMasterKey: true
+                    //sessionToken: req.user.getSessionToken()
+
+                }).then((ChannelFollowIsSelected) => {
+                    // The object was retrieved successfully.
+
+
+                    if (results) {
+
+                        // expert role exists, add as channel expert
+                        console.log("channelExpert: " + JSON.stringify(results));
+
+                        if (channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+
+                            if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
+
+                                Channel.increment("followerCount");
+                                console.log("increment Follower");
+
+                                // add this user as channel expert since he/she is a workspace expert and followed this channel
+                                expertChannelRelation.add(user);
+
+                                let expertOwner = simplifyUser(user);
+
+                                Channel.addUnique("expertsArray", expertOwner);
+
+                                if (Channel.get("type") === 'private') {
+
+                                    // if channel is private add user ACL so he/she has access to the private channel or channelfollow
+
+                                    channelACL.setReadAccess(user, true);
+                                    channelACL.setWriteAccess(user, true);
+                                    Channel.setACL(channelACL);
+
+                                    // set correct ACL for channelFollow
+                                    //channelFollowACL.setPublicReadAccess(false);
+                                    //channelFollowACL.setPublicWriteAccess(false);
+                                    channelFollowACLPrivate.setReadAccess(user, true);
+                                    channelFollowACLPrivate.setWriteAccess(user, true);
+                                    //channelFollowACL.setReadAccess(ownerChannel, true);
+                                    //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                    channelfollow.setACL(channelFollowACLPrivate);
+
+                                }
+
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+
+                                if (ChannelFollowIsSelected) {
+
+                                    ChannelFollowIsSelected.set("isSelected", false);
+                                    ChannelFollowIsSelected.save(null, {
+
+                                            useMasterKey: true
+                                            //sessionToken: req.user.getSessionToken()
+                                        }
+                                    );
+
+                                }
+
+                                // if isFollower === false then isMember has to also be false. but we will check anyway
+                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                    // user isFollow is true  && user isMember also true so make the user both a follower and member
+                                    Channel.increment("memberCount");
+                                    console.log("increment  Member");
+
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user isFollow is true but user is not a member, make user only follower
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user can't be a follower and not a member, keep him a member, sand make him a follower
+                                    channelfollow.set("isMember", true);
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                    // user can't be a member if he wasn't already a follower this really can't happen
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                }
+
+                            }
+                            else if (result.get("isFollower") === true && channelfollow.get("isFollower") === false) {
+
+                                // User was a follower but now is not a follower
+                                if (channelfollow.get("isSelected") === true) {
+                                    channelfollow.set("isSelected", false);
+                                }
+
+                                // remove user as follower of that channel
+                                Channel.increment("followerCount", -1);
+                                console.log("decrement Follower");
+
+                                // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
+                                expertChannelRelation.remove(user);
+
+                                let expertOwner = simplifyUser(user);
+
+                                Channel.remove("expertsArray", expertOwner);
+
+                                if (Channel.get("type") === 'private') {
+
+                                    // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
+
+                                    if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
+
+                                        // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                                    } else {
+
+                                        // this user is not the channel owner it's ok to remove his/her ACL
+
+                                        // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                        // user will need to be added again by channel owner since it's a private channel
+
+                                        channelACL.setReadAccess(user, false);
+                                        channelACL.setWriteAccess(user, false);
+                                        Channel.setACL(channelACL);
+
+                                        // set correct ACL for channelFollow
+                                        //channelFollowACL.setPublicReadAccess(false);
+                                        //channelFollowACL.setPublicWriteAccess(false);
+                                        channelFollowACLPrivate.setReadAccess(user, false);
+                                        channelFollowACLPrivate.setWriteAccess(user, false);
+                                        //channelFollowACL.setReadAccess(ownerChannel, true);
+                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelfollow.setACL(channelFollowACLPrivate);
 
 
                                     }
 
-                                    channelfollow.set("name", channelFollowName);
-                                    //console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
 
-                                    let channelACL = channelObject.getACL();
-                                    let channelFollowACLPrivate = channelACL;
-                                    let channelFollowACL = new Parse.ACL();
+                                }
 
-                                    // If this is a private channel, set ACL for owner to read and write
-                                    if (channelObject.get("type") === 'private') {
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", false);
 
-                                        var adminRolePrivate = new Parse.Role();
-                                        var adminNamePrivate = 'admin-' + workspace.id;
-                                        adminRolePrivate.set("name", adminNamePrivate);
+                                // since user unfollowed this channel we unselect it and by default then no channel is selected so we display 'all' channels
+
+
+                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                    // user want's to stay as member but remove as follower, can't happen. remove him as member and follower
+                                    channelfollow.set("isMember", false);
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user is not a member, was a follower and now wants to un-follow
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user was a follower and member and now wants to both un-follow and not be a member anymore
+                                    Channel.increment("memberCount", -1);
+                                    console.log("decrement Member");
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                    // user can't stay a member since he is un-following this workspace so make him not a member
+                                    channelfollow.set("isMember", false);
+                                    Channel.increment("memberCount", -1);
+                                    console.log("decrement Member");
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                }
+
+                            }
+                            else if (result.get("isFollower") === true && channelfollow.get("isFollower") === true) {
+
+                                // User was a follower and wants to stay a follower
+                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                    // user wants to be a member now
+                                    Channel.increment("memberCount");
+                                    console.log("increment  Member");
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+
+                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // do nothing since isMember and isFollower did not change
+
+                                    response.success();
+
+                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user want's to stay as a follower but removed as member
+                                    Channel.increment("memberCount", -1);
+                                    console.log("decrement Member");
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                    // do nothing since isMember and isFollower did not change
+
+                                    response.success();
+
+                                }
+
+                            }
+                            else if ((!result.get("isFollower") || result.get("isFollower") === false) && channelfollow.get("isFollower") === false) {
+
+                                // User wasn't a follower but now wants to be a member so make him also a follower
+                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                    // user can't be a member unless isFollower === true
+                                    channelfollow.set("isFollower", true);
+
+                                    Channel.increment("followerCount");
+                                    console.log("increment Follower");
+
+                                    // add this user as channel expert since he/she is a workspace expert and followed this channel
+                                    expertChannelRelation.add(user);
+
+                                    let expertOwner = simplifyUser(user);
+
+                                    Channel.addUnique("expertsArray", expertOwner);
+
+                                    if (Channel.get("type") === 'private') {
+
+                                        // if channel is private add user ACL so he/she has access to the private channel or channelfollow
 
                                         channelACL.setReadAccess(user, true);
                                         channelACL.setWriteAccess(user, true);
-                                        channel.setACL(channelACL);
+                                        Channel.setACL(channelACL);
 
                                         // set correct ACL for channelFollow
                                         //channelFollowACL.setPublicReadAccess(false);
@@ -7316,1596 +8191,477 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                         //channelFollowACL.setWriteAccess(ownerChannel, true);
                                         channelfollow.setACL(channelFollowACLPrivate);
 
-                                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            channel.increment("followerCount");
-                                            channel.increment("memberCount");
-
-
-
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-
-
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-
-                                            return callback (null, channel);
-
-
-
-                                        }
-                                        else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            channel.increment("followerCount");
-
-
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-
-                                            return callback (null, channel);
-
-
-
-                                        }
-                                        else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                            // a member is by default always a follower.
-                                            channel.increment("memberCount");
-                                            channel.increment("followerCount");
-
-                                            channelfollow.set("isFollower", true);
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-
-                                            return callback (null, channel);
-
-                                        }
-                                        else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                        }
-                                        else {
-
-                                            let beforeSave_Time = process.hrtime(time);
-                                            console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
-
-                                            return callback (null, channel);
-
-                                        }
-
-                                    }
-                                    else if (channelObject.get("type") === 'privateMembers') {
-
-                                        // get member role for this workspace
-                                        //var queryMemberRole = new Parse.Query(Parse.Role);
-                                        var memberRole = new Parse.Role();
-                                        var memberName = 'member-' + workspace.id;
-                                        memberRole.set("name", memberName);
-
-                                        // set correct ACL for channelFollow
-                                        channelFollowACL.setPublicReadAccess(false);
-                                        channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACL.setReadAccess(memberRole, true);
-                                        channelFollowACL.setWriteAccess(memberRole, false);
-                                        channelFollowACL.setReadAccess(user, true);
-                                        channelFollowACL.setWriteAccess(user, true);
-                                        channelFollowACL.setReadAccess(ownerUser, true);
-                                        channelFollowACL.setWriteAccess(ownerUser, true);
-                                        channelfollow.setACL(channelFollowACL);
-
-                                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            channel.increment("followerCount");
-                                            channel.increment("memberCount");
-
-
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-
-                                            return callback (null, channel);
-
-                                        }
-                                        else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            channel.increment("followerCount");
-
-
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        }
-                                        else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                            // a member is by default always a follower.
-                                            channel.increment("memberCount");
-                                            channel.increment("followerCount");
-                                            channelfollow.set("isFollower", true);
-
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        }
-                                        else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                        }
-                                        else {
-
-                                            return callback (null, channel);
-
-                                        }
-
-
-
-
-                                    }
-                                    else if (channelObject.get("type") === 'privateExperts') {
-
-                                        // get expert role for this workspace
-                                        var expertRole = new Parse.Role();
-                                        var expertName = 'expert-' + workspace.id;
-                                        expertRole.set("name", expertName);
-
-                                        // set correct ACL for channelFollow
-                                        channelFollowACL.setPublicReadAccess(false);
-                                        channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACL.setReadAccess(expertRole, true);
-                                        channelFollowACL.setWriteAccess(expertRole, false);
-                                        channelFollowACL.setReadAccess(user, true);
-                                        channelFollowACL.setWriteAccess(user, true);
-                                        channelFollowACL.setReadAccess(ownerUser, true);
-                                        channelFollowACL.setWriteAccess(ownerUser, true);
-                                        channelfollow.setACL(channelFollowACL);
-
-                                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            channel.increment("followerCount");
-                                            channel.increment("memberCount");
-
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        }
-                                        else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            channel.increment("followerCount");
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                            // a member is by default always a follower.
-                                            channel.increment("memberCount");
-                                            channel.increment("followerCount");
-                                            channelfollow.set("isFollower", true);
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                        } else {
-
-                                            return callback (null, channel);
-                                        }
-
-
-
-                                    }
-                                    else if (channelObject.get("type") === 'privateAdmins') {
-
-                                        // get admin role for this workspace
-                                        var adminRole = new Parse.Role();
-                                        var adminName = 'expert-' + workspace.id;
-                                        adminRole.set("name", adminName);
-
-                                        // set correct ACL for channelFollow
-                                        channelFollowACL.setPublicReadAccess(false);
-                                        channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACL.setReadAccess(adminRole, true);
-                                        channelFollowACL.setWriteAccess(adminRole, false);
-                                        channelFollowACL.setReadAccess(user, true);
-                                        channelFollowACL.setWriteAccess(user, true);
-                                        channelFollowACL.setReadAccess(ownerUser, true);
-                                        channelFollowACL.setWriteAccess(ownerUser, true);
-                                        channelfollow.setACL(channelFollowACL);
-
-                                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            channel.increment("followerCount");
-                                            channel.increment("memberCount");
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            channel.increment("followerCount");
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                            // a member is by default always a follower.
-                                            channel.increment("memberCount");
-                                            channel.increment("followerCount");
-                                            channelfollow.set("isFollower", true);
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                        } else {
-
-                                            return callback (null, channel);
-
-                                        }
-
-
-
-
-                                    }
-                                    else if (channelObject.get("type") === 'privateModerators') {
-
-                                        // get moderator role for this workspace
-                                        var moderatorRole = new Parse.Role();
-                                        var moderatorName = 'expert-' + workspace.id;
-                                        moderatorRole.set("name", moderatorName);
-
-                                        // set correct ACL for channelFollow
-                                        channelFollowACL.setPublicReadAccess(false);
-                                        channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACL.setReadAccess(moderatorRole, true);
-                                        channelFollowACL.setWriteAccess(moderatorRole, false);
-                                        channelFollowACL.setReadAccess(user, true);
-                                        channelFollowACL.setWriteAccess(user, true);
-                                        channelFollowACL.setReadAccess(ownerUser, true);
-                                        channelFollowACL.setWriteAccess(ownerUser, true);
-                                        channelfollow.setACL(channelFollowACL);
-
-                                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            channel.increment("followerCount");
-                                            channel.increment("memberCount");
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            channel.increment("followerCount");
-
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                            // a member is by default always a follower.
-                                            channel.increment("memberCount");
-                                            channel.increment("followerCount");
-                                            channelfollow.set("isFollower", true);
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                        } else {
-
-                                            return callback (null, channel);
-                                        }
-
-
-
-                                    }
-                                    else if (channelObject.get("type") === 'privateOwners') {
-
-                                        // get owner role for this workspace
-                                        var ownerRole = new Parse.Role();
-                                        var ownerName = 'expert-' + workspace.id;
-                                        ownerRole.set("name", ownerName);
-
-                                        // set correct ACL for channelFollow
-                                        channelFollowACL.setPublicReadAccess(false);
-                                        channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACL.setReadAccess(ownerRole, true);
-                                        channelFollowACL.setWriteAccess(ownerRole, false);
-                                        channelFollowACL.setReadAccess(user, true);
-                                        channelFollowACL.setWriteAccess(user, true);
-                                        channelFollowACL.setReadAccess(ownerUser, true);
-                                        channelFollowACL.setWriteAccess(ownerUser, true);
-                                        channelfollow.setACL(channelFollowACL);
-
-                                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            channel.increment("followerCount");
-                                            channel.increment("memberCount");
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            channel.increment("followerCount");
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            ChannelFollowIsSelected("isSelected", false);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                            // a member is by default always a follower.
-                                            channel.increment("memberCount");
-                                            channel.increment("followerCount");
-                                            channelfollow.set("isFollower", true);
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                        } else {
-
-                                            return callback (null, channel);
-
-                                        }
-
-
-
-
-                                    }
-                                    else if (channelObject.get("type") === "public") {
-
-                                        // do nothing, since ACL will be public read/write by default
-                                        channelFollowACL.setPublicReadAccess(true);
-                                        channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACL.setReadAccess(ownerUser, true);
-                                        channelFollowACL.setWriteAccess(ownerUser, true);
-                                        channelFollowACL.setReadAccess(user, true);
-                                        channelFollowACL.setWriteAccess(user, true);
-                                        channelfollow.setACL(channelFollowACL);
-
-                                        if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                            channel.increment("followerCount");
-                                            channel.increment("memberCount");
-
-
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-                                                console.log("channelFollowIsSelectedSave: " + JSON.stringify(channelFollowIsSelectedSave));
-
-
-                                            }
-                                            return callback (null, channel);
-
-                                        }
-                                        else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                            channel.increment("followerCount");
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        }
-                                        else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                            // a member is by default always a follower.
-                                            channel.increment("memberCount");
-                                            channel.increment("followerCount");
-                                            channelfollow.set("isFollower", true);
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-                                            if (ChannelFollowIsSelected) {
-
-                                                channelFollowIsSelectedSave.set("isSelected", false);
-                                                channelFollowIsSelectedSave.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-                                            return callback (null, channel);
-
-                                        }
-                                        else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                        }
-                                        else {
-
-                                            return callback (null, channel);
-
-                                        }
-
-
-                                    }
-                                    else if (channelObject.get("type") !== 'private' || channelObject.get("type") !== 'public' || channelObject.get("type") !== 'privateOwners' || channelObject.get("type") !== 'privateModerators' || channelObject.get("type") !== 'privateAdmins' || channelObject.get("type") !== 'privateExperts' || channelObject.get("type") !== 'privateMembers') {
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
                                     }
 
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
 
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelfollowisSelected not found");
-                                    response.error(error);
-                                }, {
+                                    if (ChannelFollowIsSelected) {
 
-                                    useMasterKey: true,
-                                    sessionToken: req.user.getSessionToken()
+                                        ChannelFollowIsSelected.set("isSelected", false);
+                                        ChannelFollowIsSelected.save(null, {
 
-                                });
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+
+                                    // user wants to be a member now
+                                    Channel.increment("memberCount");
+                                    console.log("increment  Member");
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+
+                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // do nothing since isMember and isFollower did not change
+                                    response.success();
+
+
+                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
+
+
+                                    response.success();
+
+                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                    // do nothing since isMember and isFollower did not change
+                                    response.success();
+
+
+                                }
 
                             }
 
-                            async.parallel([
-                                async.apply(addExpertsArrayToChannel),
-                                async.apply(updateFollowersInChannel)
 
-                            ], function (err, results) {
-                                if (err) {
-                                    response.error(err);
+
+                        }
+                        else if (channelfollow.dirty("isFollower") && !channelfollow.dirty("isMember")) {
+
+                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                        }
+                        else if (!channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+
+                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                        }
+                        else {
+
+                            // isMember and isFollower not updated, return success.
+                            response.success();
+                        }
+
+
+
+                    }
+                    else {
+                        // no role exists don't add or remove experts from channel
+
+                        if (channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+
+                            if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
+
+                                Channel.increment("followerCount");
+                                console.log("increment Follower");
+
+
+                                if (Channel.get("type") === 'private') {
+
+                                    // if channel is private add user ACL so he/she has access to the private channel or channelfollow
+
+                                    channelACL.setReadAccess(user, true);
+                                    channelACL.setWriteAccess(user, true);
+                                    Channel.setACL(channelACL);
+
+                                    // set correct ACL for channelFollow
+                                    //channelFollowACL.setPublicReadAccess(false);
+                                    //channelFollowACL.setPublicWriteAccess(false);
+                                    channelFollowACLPrivate.setReadAccess(user, true);
+                                    channelFollowACLPrivate.setWriteAccess(user, true);
+                                    //channelFollowACL.setReadAccess(ownerChannel, true);
+                                    //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                    channelfollow.setACL(channelFollowACLPrivate);
+
                                 }
 
-                                if (channelObject.get("name") !== 'general') {
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
 
-                                    let FinalChannelToSave = Parse.Object.extend("Channel");
-                                    let finalChannelToSave = new FinalChannelToSave();
-                                    finalChannelToSave.id = channel.id;
+                                if (ChannelFollowIsSelected) {
 
-                                    let FIRSTCHANNELRESULT = Parse.Object.extend("Channel");
-                                    let firstChannelResult = new Parse.Object(FIRSTCHANNELRESULT);
-                                    firstChannelResult = results[0];
+                                    ChannelFollowIsSelected.set("isSelected", false);
+                                    ChannelFollowIsSelected.save(null, {
 
-                                    let SecondChannelResult = Parse.Object.extend("Channel");
-                                    let secondChannelResult = new SecondChannelResult();
-                                    secondChannelResult = results[1];
-
-                                    console.log("firstChannelResult: " + JSON.stringify(firstChannelResult));
-                                    console.log("secondChannelResult: " + JSON.stringify(secondChannelResult));
-
-                                    if (firstChannelResult) {
-
-                                        if (firstChannelResult.get("expertsArray")) {
-
-                                            finalChannelToSave.set("expertsArray", firstChannelResult.get("expertsArray"));
-                                            console.log("expertsArray: " + JSON.stringify(firstChannelResult.get("expertsArray")));
-
+                                            useMasterKey: true
+                                            //sessionToken: req.user.getSessionToken()
                                         }
-                                    }
+                                    );
 
-                                    if (secondChannelResult) {
+                                }
 
-                                        if (secondChannelResult.get("followerCount")) {
-                                            finalChannelToSave.set("followerCount", secondChannelResult.get("followerCount"));
-                                        }
-                                        if (secondChannelResult.get("memberCount")) {
+                                // if isFollower === false then isMember has to also be false. but we will check anyway
+                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
 
-                                            finalChannelToSave.set("memberCount", secondChannelResult.get("memberCount"));
+                                    // user isFollow is true  && user isMember also true so make the user both a follower and member
+                                    Channel.increment("memberCount");
+                                    console.log("increment  Member");
 
+                                    Channel.save(null, {
 
-                                        }
-
-                                    }
-
-                                    console.log("Channel async.Parallels: " + JSON.stringify(finalChannelToSave));
-
-                                    finalChannelToSave.save(null, {
-
-                                        //useMasterKey: true,
-                                        sessionToken: req.user.getSessionToken()
-
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
                                     });
 
+                                    response.success();
 
+                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user isFollow is true but user is not a member, make user only follower
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user can't be a follower and not a member, keep him a member, sand make him a follower
+                                    channelfollow.set("isMember", true);
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                    // user can't be a member if he wasn't already a follower this really can't happen
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                }
+
+                            }
+                            else if (result.get("isFollower") === true && channelfollow.get("isFollower") === false) {
+
+                                // User was a follower but now is not a follower
+                                if (channelfollow.get("isSelected") === true) {
+                                    channelfollow.set("isSelected", false);
+                                }
+
+                                // remove user as follower of that channel
+                                Channel.increment("followerCount", -1);
+                                console.log("decrement Follower");
+
+
+                                if (Channel.get("type") === 'private') {
+
+                                    // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
+
+                                    if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
+
+                                        // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                                    } else {
+
+                                        // this user is not the channel owner it's ok to remove his/her ACL
+
+                                        // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                        // user will need to be added again by channel owner since it's a private channel
+
+                                        channelACL.setReadAccess(user, false);
+                                        channelACL.setWriteAccess(user, false);
+                                        Channel.setACL(channelACL);
+
+                                        // set correct ACL for channelFollow
+                                        //channelFollowACL.setPublicReadAccess(false);
+                                        //channelFollowACL.setPublicWriteAccess(false);
+                                        channelFollowACLPrivate.setReadAccess(user, false);
+                                        channelFollowACLPrivate.setWriteAccess(user, false);
+                                        //channelFollowACL.setReadAccess(ownerChannel, true);
+                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelfollow.setACL(channelFollowACLPrivate);
+
+
+                                    }
 
                                 }
 
 
+                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
 
-                                let beforeSave_Time = process.hrtime(time);
-                                console.log(`beforeSave_Time ChannelFollow took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+                                    // user want's to stay as member but remove as follower, can't happen. remove him as member and follower
+                                    channelfollow.set("isMember", false);
 
-                                response.success();
+                                    Channel.save(null, {
 
-                            });
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user is not a member, was a follower and now wants to un-follow
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user was a follower and member and now wants to both un-follow and not be a member anymore
+                                    Channel.increment("memberCount", -1);
+                                    console.log("decrement Member");
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                    // user can't stay a member since he is un-following this workspace so make him not a member
+                                    channelfollow.set("isMember", false);
+                                    Channel.increment("memberCount", -1);
+                                    console.log("decrement Member");
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                }
+
+                            }  else if (result.get("isFollower") === true && channelfollow.get("isFollower") === true) {
+
+                                // User was a follower and wants to stay a follower
+                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                    // user wants to be a member now
+                                    Channel.increment("memberCount");
+                                    console.log("increment  Member");
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+
+                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // do nothing since isMember and isFollower did not change
+
+                                    response.success();
+
+                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user want's to stay as a follower but removed as member
+                                    Channel.increment("memberCount", -1);
+                                    console.log("decrement Member");
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                    // do nothing since isMember and isFollower did not change
+
+                                    response.success();
+
+                                }
+
+                            }  else if ((!result.get("isFollower") || result.get("isFollower") === false) && channelfollow.get("isFollower") === false) {
+
+                                // User wasn't a follower but now wants to be a member so make him also a follower
+                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                    // user can't be a member unless isFollower === true
+                                    channelfollow.set("isFollower", true);
+
+                                    Channel.increment("followerCount");
+                                    console.log("increment Follower");
+
+
+                                    if (Channel.get("type") === 'private') {
+
+                                        // if channel is private add user ACL so he/she has access to the private channel or channelfollow
+
+                                        channelACL.setReadAccess(user, true);
+                                        channelACL.setWriteAccess(user, true);
+                                        Channel.setACL(channelACL);
+
+                                        // set correct ACL for channelFollow
+                                        //channelFollowACL.setPublicReadAccess(false);
+                                        //channelFollowACL.setPublicWriteAccess(false);
+                                        channelFollowACLPrivate.setReadAccess(user, true);
+                                        channelFollowACLPrivate.setWriteAccess(user, true);
+                                        //channelFollowACL.setReadAccess(ownerChannel, true);
+                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                        channelfollow.setACL(channelFollowACLPrivate);
+
+                                    }
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+
+                                    if (ChannelFollowIsSelected) {
+
+                                        ChannelFollowIsSelected.set("isSelected", false);
+                                        ChannelFollowIsSelected.save(null, {
+
+                                                useMasterKey: true
+                                                //sessionToken: req.user.getSessionToken()
+                                            }
+                                        );
+
+                                    }
+
+                                    // user wants to be a member now
+                                    Channel.increment("memberCount");
+                                    console.log("increment  Member");
+
+                                    Channel.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: req.user.getSessionToken()
+                                    });
+
+                                    response.success();
+
+
+                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // do nothing since isMember and isFollower did not change
+                                    response.success();
+
+
+                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
+
+
+                                    response.success();
+
+                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                    // do nothing since isMember and isFollower did not change
+                                    response.success();
+
+
+                                }
+
+                            }
 
 
 
+                        }
+                        else if (channelfollow.dirty("isFollower") && !channelfollow.dirty("isMember")) {
 
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            console.log("channelQuery not found");
-                            response.error(error);
-                        }, {
+                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
 
-                            //useMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
+                        }
+                        else if (!channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
 
-                        });
+                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                        }
+                        else {
+
+                            // isMember and isFollower not updated, return success.
+                            response.success();
+                        }
+
+
                     }
 
                 }, (error) => {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
-                    console.log("channelFollowQuery not found");
                     response.error(error);
                 }, {
 
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
+                    useMasterKey: true
+                    //sessionToken: req.user.getSessionToken()
 
                 });
 
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error(error);
+            }, {
 
-            }
-            else if (!channelfollow.isNew() && (channelfollow.dirty("isFollower") || channelfollow.dirty("isMember"))) {
+                useMasterKey: true
+                //sessionToken: req.user.getSessionToken()
 
-                console.log("channelfollow.id: " + JSON.stringify(channelfollow.id));
+            });
 
-                queryChannelFollow.include(["user", "workspace", "channel"]);
-                queryChannelFollow.get(channelfollow.id, {
 
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
 
-                }).then((result) => {
-                    // The object was retrieved successfully.
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
 
-                    console.log("channelfollow result from query: " + JSON.stringify(result));
+            useMasterKey: true
+            //sessionToken: req.user.getSessionToken()
 
-                    //console.log("old isFollower: "+JSON.stringify(result.get("isFollower")) + " New isFollower: " + JSON.stringify(workspace_follower.get("isFollower")) + " isFollower.dirty: "+JSON.stringify(workspace_follower.dirty("isFollower")));
-                    //console.log("old isMember: "+JSON.stringify(result.get("isMember")) + " New isMember: " + JSON.stringify(workspace_follower.get("isMember")) + " isMember.dirty: "+JSON.stringify(workspace_follower.dirty("isMember")));
+        });
 
-                    //queryPTime = process.hrtime(timequeryPostFind);
-                    //console.log(`function queryPostFind took ${(queryPTime[0] * NS_PER_SEC + queryPTime[1])  * MS_PER_NS} milliseconds`);
 
+    }
+    else {
 
-                    var Channel = result.get("channel");
-                    var channelACL = Channel.getACL();
-                    var channelFollowACLPrivate = result.getACL();
-                    var user = result.get("user");
-                    var workspace = result.get("workspace");
-                    //var userRole = user.get("roles");
-                    console.log("channelfollow user: " + JSON.stringify(user));
+        let beforeSaveElse_Time = process.hrtime(time);
+        console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                    let expertsArray = Channel.get("expertsArray");
-                    if (expertsArray === undefined || !expertsArray) { expertsArray = []; Channel.set("expertsArray", []);}
+        response.success();
 
-                    var userRoleRelation = user.relation("roles");
-                    var expertChannelRelation = Channel.relation("experts");
-                    //console.log("userRole: " + JSON.stringify(userRoleRelation));
-
-                    var expertRoleName = "expert-" + channelfollow.get("workspace").id;
-
-                    var userRoleRelationQuery = userRoleRelation.query();
-                    userRoleRelationQuery.equalTo("name", expertRoleName);
-                    userRoleRelationQuery.first({
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    }).then((results) => {
-                        // The object was retrieved successfully.
-
-                        var queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
-                        queryChannelFollowIsSelected.equalTo("user", user);
-                        queryChannelFollowIsSelected.equalTo("workspace", workspace);
-                        queryChannelFollowIsSelected.equalTo("isSelected", true);
-
-                        queryChannelFollowIsSelected.first({
-
-                            useMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
-
-                        }).then((ChannelFollowIsSelected) => {
-                            // The object was retrieved successfully.
-
-
-                            if (results) {
-
-                                // expert role exists, add as channel expert
-                                console.log("channelExpert: " + JSON.stringify(results));
-
-                                if (channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
-
-                                    if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
-
-                                        Channel.increment("followerCount");
-                                        console.log("increment Follower");
-
-                                        // add this user as channel expert since he/she is a workspace expert and followed this channel
-                                        expertChannelRelation.add(user);
-
-                                        let expertOwner = simplifyUser(user);
-
-                                        Channel.addUnique("expertsArray", expertOwner);
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private add user ACL so he/she has access to the private channel or channelfollow
-
-                                            channelACL.setReadAccess(user, true);
-                                            channelACL.setWriteAccess(user, true);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, true);
-                                            channelFollowACLPrivate.setWriteAccess(user, true);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-                                        // set isSelected for this channel to true and set previous channel that was selected to false
-                                        channelfollow.set("isSelected", true);
-
-                                        if (ChannelFollowIsSelected) {
-
-                                            ChannelFollowIsSelected.set("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
-
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
-
-                                        }
-
-                                        // if isFollower === false then isMember has to also be false. but we will check anyway
-                                        if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                            // user isFollow is true  && user isMember also true so make the user both a follower and member
-                                            Channel.increment("memberCount");
-                                            console.log("increment  Member");
-
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user isFollow is true but user is not a member, make user only follower
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user can't be a follower and not a member, keep him a member, sand make him a follower
-                                            channelfollow.set("isMember", true);
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                            // user can't be a member if he wasn't already a follower this really can't happen
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        }
-
-                                    }
-                                    else if (result.get("isFollower") === true && channelfollow.get("isFollower") === false) {
-
-                                        // User was a follower but now is not a follower
-                                        if (channelfollow.get("isSelected") === true) {
-                                            channelfollow.set("isSelected", false);
-                                        }
-
-                                        // remove user as follower of that channel
-                                        Channel.increment("followerCount", -1);
-                                        console.log("decrement Follower");
-
-                                        // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
-                                        expertChannelRelation.remove(user);
-
-                                        let expertOwner = simplifyUser(user);
-
-                                        Channel.remove("expertsArray", expertOwner);
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
-
-                                            if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
-
-                                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
-
-
-
-                                            } else {
-
-                                                // this user is not the channel owner it's ok to remove his/her ACL
-
-                                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                                // user will need to be added again by channel owner since it's a private channel
-
-                                                channelACL.setReadAccess(user, false);
-                                                channelACL.setWriteAccess(user, false);
-                                                Channel.setACL(channelACL);
-
-                                                // set correct ACL for channelFollow
-                                                //channelFollowACL.setPublicReadAccess(false);
-                                                //channelFollowACL.setPublicWriteAccess(false);
-                                                channelFollowACLPrivate.setReadAccess(user, false);
-                                                channelFollowACLPrivate.setWriteAccess(user, false);
-                                                //channelFollowACL.setReadAccess(ownerChannel, true);
-                                                //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                                channelfollow.setACL(channelFollowACLPrivate);
-
-
-                                            }
-
-
-                                        }
-
-                                        // set isSelected for this channel to true and set previous channel that was selected to false
-                                        channelfollow.set("isSelected", false);
-
-                                        // since user unfollowed this channel we unselect it and by default then no channel is selected so we display 'all' channels
-
-
-                                        if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                            // user want's to stay as member but remove as follower, can't happen. remove him as member and follower
-                                            channelfollow.set("isMember", false);
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user is not a member, was a follower and now wants to un-follow
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user was a follower and member and now wants to both un-follow and not be a member anymore
-                                            Channel.increment("memberCount", -1);
-                                            console.log("decrement Member");
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                            // user can't stay a member since he is un-following this workspace so make him not a member
-                                            channelfollow.set("isMember", false);
-                                            Channel.increment("memberCount", -1);
-                                            console.log("decrement Member");
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        }
-
-                                    }
-                                    else if (result.get("isFollower") === true && channelfollow.get("isFollower") === true) {
-
-                                        // User was a follower and wants to stay a follower
-                                        if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                            // user wants to be a member now
-                                            Channel.increment("memberCount");
-                                            console.log("increment  Member");
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-
-                                        } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // do nothing since isMember and isFollower did not change
-
-                                            response.success();
-
-                                        } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user want's to stay as a follower but removed as member
-                                            Channel.increment("memberCount", -1);
-                                            console.log("decrement Member");
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                            // do nothing since isMember and isFollower did not change
-
-                                            response.success();
-
-                                        }
-
-                                    }
-                                    else if ((!result.get("isFollower") || result.get("isFollower") === false) && channelfollow.get("isFollower") === false) {
-
-                                        // User wasn't a follower but now wants to be a member so make him also a follower
-                                        if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                            // user can't be a member unless isFollower === true
-                                            channelfollow.set("isFollower", true);
-
-                                            Channel.increment("followerCount");
-                                            console.log("increment Follower");
-
-                                            // add this user as channel expert since he/she is a workspace expert and followed this channel
-                                            expertChannelRelation.add(user);
-
-                                            let expertOwner = simplifyUser(user);
-
-                                            Channel.addUnique("expertsArray", expertOwner);
-
-                                            if (Channel.get("type") === 'private') {
-
-                                                // if channel is private add user ACL so he/she has access to the private channel or channelfollow
-
-                                                channelACL.setReadAccess(user, true);
-                                                channelACL.setWriteAccess(user, true);
-                                                Channel.setACL(channelACL);
-
-                                                // set correct ACL for channelFollow
-                                                //channelFollowACL.setPublicReadAccess(false);
-                                                //channelFollowACL.setPublicWriteAccess(false);
-                                                channelFollowACLPrivate.setReadAccess(user, true);
-                                                channelFollowACLPrivate.setWriteAccess(user, true);
-                                                //channelFollowACL.setReadAccess(ownerChannel, true);
-                                                //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                                channelfollow.setACL(channelFollowACLPrivate);
-
-                                            }
-
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-
-                                            if (ChannelFollowIsSelected) {
-
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-
-                                            // user wants to be a member now
-                                            Channel.increment("memberCount");
-                                            console.log("increment  Member");
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-
-                                        } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // do nothing since isMember and isFollower did not change
-                                            response.success();
-
-
-                                        } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
-
-
-                                            response.success();
-
-                                        } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                            // do nothing since isMember and isFollower did not change
-                                            response.success();
-
-
-                                        }
-
-                                    }
-
-
-
-                                }
-                                else if (channelfollow.dirty("isFollower") && !channelfollow.dirty("isMember")) {
-
-                                    response.error("Please enter both isFollower and isMember when updating either member of follower.");
-
-                                }
-                                else if (!channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
-
-                                    response.error("Please enter both isFollower and isMember when updating either member of follower.");
-
-                                }
-                                else {
-
-                                    // isMember and isFollower not updated, return success.
-                                    response.success();
-                                }
-
-
-
-                            }
-                            else {
-                                // no role exists don't add or remove experts from channel
-
-                                if (channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
-
-                                    if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
-
-                                        Channel.increment("followerCount");
-                                        console.log("increment Follower");
-
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // if channel is private add user ACL so he/she has access to the private channel or channelfollow
-
-                                            channelACL.setReadAccess(user, true);
-                                            channelACL.setWriteAccess(user, true);
-                                            Channel.setACL(channelACL);
-
-                                            // set correct ACL for channelFollow
-                                            //channelFollowACL.setPublicReadAccess(false);
-                                            //channelFollowACL.setPublicWriteAccess(false);
-                                            channelFollowACLPrivate.setReadAccess(user, true);
-                                            channelFollowACLPrivate.setWriteAccess(user, true);
-                                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                            channelfollow.setACL(channelFollowACLPrivate);
-
-                                        }
-
-                                        // set isSelected for this channel to true and set previous channel that was selected to false
-                                        channelfollow.set("isSelected", true);
-
-                                        if (ChannelFollowIsSelected) {
-
-                                            ChannelFollowIsSelected.set("isSelected", false);
-                                            ChannelFollowIsSelected.save(null, {
-
-                                                    //useMasterKey: true,
-                                                    sessionToken: req.user.getSessionToken()
-                                                }
-                                            );
-
-                                        }
-
-                                        // if isFollower === false then isMember has to also be false. but we will check anyway
-                                        if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                            // user isFollow is true  && user isMember also true so make the user both a follower and member
-                                            Channel.increment("memberCount");
-                                            console.log("increment  Member");
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user isFollow is true but user is not a member, make user only follower
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                        } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user can't be a follower and not a member, keep him a member, sand make him a follower
-                                            channelfollow.set("isMember", true);
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                            // user can't be a member if he wasn't already a follower this really can't happen
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        }
-
-                                    }
-                                    else if (result.get("isFollower") === true && channelfollow.get("isFollower") === false) {
-
-                                        // User was a follower but now is not a follower
-                                        if (channelfollow.get("isSelected") === true) {
-                                            channelfollow.set("isSelected", false);
-                                        }
-
-                                        // remove user as follower of that channel
-                                        Channel.increment("followerCount", -1);
-                                        console.log("decrement Follower");
-
-
-                                        if (Channel.get("type") === 'private') {
-
-                                            // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
-
-                                            if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
-
-                                                // this user who is unfollowing is also the channel owner, don't remove his ACL.
-
-
-
-                                            } else {
-
-                                                // this user is not the channel owner it's ok to remove his/her ACL
-
-                                                // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                                // user will need to be added again by channel owner since it's a private channel
-
-                                                channelACL.setReadAccess(user, false);
-                                                channelACL.setWriteAccess(user, false);
-                                                Channel.setACL(channelACL);
-
-                                                // set correct ACL for channelFollow
-                                                //channelFollowACL.setPublicReadAccess(false);
-                                                //channelFollowACL.setPublicWriteAccess(false);
-                                                channelFollowACLPrivate.setReadAccess(user, false);
-                                                channelFollowACLPrivate.setWriteAccess(user, false);
-                                                //channelFollowACL.setReadAccess(ownerChannel, true);
-                                                //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                                channelfollow.setACL(channelFollowACLPrivate);
-
-
-                                            }
-
-                                        }
-
-
-                                        if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                            // user want's to stay as member but remove as follower, can't happen. remove him as member and follower
-                                            channelfollow.set("isMember", false);
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user is not a member, was a follower and now wants to un-follow
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user was a follower and member and now wants to both un-follow and not be a member anymore
-                                            Channel.increment("memberCount", -1);
-                                            console.log("decrement Member");
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                            // user can't stay a member since he is un-following this workspace so make him not a member
-                                            channelfollow.set("isMember", false);
-                                            Channel.increment("memberCount", -1);
-                                            console.log("decrement Member");
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        }
-
-                                    }  else if (result.get("isFollower") === true && channelfollow.get("isFollower") === true) {
-
-                                        // User was a follower and wants to stay a follower
-                                        if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                            // user wants to be a member now
-                                            Channel.increment("memberCount");
-                                            console.log("increment  Member");
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-
-                                        } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // do nothing since isMember and isFollower did not change
-
-                                            response.success();
-
-                                        } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user want's to stay as a follower but removed as member
-                                            Channel.increment("memberCount", -1);
-                                            console.log("decrement Member");
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-                                        } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                            // do nothing since isMember and isFollower did not change
-
-                                            response.success();
-
-                                        }
-
-                                    }  else if ((!result.get("isFollower") || result.get("isFollower") === false) && channelfollow.get("isFollower") === false) {
-
-                                        // User wasn't a follower but now wants to be a member so make him also a follower
-                                        if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                            // user can't be a member unless isFollower === true
-                                            channelfollow.set("isFollower", true);
-
-                                            Channel.increment("followerCount");
-                                            console.log("increment Follower");
-
-
-                                            if (Channel.get("type") === 'private') {
-
-                                                // if channel is private add user ACL so he/she has access to the private channel or channelfollow
-
-                                                channelACL.setReadAccess(user, true);
-                                                channelACL.setWriteAccess(user, true);
-                                                Channel.setACL(channelACL);
-
-                                                // set correct ACL for channelFollow
-                                                //channelFollowACL.setPublicReadAccess(false);
-                                                //channelFollowACL.setPublicWriteAccess(false);
-                                                channelFollowACLPrivate.setReadAccess(user, true);
-                                                channelFollowACLPrivate.setWriteAccess(user, true);
-                                                //channelFollowACL.setReadAccess(ownerChannel, true);
-                                                //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                                channelfollow.setACL(channelFollowACLPrivate);
-
-                                            }
-
-                                            // set isSelected for this channel to true and set previous channel that was selected to false
-                                            channelfollow.set("isSelected", true);
-
-                                            if (ChannelFollowIsSelected) {
-
-                                                ChannelFollowIsSelected.set("isSelected", false);
-                                                ChannelFollowIsSelected.save(null, {
-
-                                                        //useMasterKey: true,
-                                                        sessionToken: req.user.getSessionToken()
-                                                    }
-                                                );
-
-                                            }
-
-                                            // user wants to be a member now
-                                            Channel.increment("memberCount");
-                                            console.log("increment  Member");
-
-                                            Channel.save(null, {
-
-                                                //useMasterKey: true,
-                                                sessionToken: req.user.getSessionToken()
-                                            });
-
-                                            response.success();
-
-
-                                        } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // do nothing since isMember and isFollower did not change
-                                            response.success();
-
-
-                                        } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                            // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
-
-
-                                            response.success();
-
-                                        } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                            // do nothing since isMember and isFollower did not change
-                                            response.success();
-
-
-                                        }
-
-                                    }
-
-
-
-                                }
-                                else if (channelfollow.dirty("isFollower") && !channelfollow.dirty("isMember")) {
-
-                                    response.error("Please enter both isFollower and isMember when updating either member of follower.");
-
-                                }
-                                else if (!channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
-
-                                    response.error("Please enter both isFollower and isMember when updating either member of follower.");
-
-                                }
-                                else {
-
-                                    // isMember and isFollower not updated, return success.
-                                    response.success();
-                                }
-
-
-                            }
-
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            response.error(error);
-                        }, {
-
-                            useMasterKey: true,
-                            sessionToken: req.user.getSessionToken()
-
-                        });
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true,
-                        sessionToken: req.user.getSessionToken()
-
-                    });
-
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    response.error(error);
-                }, {
-
-                    useMasterKey: true,
-                    sessionToken: req.user.getSessionToken()
-
-                });
-
-
-            }
-            else {
-
-                let beforeSaveElse_Time = process.hrtime(time);
-                console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                response.success();
-
-            }
-
-
-        }
     }
 
 
@@ -9558,13 +9314,24 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
 // Add and Update AlgoliaSearch user object if it's deleted from Parse
 Parse.Cloud.afterSave('_User', function(request, response) {
 
-    var NS_PER_SEC = 1e9;
+    const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
-    var time = process.hrtime();
+    let time = process.hrtime();
 
-    var objectToSave = request.object.toJSON();
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
-    var queryUser = new Parse.Query("_User");
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.009.afterSave-User.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    let objectToSave = request.object.toJSON();
+
+    let queryUser = new Parse.Query("_User");
     queryUser.include( ["currentCompany"] );
 
 
@@ -9572,8 +9339,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
     queryUser.get(objectToSave.objectId , {
 
-        useMasterKey: true,
-        sessionToken: request.user.getSessionToken()
+        useMasterKey: true
+        //sessionToken: sessionToken
 
     }).then((user) => {
         // The object was retrieved successfully.
@@ -9613,8 +9380,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
             workspaceQuery.find({
 
-                useMasterKey: true,
-                sessionToken: request.user.getSessionToken()
+                useMasterKey: true
+                //sessionToken: sessionToken
 
             }).then((objectsToIndex) => {
                 // The object was retrieved successfully.
@@ -9685,8 +9452,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
             }, {
 
-                useMasterKey: true,
-                sessionToken: request.user.getSessionToken()
+                useMasterKey: true
+                //sessionToken: sessionToken
 
             });
 
@@ -9866,7 +9633,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
             }
 
             let finalTime = process.hrtime(time);
-            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            console.log(`finalTime took afterSave _User {(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
             response.success();
             //return callback (null, resultsToMap);
 
@@ -9878,8 +9645,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
         response.error(error);
     }, {
 
-        useMasterKey: true,
-        sessionToken: request.user.getSessionToken()
+        useMasterKey: true
+        //sessionToken: sessionToken
 
     });
 
@@ -9904,148 +9671,140 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
     let workspace = new WORKSPACE();
     workspace.id = channelfollow.get("workspace").id;
 
-
     console.log("afterSave ChannelFollow: " + JSON.stringify(channelfollow));
 
-    if (!request.user) {
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
-        response.error("afterSave ChannelFollow Session token: X-Parse-Session-Token is required");
-
-    } else if (request.user) {
-
-        if (!request.user.getSessionToken()) {
-
-            response.error("afterSave ChannelFollow Session token: X-Parse-Session-Token is required");
-
-        } else {
-
-
-            function addIsSelectedChannelFollowPointerWorkspaceFollow (callback) {
-
-                console.log("channelfollow.isSelected: " + channelfollow.toJSON().isSelected);
-
-                if (channelfollow.toJSON().isSelected === true) {
-
-                    // add selected ChannelFollow as pointer to workspace_follower
-                    let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                    queryWorkspaceFollow.equalTo("user", user);
-                    queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                    queryWorkspaceFollow.first({
-
-                        //useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
-
-                    }).then((workspaceFollow) => {
-                        // The object was retrieved successfully.
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.002.afterSave-ChannelFollow.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
 
 
+    function addIsSelectedChannelFollowPointerWorkspaceFollow (callback) {
 
-                        workspaceFollow.set("isSelectedChannelFollow", channelfollow);
-                        workspaceFollow.save(null, {
+        console.log("channelfollow.isSelected: " + channelfollow.toJSON().isSelected);
 
-                                //useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
+        if (channelfollow.toJSON().isSelected === true) {
 
-                            }
+            // add selected ChannelFollow as pointer to workspace_follower
+            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
+            queryWorkspaceFollow.equalTo("user", user);
+            queryWorkspaceFollow.equalTo("workspace", workspace);
 
-                        );
+            queryWorkspaceFollow.first({
 
-                        return callback (null, channelfollow);
+                useMasterKey: true
+                //sessionToken: sessionToken
 
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        //console.log("channelfollowisSelected not found");
-                        response.error(error);
-                    }, {
-
-                        //useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
-
-                    });
-
-                } else if (channelfollow.toJSON().isSelected === false) {
-
-                    // add selected ChannelFollow as pointer to workspace_follower
-                    let queryWorkspaceFollow = new Parse.Query("workspace_follower");
-                    queryWorkspaceFollow.equalTo("user", user);
-                    queryWorkspaceFollow.equalTo("workspace", workspace);
-
-                    queryWorkspaceFollow.first({
-
-                        //useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
-
-                    }).then((workspaceFollow) => {
-                        // The object was retrieved successfully.
-
-                        workspaceFollow.set("isSelectedChannelFollow", null);
-                        workspaceFollow.save(null, {
-
-                                //useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
-
-                            }
-
-                        );
-
-                        return callback (null, channelfollow);
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        //console.log("channelfollowisSelected not found");
-                        response.error(error);
-                    }, {
-
-                        //useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
-
-                    });
-
-
-                } else {
+            }).then((workspaceFollow) => {
+                // The object was retrieved successfully.
 
 
 
-                    return callback (null, channelfollow);
+                workspaceFollow.set("isSelectedChannelFollow", channelfollow);
+                workspaceFollow.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }
+
+                );
+
+                return callback (null, channelfollow);
 
 
-                }
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                //console.log("channelfollowisSelected not found");
+                response.error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+        } else if (channelfollow.toJSON().isSelected === false) {
+
+            // add selected ChannelFollow as pointer to workspace_follower
+            let queryWorkspaceFollow = new Parse.Query("workspace_follower");
+            queryWorkspaceFollow.equalTo("user", user);
+            queryWorkspaceFollow.equalTo("workspace", workspace);
+
+            queryWorkspaceFollow.first({
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((workspaceFollow) => {
+                // The object was retrieved successfully.
+
+                workspaceFollow.set("isSelectedChannelFollow", null);
+                workspaceFollow.save(null, {
+
+                        //useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }
+
+                );
+
+                return callback (null, channelfollow);
 
 
-            }
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                //console.log("channelfollowisSelected not found");
+                response.error(error);
+            }, {
 
-
-            async.parallel([
-                async.apply(addIsSelectedChannelFollowPointerWorkspaceFollow)
-                // async.apply(addChannelsToAlgolia)
-
-            ], function (err, results) {
-                if (err) {
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took afterSave ChannelFollow ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                    response.error(err);
-                }
-
-                //console.log("results length: " + JSON.stringify(results));
-
-                let finalTime = process.hrtime(time);
-                console.log(`finalTime took afterSave ChannelFollow${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                response.success(results);
-
+                useMasterKey: true
+                //sessionToken: sessionToken
 
             });
 
 
+        } else {
+
+
+
+            return callback (null, channelfollow);
+
 
         }
+
+
     }
 
+
+    async.parallel([
+        async.apply(addIsSelectedChannelFollowPointerWorkspaceFollow)
+        // async.apply(addChannelsToAlgolia)
+
+    ], function (err, results) {
+        if (err) {
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took afterSave ChannelFollow ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            response.error(err);
+        }
+
+        //console.log("results length: " + JSON.stringify(results));
+
+        let finalTime = process.hrtime(time);
+        console.log(`finalTime took afterSave ChannelFollow${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+        response.success(results);
+
+
+    });
 
 
 }, {useMasterKey: true});
@@ -10071,84 +9830,68 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
 
     console.log("afterSave workspace_follower: " + JSON.stringify(workspace_follow));
 
-    if (!request.user) {
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
-        response.error("afterSave workspace_follower Session token: X-Parse-Session-Token is required");
-
-    } else if (request.user) {
-
-        if (!request.user.getSessionToken()) {
-
-            response.error("afterSave workspace_follower Session token: X-Parse-Session-Token is required");
-
-        } else {
-
-
-            function addIsSelectedWorkspaceFollowPointerToUser (callback) {
-
-                console.log("workspace_follow.isSelected: " + workspace_follow.toJSON().isSelected);
-
-                if (workspace_follow.toJSON().isSelected === true) {
-
-                    console.log("workspaceFollow aftersave user: " + JSON.stringify(user));
-
-                    user.set("isSelectedWorkspaceFollower", workspace_follower);
-                    user.save(null, {
-
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        }
-
-                    );
-
-                    return callback (null, workspace_follow);
-
-
-
-
-
-
-                }
-                else {
-
-
-
-                    return callback (null, workspace_follow);
-
-
-                }
-
-
-            }
-
-
-            async.parallel([
-                async.apply(addIsSelectedWorkspaceFollowPointerToUser)
-                // async.apply(addChannelsToAlgolia)
-
-            ], function (err, results) {
-                if (err) {
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took afterSave workspace_follower ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                    response.error(err);
-                }
-
-                //console.log("results length: " + JSON.stringify(results));
-
-                let finalTime = process.hrtime(time);
-                console.log(`finalTime took afterSave workspace_follower ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                response.success();
-
-
-            });
-
-
-
-        }
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.006.afterSave-workspace_follower.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
     }
 
+
+    function addIsSelectedWorkspaceFollowPointerToUser (callback) {
+
+        console.log("workspace_follow.isSelected: " + workspace_follow.toJSON().isSelected);
+
+        if (workspace_follow.toJSON().isSelected === true) {
+
+            console.log("workspaceFollow aftersave user: " + JSON.stringify(user));
+
+            user.set("isSelectedWorkspaceFollower", workspace_follower);
+            user.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }
+
+            );
+
+            return callback (null, workspace_follow);
+
+        }
+        else {
+
+            return callback (null, workspace_follow);
+
+        }
+
+
+    }
+
+    async.parallel([
+        async.apply(addIsSelectedWorkspaceFollowPointerToUser)
+        // async.apply(addChannelsToAlgolia)
+
+    ], function (err, results) {
+        if (err) {
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took afterSave workspace_follower ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            response.error(err);
+        }
+
+        //console.log("results length: " + JSON.stringify(results));
+
+        let finalTime = process.hrtime(time);
+        console.log(`finalTime took afterSave workspace_follower ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+        response.success();
+
+
+    });
 
 
 }, {useMasterKey: true});
@@ -10163,186 +9906,181 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
     // Convert Parse.Object to JSON
     let Channel = request.object;
 
-    console.log("afterSaveChannel req.user: " + JSON.stringify(request.user));
+    //console.log("afterSaveChannel req.user: " + JSON.stringify(request.user));
 
-    if (!request.user) {
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
-        response.error("afterSave Channel Session token: X-Parse-Session-Token is required");
-
-    } else if (request.user) {
-
-        if (!request.user.getSessionToken()) {
-
-            response.error("afterSave Channel Session token: X-Parse-Session-Token is required");
-
-        } else {
-
-            let CHANNEL = Parse.Object.extend("Channel");
-            let queryChannel = new Parse.Query(CHANNEL);
-            //queryChannel.equalTo("objectId", request.object.id);
-            queryChannel.include( ["user", "workspace", "category"] );
-            //queryChannel.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive"]);
-
-            //console.log("Request: " + JSON.stringify(request));
-            //console.log("objectID: " + objectToSave.objectId);
-            console.log("Channel.id: " + JSON.stringify(Channel.id));
-
-            queryChannel.get(Channel.id, {
-
-                //useMasterKey: true,
-                sessionToken: request.user.getSessionToken()
-
-            }).then((channel) => {
-                // The object was retrieved successfully.
-                console.log("Result from get channel" + JSON.stringify(channel));
-
-                let WORKSPACE = Parse.Object.extend("WorkSpace");
-                let workspace = new WORKSPACE();
-                workspace.id = channel.get("workspace").id;
-
-                let USER = Parse.Object.extend("_User");
-                let User = new USER();
-                User.id = channel.get("user").id;
-
-                let channelToSave = channel.toJSON();
-
-                function createOwnerChannelFollow (callback) {
-
-                    console.log("channel isNew: " + channel.get("isNew"));
-                    //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
-
-                    if (channel.get("isNew") === true) {
-
-                        // channel is new so let's add a channelfollow row for the channel creator so he can see the channel
-                        let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
-                        let channelFollow = new CHANNELFOLLOW();
-
-                        let Channel = new CHANNEL();
-                        Channel.id = channel.id;
-
-                        //let expertChannelRelation = channel.relation("experts");
-                        //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
-
-                        //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
-
-                        channelFollow.set("archive", false);
-                        channelFollow.set("user", User);
-                        channelFollow.set("workspace", workspace);
-                        channelFollow.set("channel", Channel);
-                        channelFollow.set("notificationCount", 0);
-                        channelFollow.set("isSelected", false);
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.004.afterSave-Channel.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
 
 
-                        // set correct ACL for channelFollow
-                        let channelFollowACL = new Parse.ACL();
-                        channelFollowACL.setPublicReadAccess(false);
-                        channelFollowACL.setPublicWriteAccess(false);
-                        channelFollowACL.setReadAccess(User, true);
-                        channelFollowACL.setWriteAccess(User, true);
-                        channelFollow.setACL(channelFollowACL);
+    let CHANNEL = Parse.Object.extend("Channel");
+    let queryChannel = new Parse.Query(CHANNEL);
+    //queryChannel.equalTo("objectId", request.object.id);
+    queryChannel.include( ["user", "workspace", "category"] );
+    //queryChannel.select(["user", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive"]);
 
-                        // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
-                        channelFollow.set("isMember", true);
-                        channelFollow.set("isFollower", true);
+    //console.log("Request: " + JSON.stringify(request));
+    //console.log("objectID: " + objectToSave.objectId);
+    console.log("Channel.id: " + JSON.stringify(Channel.id));
 
-                        console.log("channelFollow: " + JSON.stringify(channelFollow));
+    queryChannel.get(Channel.id, {
 
-                        channelFollow.save(null, {
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
+    }).then((channel) => {
+        // The object was retrieved successfully.
+        console.log("Result from get channel" + JSON.stringify(channel));
 
-                        });
+        let WORKSPACE = Parse.Object.extend("WorkSpace");
+        let workspace = new WORKSPACE();
+        workspace.id = channel.get("workspace").id;
 
-                        return callback(null, channelFollow);
+        let USER = Parse.Object.extend("_User");
+        let User = new USER();
+        User.id = channel.get("user").id;
 
+        let channelToSave = channel.toJSON();
 
+        function createOwnerChannelFollow (callback) {
 
-                    }
-                    else {return callback (null, channel);}
+            console.log("channel isNew: " + channel.get("isNew"));
+            //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
 
+            if (channel.get("isNew") === true) {
 
-                }
+                // channel is new so let's add a channelfollow row for the channel creator so he can see the channel
+                let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
+                let channelFollow = new CHANNELFOLLOW();
 
-                function addChannelsToAlgolia (callback) {
+                let Channel = new CHANNEL();
+                Channel.id = channel.id;
 
-                    // Specify Algolia's objectID with the Parse.Object unique ID
-                    channelToSave.objectID = channel.id;
+                //let expertChannelRelation = channel.relation("experts");
+                //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
 
-                    // Add or update object
-                    indexChannel.saveObject(channelToSave, function(err, content) {
-                        if (err) {
-                            return error(err);
-                        }
-                        console.log('Parse<>Algolia channel object saved');
-                        return callback(null, channelToSave);
+                //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
-                    });
-
-
-                }
-
-                function incrementChannelCounttoWorkspace (callback) {
-
-                    if (channel.get("isNew") === true) {
-
-                        workspace.increment("channelCount");
-                        workspace.save(null, {
-
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-
-                        return callback (null, workspace);
-
-                    }
-
-                }
+                channelFollow.set("archive", false);
+                channelFollow.set("user", User);
+                channelFollow.set("workspace", workspace);
+                channelFollow.set("channel", Channel);
+                channelFollow.set("notificationCount", 0);
+                channelFollow.set("isSelected", false);
 
 
-                async.parallel([
-                    async.apply(createOwnerChannelFollow),
-                    async.apply(addChannelsToAlgolia),
-                    //async.apply(incrementChannelCounttoWorkspace)
+                // set correct ACL for channelFollow
+                let channelFollowACL = new Parse.ACL();
+                channelFollowACL.setPublicReadAccess(false);
+                channelFollowACL.setPublicWriteAccess(false);
+                channelFollowACL.setReadAccess(User, true);
+                channelFollowACL.setWriteAccess(User, true);
+                channelFollow.setACL(channelFollowACL);
 
-                ], function (err, results) {
-                    if (err) {
+                // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
+                channelFollow.set("isMember", true);
+                channelFollow.set("isFollower", true);
 
-                        let finalTime = process.hrtime(time);
-                        console.log(`finalTime took  afterSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                        response.error(err);
-                    }
+                console.log("channelFollow: " + JSON.stringify(channelFollow));
 
-                    console.log("results length: " + JSON.stringify(results));
+                channelFollow.save(null, {
 
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took afterSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                    response.success(results);
-
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 });
 
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                console.log(`finalTime took  afterSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                response.error(error);
-            }, {
+                return callback(null, channelFollow);
 
-                //useMasterKey: true,
-                sessionToken: request.user.getSessionToken()
+
+
+            }
+            else {return callback (null, channel);}
+
+
+        }
+
+        function addChannelsToAlgolia (callback) {
+
+            // Specify Algolia's objectID with the Parse.Object unique ID
+            channelToSave.objectID = channel.id;
+
+            // Add or update object
+            indexChannel.saveObject(channelToSave, function(err, content) {
+                if (err) {
+                    return error(err);
+                }
+                console.log('Parse<>Algolia channel object saved');
+                return callback(null, channelToSave);
 
             });
 
+
         }
-    }
+
+        function incrementChannelCounttoWorkspace (callback) {
+
+            if (channel.get("isNew") === true) {
+
+                workspace.increment("channelCount");
+                workspace.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: request.user.getSessionToken()
+
+                });
+
+                return callback (null, workspace);
+
+            }
+
+        }
+
+
+        async.parallel([
+            async.apply(createOwnerChannelFollow),
+            async.apply(addChannelsToAlgolia),
+            //async.apply(incrementChannelCounttoWorkspace)
+
+        ], function (err, results) {
+            if (err) {
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took  afterSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                response.error(err);
+            }
+
+            console.log("results length: " + JSON.stringify(results));
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took afterSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            response.success(results);
+
+
+        });
+
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        console.log(`finalTime took  afterSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+        response.error(error);
+    }, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
 
 
 
 }, {useMasterKey: true});
-
-
 
 
 // Add and Update AlgoliaSearch user object if it's deleted from Parse
@@ -10365,460 +10103,444 @@ Parse.Cloud.afterSave('Skill', function(request) {
 });
 
 
-
-
-
 // Add and Update AlgoliaSearch Workspace object if it's deleted from Parse & create Workspace roles
 Parse.Cloud.afterSave('WorkSpace', function(request, response) {
-
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
-    if (!request.user || !request.user.getSessionToken()) {
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
-        response.error("afterSave WorkSpace Session token: a valid X-Parse-Session-Token is required");
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.008.afterSave-WorkSpace.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
 
-    } else {
+    // Convert Parse.Object to JSON
+    let workspace = request.object;
 
-        // Convert Parse.Object to JSON
-        let workspace = request.object;
+    let workspaceToSave = request.object.toJSON();
 
-        let workspaceToSave = request.object.toJSON();
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let queryWorkspace = new Parse.Query(WORKSPACE);
 
-        let WORKSPACE = Parse.Object.extend("WorkSpace");
-        let queryWorkspace = new Parse.Query(WORKSPACE);
+    queryWorkspace.equalTo("objectId", workspaceToSave.objectId);
+    queryWorkspace.include( ["user"] );
+    queryWorkspace.select(["isDirtySkills", "isDirtyExperts", "expertsArray", "user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image"]);
 
-        let sessionToken = request.user.getSessionToken();
+    console.log("Workspace Object: " + JSON.stringify(workspace));
+    //console.log("objectID: " + objectToSave.objectId);
+    //console.log("objectID: " + objectToSave.user.objectId);
 
-        queryWorkspace.equalTo("objectId", workspaceToSave.objectId);
-        queryWorkspace.include( ["user"] );
-        queryWorkspace.select(["isDirtySkills", "isDirtyExperts", "expertsArray", "user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image"]);
+    //var Workspace = new Parse.Object("WorkSpace");
 
-        console.log("Workspace Object: " + JSON.stringify(workspace));
-        //console.log("objectID: " + objectToSave.objectId);
-        //console.log("objectID: " + objectToSave.user.objectId);
+    queryWorkspace.get(workspace.id , {
 
-        //var Workspace = new Parse.Object("WorkSpace");
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-        queryWorkspace.get(workspace.id , {
+    }).then((Workspace) => {
+        // The object was retrieved successfully.
+        //console.log("Result from get " + JSON.stringify(Workspace));
 
-            useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
+        //var workspace = Parse.Object.extend("WorkSpace");
 
-        }).then((Workspace) => {
-            // The object was retrieved successfully.
-            //console.log("Result from get " + JSON.stringify(Workspace));
+        //let WORKSPACE_FOLLOW = Parse.Object.extend("workspace_follower");
+        let owner = new Parse.Object("_User");
+        owner = workspace.get("user");
 
-            //var workspace = Parse.Object.extend("WorkSpace");
+        let User = new Parse.Object("_User");
+        User.id = workspace.get("user").id;
 
-            //let WORKSPACE_FOLLOW = Parse.Object.extend("workspace_follower");
-            let owner = new Parse.Object("_User");
-            owner = workspace.get("user");
+        let WorkSpace = new Parse.Object("WorkSpace");
+        WorkSpace.id =  Workspace.id;
 
-            let User = new Parse.Object("_User");
-            User.id = workspace.get("user").id;
+        workspace = Workspace;
+        workspaceToSave = Workspace.toJSON();
+        //console.log("Workspace from afterSave Query: " + JSON.stringify(WorkSpace));
 
-            let WorkSpace = new Parse.Object("WorkSpace");
-            WorkSpace.id =  Workspace.id;
+        let skillObject = Parse.Object.extend("Skill");
+        //var skillsRelation = new skillObject.relation("skills");
+        skillObject = workspace.get("skills");
 
-            workspace = Workspace;
-            workspaceToSave = Workspace.toJSON();
-            //console.log("Workspace from afterSave Query: " + JSON.stringify(WorkSpace));
+        function createWorkspaceRoles (callback) {
 
-            let skillObject = Parse.Object.extend("Skill");
-            //var skillsRelation = new skillObject.relation("skills");
-            skillObject = workspace.get("skills");
+            //console.log("isNew: " + workspace.get("isNew"));
 
-            function createWorkspaceRoles (callback) {
+            if (workspace.get("isNew") === true) {
 
-                //console.log("isNew: " + workspace.get("isNew"));
+                //workspace.set("isNew", false);
 
-                if (workspace.get("isNew") === true) {
+                // create roles
+                var roleACL = new Parse.ACL();
+                roleACL.setPublicReadAccess(true);
+                //roleACL.setPublicWriteAccess(true);
 
-                    //workspace.set("isNew", false);
+                var followerName = "Follower-" + workspace.id;
+                //console.log("followerName: " + followerName);
 
-                    // create roles
-                    var roleACL = new Parse.ACL();
-                    roleACL.setPublicReadAccess(true);
-                    //roleACL.setPublicWriteAccess(true);
+                var followerRole = new Parse.Role(followerName, roleACL);
+                followerRole.set("workspace", workspace);
+                //followerRole["name"] = followerName;
+                followerRole.set("PermissionBundle", {
+                    "canAddCategory": false,
+                    "canUpdateCategory": false,
+                    "canDeleteCategory": false,
+                    "canAddChanneltoCategory": false,
+                    "canInvitePeopleToWorkspace": false,
+                    "canCreateChannel": false,
+                    "canAddPeopleToChannel": true,
+                    "canCreatePost": false,
+                    "NumberOfCreatePostAllowed": "0",
+                    "canCreateQuestionPost": true,
+                    "NumberOfCreateQuestionsPostAllowed": "3",
+                    "canAskQuestionOnPost": true,
+                    "NumberOfCanAskQuestionOnPostAllowed": "3",
+                    "canCreateOfficeHoursPost": false,
+                    "NumberOfCanCreateOfficeHoursPostAllowed": "0",
+                    "canMentionMembers": false
+                });
+                //followerRole.save(null, {useMasterKey: true});
+                //console.log("followerRole: " + JSON.stringify(followerRole));
 
-                    var followerName = "Follower-" + workspace.id;
-                    //console.log("followerName: " + followerName);
+                var memberName = "member-" + workspace.id;
 
-                    var followerRole = new Parse.Role(followerName, roleACL);
-                    followerRole.set("workspace", workspace);
-                    //followerRole["name"] = followerName;
-                    followerRole.set("PermissionBundle", {
-                        "canAddCategory": false,
-                        "canUpdateCategory": false,
-                        "canDeleteCategory": false,
-                        "canAddChanneltoCategory": false,
-                        "canInvitePeopleToWorkspace": false,
-                        "canCreateChannel": false,
-                        "canAddPeopleToChannel": true,
-                        "canCreatePost": false,
-                        "NumberOfCreatePostAllowed": "0",
-                        "canCreateQuestionPost": true,
-                        "NumberOfCreateQuestionsPostAllowed": "3",
-                        "canAskQuestionOnPost": true,
-                        "NumberOfCanAskQuestionOnPostAllowed": "3",
-                        "canCreateOfficeHoursPost": false,
-                        "NumberOfCanCreateOfficeHoursPostAllowed": "0",
-                        "canMentionMembers": false
+                var memberRole = new Parse.Role(memberName, roleACL);
+                memberRole.set("workspace", workspace);
+                //memberRole.set("name", memberName);
+                memberRole.set("PermissionBundle", {
+                    "canAddCategory": false,
+                    "canUpdateCategory": false,
+                    "canDeleteCategory": false,
+                    "canAddChanneltoCategory": true,
+                    "canInvitePeopleToWorkspace": false,
+                    "canCreateChannel": true,
+                    "canAddPeopleToChannel": true,
+                    "canCreatePost": true,
+                    "NumberOfCreatePostAllowed": "unlimited",
+                    "canCreateQuestionPost": true,
+                    "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                    "canAskQuestionOnPost": true,
+                    "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                    "canCreateOfficeHoursPost": true,
+                    "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                    "canMentionMembers": true
+                });
+                //memberRole.save(null, {useMasterKey: true});
+
+                var moderatorName = "moderator-" + workspace.id;
+
+                var moderatorRole = new Parse.Role(moderatorName, roleACL);
+                moderatorRole.set("workspace", workspace);
+                //moderatorRole.set("name", moderatorName);
+                moderatorRole.set("PermissionBundle", {
+                    "canAddCategory": false,
+                    "canUpdateCategory": false,
+                    "canDeleteCategory": false,
+                    "canAddChanneltoCategory": true,
+                    "canInvitePeopleToWorkspace": false,
+                    "canCreateChannel": true,
+                    "canAddPeopleToChannel": true,
+                    "canCreatePost": true,
+                    "NumberOfCreatePostAllowed": "unlimited",
+                    "canCreateQuestionPost": true,
+                    "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                    "canAskQuestionOnPost": true,
+                    "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                    "canCreateOfficeHoursPost": true,
+                    "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                    "canMentionMembers": true
+                });
+                //moderatorRole.save(null, {useMasterKey: true});
+
+                var adminName = "admin-" + workspace.id;
+
+                var adminRole = new Parse.Role(adminName, roleACL);
+                adminRole.set("workspace", workspace);
+                //adminRole.set("name", adminName);
+                adminRole.set("PermissionBundle", {
+                    "canAddCategory": true,
+                    "canUpdateCategory": true,
+                    "canDeleteCategory": true,
+                    "canAddChanneltoCategory": true,
+                    "canInvitePeopleToWorkspace": true,
+                    "canCreateChannel": true,
+                    "canAddPeopleToChannel": true,
+                    "canCreatePost": true,
+                    "NumberOfCreatePostAllowed": "unlimited",
+                    "canCreateQuestionPost": true,
+                    "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                    "canAskQuestionOnPost": true,
+                    "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                    "canCreateOfficeHoursPost": true,
+                    "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                    "canMentionMembers": true
+                });
+                //adminRole.save(null, {useMasterKey: true});
+
+                var expertName = "expert-" + workspace.id;
+
+                var expertRole = new Parse.Role(expertName, roleACL);
+                expertRole.set("workspace", workspace);
+                //expertRole.set("name", expertName);
+                expertRole.set("PermissionBundle", {
+                    "canAddCategory": true,
+                    "canUpdateCategory": true,
+                    "canDeleteCategory": true,
+                    "canAddChanneltoCategory": true,
+                    "canInvitePeopleToWorkspace": true,
+                    "canCreateChannel": true,
+                    "canAddPeopleToChannel": true,
+                    "canCreatePost": true,
+                    "NumberOfCreatePostAllowed": "unlimited",
+                    "canCreateQuestionPost": true,
+                    "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                    "canAskQuestionOnPost": true,
+                    "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                    "canCreateOfficeHoursPost": true,
+                    "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                    "canMentionMembers": true
+                });
+                //expertRole.save(null, {useMasterKey: true});
+
+
+                var ownerName = "owner-" + workspace.id;
+                var ownerRole = new Parse.Role(ownerName, roleACL);
+                //console.log("ownerRole 1: " + JSON.stringify(ownerRole));
+                ownerRole.set("workspace", workspace);
+                //ownerRole.set("name", ownerName);
+                ownerRole.set("PermissionBundle", {
+                    "canAddCategory": true,
+                    "canUpdateCategory": true,
+                    "canDeleteCategory": true,
+                    "canAddChanneltoCategory": true,
+                    "canInvitePeopleToWorkspace": true,
+                    "canCreateChannel": true,
+                    "canAddPeopleToChannel": true,
+                    "canCreatePost": true,
+                    "NumberOfCreatePostAllowed": "unlimited",
+                    "canCreateQuestionPost": true,
+                    "NumberOfCreateQuestionsPostAllowed": "unlimited",
+                    "canAskQuestionOnPost": true,
+                    "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
+                    "canCreateOfficeHoursPost": true,
+                    "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
+                    "canMentionMembers": true
+                });
+                //console.log("ownerRole 2: " + JSON.stringify(ownerRole));
+                //ownerRole.save(null, {useMasterKey: true});
+                //console.log("ownerRole 3: " + JSON.stringify(ownerRole));
+
+
+                Parse.Object.saveAll([ownerRole, expertRole, adminRole, moderatorRole, memberRole, followerRole], {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((savedRoles) => {
+
+                    //console.log("savedRoles: " + JSON.stringify(savedRoles));
+
+                    var memberrole = savedRoles[4];
+                    //memberrole.getUsers().add(usersToAddToRole);
+                    memberrole.getRoles().add(followerRole);
+                    memberrole.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
                     });
-                    //followerRole.save(null, {useMasterKey: true});
-                    //console.log("followerRole: " + JSON.stringify(followerRole));
 
-                    var memberName = "member-" + workspace.id;
+                    var moderatorrole = savedRoles[3];
+                    //memberrole.getUsers().add(usersToAddToRole);
+                    moderatorrole.getRoles().add(memberRole);
+                    moderatorrole.save(null, {
 
-                    var memberRole = new Parse.Role(memberName, roleACL);
-                    memberRole.set("workspace", workspace);
-                    //memberRole.set("name", memberName);
-                    memberRole.set("PermissionBundle", {
-                        "canAddCategory": false,
-                        "canUpdateCategory": false,
-                        "canDeleteCategory": false,
-                        "canAddChanneltoCategory": true,
-                        "canInvitePeopleToWorkspace": false,
-                        "canCreateChannel": true,
-                        "canAddPeopleToChannel": true,
-                        "canCreatePost": true,
-                        "NumberOfCreatePostAllowed": "unlimited",
-                        "canCreateQuestionPost": true,
-                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
-                        "canAskQuestionOnPost": true,
-                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
-                        "canCreateOfficeHoursPost": true,
-                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                        "canMentionMembers": true
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
                     });
-                    //memberRole.save(null, {useMasterKey: true});
 
-                    var moderatorName = "moderator-" + workspace.id;
+                    var adminrole = savedRoles[2];
+                    //memberrole.getUsers().add(usersToAddToRole);
+                    adminrole.getRoles().add(moderatorRole);
+                    adminrole.save(null, {
 
-                    var moderatorRole = new Parse.Role(moderatorName, roleACL);
-                    moderatorRole.set("workspace", workspace);
-                    //moderatorRole.set("name", moderatorName);
-                    moderatorRole.set("PermissionBundle", {
-                        "canAddCategory": false,
-                        "canUpdateCategory": false,
-                        "canDeleteCategory": false,
-                        "canAddChanneltoCategory": true,
-                        "canInvitePeopleToWorkspace": false,
-                        "canCreateChannel": true,
-                        "canAddPeopleToChannel": true,
-                        "canCreatePost": true,
-                        "NumberOfCreatePostAllowed": "unlimited",
-                        "canCreateQuestionPost": true,
-                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
-                        "canAskQuestionOnPost": true,
-                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
-                        "canCreateOfficeHoursPost": true,
-                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                        "canMentionMembers": true
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
                     });
-                    //moderatorRole.save(null, {useMasterKey: true});
 
-                    var adminName = "admin-" + workspace.id;
+                    var expertrole = savedRoles[1];
+                    expertrole.getUsers().add(owner);
+                    //expertrole.getUsers().add(usersToAddToRole);
+                    expertrole.getRoles().add(moderatorRole);
+                    expertrole.save(null, {
 
-                    var adminRole = new Parse.Role(adminName, roleACL);
-                    adminRole.set("workspace", workspace);
-                    //adminRole.set("name", adminName);
-                    adminRole.set("PermissionBundle", {
-                        "canAddCategory": true,
-                        "canUpdateCategory": true,
-                        "canDeleteCategory": true,
-                        "canAddChanneltoCategory": true,
-                        "canInvitePeopleToWorkspace": true,
-                        "canCreateChannel": true,
-                        "canAddPeopleToChannel": true,
-                        "canCreatePost": true,
-                        "NumberOfCreatePostAllowed": "unlimited",
-                        "canCreateQuestionPost": true,
-                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
-                        "canAskQuestionOnPost": true,
-                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
-                        "canCreateOfficeHoursPost": true,
-                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                        "canMentionMembers": true
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
                     });
-                    //adminRole.save(null, {useMasterKey: true});
 
-                    var expertName = "expert-" + workspace.id;
+                    var ownerrole = savedRoles[0];
+                    ownerrole.getUsers().add(owner);
+                    ownerrole.getRoles().add(expertRole);
+                    ownerrole.getRoles().add(adminRole);
+                    ownerrole.save(null, {
 
-                    var expertRole = new Parse.Role(expertName, roleACL);
-                    expertRole.set("workspace", workspace);
-                    //expertRole.set("name", expertName);
-                    expertRole.set("PermissionBundle", {
-                        "canAddCategory": true,
-                        "canUpdateCategory": true,
-                        "canDeleteCategory": true,
-                        "canAddChanneltoCategory": true,
-                        "canInvitePeopleToWorkspace": true,
-                        "canCreateChannel": true,
-                        "canAddPeopleToChannel": true,
-                        "canCreatePost": true,
-                        "NumberOfCreatePostAllowed": "unlimited",
-                        "canCreateQuestionPost": true,
-                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
-                        "canAskQuestionOnPost": true,
-                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
-                        "canCreateOfficeHoursPost": true,
-                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                        "canMentionMembers": true
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
                     });
-                    //expertRole.save(null, {useMasterKey: true});
 
+                    var userRolesRelation = owner.relation("roles");
+                    userRolesRelation.add(ownerRole); // add owner role to the user roles field.
+                    userRolesRelation.add(expertrole); // add owner role to the user roles field.
+                    owner.save(null, {
 
-                    var ownerName = "owner-" + workspace.id;
-                    var ownerRole = new Parse.Role(ownerName, roleACL);
-                    //console.log("ownerRole 1: " + JSON.stringify(ownerRole));
-                    ownerRole.set("workspace", workspace);
-                    //ownerRole.set("name", ownerName);
-                    ownerRole.set("PermissionBundle", {
-                        "canAddCategory": true,
-                        "canUpdateCategory": true,
-                        "canDeleteCategory": true,
-                        "canAddChanneltoCategory": true,
-                        "canInvitePeopleToWorkspace": true,
-                        "canCreateChannel": true,
-                        "canAddPeopleToChannel": true,
-                        "canCreatePost": true,
-                        "NumberOfCreatePostAllowed": "unlimited",
-                        "canCreateQuestionPost": true,
-                        "NumberOfCreateQuestionsPostAllowed": "unlimited",
-                        "canAskQuestionOnPost": true,
-                        "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
-                        "canCreateOfficeHoursPost": true,
-                        "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                        "canMentionMembers": true
-                    });
-                    //console.log("ownerRole 2: " + JSON.stringify(ownerRole));
-                    //ownerRole.save(null, {useMasterKey: true});
-                    //console.log("ownerRole 3: " + JSON.stringify(ownerRole));
-
-
-                    Parse.Object.saveAll([ownerRole, expertRole, adminRole, moderatorRole, memberRole, followerRole], {
-
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
-
-                    }).then((savedRoles) => {
-
-                        //console.log("savedRoles: " + JSON.stringify(savedRoles));
-
-                        var memberrole = savedRoles[4];
-                        //memberrole.getUsers().add(usersToAddToRole);
-                        memberrole.getRoles().add(followerRole);
-                        memberrole.save(null, {
-
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-
-                        var moderatorrole = savedRoles[3];
-                        //memberrole.getUsers().add(usersToAddToRole);
-                        moderatorrole.getRoles().add(memberRole);
-                        moderatorrole.save(null, {
-
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-
-                        var adminrole = savedRoles[2];
-                        //memberrole.getUsers().add(usersToAddToRole);
-                        adminrole.getRoles().add(moderatorRole);
-                        adminrole.save(null, {
-
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-
-                        var expertrole = savedRoles[1];
-                        expertrole.getUsers().add(owner);
-                        //expertrole.getUsers().add(usersToAddToRole);
-                        expertrole.getRoles().add(moderatorRole);
-                        expertrole.save(null, {
-
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-
-                        var ownerrole = savedRoles[0];
-                        ownerrole.getUsers().add(owner);
-                        ownerrole.getRoles().add(expertRole);
-                        ownerrole.getRoles().add(adminRole);
-                        ownerrole.save(null, {
-
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-
-                        var userRolesRelation = owner.relation("roles");
-                        userRolesRelation.add(ownerRole); // add owner role to the user roles field.
-                        userRolesRelation.add(expertrole); // add owner role to the user roles field.
-                        owner.save(null, {
-
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        });
-
-
-                        return callback (null, savedRoles);
-
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
                     });
 
 
-                }
-                else {return callback (null, workspace);}
+                    return callback (null, savedRoles);
 
-
-
-            }
-
-            function getSkills (callback) {
-
-                //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
-                //console.log("Skill Length:" + skillObject);
-
-
-                let skillObjectQuery = skillObject.query();
-                skillObjectQuery.ascending("level");
-
-                skillObjectQuery.find({
-
-                    useMasterKey: true,
-                    sessionToken: request.user.getSessionToken()
-
-                }).then((skill) => {
-
-                    let skillObject = [];
-
-                    if (skill) {
-
-                        // skills exist return then then
-                        skillObject = skill;
-                    } else {
-
-                        // do nothing and return empty skill object no skills;
-
-                    }
-
-                    return callback (null, skillObject);
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    return callback (error);
-                }, {
-
-                    useMasterKey: true,
-                    sessionToken: request.user.getSessionToken()
 
                 });
 
 
-
-
             }
+            else {return callback (null, workspace);}
 
-            function getExperts (callback) {
+        }
 
-                let expertObject = Parse.Object.extend("_User");
-                expertObject = workspace.get("experts");
-                let expertsArray = [];
+        function getSkills (callback) {
 
-                if (workspace.get("isNew")) {
+            //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
+            //console.log("Skill Length:" + skillObject);
 
-                    expertsArray = workspace.get("expertsArray");
+            let skillObjectQuery = skillObject.query();
+            skillObjectQuery.ascending("level");
 
-                    //console.log("isNew Workspace expertsArray: " + JSON.stringify(expertsArray));
+            skillObjectQuery.find({
 
-                    return callback (null, expertsArray);
+                useMasterKey: true
+                //sessionToken: sessionToken
 
+            }).then((skill) => {
+
+                let skillObject = [];
+
+                if (skill) {
+
+                    // skills exist return then then
+                    skillObject = skill;
                 } else {
 
-                    console.log("workspace.dirty_experts: " + JSON.stringify(workspace.dirty("experts")));
+                    // do nothing and return empty skill object no skills;
 
-                    if (workspace.get("isDirtyExperts")) {
+                }
 
-                        // expert being added or removed, update algolia, else return callback.
-
-                        expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
-
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        }).then((experts) => {
-
-                            // Convert Parse.Object to JSON
-                            //workspace = workspace.toJSON();
-                            let User = new Parse.Object("_User");
-                            let queryRole = new Parse.Query(Parse.Role);
-
-                            //console.log("\n Experts: " + JSON.stringify(experts));
-
-                            queryRole.equalTo('name', 'expert-' + workspace.id);
-
-                            queryRole.first({
-
-                                useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
-
-                            }).then((role) => {
-
-                                let expertrole = role;
-
-                                console.log("Role: " + JSON.stringify(role));
-
-                                expertrole.getUsers().add(experts);
-                                expertrole.save(null, {
-
-                                    useMasterKey: true,
-                                    sessionToken: request.user.getSessionToken()
-
-                                });
-                                //var userRolesRelation;
-
-                                for (let i = 0; i < experts.length; i++) {
-
-                                    let expertObject = experts[i];
-
-                                    let userRolesRelation = expertObject.relation("roles");
-                                    console.log("userRolesRelation afterSave Workspace: " + JSON.stringify(userRolesRelation));
-                                    userRolesRelation.add(expertrole); // add owner role to the user roles field.
-                                    expertObject.save(null, {
-
-                                        useMasterKey: true,
-                                        sessionToken: request.user.getSessionToken()
-
-                                    });
-
-                                }
-
-                                return callback (null, experts);
+                return callback (null, skillObject);
 
 
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                return callback (error);
-                            }, {
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
+            }, {
 
-                                useMasterKey: true,
-                                sessionToken: request.user.getSessionToken()
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+
+
+        }
+
+        function getExperts (callback) {
+
+            let expertObject = Parse.Object.extend("_User");
+            expertObject = workspace.get("experts");
+            let expertsArray = [];
+
+            if (workspace.get("isNew")) {
+
+                expertsArray = workspace.get("expertsArray");
+
+                //console.log("isNew Workspace expertsArray: " + JSON.stringify(expertsArray));
+
+                return callback (null, expertsArray);
+
+            } else {
+
+                console.log("workspace.dirty_experts: " + JSON.stringify(workspace.dirty("experts")));
+
+                if (workspace.get("isDirtyExperts")) {
+
+                    // expert being added or removed, update algolia, else return callback.
+
+                    expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((experts) => {
+
+                        // Convert Parse.Object to JSON
+                        //workspace = workspace.toJSON();
+                        let User = new Parse.Object("_User");
+                        let queryRole = new Parse.Query(Parse.Role);
+
+                        //console.log("\n Experts: " + JSON.stringify(experts));
+
+                        queryRole.equalTo('name', 'expert-' + workspace.id);
+
+                        queryRole.first({
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((role) => {
+
+                            let expertrole = role;
+
+                            console.log("Role: " + JSON.stringify(role));
+
+                            expertrole.getUsers().add(experts);
+                            expertrole.save(null, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
 
                             });
+                            //var userRolesRelation;
+
+                            for (let i = 0; i < experts.length; i++) {
+
+                                let expertObject = experts[i];
+
+                                let userRolesRelation = expertObject.relation("roles");
+                                console.log("userRolesRelation afterSave Workspace: " + JSON.stringify(userRolesRelation));
+                                userRolesRelation.add(expertrole); // add owner role to the user roles field.
+                                expertObject.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            }
+
+                            return callback (null, experts);
 
 
                         }, (error) => {
@@ -10827,107 +10549,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                             return callback (error);
                         }, {
 
-                            useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
+                            useMasterKey: true
+                            //sessionToken: sessionToken
 
                         });
-
-
-                    }
-                    else {
-
-                        expertsArray = workspace.get("expertsArray");
-
-                        console.log("isNew Workspace expertsArray: isDirtyExperts false " + JSON.stringify(expertsArray));
-
-                        return callback (null, expertsArray);
-
-
-                    }
-
-
-                }
-
-
-            }
-
-            function getWorkspaceFollowers (callback) {
-
-                //todo check for when we should be updating workspace_follower in Algolia Index
-                // get workspace_followers only in the following scenarios (1) user isFollower or isMember == true (2) workspace admin sent request for a user to join a workspace it's viewable to that user.
-
-                // Convert Parse.Object to JSON
-                // var workspace_follower = request.object;
-
-                // Specify Algolia's objectID with the Parse.Object unique ID
-                // var objectToSave = request.object.toJSON();
-
-                //var WORKSPACEFollower = Parse.Object.extend("workspace_follower");
-                //var workspaceFollower = new Parse.Object(WORKSPACEFollower);
-
-                //console.log("workspace type: " + JSON.stringify(workspace.id));
-
-                let followersArray = [];
-
-                if (workspace.get("isNew")) {
-
-                    //console.log("isNew Workspace no followers yet except workspace owner: " + JSON.stringify(followersArray));
-
-                    return callback (null, followersArray);
-
-                } else {
-
-                    let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-                    let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
-
-                    let viewableBy = [];
-
-                    queryWorkspaceFollower.equalTo("workspace", workspace);
-
-                    // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
-                    queryWorkspaceFollower.limit(10000);
-                    // queryWorkspaceFollower.include( ["workspace"] );
-
-                    queryWorkspaceFollower.find({
-
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
-
-                    }).then((followers) => {
-
-                        console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
-
-                        delete workspaceToSave.skills;
-                        delete workspaceToSave.experts;
-
-                        workspaceToSave.objectID = workspaceToSave.objectId;
-                        workspaceToSave['followers'] = followers;
-
-
-                        for (var i = 0; i < followers.length; i++) {
-
-                            if (workspaceToSave.type === 'private') {
-                                viewableBy.push(followers[i].toJSON().user.objectId);
-                                //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
-                            }
-
-
-                        }
-
-                        if (workspaceToSave.type === 'private') {
-
-                            workspaceToSave._tags= viewableBy;
-                            //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
-
-                        } else if (workspaceToSave.type === 'public') {
-
-                            workspaceToSave._tags = ['*'];
-
-                        }
-
-                        // console.log("followers: " + JSON.stringify(workspaceToSave.followers));
-
-                        return callback (null, workspaceToSave);
 
 
                     }, (error) => {
@@ -10936,268 +10561,364 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                         return callback (error);
                     }, {
 
-                        useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
                     });
-
-
-
-                }
-
-
-            }
-
-            function createOwnerWorkspaceFollower (callback) {
-
-                //console.log("workspace createOwnerWorkspaceFollower  isNew: " + workspace.get("isNew"));
-                //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
-
-                if (workspace.get("isNew") === true) {
-
-                    let viewableBy = [];
-                    let followersArray = [];
-
-                    let workspaceFollower = new Parse.Object("workspace_follower");
-
-                    //console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(workspace));
-
-                    workspaceFollower.set("archive", false);
-                    workspaceFollower.set("user", User);
-                    workspaceFollower.set("workspace", WorkSpace);
-                    workspaceFollower.set("notificationCount", 0);
-                    workspaceFollower.set("isSelected", false);
-                    workspaceFollower.set("isNewWorkspace", true);
-
-                    // set correct ACL for channelFollow
-                    /*let workspaceFollowACL = new Parse.ACL();
-                     workspaceFollowACL.setPublicReadAccess(true);
-                     workspaceFollowACL.setPublicWriteAccess(true);
-                     workspaceFollowACL.setReadAccess(User, true);
-                     workspaceFollowACL.setWriteAccess(User, true);
-                     workspaceFollower.setACL(workspaceFollowACL);*/
-
-                    // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
-                    workspaceFollower.set("isMember", true);
-                    workspaceFollower.set("isFollower", true);
-                    workspaceFollower.set("isMemberRequestedByWorkspaceAdmin", false);
-                    workspaceFollower.set("isMemberRequestedByUser", false);
-
-                    //console.log("workspaceFollower: " + JSON.stringify(workspaceFollower));
-
-                    workspaceFollower.save(null, {
-
-                        //useMasterKey: true,
-                        sessionToken: request.user.getSessionToken()
-
-                    }).then((result) => {
-
-                        // save was successful
-
-                        //console.log("workspace new workspace: " + JSON.stringify(result));
-
-                        workspaceFollower = result;
-
-                        //console.log("workspace new workspace to save: " + JSON.stringify(workspaceFollower));
-
-                        delete workspaceToSave.skills;
-                        delete workspaceToSave.experts;
-
-                        workspaceToSave.objectID = workspaceToSave.objectId;
-                        followersArray.push(workspaceFollower);
-                        workspaceToSave['followers'] = followersArray;
-
-                        //console.log("workspaceToSave with followers: " + JSON.stringify(workspaceToSave));
-
-
-                        // add _tags for this workspacefollower so it's visible in algolia
-
-                        if (workspace.get("type") === 'private') {
-                            viewableBy.push(workspaceFollower.toJSON().user.objectId);
-                            //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
-                        }
-
-
-                        if (workspace.get("type") === 'private') {
-
-                            workspaceToSave._tags= viewableBy;
-                            //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
-
-                        } else if (workspace.get("type")=== 'public') {
-
-                            workspaceToSave._tags = ['*'];
-
-                        }
-
-
-
-                        return callback(null, workspaceToSave);
-
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true,
-                        sessionToken: sessionToken
-
-                    });
-
-
-                } else {
-
-                    return callback (null, workspace);
-                }
-
-            }
-
-            function createGeneralChannel (callback) {
-
-                if (workspace.get("isNew") === true) {
-
-                    let CHANNEL = Parse.Object.extend("Channel");
-                    let Channel = new CHANNEL();
-
-                    Channel.set("name", "general");
-                    Channel.set("default", true);
-                    Channel.set("type", "public");
-                    Channel.set("purpose", "Community wide announcements and general questions");
-                    Channel.set("allowMemberPostCreation", false);
-                    Channel.set("workspace", workspace);
-                    Channel.set("user", owner);
-
-                    console.log("Channel save in afterSave Workspace cloud function");
-
-                    Channel.save(null, {
-
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
-                        }
-                    );
-
-                    return callback (null, Channel);
 
 
                 }
                 else {
 
-                    return callback (null, workspace);
+                    expertsArray = workspace.get("expertsArray");
+
+                    console.log("isNew Workspace expertsArray: isDirtyExperts false " + JSON.stringify(expertsArray));
+
+                    return callback (null, expertsArray);
+
+
                 }
 
 
             }
 
-            async.parallel([
-                async.apply(createWorkspaceRoles),
-                async.apply(getSkills),
-                async.apply(getExperts),
-                async.apply(getWorkspaceFollowers),
-                //async.apply(createGeneralChannel),
-                async.apply(createOwnerWorkspaceFollower)
 
-            ], function (err, results) {
-                if (err) {
-                    response.error(err);
-                }
+        }
 
-                //console.log("results length: " + JSON.stringify(results.length));
+        function getWorkspaceFollowers (callback) {
 
-                if(workspace.get("isNew")) {
-                    workspaceToSave = results[4];
-                    workspace.set("isDirtyExperts", true);
+            //todo check for when we should be updating workspace_follower in Algolia Index
+            // get workspace_followers only in the following scenarios (1) user isFollower or isMember == true (2) workspace admin sent request for a user to join a workspace it's viewable to that user.
 
-                } else {
-                    workspaceToSave = results[3];
+            // Convert Parse.Object to JSON
+            // var workspace_follower = request.object;
 
-                }
-                let skillsToSave = results[1];
-                let expertsToSave = results[2];
+            // Specify Algolia's objectID with the Parse.Object unique ID
+            // var objectToSave = request.object.toJSON();
 
+            //var WORKSPACEFollower = Parse.Object.extend("workspace_follower");
+            //var workspaceFollower = new Parse.Object(WORKSPACEFollower);
 
-                workspaceToSave["skills"] = skillsToSave;
+            //console.log("workspace type: " + JSON.stringify(workspace.id));
 
+            let followersArray = [];
 
-                if (workspace.get("isDirtyExperts")) {
-                    workspaceToSave["experts"] = expertsToSave;
-                    delete workspaceToSave.expertsArray;
-                } else {
+            if (workspace.get("isNew")) {
 
+                //console.log("isNew Workspace no followers yet except workspace owner: " + JSON.stringify(followersArray));
+
+                return callback (null, followersArray);
+
+            } else {
+
+                let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+                let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+
+                let viewableBy = [];
+
+                queryWorkspaceFollower.equalTo("workspace", workspace);
+
+                // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
+                queryWorkspaceFollower.limit(10000);
+                // queryWorkspaceFollower.include( ["workspace"] );
+
+                queryWorkspaceFollower.find({
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((followers) => {
+
+                    console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
+
+                    delete workspaceToSave.skills;
                     delete workspaceToSave.experts;
-                    delete workspaceToSave.expertsArray;
 
-                }
+                    workspaceToSave.objectID = workspaceToSave.objectId;
+                    workspaceToSave['followers'] = followers;
 
-                delete workspaceToSave.isDirtySkills;
-                delete workspaceToSave.isDirtyExperts;
-                delete workspaceToSave.isNew;
-                //delete workspaceToSave.expertsArray;
 
-                if (workspace.get("isNew") === true) {
+                    for (var i = 0; i < followers.length; i++) {
 
-                    let Channel = new Parse.Object("Channel");
-                    //let Channel = new CHANNEL();
-
-                    Channel.set("name", "general");
-                    Channel.set("default", true);
-                    Channel.set("type", "public");
-                    Channel.set("purpose", "Community wide announcements and general questions");
-                    Channel.set("allowMemberPostCreation", false);
-                    Channel.set("workspace", workspace);
-                    Channel.set("user", owner);
-
-                    console.log("Channel save in afterSave Workspace cloud function: " + JSON.stringify(Channel));
-
-                    Channel.save(null, {
-
-                            //useMasterKey: true,
-                            sessionToken: request.user.getSessionToken()
-
+                        if (workspaceToSave.type === 'private') {
+                            viewableBy.push(followers[i].toJSON().user.objectId);
+                            //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
                         }
-                    );
-                }
 
 
-                //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
-                //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-                //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
+                    }
 
-                indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
-                    if (err) return response.error(err);
+                    if (workspaceToSave.type === 'private') {
 
-                    console.log("Parse<>Algolia workspace saved from AfterSave Workspace function ");
+                        workspaceToSave._tags= viewableBy;
+                        //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
 
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                    return response.success();
+                    } else if (workspaceToSave.type === 'public') {
+
+                        workspaceToSave._tags = ['*'];
+
+                    }
+
+                    // console.log("followers: " + JSON.stringify(workspaceToSave.followers));
+
+                    return callback (null, workspaceToSave);
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback (error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+            }
+
+        }
+
+        function createOwnerWorkspaceFollower (callback) {
+
+            //console.log("workspace createOwnerWorkspaceFollower  isNew: " + workspace.get("isNew"));
+            //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
+
+            if (workspace.get("isNew") === true) {
+
+                let viewableBy = [];
+                let followersArray = [];
+
+                let workspaceFollower = new Parse.Object("workspace_follower");
+
+                //console.log("createOwnerWorkspaceFollower ACL: " + JSON.stringify(workspace));
+
+                workspaceFollower.set("archive", false);
+                workspaceFollower.set("user", User);
+                workspaceFollower.set("workspace", WorkSpace);
+                workspaceFollower.set("notificationCount", 0);
+                workspaceFollower.set("isSelected", false);
+                workspaceFollower.set("isNewWorkspace", true);
+
+                // set correct ACL for channelFollow
+                /*let workspaceFollowACL = new Parse.ACL();
+                 workspaceFollowACL.setPublicReadAccess(true);
+                 workspaceFollowACL.setPublicWriteAccess(true);
+                 workspaceFollowACL.setReadAccess(User, true);
+                 workspaceFollowACL.setWriteAccess(User, true);
+                 workspaceFollower.setACL(workspaceFollowACL);*/
+
+                // since workspace followers can't create a channel, for now we are setting each channel creator as isMember = true
+                workspaceFollower.set("isMember", true);
+                workspaceFollower.set("isFollower", true);
+                workspaceFollower.set("isMemberRequestedByWorkspaceAdmin", false);
+                workspaceFollower.set("isMemberRequestedByUser", false);
+
+                //console.log("workspaceFollower: " + JSON.stringify(workspaceFollower));
+
+                workspaceFollower.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((result) => {
+
+                    // save was successful
+
+                    //console.log("workspace new workspace: " + JSON.stringify(result));
+
+                    workspaceFollower = result;
+
+                    //console.log("workspace new workspace to save: " + JSON.stringify(workspaceFollower));
+
+                    delete workspaceToSave.skills;
+                    delete workspaceToSave.experts;
+
+                    workspaceToSave.objectID = workspaceToSave.objectId;
+                    followersArray.push(workspaceFollower);
+                    workspaceToSave['followers'] = followersArray;
+
+                    //console.log("workspaceToSave with followers: " + JSON.stringify(workspaceToSave));
+
+
+                    // add _tags for this workspacefollower so it's visible in algolia
+
+                    if (workspace.get("type") === 'private') {
+                        viewableBy.push(workspaceFollower.toJSON().user.objectId);
+                        //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
+                    }
+
+
+                    if (workspace.get("type") === 'private') {
+
+                        workspaceToSave._tags= viewableBy;
+                        //console.log("workspace 2: " + JSON.stringify(workspaceToSave));
+
+                    } else if (workspace.get("type")=== 'public') {
+
+                        workspaceToSave._tags = ['*'];
+
+                    }
+
+                    return callback(null, workspaceToSave);
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 });
 
 
+            } else {
+
+                return callback (null, workspace);
+            }
+
+        }
+
+        function createGeneralChannel (callback) {
+
+            if (workspace.get("isNew") === true) {
+
+                let CHANNEL = Parse.Object.extend("Channel");
+                let Channel = new CHANNEL();
+
+                Channel.set("name", "general");
+                Channel.set("default", true);
+                Channel.set("type", "public");
+                Channel.set("purpose", "Community wide announcements and general questions");
+                Channel.set("allowMemberPostCreation", false);
+                Channel.set("workspace", workspace);
+                Channel.set("user", owner);
+
+                console.log("Channel save in afterSave Workspace cloud function");
+
+                Channel.save(null, {
+
+                        useMasterKey: true,
+                        //sessionToken: sessionToken
+
+                    }
+                );
+
+                return callback (null, Channel);
+
+
+            }
+            else {
+
+                return callback (null, workspace);
+            }
+
+
+        }
+
+        async.parallel([
+            async.apply(createWorkspaceRoles),
+            async.apply(getSkills),
+            async.apply(getExperts),
+            async.apply(getWorkspaceFollowers),
+            //async.apply(createGeneralChannel),
+            async.apply(createOwnerWorkspaceFollower)
+
+        ], function (err, results) {
+            if (err) {
+                response.error(err);
+            }
+
+            //console.log("results length: " + JSON.stringify(results.length));
+
+            if(workspace.get("isNew")) {
+                workspaceToSave = results[4];
+                workspace.set("isDirtyExperts", true);
+
+            } else {
+                workspaceToSave = results[3];
+
+            }
+            let skillsToSave = results[1];
+            let expertsToSave = results[2];
+
+
+            workspaceToSave["skills"] = skillsToSave;
+
+
+            if (workspace.get("isDirtyExperts")) {
+                workspaceToSave["experts"] = expertsToSave;
+                delete workspaceToSave.expertsArray;
+            } else {
+
+                delete workspaceToSave.experts;
+                delete workspaceToSave.expertsArray;
+
+            }
+
+            delete workspaceToSave.isDirtySkills;
+            delete workspaceToSave.isDirtyExperts;
+            delete workspaceToSave.isNew;
+            //delete workspaceToSave.expertsArray;
+
+            if (workspace.get("isNew") === true) {
+
+                let Channel = new Parse.Object("Channel");
+                //let Channel = new CHANNEL();
+
+                Channel.set("name", "general");
+                Channel.set("default", true);
+                Channel.set("type", "public");
+                Channel.set("purpose", "Community wide announcements and general questions");
+                Channel.set("allowMemberPostCreation", false);
+                Channel.set("workspace", workspace);
+                Channel.set("user", owner);
+
+                console.log("Channel save in afterSave Workspace cloud function: " + JSON.stringify(Channel));
+
+                Channel.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }
+                );
+            }
+
+
+            //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
+            //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
+            //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
+
+            indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
+                if (err) return response.error(err);
+
+                console.log("Parse<>Algolia workspace saved from AfterSave Workspace function ");
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                return response.success();
+
             });
 
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {
-
-            useMasterKey: true,
-            sessionToken: request.user.getSessionToken()
 
         });
 
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        response.error(error);
+    }, {
 
-    }
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
 
 
 }, {useMasterKey: true});
-
-
-
 
 
 // Delete AlgoliaSearch post object if it's deleted from Parse
@@ -11222,6 +10943,17 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.009.afterDelete-Channel.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
     let CHANNEL = Parse.Object.extend("Channel");
     let channel = new CHANNEL();
     channel.id = request.object.id;
@@ -11236,7 +10968,7 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
     let owner = new USER();
     owner.id = workspace.get("user");
 
-    var sessionToken;
+    /*var sessionToken;
 
     if (!request.user) {
 
@@ -11262,7 +10994,7 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
 
 
         }
-    }
+    }*/
 
 
     function deleteChannelFollowers (callback) {
@@ -11273,8 +11005,8 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
         queryChannelFollower.equalTo("channel", channel);
         queryChannelFollower.limit(10000);
         queryChannelFollower.find({
-            //useMasterKey: true
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
         }).then((Channel_Followers) => {
 
 
@@ -11297,14 +11029,16 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
                  });*/
 
                 Parse.Object.destroyAll(Channel_Followers, {
-                    success: function() {
+                    success: function(result) {
                         console.log('Did successfully delete channelFollowers in afterDeleteChannel Cloud Function');
+                        return callback(null, result);
                     },
                     error: function(error) {
                         console.error("Error  deleteChannelFollowers " + error.code + ": " + error.message);
+                        return callback(error);
                     },
-                    //useMasterKey: true,
-                    sessionToken: sessionToken
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 });
 
@@ -11326,8 +11060,8 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
             response.error(error);
         }, {
 
-            //useMasterKey: true
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
 
         });
 
@@ -11365,11 +11099,13 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
                 });*/
 
                 Parse.Object.destroyAll(posts, {
-                    success: function() {
+                    success: function(result) {
                         console.log('Did successfully delete posts in afterDeleteChannel Cloud Function');
+                        return callback(null, result);
                     },
                     error: function(error) {
                         console.error("Error delete posts in afterDeleteChannel Cloud Function " + error.code + ": " + error.message);
+                        return callback(error);
                     },
                     useMasterKey: true
                 });
@@ -11450,7 +11186,18 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
 // Delete AlgoliaSearch channel object if it's deleted from Parse
 Parse.Cloud.beforeDelete('Channel', function(request, response) {
 
-    var sessionToken;
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.010.beforeDelete-Channel.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    /*var sessionToken;
 
     if (!request.user) {
 
@@ -11476,7 +11223,7 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
 
 
         }
-    }
+    }*/
 
 
     // get objects
@@ -11488,13 +11235,14 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
     workspace.increment("channelCount", -1);
     workspace.save(null, {
 
-        //useMasterKey: true,
-        sessionToken: sessionToken
+        useMasterKey: true
+        //sessionToken: sessionToken
 
     });
 
     response.success();
-});
+
+}, {useMasterKey: true});
 
 
 
@@ -11636,6 +11384,17 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.011.afterDelete-WorkSpace.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
     workspace.id = request.object.id;
@@ -11651,8 +11410,7 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
     //console.log("owner: " + JSON.stringify(owner));
 
-    var sessionToken;
-
+    /*var sessionToken;
 
     if (!request.user) {
 
@@ -11688,7 +11446,7 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
 
         }
-    }
+    }*/
 
     let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
     let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
@@ -11704,13 +11462,13 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
         queryWorksapceFollower.equalTo("workspace", workspace);
         queryWorksapceFollower.limit(10000);
         queryWorksapceFollower.find({
-            sessionToken: sessionToken
+                useMasterKey: true
         }).then((workspacefollowers) => {
 
 
             if (workspacefollowers) {
 
-                Parse.Object.destroyAll(workspacefollowers, {sessionToken: sessionToken}).catch(function(error, result) {
+                /*Parse.Object.destroyAll(workspacefollowers, {useMasterKey: true}).catch(function(error, result) {
 
                     if (error) {
 
@@ -11721,20 +11479,23 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
                     }
 
                     if (result) {
+                        console.log('Did successfully delete posts in afterDeleteChannel Cloud Function');
 
                         return callback(null, result);
                     }
-                });
+                });*/
 
-                /*Parse.Object.destroyAll(workspacefollowers, {
-                    success: function() {
+                Parse.Object.destroyAll(workspacefollowers, {
+                    success: function(result) {
                         console.log('Did successfully delete posts in afterDeleteChannel Cloud Function');
+                        return callback(null, result);
                     },
                     error: function(error) {
                         console.error("Error delete posts in afterDeleteChannel Cloud Function " + error.code + ": " + error.message);
+                        return callback(error);
                     },
                     useMasterKey: true
-                });*/
+                });
 
 
             } else {
@@ -11752,8 +11513,8 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
             // error is a Parse.Error with an error code and message.
             response.error(error);
         }, {
-
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
         });
 
     }
@@ -11766,14 +11527,14 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
         queryChannel.equalTo("workspace", workspace);
         queryChannel.limit(1000);
         queryChannel.find({
-
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
         }).then((channels) => {
 
 
             if (channels) {
 
-                Parse.Object.destroyAll(channels, {sessionToken: sessionToken}).catch(function(error, result) {
+                /*Parse.Object.destroyAll(channels, {sessionToken: sessionToken}).catch(function(error, result) {
 
                     if (error) {
 
@@ -11787,6 +11548,18 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
                         return callback(null, result);
                     }
+                });*/
+
+                Parse.Object.destroyAll(channels, {
+                    success: function(result) {
+                        console.log('Did successfully delete channels in afterDelete Workspace Cloud Function');
+                        return callback(null, result);
+                    },
+                    error: function(error) {
+                        console.error("Error delete channels in afterDelete Workspace Cloud Function" + error.code + ": " + error.message);
+                        return callback(error);
+                    },
+                    useMasterKey: true
                 });
 
 
@@ -11804,8 +11577,8 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
                 response.error(error);
             }, {
 
-
-                sessionToken: sessionToken
+                useMasterKey: true
+                //sessionToken: sessionToken
 
         });
 
@@ -11839,8 +11612,8 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
         previousQueryWorkspaceFollowerLeave.first( {
 
-            //useMasterKey: true,
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
 
         }).then((WorkspaceToSelect) => {
             // The object was retrieved successfully.
@@ -11855,8 +11628,8 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
                 WorkspaceToSelectSave.save(null, {
 
-                    //useMasterKey: true,
-                    sessionToken: sessionToken
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 }).then((result) => {
 
@@ -11866,15 +11639,11 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
                         // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
                         return callback (null, result);
 
-
-
-
                     } else {
 
                         return callback (null, result);
 
                     }
-
 
 
                 }, (error) => {
@@ -11883,8 +11652,8 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
                     return callback (error);
                 }, {
 
-                    //useMasterKey: true,
-                    sessionToken: sessionToken
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 });
 
@@ -11896,15 +11665,14 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
             }
 
 
-
         }, (error) => {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
             response.error(error);
         }, {
 
-            //useMasterKey: true,
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
 
         });
 
@@ -11947,6 +11715,17 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.012.afterDelete-workspace_follower.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
     let workspaceFollower = request.object;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
@@ -11956,7 +11735,7 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
     let user = new USER();
     user.id = workspaceFollower.get("user").id;
 
-    var sessionToken;
+    /*var sessionToken;
 
     if (!request.user) {
 
@@ -11982,7 +11761,7 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 
 
         }
-    }
+    }*/
 
     // Get workspace
     workspace.id = workspaceFollower.get("workspace").id;
@@ -11990,8 +11769,8 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 
     workspace.fetch(workspace.id, {
 
-        //useMasterKey: true,
-        sessionToken: sessionToken
+        useMasterKey: true
+        //sessionToken: sessionToken
 
     }).then((Workspace) => {
         // The object was retrieved successfully.
@@ -12011,8 +11790,8 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
                 workspace.increment("memberCount", -1);
                 workspace.save(null, {
 
-                    //useMasterKey: true,
-                    sessionToken: sessionToken
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 });
                 response.success();
@@ -12023,8 +11802,8 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
                 workspace.increment("followerCount", -1);
                 workspace.save(null, {
 
-                    //useMasterKey: true,
-                    sessionToken: sessionToken
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 });
                 response.success();
@@ -12044,8 +11823,8 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
                 workspace.increment("memberCount", -1);
                 workspace.save(null, {
 
-                    //useMasterKey: true,
-                    sessionToken: sessionToken
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 });
                 response.success();
@@ -12069,8 +11848,8 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
         // error is a Parse.Error with an error code and message.
         response.error(error);
     }, {
-        //useMasterKey: true,
-        sessionToken: sessionToken
+        useMasterKey: true
+        //sessionToken: sessionToken
 
     });
 
@@ -12080,11 +11859,22 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 // Update followers list in Channel after deleting workspace_follower row
 Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.013.afterDelete-ChannelFollow.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
     var channelfollow = request.object;
     var CHANNEL = request.object.get("channel");
     console.log("channel afterDelete: " + JSON.stringify(CHANNEL));
 
-    var sessionToken;
+    /*var sessionToken;
 
     if (!request.user) {
 
@@ -12110,13 +11900,13 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
 
         }
-    }
+    }*/
 
 
     CHANNEL.fetch(CHANNEL.toJSON().objectId, {
 
-            //useMasterKey: true,
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
 
         }).then((channel) => {
             // The object was retrieved successfully.
@@ -12141,8 +11931,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                 userRoleRelationQuery.equalTo("name", expertRoleName);
                 userRoleRelationQuery.first({
 
-                    useMasterKey: true,
-                    sessionToken: sessionToken
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 }).then((results) => {
                     // The object was retrieved successfully.
@@ -12197,8 +11987,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                             }
                             channel.save(null, {
 
-                                //useMasterKey: true,
-                                sessionToken: sessionToken
+                                useMasterKey: true
+                                //sessionToken: sessionToken
 
                             });
                             response.success();
@@ -12247,8 +12037,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                             }
                             channel.save(null, {
 
-                                //useMasterKey: true,
-                                sessionToken: sessionToken
+                                useMasterKey: true
+                                //sessionToken: sessionToken
 
                             });
                             response.success();
@@ -12305,8 +12095,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                             }
                             channel.save(null, {
 
-                                //useMasterKey: true,
-                                sessionToken: sessionToken
+                                useMasterKey: true
+                                //sessionToken: sessionToken
 
                             });
                             response.success();
@@ -12355,8 +12145,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                             }
                             channel.save(null, {
 
-                                //useMasterKey: true,
-                                sessionToken: sessionToken
+                                useMasterKey: true
+                                //sessionToken: sessionToken
 
                             });
                             response.success();
@@ -12395,14 +12185,15 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                             }
                             channel.save(null, {
 
-                                //useMasterKey: true,
-                                sessionToken: sessionToken
+                                useMasterKey: true
+                                //sessionToken: sessionToken
 
                             });
                             response.success();
 
 
-                        } else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
+                        }
+                        else if ((isFollower === false || !isFollower) &&(isMember === false || !isMember)) {
 
                             // do nothing since this user should not be a follower or member for that workspace
                             response.success();
@@ -12443,8 +12234,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                             }
                             channel.save(null, {
 
-                                //useMasterKey: true,
-                                sessionToken: sessionToken
+                                useMasterKey: true
+                                //sessionToken: sessionToken
 
                             });
                             response.success();
@@ -12460,8 +12251,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                     // error is a Parse.Error with an error code and message.
                     response.error(error);
                 }, {
-                    //useMasterKey: true,
-                    sessionToken: sessionToken
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 });
 
@@ -12479,8 +12270,8 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
 
         }, {
 
-            //useMasterKey: true,
-            sessionToken: sessionToken
+            useMasterKey: true
+            //sessionToken: sessionToken
 
         });
 
@@ -12551,7 +12342,7 @@ Parse.Cloud.define("sendEmail", function(request, response) {
         });
     }
     // var i = 0;
-    let allMail = request.params.emails
+    let allMail = request.params.emails;
     var counter = require('counter'),
         count = counter(0, { target: Object.keys(allMail).length - 1, once: true }),
         i, l = Object.keys(allMail).length - 1;
@@ -12698,11 +12489,12 @@ Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
     // let deviceToken = "7689db229f040ad9e35a59732a5506b7fd27bb5c0b6f151615383ff8c71caddf"; // Production false
     let deviceToken = request.params.token;
     let production = request.params.production;
+
     if( production ){
-        fileForPushNotification = 'Papr-Distribution-APNS.pem';
+        fileForPushNotification = 'apns-prod-cert.pem';
         keyFileForPushNotification = 'Key-Distribution.pem';
     } else {
-        fileForPushNotification = 'Papr-Development-APNS.pem';
+        fileForPushNotification = 'apns-dev-cert.pem';
         keyFileForPushNotification = 'Key-Development.pem';
     }
     var options = {
