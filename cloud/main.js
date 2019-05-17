@@ -2403,6 +2403,12 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                         workspaceFollower.id = object.id;
 
                         workspaceFollower.set("archive", false);
+                        if (object.get("user").id === req.user.toJSON().objectId) {
+
+                            workspaceFollower.set("isSelected", true);
+
+
+                        }
 
                         object = workspaceFollower;
 
@@ -2745,7 +2751,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                         if (workspace.dirty("archive")) {
 
-                            queryWorkspace.fetch(workspace.id, {
+                            queryWorkspace.get(workspace.id, {
 
                                 //useMasterKey: true,
                                 sessionToken: req.user.getSessionToken()
@@ -3030,7 +3036,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
                 if (workspace.dirty("archive")) {
 
-                    queryWorkspace.fetch(workspace.id, {
+                    queryWorkspace.get(workspace.id, {
 
                         //useMasterKey: true,
                         sessionToken: req.user.getSessionToken()
@@ -3207,7 +3213,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                 queryChannel.first({
 
-                    useMasterKey: true,
+                    //useMasterKey: true,
                     sessionToken: req.user.getSessionToken()
 
                 }).then((results) => {
@@ -3770,7 +3776,10 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
                     response.error(error);
-                }, {useMasterKey: true});
+                }, {
+                    //useMasterKey: true,
+                    sessionToken: req.user.getSessionToken()
+                });
 
 
             }
