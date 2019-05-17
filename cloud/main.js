@@ -470,8 +470,6 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
     let user = new USER();
     user.id = User;
 
-    let sessionToken = request.user.getSessionToken();
-
     // update user's workspace follower
     workspaceFollower.set("isFollower", false);
     workspaceFollower.set("isMember", false);
@@ -4896,13 +4894,17 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
     //let USER = Parse.Object.extend("_User");
     let user = new Parse.Object("_User");
-    user.id = req.user.id;
-    console.log("user beforeSave workspace_follower: " + JSON.stringify(user));
-    if (!user) { return response.error("please add _User it's required when adding new or updating workspace follower");} else {
-        var userRolesRelation = user.relation("roles");
+    if (workspace_follower.user) {
+
+        user.id = workspace_follower.user.id;
         console.log("user beforeSave workspace_follower userRoleRelation: " + JSON.stringify(user));
 
+    } else (!workspace_follower.user) {
+
+        return response.error("please add _User it's required when adding new or updating workspace follower");
     }
+
+
 
     let queryMemberRole = new Parse.Query(Parse.Role);
     let queryfollowerRole = new Parse.Query(Parse.Role);
