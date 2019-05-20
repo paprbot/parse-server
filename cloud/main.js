@@ -11780,48 +11780,19 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
         return;
     }
 
-    /*var sessionToken;
-
-    if (!request.user) {
-
-        if (request.master === true) {
-
-            sessionToken = owner.getSessionToken();
-            console.log("sessionToken: " + JSON.stringify(sessionToken));
-        } else {
-
-            response.error("afterDelete WorkSpace masterKey or Session token is required");
-
-        }
-    } else if (request.user) {
-
-        if (request.user.getSessionToken()) {
-
-            sessionToken = request.user.getSessionToken();
-
-
-        } else {
-
-            response.error("afterDelete WorkSpace user does not have a valid sessionToken");
-
-
-        }
-    }*/
-
-
     // get objects
     let channel = request.object;
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
     workspace.id = channel.get("workspace").id;
 
-    workspace.increment("channelCount", -1);
+    /*workspace.increment("channelCount", -1);
     workspace.save(null, {
 
         useMasterKey: true
         //sessionToken: sessionToken
 
-    });
+    });*/
 
     response.success();
 
@@ -12461,33 +12432,6 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
     let user = new USER();
     user.id = workspaceFollower.get("user").id;
 
-    /*var sessionToken;
-
-    if (!request.user) {
-
-        if (request.master === true) {
-
-            sessionToken = user.getSessionToken();
-            console.log("sessionToken: " + JSON.stringify(sessionToken));
-        } else {
-
-            response.error("afterDelete WorkSpace masterKey or Session token is required");
-
-        }
-    } else if (request.user) {
-
-        if (request.user.getSessionToken()) {
-
-            sessionToken = request.user.getSessionToken();
-
-
-        } else {
-
-            response.error("afterDelete WorkSpace user does not have a valid sessionToken");
-
-
-        }
-    }*/
 
     // Get workspace
     workspace.id = workspaceFollower.get("workspace").id;
@@ -12570,9 +12514,8 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 
 
     }, (error) => {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
-        response.error(error);
+        // this can happen if the user is deleting the workspace so returning success here.
+        response.success();;
     }, {
         useMasterKey: true
         //sessionToken: sessionToken
