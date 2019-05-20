@@ -11992,43 +11992,7 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
 
     //console.log("owner: " + JSON.stringify(owner));
 
-    /*var sessionToken;
 
-     if (!request.user) {
-
-     if (request.master === true) {
-
-     //sessionToken = owner.fetch(owner.id, {userMasterKey:true})
-
-     sessionToken = owner.getSessionToken();
-     console.log("sessionToken no user sessionToken-1: " + JSON.stringify(sessionToken));
-
-     //use that token
-
-
-     console.log("sessionToken no user sessionToken: " + JSON.stringify(sessionToken));
-     }
-     else {
-
-     response.error("afterDelete WorkSpace masterKey or Session token is required");
-
-     }
-     }
-     else if (request.user) {
-
-     if (request.user.getSessionToken()) {
-
-     sessionToken = request.user.getSessionToken();
-
-
-     }
-     else {
-
-     response.error("afterDelete WorkSpace user does not have a valid sessionToken");
-
-
-     }
-     }*/
 
     let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
     let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
@@ -12444,8 +12408,8 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
     async.parallel([
         async.apply(deleteWorkspaceAlgolia),
         async.apply(deleteChannels),
-        async.apply(deleteWorkspaceFollowers)
-        //async.apply(selectPreviouslySelectedWorkspace)
+        async.apply(deleteWorkspaceFollowers),
+        async.apply(selectPreviouslySelectedWorkspace)
 
     ], function (err, results) {
         if (err) {
