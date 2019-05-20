@@ -11960,7 +11960,7 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
 
  });*/
 
-Parse.Cloud.beforeDelete('WorkSpace', function(request, response) {
+/*Parse.Cloud.beforeDelete('WorkSpace', function(request, response) {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -12134,7 +12134,7 @@ Parse.Cloud.beforeDelete('WorkSpace', function(request, response) {
     });
 
 
-}, {useMasterKey: true});
+}, {useMasterKey: true});*/
 
 
 // Delete AlgoliaSearch workspace object if it's deleted from Parse
@@ -12368,10 +12368,84 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
     }
 
+    function selectPreviouslySelectedWorkspace (callback) {
+
+        previousQueryWorkspaceFollowerLeave.first( {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }).then((WorkspaceToSelect) => {
+            // The object was retrieved successfully.
+
+            if (WorkspaceToSelect) {
+
+                let WORKSPACE = Parse.Object.extend("WorkSpace");
+                let WorkspaceToSelectSave = new WORKSPACE();
+                WorkspaceToSelectSave.id = WorkspaceToSelect.id;
+
+                WorkspaceToSelectSave.set("isSelected", true);
+
+                WorkspaceToSelectSave.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((result) => {
+
+                    // save was successful
+                    if(result) {
+
+                        console.log("result from afterDelete workspace save: " + JSON.stringify(result));
+
+                        // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
+                        return callback (null, result);
+
+                    } else {
+
+                        return callback (null, result);
+
+                    }
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback (error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+            } else {
+
+                // there was no workspace that was previously selected, return empty
+
+                return callback (null, WorkspaceToSelect);
+            }
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+    }
+
+
     async.parallel([
         async.apply(deleteWorkspaceAlgolia),
         async.apply(deleteChannels),
-        async.apply(deleteWorkspaceFollowers),
+        async.apply(deleteWorkspaceFollowers)
+        //async.apply(selectPreviouslySelectedWorkspace)
 
     ], function (err, results) {
         if (err) {
