@@ -12105,44 +12105,6 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
     //console.log("owner: " + JSON.stringify(owner));
 
-    /*var sessionToken;
-
-    if (!request.user) {
-
-        if (request.master === true) {
-
-            //sessionToken = owner.fetch(owner.id, {userMasterKey:true})
-
-            sessionToken = owner.getSessionToken();
-            console.log("sessionToken no user sessionToken-1: " + JSON.stringify(sessionToken));
-
-            //use that token
-
-
-            console.log("sessionToken no user sessionToken: " + JSON.stringify(sessionToken));
-        }
-        else {
-
-            response.error("afterDelete WorkSpace masterKey or Session token is required");
-
-        }
-    }
-    else if (request.user) {
-
-        if (request.user.getSessionToken()) {
-
-            sessionToken = request.user.getSessionToken();
-
-
-        }
-        else {
-
-            response.error("afterDelete WorkSpace user does not have a valid sessionToken");
-
-
-        }
-    }*/
-
     let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
     let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
     previousQueryWorkspaceFollowerLeave.include("workspace");
@@ -12384,6 +12346,8 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
     ], function (err, results) {
         if (err) {
+
+            console.log("error in afterDelete Workspace: " + err);
             return response.error(err);
         }
 
@@ -12515,7 +12479,8 @@ Parse.Cloud.afterDelete('workspace_follower', function(request, response) {
 
     }, (error) => {
         // this can happen if the user is deleting the workspace so returning success here.
-        response.success();;
+        console.log("no workspace mybe we are deleting a workspace");
+        response.success();
     }, {
         useMasterKey: true
         //sessionToken: sessionToken
