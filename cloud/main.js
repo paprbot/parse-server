@@ -12543,34 +12543,6 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
     let CHANNEL = request.object.get("channel");
     console.log("channel afterDelete: " + JSON.stringify(CHANNEL));
 
-    /*var sessionToken;
-
-    if (!request.user) {
-
-        if (request.master === true) {
-
-            sessionToken = user.getSessionToken();
-            console.log("sessionToken: " + JSON.stringify(sessionToken));
-        } else {
-
-            response.error("afterDelete WorkSpace masterKey or Session token is required");
-
-        }
-    } else if (request.user) {
-
-        if (request.user.getSessionToken()) {
-
-            sessionToken = request.user.getSessionToken();
-
-
-        } else {
-
-            response.error("afterDelete WorkSpace user does not have a valid sessionToken");
-
-
-        }
-    }*/
-
 
     CHANNEL.fetch(CHANNEL.toJSON().objectId, {
 
@@ -12912,7 +12884,9 @@ Parse.Cloud.afterDelete('ChannelFollow', function(request, response) {
                 }, (error) => {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
-                    response.error(error);
+                    console.log("no roles found in afterDelete channelFollow maybe we are deleting a channel & workspace");
+
+                    response.success();
                 }, {
                     useMasterKey: true
                     //sessionToken: sessionToken
