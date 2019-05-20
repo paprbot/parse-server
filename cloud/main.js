@@ -3755,7 +3755,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                     let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
 
-                    let queryChannelFollow= new Parse.Query(WORKSPACEFOLLOWER);
+                    let queryChannelFollow= new Parse.Query(CHANNELFOLLOW);
                     queryChannelFollow.equalTo("channel", channel);
                     queryChannelFollow.limit(10000);
                     queryChannelFollow.find({
@@ -3852,7 +3852,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                     let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
 
-                    let queryChannelFollow= new Parse.Query(WORKSPACEFOLLOWER);
+                    let queryChannelFollow= new Parse.Query(CHANNELFOLLOW);
                     queryChannelFollow.equalTo("channel", channel);
                     queryChannelFollow.limit(10000);
                     queryChannelFollow.find({
@@ -6895,701 +6895,1051 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                     function updateFollowersInChannel (callback) {
 
+                        function removeAllPreviousSelectedChannelFollowerJoin (callback) {
 
-                        let queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
-                        queryChannelFollowIsSelected.equalTo("user", user);
-                        //queryChannelFollowIsSelected.equalTo("channel", Channel);
-                        queryChannelFollowIsSelected.equalTo("workspace", workspace);
-                        queryChannelFollowIsSelected.equalTo("isSelected", true);
+                            let queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
+                            queryChannelFollowIsSelected.equalTo("user", user);
+                            //queryChannelFollowIsSelected.equalTo("channel", Channel);
+                            queryChannelFollowIsSelected.equalTo("workspace", workspace);
+                            queryChannelFollowIsSelected.equalTo("isSelected", true);
 
-                        queryChannelFollowIsSelected.first({
+                            queryChannelFollowIsSelected.find({
 
-                            useMasterKey: true
-                            //sessionToken: sessionToken
+                                useMasterKey: true
+                                //sessionToken: sessionToken
 
-                        }).then((ChannelFollowIsSelected) => {
-                            // The object was retrieved successfully.
+                            }).then((results) => {
+                                // The object was retrieved successfully.
 
+                                if (results) {
 
+                                    let previousChannelFollowers = results;
 
-                            let ChannelFollowISSELECTED = Parse.Object.extend("ChannelFollow");
-                            let channelFollowIsSelectedSave = new ChannelFollowISSELECTED();
+                                    // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
 
-                            if (ChannelFollowIsSelected) {
+                                    console.log("removePreviousWorkspaceFollowSelected" );
 
-                                channelFollowIsSelectedSave.id = ChannelFollowIsSelected.id;
+                                    // joining a workspace follower, so mark previous one as false
+                                    if (previousChannelFollowers.length > 0) {
 
+                                        console.log("marketing previous workspacefollow that isSelected to false: " +previousChannelFollowers.length );
 
-                            }
+                                        async.map(previousChannelFollowers, function (channelFollow, cb) {
 
-                            channelfollow.set("name", channelFollowName);
-                            //console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
+                                            let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
+                                            let channel_follow =  new CHANNELFOLLOW();
+                                            channel_follow.id = channelFollow.id;
 
-                            let channelACL = channelObject.getACL();
-                            let channelFollowACLPrivate = channelACL;
-                            let channelFollowACL = new Parse.ACL();
+                                            channel_follow.set("isSelected",false);
+                                            //channel_follow.set("user", workspaceFollow.get("user"));
 
-                            // If this is a private channel, set ACL for owner to read and write
-                            if (channelObject.get("type") === 'private') {
-
-                                var adminRolePrivate = new Parse.Role();
-                                var adminNamePrivate = 'admin-' + workspace.id;
-                                adminRolePrivate.set("name", adminNamePrivate);
-
-                                channelACL.setReadAccess(user, true);
-                                channelACL.setWriteAccess(user, true);
-                                channel.setACL(channelACL);
-
-                                // set correct ACL for channelFollow
-                                //channelFollowACL.setPublicReadAccess(false);
-                                //channelFollowACL.setPublicWriteAccess(false);
-                                channelFollowACLPrivate.setReadAccess(user, true);
-                                channelFollowACLPrivate.setWriteAccess(user, true);
-                                //channelFollowACL.setReadAccess(ownerChannel, true);
-                                //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                channelfollow.setACL(channelFollowACLPrivate);
-
-                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                    channel.increment("followerCount");
-                                    channel.increment("memberCount");
-
-
-
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-
-
-                                    if (ChannelFollowIsSelected) {
-
-                                        console.log("ChannelFollowIsSelected: " + JSON.stringify(ChannelFollowIsSelected));
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
+                                            channel_follow.save(null, {
 
                                                 useMasterKey: true
                                                 //sessionToken: sessionToken
-                                            }
-                                        );
+                                            });
 
+                                            channelFollow = channel_follow;
+
+                                            return cb (null, channelFollow);
+
+
+                                        }, function (err, previousChannelFollowers) {
+
+                                            //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
+
+                                            if (err) {
+                                                return callback (err);
+                                            } else {
+
+                                                return callback (null, previousChannelFollowers);
+
+
+                                            }
+
+                                        });
+
+
+
+                                    } else {
+
+                                        return callback (null, previousChannelFollowers);
                                     }
 
-                                    return callback (null, channel);
-
-
-
-                                }
-                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                    channel.increment("followerCount");
-
-
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-
-                                    return callback (null, channel);
-
-
-
-                                }
-                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                    // a member is by default always a follower.
-                                    channel.increment("memberCount");
-                                    channel.increment("followerCount");
-
-                                    channelfollow.set("isFollower", true);
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-
-                                    return callback (null, channel);
-
-                                }
-                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                }
-                                else {
-
-                                    return callback (null, channel);
-
-                                }
-
-                            }
-                            else if (channelObject.get("type") === 'privateMembers') {
-
-                                // get member role for this workspace
-                                //var queryMemberRole = new Parse.Query(Parse.Role);
-                                var memberRole = new Parse.Role();
-                                var memberName = 'member-' + workspace.id;
-                                memberRole.set("name", memberName);
-
-                                // set correct ACL for channelFollow
-                                channelFollowACL.setPublicReadAccess(false);
-                                channelFollowACL.setPublicWriteAccess(false);
-                                channelFollowACL.setReadAccess(memberRole, true);
-                                channelFollowACL.setWriteAccess(memberRole, false);
-                                channelFollowACL.setReadAccess(user, true);
-                                channelFollowACL.setWriteAccess(user, true);
-                                channelFollowACL.setReadAccess(ownerUser, true);
-                                channelFollowACL.setWriteAccess(ownerUser, true);
-                                channelfollow.setACL(channelFollowACL);
-
-                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                    channel.increment("followerCount");
-                                    channel.increment("memberCount");
-
-
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-
-                                    return callback (null, channel);
-
-                                }
-                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                    channel.increment("followerCount");
-
-
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                }
-                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                    // a member is by default always a follower.
-                                    channel.increment("memberCount");
-                                    channel.increment("followerCount");
-                                    channelfollow.set("isFollower", true);
-
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                }
-                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                }
-                                else {
-
-                                    return callback (null, channel);
-
-                                }
-
-
-
-
-                            }
-                            else if (channelObject.get("type") === 'privateExperts') {
-
-                                // get expert role for this workspace
-                                var expertRole = new Parse.Role();
-                                var expertName = 'expert-' + workspace.id;
-                                expertRole.set("name", expertName);
-
-                                // set correct ACL for channelFollow
-                                channelFollowACL.setPublicReadAccess(false);
-                                channelFollowACL.setPublicWriteAccess(false);
-                                channelFollowACL.setReadAccess(expertRole, true);
-                                channelFollowACL.setWriteAccess(expertRole, false);
-                                channelFollowACL.setReadAccess(user, true);
-                                channelFollowACL.setWriteAccess(user, true);
-                                channelFollowACL.setReadAccess(ownerUser, true);
-                                channelFollowACL.setWriteAccess(ownerUser, true);
-                                channelfollow.setACL(channelFollowACL);
-
-                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                    channel.increment("followerCount");
-                                    channel.increment("memberCount");
-
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                }
-                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                    channel.increment("followerCount");
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                    // a member is by default always a follower.
-                                    channel.increment("memberCount");
-                                    channel.increment("followerCount");
-                                    channelfollow.set("isFollower", true);
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
 
                                 } else {
 
-                                    return callback (null, channel);
+                                    // there was no workspace that was previously selected, return empty
+
+                                    return callback (null, results);
                                 }
+
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                return callback(error);
+                            }, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+
+                        }
+
+                        channelfollow.set("name", channelFollowName);
+                        //console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
+
+                        let channelACL = channelObject.getACL();
+                        let channelFollowACLPrivate = channelACL;
+                        let channelFollowACL = new Parse.ACL();
+
+                        // If this is a private channel, set ACL for owner to read and write
+                        if (channelObject.get("type") === 'private') {
+
+                            var adminRolePrivate = new Parse.Role();
+                            var adminNamePrivate = 'admin-' + workspace.id;
+                            adminRolePrivate.set("name", adminNamePrivate);
+
+                            channelACL.setReadAccess(user, true);
+                            channelACL.setWriteAccess(user, true);
+                            channel.setACL(channelACL);
+
+                            // set correct ACL for channelFollow
+                            //channelFollowACL.setPublicReadAccess(false);
+                            //channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACLPrivate.setReadAccess(user, true);
+                            channelFollowACLPrivate.setWriteAccess(user, true);
+                            //channelFollowACL.setReadAccess(ownerChannel, true);
+                            //channelFollowACL.setWriteAccess(ownerChannel, true);
+                            channelfollow.setACL(channelFollowACLPrivate);
+
+                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                channel.increment("followerCount");
+                                channel.increment("memberCount");
+
+
+
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+
+
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+
+                            }
+                            else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                channel.increment("followerCount");
+
+
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
 
 
 
                             }
-                            else if (channelObject.get("type") === 'privateAdmins') {
+                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                // a member is by default always a follower.
+                                channel.increment("memberCount");
+                                channel.increment("followerCount");
 
-                                // get admin role for this workspace
-                                var adminRole = new Parse.Role();
-                                var adminName = 'expert-' + workspace.id;
-                                adminRole.set("name", adminName);
+                                channelfollow.set("isFollower", true);
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
 
-                                // set correct ACL for channelFollow
-                                channelFollowACL.setPublicReadAccess(false);
-                                channelFollowACL.setPublicWriteAccess(false);
-                                channelFollowACL.setReadAccess(adminRole, true);
-                                channelFollowACL.setWriteAccess(adminRole, false);
-                                channelFollowACL.setReadAccess(user, true);
-                                channelFollowACL.setWriteAccess(user, true);
-                                channelFollowACL.setReadAccess(ownerUser, true);
-                                channelFollowACL.setWriteAccess(ownerUser, true);
-                                channelfollow.setACL(channelFollowACL);
-
-                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                    channel.increment("followerCount");
-                                    channel.increment("memberCount");
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
                                     }
-                                    return callback (null, channel);
 
-                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                    channel.increment("followerCount");
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
+                                    if (results) {
 
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
+                                        return callback (null, channel);
 
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
+                                    } else {
 
+                                        return callback (null, channel);
                                     }
-                                    return callback (null, channel);
 
-                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                    // a member is by default always a follower.
-                                    channel.increment("memberCount");
-                                    channel.increment("followerCount");
-                                    channelfollow.set("isFollower", true);
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
 
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
 
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                } else {
-
-                                    return callback (null, channel);
-
-                                }
-
-
-
+                                });
 
                             }
-                            else if (channelObject.get("type") === 'privateModerators') {
+                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
-                                // get moderator role for this workspace
-                                var moderatorRole = new Parse.Role();
-                                var moderatorName = 'expert-' + workspace.id;
-                                moderatorRole.set("name", moderatorName);
-
-                                // set correct ACL for channelFollow
-                                channelFollowACL.setPublicReadAccess(false);
-                                channelFollowACL.setPublicWriteAccess(false);
-                                channelFollowACL.setReadAccess(moderatorRole, true);
-                                channelFollowACL.setWriteAccess(moderatorRole, false);
-                                channelFollowACL.setReadAccess(user, true);
-                                channelFollowACL.setWriteAccess(user, true);
-                                channelFollowACL.setReadAccess(ownerUser, true);
-                                channelFollowACL.setWriteAccess(ownerUser, true);
-                                channelfollow.setACL(channelFollowACL);
-
-                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                    channel.increment("followerCount");
-                                    channel.increment("memberCount");
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true,
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                    channel.increment("followerCount");
-
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                    // a member is by default always a follower.
-                                    channel.increment("memberCount");
-                                    channel.increment("followerCount");
-                                    channelfollow.set("isFollower", true);
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                } else {
-
-                                    return callback (null, channel);
-                                }
-
-
+                                return response.error("Please set isFollower:true or isMember:true since one if required.");
 
                             }
-                            else if (channelObject.get("type") === 'privateOwners') {
+                            else {
 
-                                // get owner role for this workspace
-                                var ownerRole = new Parse.Role();
-                                var ownerName = 'expert-' + workspace.id;
-                                ownerRole.set("name", ownerName);
-
-                                // set correct ACL for channelFollow
-                                channelFollowACL.setPublicReadAccess(false);
-                                channelFollowACL.setPublicWriteAccess(false);
-                                channelFollowACL.setReadAccess(ownerRole, true);
-                                channelFollowACL.setWriteAccess(ownerRole, false);
-                                channelFollowACL.setReadAccess(user, true);
-                                channelFollowACL.setWriteAccess(user, true);
-                                channelFollowACL.setReadAccess(ownerUser, true);
-                                channelFollowACL.setWriteAccess(ownerUser, true);
-                                channelfollow.setACL(channelFollowACL);
-
-                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                    channel.increment("followerCount");
-                                    channel.increment("memberCount");
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                    channel.increment("followerCount");
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    ChannelFollowIsSelected("isSelected", false);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                    // a member is by default always a follower.
-                                    channel.increment("memberCount");
-                                    channel.increment("followerCount");
-                                    channelfollow.set("isFollower", true);
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                } else {
-
-                                    return callback (null, channel);
-
-                                }
-
-
-
+                                return callback (null, channel);
 
                             }
-                            else if (channelObject.get("type") === "public") {
 
-                                // do nothing, since ACL will be public read/write by default
-                                channelFollowACL.setPublicReadAccess(true);
-                                channelFollowACL.setPublicWriteAccess(false);
-                                channelFollowACL.setReadAccess(ownerUser, true);
-                                channelFollowACL.setWriteAccess(ownerUser, true);
-                                channelFollowACL.setReadAccess(user, true);
-                                channelFollowACL.setWriteAccess(user, true);
-                                channelfollow.setACL(channelFollowACL);
+                        }
+                        else if (channelObject.get("type") === 'privateMembers') {
 
-                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                    channel.increment("followerCount");
-                                    channel.increment("memberCount");
+                            // get member role for this workspace
+                            //var queryMemberRole = new Parse.Query(Parse.Role);
+                            var memberRole = new Parse.Role();
+                            var memberName = 'member-' + workspace.id;
+                            memberRole.set("name", memberName);
 
+                            // set correct ACL for channelFollow
+                            channelFollowACL.setPublicReadAccess(false);
+                            channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACL.setReadAccess(memberRole, true);
+                            channelFollowACL.setWriteAccess(memberRole, false);
+                            channelFollowACL.setReadAccess(user, true);
+                            channelFollowACL.setWriteAccess(user, true);
+                            channelFollowACL.setReadAccess(ownerUser, true);
+                            channelFollowACL.setWriteAccess(ownerUser, true);
+                            channelfollow.setACL(channelFollowACL);
 
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
-
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-                                        console.log("channelFollowIsSelectedSave: " + JSON.stringify(channelFollowIsSelectedSave));
+                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                channel.increment("followerCount");
+                                channel.increment("memberCount");
 
 
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
                                     }
-                                    return callback (null, channel);
 
-                                }
-                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                    channel.increment("followerCount");
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
+                                    if (results) {
 
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
+                                        return callback (null, channel);
 
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
+                                    } else {
 
+                                        return callback (null, channel);
                                     }
-                                    return callback (null, channel);
 
-                                }
-                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                    // a member is by default always a follower.
-                                    channel.increment("memberCount");
-                                    channel.increment("followerCount");
-                                    channelfollow.set("isFollower", true);
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-                                    if (ChannelFollowIsSelected) {
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
 
-                                        channelFollowIsSelectedSave.set("isSelected", false);
-                                        channelFollowIsSelectedSave.save(null, {
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
 
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-                                    return callback (null, channel);
-
-                                }
-                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                                }
-                                else {
-
-                                    return callback (null, channel);
-
-                                }
-
+                                });
 
                             }
-                            else if (channelObject.get("type") !== 'private' || channelObject.get("type") !== 'public' || channelObject.get("type") !== 'privateOwners' || channelObject.get("type") !== 'privateModerators' || channelObject.get("type") !== 'privateAdmins' || channelObject.get("type") !== 'privateExperts' || channelObject.get("type") !== 'privateMembers') {
+                            else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                channel.increment("followerCount");
 
-                                let finalTime = process.hrtime(time);
-                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            }
+                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                // a member is by default always a follower.
+                                channel.increment("memberCount");
+                                channel.increment("followerCount");
+                                channelfollow.set("isFollower", true);
+
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            }
+                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                            }
+                            else {
+
+                                return callback (null, channel);
+
                             }
 
 
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            console.log("channelfollowisSelected not found");
-                            return response.error(error);
-                        }, {
 
-                            useMasterKey: true
-                            //sessionToken: sessionToken
 
-                        });
+                        }
+                        else if (channelObject.get("type") === 'privateExperts') {
+
+                            // get expert role for this workspace
+                            var expertRole = new Parse.Role();
+                            var expertName = 'expert-' + workspace.id;
+                            expertRole.set("name", expertName);
+
+                            // set correct ACL for channelFollow
+                            channelFollowACL.setPublicReadAccess(false);
+                            channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACL.setReadAccess(expertRole, true);
+                            channelFollowACL.setWriteAccess(expertRole, false);
+                            channelFollowACL.setReadAccess(user, true);
+                            channelFollowACL.setWriteAccess(user, true);
+                            channelFollowACL.setReadAccess(ownerUser, true);
+                            channelFollowACL.setWriteAccess(ownerUser, true);
+                            channelfollow.setACL(channelFollowACL);
+
+                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                channel.increment("followerCount");
+                                channel.increment("memberCount");
+
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            }
+                            else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                channel.increment("followerCount");
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                if (ChannelFollowIsSelected) {
+
+                                    channelFollowIsSelectedSave.set("isSelected", false);
+                                    channelFollowIsSelectedSave.save(null, {
+
+                                            useMasterKey: true
+                                            //sessionToken: sessionToken
+                                        }
+                                    );
+
+                                }
+                                return callback (null, channel);
+
+                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                // a member is by default always a follower.
+                                channel.increment("memberCount");
+                                channel.increment("followerCount");
+                                channelfollow.set("isFollower", true);
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                            } else {
+
+                                return callback (null, channel);
+                            }
+
+
+
+                        }
+                        else if (channelObject.get("type") === 'privateAdmins') {
+
+                            // get admin role for this workspace
+                            var adminRole = new Parse.Role();
+                            var adminName = 'expert-' + workspace.id;
+                            adminRole.set("name", adminName);
+
+                            // set correct ACL for channelFollow
+                            channelFollowACL.setPublicReadAccess(false);
+                            channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACL.setReadAccess(adminRole, true);
+                            channelFollowACL.setWriteAccess(adminRole, false);
+                            channelFollowACL.setReadAccess(user, true);
+                            channelFollowACL.setWriteAccess(user, true);
+                            channelFollowACL.setReadAccess(ownerUser, true);
+                            channelFollowACL.setWriteAccess(ownerUser, true);
+                            channelfollow.setACL(channelFollowACL);
+
+                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                channel.increment("followerCount");
+                                channel.increment("memberCount");
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+                            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                channel.increment("followerCount");
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                // a member is by default always a follower.
+                                channel.increment("memberCount");
+                                channel.increment("followerCount");
+                                channelfollow.set("isFollower", true);
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                            } else {
+
+                                return callback (null, channel);
+
+                            }
+
+
+
+
+                        }
+                        else if (channelObject.get("type") === 'privateModerators') {
+
+                            // get moderator role for this workspace
+                            var moderatorRole = new Parse.Role();
+                            var moderatorName = 'expert-' + workspace.id;
+                            moderatorRole.set("name", moderatorName);
+
+                            // set correct ACL for channelFollow
+                            channelFollowACL.setPublicReadAccess(false);
+                            channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACL.setReadAccess(moderatorRole, true);
+                            channelFollowACL.setWriteAccess(moderatorRole, false);
+                            channelFollowACL.setReadAccess(user, true);
+                            channelFollowACL.setWriteAccess(user, true);
+                            channelFollowACL.setReadAccess(ownerUser, true);
+                            channelFollowACL.setWriteAccess(ownerUser, true);
+                            channelfollow.setACL(channelFollowACL);
+
+                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                channel.increment("followerCount");
+                                channel.increment("memberCount");
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                channel.increment("followerCount");
+
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                if (ChannelFollowIsSelected) {
+
+                                    channelFollowIsSelectedSave.set("isSelected", false);
+                                    channelFollowIsSelectedSave.save(null, {
+
+                                            useMasterKey: true
+                                            //sessionToken: sessionToken
+                                        }
+                                    );
+
+                                }
+                                return callback (null, channel);
+
+                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                // a member is by default always a follower.
+                                channel.increment("memberCount");
+                                channel.increment("followerCount");
+                                channelfollow.set("isFollower", true);
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                            } else {
+
+                                return callback (null, channel);
+                            }
+
+
+
+                        }
+                        else if (channelObject.get("type") === 'privateOwners') {
+
+                            // get owner role for this workspace
+                            var ownerRole = new Parse.Role();
+                            var ownerName = 'expert-' + workspace.id;
+                            ownerRole.set("name", ownerName);
+
+                            // set correct ACL for channelFollow
+                            channelFollowACL.setPublicReadAccess(false);
+                            channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACL.setReadAccess(ownerRole, true);
+                            channelFollowACL.setWriteAccess(ownerRole, false);
+                            channelFollowACL.setReadAccess(user, true);
+                            channelFollowACL.setWriteAccess(user, true);
+                            channelFollowACL.setReadAccess(ownerUser, true);
+                            channelFollowACL.setWriteAccess(ownerUser, true);
+                            channelfollow.setACL(channelFollowACL);
+
+                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                channel.increment("followerCount");
+                                channel.increment("memberCount");
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                channel.increment("followerCount");
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                ChannelFollowIsSelected("isSelected", false);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                // a member is by default always a follower.
+                                channel.increment("memberCount");
+                                channel.increment("followerCount");
+                                channelfollow.set("isFollower", true);
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                            } else {
+
+                                return callback (null, channel);
+
+                            }
+
+
+
+
+                        }
+                        else if (channelObject.get("type") === "public") {
+
+                            // do nothing, since ACL will be public read/write by default
+                            channelFollowACL.setPublicReadAccess(true);
+                            channelFollowACL.setPublicWriteAccess(false);
+                            channelFollowACL.setReadAccess(ownerUser, true);
+                            channelFollowACL.setWriteAccess(ownerUser, true);
+                            channelFollowACL.setReadAccess(user, true);
+                            channelFollowACL.setWriteAccess(user, true);
+                            channelfollow.setACL(channelFollowACL);
+
+                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                channel.increment("followerCount");
+                                channel.increment("memberCount");
+
+
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            }
+                            else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                channel.increment("followerCount");
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            }
+                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                // a member is by default always a follower.
+                                channel.increment("memberCount");
+                                channel.increment("followerCount");
+                                channelfollow.set("isFollower", true);
+                                // set isSelected for this channel to true and set previous channel that was selected to false
+                                channelfollow.set("isSelected", true);
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+                                        return callback (null, channel);
+
+                                    } else {
+
+                                        return callback (null, channel);
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            }
+                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                            }
+                            else {
+
+                                return callback (null, channel);
+
+                            }
+
+
+                        }
+                        else if (channelObject.get("type") !== 'private' || channelObject.get("type") !== 'public' || channelObject.get("type") !== 'privateOwners' || channelObject.get("type") !== 'privateModerators' || channelObject.get("type") !== 'privateAdmins' || channelObject.get("type") !== 'privateExperts' || channelObject.get("type") !== 'privateMembers') {
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                            response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+                        }
+
 
                     }
+
+
 
                     async.parallel([
                         async.apply(addExpertsArrayToChannel),
@@ -7755,28 +8105,482 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
             }).then((results) => {
                 // The object was retrieved successfully.
 
-                var queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
-                queryChannelFollowIsSelected.equalTo("user", user);
-                queryChannelFollowIsSelected.equalTo("workspace", workspace);
-                queryChannelFollowIsSelected.equalTo("isSelected", true);
+                if (results) {
 
-                queryChannelFollowIsSelected.first({
+                    function removeAllPreviousSelectedChannelFollowerJoin (callback) {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                        let queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
+                        queryChannelFollowIsSelected.equalTo("user", user);
+                        //queryChannelFollowIsSelected.equalTo("channel", Channel);
+                        queryChannelFollowIsSelected.equalTo("workspace", workspace);
+                        queryChannelFollowIsSelected.equalTo("isSelected", true);
 
-                }).then((ChannelFollowIsSelected) => {
-                    // The object was retrieved successfully.
+                        queryChannelFollowIsSelected.find({
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((channelFollowersResult) => {
+                            // The object was retrieved successfully.
+
+                            if (channelFollowersResult) {
+
+                                let previousChannelFollowers = channelFollowersResult;
+
+                                // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
+
+                                console.log("removePreviousWorkspaceFollowSelected" );
+
+                                // joining a workspace follower, so mark previous one as false
+                                if (previousChannelFollowers.length > 0) {
+
+                                    console.log("marketing previous workspacefollow that isSelected to false: " +previousChannelFollowers.length );
+
+                                    async.map(previousChannelFollowers, function (channelFollow, cb) {
+
+                                        let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
+                                        let channel_follow =  new CHANNELFOLLOW();
+                                        channel_follow.id = channelFollow.id;
+
+                                        channel_follow.set("isSelected",false);
+                                        //channel_follow.set("user", workspaceFollow.get("user"));
+
+                                        channel_follow.save(null, {
+
+                                            useMasterKey: true
+                                            //sessionToken: sessionToken
+                                        });
+
+                                        channelFollow = channel_follow;
+
+                                        return cb (null, channelFollow);
 
 
-                    if (results) {
+                                    }, function (err, previousChannelFollowers) {
 
-                        // expert role exists, add as channel expert
-                        console.log("channelExpert: " + JSON.stringify(results));
+                                        //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
 
-                        if (channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+                                        if (err) {
+                                            return callback (err);
+                                        } else {
 
-                            if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
+                                            return callback (null, previousChannelFollowers);
+
+
+                                        }
+
+                                    });
+
+
+
+                                } else {
+
+                                    return callback (null, previousChannelFollowers);
+                                }
+
+
+                            } else {
+
+                                // there was no workspace that was previously selected, return empty
+
+                                return callback (null, channelFollowersResult);
+                            }
+
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                    }
+
+                    // expert role exists, add as channel expert
+                    console.log("channelExpert: " + JSON.stringify(results));
+
+                    if (channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+
+                        if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
+
+                            Channel.increment("followerCount");
+                            console.log("increment Follower");
+
+                            // add this user as channel expert since he/she is a workspace expert and followed this channel
+                            expertChannelRelation.add(user);
+
+                            let expertOwner = simplifyUser(user);
+
+                            Channel.addUnique("expertsArray", expertOwner);
+
+                            if (Channel.get("type") === 'private') {
+
+                                // if channel is private add user ACL so he/she has access to the private channel or channelfollow
+
+                                channelACL.setReadAccess(user, true);
+                                channelACL.setWriteAccess(user, true);
+                                Channel.setACL(channelACL);
+
+                                // set correct ACL for channelFollow
+                                //channelFollowACL.setPublicReadAccess(false);
+                                //channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACLPrivate.setReadAccess(user, true);
+                                channelFollowACLPrivate.setWriteAccess(user, true);
+                                //channelFollowACL.setReadAccess(ownerChannel, true);
+                                //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                channelfollow.setACL(channelFollowACLPrivate);
+
+                            }
+
+                            // set isSelected for this channel to true and set previous channel that was selected to false
+                            channelfollow.set("isSelected", true);
+
+
+                            // if isFollower === false then isMember has to also be false. but we will check anyway
+                            if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                // user isFollow is true  && user isMember also true so make the user both a follower and member
+                                Channel.increment("memberCount");
+                                console.log("increment  Member");
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+
+
+                            } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // user isFollow is true but user is not a member, make user only follower
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // user can't be a follower and not a member, keep him a member, sand make him a follower
+                                channelfollow.set("isMember", true);
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                // user can't be a member if he wasn't already a follower this really can't happen
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            }
+
+                        }
+                        else if (result.get("isFollower") === true && channelfollow.get("isFollower") === false) {
+
+                            // User was a follower but now is not a follower
+                            if (channelfollow.get("isSelected") === true) {
+                                channelfollow.set("isSelected", false);
+                            }
+
+                            // remove user as follower of that channel
+                            Channel.increment("followerCount", -1);
+                            console.log("decrement Follower");
+
+                            // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
+                            expertChannelRelation.remove(user);
+
+                            let expertOwner = simplifyUser(user);
+
+                            Channel.remove("expertsArray", expertOwner);
+
+                            if (Channel.get("type") === 'private') {
+
+                                // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
+
+                                if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
+
+                                    // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                                } else {
+
+                                    // this user is not the channel owner it's ok to remove his/her ACL
+
+                                    // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                    // user will need to be added again by channel owner since it's a private channel
+
+                                    channelACL.setReadAccess(user, false);
+                                    channelACL.setWriteAccess(user, false);
+                                    Channel.setACL(channelACL);
+
+                                    // set correct ACL for channelFollow
+                                    //channelFollowACL.setPublicReadAccess(false);
+                                    //channelFollowACL.setPublicWriteAccess(false);
+                                    channelFollowACLPrivate.setReadAccess(user, false);
+                                    channelFollowACLPrivate.setWriteAccess(user, false);
+                                    //channelFollowACL.setReadAccess(ownerChannel, true);
+                                    //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                    channelfollow.setACL(channelFollowACLPrivate);
+
+
+                                }
+
+
+                            }
+
+                            // set isSelected for this channel to true and set previous channel that was selected to false
+                            channelfollow.set("isSelected", false);
+
+                            // since user unfollowed this channel we unselect it and by default then no channel is selected so we display 'all' channels
+
+
+                            if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                // user want's to stay as member but remove as follower, can't happen. remove him as member and follower
+                                channelfollow.set("isMember", false);
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+                            } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // user is not a member, was a follower and now wants to un-follow
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+                            } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // user was a follower and member and now wants to both un-follow and not be a member anymore
+                                Channel.increment("memberCount", -1);
+                                console.log("decrement Member");
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+                            } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                // user can't stay a member since he is un-following this workspace so make him not a member
+                                channelfollow.set("isMember", false);
+                                Channel.increment("memberCount", -1);
+                                console.log("decrement Member");
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+                            }
+
+                        }
+                        else if (result.get("isFollower") === true && channelfollow.get("isFollower") === true) {
+
+                            // User was a follower and wants to stay a follower
+                            if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                // user wants to be a member now
+                                Channel.increment("memberCount");
+                                console.log("increment  Member");
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+
+                            } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // do nothing since isMember and isFollower did not change
+
+                                response.success();
+
+                            } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // user want's to stay as a follower but removed as member
+                                Channel.increment("memberCount", -1);
+                                console.log("decrement Member");
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+                            } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                // do nothing since isMember and isFollower did not change
+
+                                response.success();
+
+                            }
+
+                        }
+                        else if ((!result.get("isFollower") || result.get("isFollower") === false) && channelfollow.get("isFollower") === false) {
+
+                            // User wasn't a follower but now wants to be a member so make him also a follower
+                            if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                // user can't be a member unless isFollower === true
+                                channelfollow.set("isFollower", true);
 
                                 Channel.increment("followerCount");
                                 console.log("increment Follower");
@@ -7810,354 +8614,451 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
 
-                                if (ChannelFollowIsSelected) {
 
-                                    ChannelFollowIsSelected.set("isSelected", false);
-                                    ChannelFollowIsSelected.save(null, {
+                                // user wants to be a member now
+                                Channel.increment("memberCount");
+                                console.log("increment  Member");
 
-                                            useMasterKey: true
-                                            //sessionToken: sessionToken
-                                        }
-                                    );
+                                Channel.save(null, {
 
-                                }
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
 
-                                // if isFollower === false then isMember has to also be false. but we will check anyway
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
 
-                                    // user isFollow is true  && user isMember also true so make the user both a follower and member
-                                    Channel.increment("memberCount");
-                                    console.log("increment  Member");
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
 
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // user isFollow is true but user is not a member, make user only follower
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // user can't be a follower and not a member, keep him a member, sand make him a follower
-                                    channelfollow.set("isMember", true);
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                    // user can't be a member if he wasn't already a follower this really can't happen
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                }
-
-                            }
-                            else if (result.get("isFollower") === true && channelfollow.get("isFollower") === false) {
-
-                                // User was a follower but now is not a follower
-                                if (channelfollow.get("isSelected") === true) {
-                                    channelfollow.set("isSelected", false);
-                                }
-
-                                // remove user as follower of that channel
-                                Channel.increment("followerCount", -1);
-                                console.log("decrement Follower");
-
-                                // remove this user as channel expert since he/she is a workspace expert and un-followed this channel
-                                expertChannelRelation.remove(user);
-
-                                let expertOwner = simplifyUser(user);
-
-                                Channel.remove("expertsArray", expertOwner);
-
-                                if (Channel.get("type") === 'private') {
-
-                                    // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
-
-                                    if (Channel.get("user").toJSON().objectId === expertOwner.objectId) {
-
-                                        // this user who is unfollowing is also the channel owner, don't remove his ACL.
+                                    if (results) {
 
 
+                                        response.success();
 
                                     } else {
 
-                                        // this user is not the channel owner it's ok to remove his/her ACL
-
-                                        // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                        // user will need to be added again by channel owner since it's a private channel
-
-                                        channelACL.setReadAccess(user, false);
-                                        channelACL.setWriteAccess(user, false);
-                                        Channel.setACL(channelACL);
-
-                                        // set correct ACL for channelFollow
-                                        //channelFollowACL.setPublicReadAccess(false);
-                                        //channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACLPrivate.setReadAccess(user, false);
-                                        channelFollowACLPrivate.setWriteAccess(user, false);
-                                        //channelFollowACL.setReadAccess(ownerChannel, true);
-                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                        channelfollow.setACL(channelFollowACLPrivate);
-
-
+                                        response.success();
                                     }
 
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
 
-                                }
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
 
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", false);
+                                });
 
-                                // since user unfollowed this channel we unselect it and by default then no channel is selected so we display 'all' channels
 
+                            } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+                                // do nothing since isMember and isFollower did not change
+                                response.success();
 
-                                    // user want's to stay as member but remove as follower, can't happen. remove him as member and follower
-                                    channelfollow.set("isMember", false);
 
-                                    Channel.save(null, {
+                            } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
+                                // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
 
-                                    response.success();
 
-                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                response.success();
 
-                                    // user is not a member, was a follower and now wants to un-follow
+                            } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
 
-                                    Channel.save(null, {
+                                // do nothing since isMember and isFollower did not change
+                                response.success();
 
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // user was a follower and member and now wants to both un-follow and not be a member anymore
-                                    Channel.increment("memberCount", -1);
-                                    console.log("decrement Member");
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                    // user can't stay a member since he is un-following this workspace so make him not a member
-                                    channelfollow.set("isMember", false);
-                                    Channel.increment("memberCount", -1);
-                                    console.log("decrement Member");
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                }
-
-                            }
-                            else if (result.get("isFollower") === true && channelfollow.get("isFollower") === true) {
-
-                                // User was a follower and wants to stay a follower
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                    // user wants to be a member now
-                                    Channel.increment("memberCount");
-                                    console.log("increment  Member");
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-
-                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // do nothing since isMember and isFollower did not change
-
-                                    response.success();
-
-                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // user want's to stay as a follower but removed as member
-                                    Channel.increment("memberCount", -1);
-                                    console.log("decrement Member");
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                    // do nothing since isMember and isFollower did not change
-
-                                    response.success();
-
-                                }
-
-                            }
-                            else if ((!result.get("isFollower") || result.get("isFollower") === false) && channelfollow.get("isFollower") === false) {
-
-                                // User wasn't a follower but now wants to be a member so make him also a follower
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                    // user can't be a member unless isFollower === true
-                                    channelfollow.set("isFollower", true);
-
-                                    Channel.increment("followerCount");
-                                    console.log("increment Follower");
-
-                                    // add this user as channel expert since he/she is a workspace expert and followed this channel
-                                    expertChannelRelation.add(user);
-
-                                    let expertOwner = simplifyUser(user);
-
-                                    Channel.addUnique("expertsArray", expertOwner);
-
-                                    if (Channel.get("type") === 'private') {
-
-                                        // if channel is private add user ACL so he/she has access to the private channel or channelfollow
-
-                                        channelACL.setReadAccess(user, true);
-                                        channelACL.setWriteAccess(user, true);
-                                        Channel.setACL(channelACL);
-
-                                        // set correct ACL for channelFollow
-                                        //channelFollowACL.setPublicReadAccess(false);
-                                        //channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACLPrivate.setReadAccess(user, true);
-                                        channelFollowACLPrivate.setWriteAccess(user, true);
-                                        //channelFollowACL.setReadAccess(ownerChannel, true);
-                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                        channelfollow.setACL(channelFollowACLPrivate);
-
-                                    }
-
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-
-                                    if (ChannelFollowIsSelected) {
-
-                                        ChannelFollowIsSelected.set("isSelected", false);
-                                        ChannelFollowIsSelected.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-
-                                    // user wants to be a member now
-                                    Channel.increment("memberCount");
-                                    console.log("increment  Member");
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-
-                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // do nothing since isMember and isFollower did not change
-                                    response.success();
-
-
-                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
-
-
-                                    response.success();
-
-                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                    // do nothing since isMember and isFollower did not change
-                                    response.success();
-
-
-                                }
 
                             }
 
-
-
-                        }
-                        else if (channelfollow.dirty("isFollower") && !channelfollow.dirty("isMember")) {
-
-                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
-
-                        }
-                        else if (!channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
-
-                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
-
-                        }
-                        else {
-
-                            // isMember and isFollower not updated, return success.
-                            response.success();
                         }
 
 
 
                     }
+                    else if (channelfollow.dirty("isFollower") && !channelfollow.dirty("isMember")) {
+
+                        response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                    }
+                    else if (!channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+
+                        response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                    }
                     else {
-                        // no role exists don't add or remove experts from channel
 
-                        if (channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+                        // isMember and isFollower not updated, return success.
+                        response.success();
+                    }
 
-                            if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
+
+
+                }
+                else {
+                    // no role exists don't add or remove experts from channel
+
+                    if (channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
+
+                        if ((result.get("isFollower") === false || !result.get("isFollower") ) && channelfollow.get("isFollower") === true) {
+
+                            Channel.increment("followerCount");
+                            console.log("increment Follower");
+
+
+                            if (Channel.get("type") === 'private') {
+
+                                // if channel is private add user ACL so he/she has access to the private channel or channelfollow
+
+                                channelACL.setReadAccess(user, true);
+                                channelACL.setWriteAccess(user, true);
+                                Channel.setACL(channelACL);
+
+                                // set correct ACL for channelFollow
+                                //channelFollowACL.setPublicReadAccess(false);
+                                //channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACLPrivate.setReadAccess(user, true);
+                                channelFollowACLPrivate.setWriteAccess(user, true);
+                                //channelFollowACL.setReadAccess(ownerChannel, true);
+                                //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                channelfollow.setACL(channelFollowACLPrivate);
+
+                            }
+
+                            // set isSelected for this channel to true and set previous channel that was selected to false
+                            channelfollow.set("isSelected", true);
+
+
+                            // if isFollower === false then isMember has to also be false. but we will check anyway
+                            if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                // user isFollow is true  && user isMember also true so make the user both a follower and member
+                                Channel.increment("memberCount");
+                                console.log("increment  Member");
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // user isFollow is true but user is not a member, make user only follower
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // user can't be a follower and not a member, keep him a member, sand make him a follower
+                                channelfollow.set("isMember", true);
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                // user can't be a member if he wasn't already a follower this really can't happen
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                            }
+
+                        }
+                        else if (result.get("isFollower") === true && channelfollow.get("isFollower") === false) {
+
+                            // User was a follower but now is not a follower
+                            if (channelfollow.get("isSelected") === true) {
+                                channelfollow.set("isSelected", false);
+                            }
+
+                            // remove user as follower of that channel
+                            Channel.increment("followerCount", -1);
+                            console.log("decrement Follower");
+
+
+                            if (Channel.get("type") === 'private') {
+
+                                // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
+
+                                if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
+
+                                    // this user who is unfollowing is also the channel owner, don't remove his ACL.
+
+
+
+                                } else {
+
+                                    // this user is not the channel owner it's ok to remove his/her ACL
+
+                                    // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
+                                    // user will need to be added again by channel owner since it's a private channel
+
+                                    channelACL.setReadAccess(user, false);
+                                    channelACL.setWriteAccess(user, false);
+                                    Channel.setACL(channelACL);
+
+                                    // set correct ACL for channelFollow
+                                    //channelFollowACL.setPublicReadAccess(false);
+                                    //channelFollowACL.setPublicWriteAccess(false);
+                                    channelFollowACLPrivate.setReadAccess(user, false);
+                                    channelFollowACLPrivate.setWriteAccess(user, false);
+                                    //channelFollowACL.setReadAccess(ownerChannel, true);
+                                    //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                    channelfollow.setACL(channelFollowACLPrivate);
+
+
+                                }
+
+                            }
+
+
+                            if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                // user want's to stay as member but remove as follower, can't happen. remove him as member and follower
+                                channelfollow.set("isMember", false);
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+                            } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // user is not a member, was a follower and now wants to un-follow
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+                            } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // user was a follower and member and now wants to both un-follow and not be a member anymore
+                                Channel.increment("memberCount", -1);
+                                console.log("decrement Member");
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+                            } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                // user can't stay a member since he is un-following this workspace so make him not a member
+                                channelfollow.set("isMember", false);
+                                Channel.increment("memberCount", -1);
+                                console.log("decrement Member");
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+                            }
+
+                        }  else if (result.get("isFollower") === true && channelfollow.get("isFollower") === true) {
+
+                            // User was a follower and wants to stay a follower
+                            if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                // user wants to be a member now
+                                Channel.increment("memberCount");
+                                console.log("increment  Member");
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+
+                            } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // do nothing since isMember and isFollower did not change
+
+                                response.success();
+
+                            } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                // user want's to stay as a follower but removed as member
+                                Channel.increment("memberCount", -1);
+                                console.log("decrement Member");
+
+                                Channel.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
+
+                                response.success();
+
+                            } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
+
+                                // do nothing since isMember and isFollower did not change
+
+                                response.success();
+
+                            }
+
+                        }  else if ((!result.get("isFollower") || result.get("isFollower") === false) && channelfollow.get("isFollower") === false) {
+
+                            // User wasn't a follower but now wants to be a member so make him also a follower
+                            if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+
+                                // user can't be a member unless isFollower === true
+                                channelfollow.set("isFollower", true);
 
                                 Channel.increment("followerCount");
                                 console.log("increment Follower");
@@ -8185,335 +9086,93 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
 
-                                if (ChannelFollowIsSelected) {
+                                // user wants to be a member now
+                                Channel.increment("memberCount");
+                                console.log("increment  Member");
 
-                                    ChannelFollowIsSelected.set("isSelected", false);
-                                    ChannelFollowIsSelected.save(null, {
+                                Channel.save(null, {
 
-                                            useMasterKey: true
-                                            //sessionToken: sessionToken
-                                        }
-                                    );
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                });
 
-                                }
+                                async.parallel([
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
 
-                                // if isFollower === false then isMember has to also be false. but we will check anyway
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
 
-                                    // user isFollow is true  && user isMember also true so make the user both a follower and member
-                                    Channel.increment("memberCount");
-                                    console.log("increment  Member");
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // user isFollow is true but user is not a member, make user only follower
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // user can't be a follower and not a member, keep him a member, sand make him a follower
-                                    channelfollow.set("isMember", true);
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                    // user can't be a member if he wasn't already a follower this really can't happen
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                }
-
-                            }
-                            else if (result.get("isFollower") === true && channelfollow.get("isFollower") === false) {
-
-                                // User was a follower but now is not a follower
-                                if (channelfollow.get("isSelected") === true) {
-                                    channelfollow.set("isSelected", false);
-                                }
-
-                                // remove user as follower of that channel
-                                Channel.increment("followerCount", -1);
-                                console.log("decrement Follower");
+                                    if (results) {
 
 
-                                if (Channel.get("type") === 'private') {
-
-                                    // check if this user is a channel owner then don't remove the ACL or he won't be able to come back to his channel
-
-                                    if (Channel.get("user").toJSON().objectId === user.toJSON().objectId) {
-
-                                        // this user who is unfollowing is also the channel owner, don't remove his ACL.
-
-
+                                        response.success();
 
                                     } else {
 
-                                        // this user is not the channel owner it's ok to remove his/her ACL
-
-                                        // if channel is private remove user ACL so he/she doesn't have access to the private channel or channelfollow
-                                        // user will need to be added again by channel owner since it's a private channel
-
-                                        channelACL.setReadAccess(user, false);
-                                        channelACL.setWriteAccess(user, false);
-                                        Channel.setACL(channelACL);
-
-                                        // set correct ACL for channelFollow
-                                        //channelFollowACL.setPublicReadAccess(false);
-                                        //channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACLPrivate.setReadAccess(user, false);
-                                        channelFollowACLPrivate.setWriteAccess(user, false);
-                                        //channelFollowACL.setReadAccess(ownerChannel, true);
-                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                        channelfollow.setACL(channelFollowACLPrivate);
-
-
+                                        response.success();
                                     }
 
-                                }
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
 
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
 
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
+                                });
 
-                                    // user want's to stay as member but remove as follower, can't happen. remove him as member and follower
-                                    channelfollow.set("isMember", false);
 
-                                    Channel.save(null, {
+                            } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
+                                // do nothing since isMember and isFollower did not change
+                                response.success();
 
-                                    response.success();
 
-                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                            } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
-                                    // user is not a member, was a follower and now wants to un-follow
+                                // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
 
-                                    Channel.save(null, {
 
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
+                                response.success();
 
-                                    response.success();
+                            } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
 
-                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                // do nothing since isMember and isFollower did not change
+                                response.success();
 
-                                    // user was a follower and member and now wants to both un-follow and not be a member anymore
-                                    Channel.increment("memberCount", -1);
-                                    console.log("decrement Member");
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                    // user can't stay a member since he is un-following this workspace so make him not a member
-                                    channelfollow.set("isMember", false);
-                                    Channel.increment("memberCount", -1);
-                                    console.log("decrement Member");
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                }
-
-                            }  else if (result.get("isFollower") === true && channelfollow.get("isFollower") === true) {
-
-                                // User was a follower and wants to stay a follower
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                    // user wants to be a member now
-                                    Channel.increment("memberCount");
-                                    console.log("increment  Member");
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-
-                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // do nothing since isMember and isFollower did not change
-
-                                    response.success();
-
-                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // user want's to stay as a follower but removed as member
-                                    Channel.increment("memberCount", -1);
-                                    console.log("decrement Member");
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                    // do nothing since isMember and isFollower did not change
-
-                                    response.success();
-
-                                }
-
-                            }  else if ((!result.get("isFollower") || result.get("isFollower") === false) && channelfollow.get("isFollower") === false) {
-
-                                // User wasn't a follower but now wants to be a member so make him also a follower
-                                if ((result.get("isMember") === false || !result.get("isMember") ) && channelfollow.get("isMember") === true) {
-
-                                    // user can't be a member unless isFollower === true
-                                    channelfollow.set("isFollower", true);
-
-                                    Channel.increment("followerCount");
-                                    console.log("increment Follower");
-
-
-                                    if (Channel.get("type") === 'private') {
-
-                                        // if channel is private add user ACL so he/she has access to the private channel or channelfollow
-
-                                        channelACL.setReadAccess(user, true);
-                                        channelACL.setWriteAccess(user, true);
-                                        Channel.setACL(channelACL);
-
-                                        // set correct ACL for channelFollow
-                                        //channelFollowACL.setPublicReadAccess(false);
-                                        //channelFollowACL.setPublicWriteAccess(false);
-                                        channelFollowACLPrivate.setReadAccess(user, true);
-                                        channelFollowACLPrivate.setWriteAccess(user, true);
-                                        //channelFollowACL.setReadAccess(ownerChannel, true);
-                                        //channelFollowACL.setWriteAccess(ownerChannel, true);
-                                        channelfollow.setACL(channelFollowACLPrivate);
-
-                                    }
-
-                                    // set isSelected for this channel to true and set previous channel that was selected to false
-                                    channelfollow.set("isSelected", true);
-
-                                    if (ChannelFollowIsSelected) {
-
-                                        ChannelFollowIsSelected.set("isSelected", false);
-                                        ChannelFollowIsSelected.save(null, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-                                            }
-                                        );
-
-                                    }
-
-                                    // user wants to be a member now
-                                    Channel.increment("memberCount");
-                                    console.log("increment  Member");
-
-                                    Channel.save(null, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-                                    });
-
-                                    response.success();
-
-
-                                } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // do nothing since isMember and isFollower did not change
-                                    response.success();
-
-
-                                } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                    // user was a member but now is not a member or follower - note this case can't happen because he will always be a follower if he is a member
-
-
-                                    response.success();
-
-                                } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
-
-                                    // do nothing since isMember and isFollower did not change
-                                    response.success();
-
-
-                                }
 
                             }
 
-
-
                         }
-                        else if (channelfollow.dirty("isFollower") && !channelfollow.dirty("isMember")) {
 
-                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
-
-                        }
-                        else if (!channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
-
-                            response.error("Please enter both isFollower and isMember when updating either member of follower.");
-
-                        }
-                        else {
-
-                            // isMember and isFollower not updated, return success.
-                            response.success();
-                        }
 
 
                     }
+                    else if (channelfollow.dirty("isFollower") && !channelfollow.dirty("isMember")) {
 
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    response.error(error);
-                }, {
+                        response.error("Please enter both isFollower and isMember when updating either member of follower.");
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    }
+                    else if (!channelfollow.dirty("isFollower") && channelfollow.dirty("isMember")) {
 
-                });
+                        response.error("Please enter both isFollower and isMember when updating either member of follower.");
+
+                    }
+                    else {
+
+                        // isMember and isFollower not updated, return success.
+                        response.success();
+                    }
+
+
+                }
+
+
 
             }, (error) => {
                 // The object was not retrieved successfully.
