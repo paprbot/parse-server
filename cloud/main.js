@@ -5788,8 +5788,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             async.map(defaultChannels, function (channel, cb) {
 
-                                let ChannelFollower = Parse.Object.extend("ChannelFollow");
-                                let channelFollower = new Parse.Object(ChannelFollower);
+                                let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
+                                let channelFollower = new CHANNELFOLLOW();
 
                                 //console.log("ObjectToSave: " + JSON.stringify(channel.getACL()));
 
@@ -5807,7 +5807,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 channelFollower.set("isMember", true);
                                 channelFollower.set("isFollower", true);
 
-                                //console.log("channelFollow: " + JSON.stringify(channelFollow));
+                                console.log("channelFollow: " + JSON.stringify(channelFollow));
 
                                 channelFollower.save(null, {
 
@@ -12103,15 +12103,10 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
     let owner = new USER();
     owner.id = workspaceObject.get("user").id;
 
-    //console.log("owner: " + JSON.stringify(owner));
+    console.log("owner: " + JSON.stringify(owner));
 
     let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-    let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
-    previousQueryWorkspaceFollowerLeave.include("workspace");
-    previousQueryWorkspaceFollowerLeave.equalTo("user", owner);
-    previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
-    previousQueryWorkspaceFollowerLeave.equalTo("isFollower", true);
-    previousQueryWorkspaceFollowerLeave.descending("updatedAt");
+
 
     function deleteWorkspaceFollowers (callback) {
 
@@ -12267,6 +12262,13 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
     function selectPreviouslySelectedWorkspace (callback) {
 
+        let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
+        //previousQueryWorkspaceFollowerLeave.include("workspace");
+        previousQueryWorkspaceFollowerLeave.equalTo("user", owner);
+        previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
+        previousQueryWorkspaceFollowerLeave.equalTo("isFollower", true);
+        previousQueryWorkspaceFollowerLeave.descending("updatedAt");
+
         previousQueryWorkspaceFollowerLeave.first( {
 
             useMasterKey: true
@@ -12341,8 +12343,8 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
     async.parallel([
         async.apply(deleteWorkspaceAlgolia),
         async.apply(deleteChannels),
-        async.apply(deleteWorkspaceFollowers),
-        async.apply(selectPreviouslySelectedWorkspace)
+        async.apply(deleteWorkspaceFollowers)
+        //async.apply(selectPreviouslySelectedWorkspace)
 
     ], function (err, results) {
         if (err) {
