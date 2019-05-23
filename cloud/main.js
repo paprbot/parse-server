@@ -5807,7 +5807,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 channelFollower.set("isMember", true);
                                 channelFollower.set("isFollower", true);
 
-                                console.log("channelFollow: " + JSON.stringify(channelFollow));
+                                console.log("channelFollow: " + JSON.stringify(channelFollower));
 
                                 channelFollower.save(null, {
 
@@ -11505,18 +11505,290 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
 
 // Delete AlgoliaSearch post object if it's deleted from Parse
-Parse.Cloud.afterDelete('Post', function(request) {
+Parse.Cloud.afterDelete('Post', function(request, response) {
 
-    // Get Algolia objectID
-    var objectID = request.object.id;
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
 
-    // Remove the object from Algolia
-    indexPosts.deleteObject(objectID, function(err, content) {
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.009.afterDelete-Channel.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    // Get post object
+    let POST = Parse.Object.extend("Post");
+    let post = request.object;
+
+    let CHANNEL = Parse.Object.extend("Channel");
+    let channel = new CHANNEL();
+    channel.id = post.get("channel").id;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = post.get("workspace").id;
+
+    console.log("request afterDelete Post: " + JSON.stringify(request));
+
+    let USER = Parse.Object.extend("_User");
+    let owner = new USER();
+    owner.id = post.get("user").id;
+
+    function deletePostSocial (callback) {
+
+        let POSTSOCIAL = Parse.Object.extend("PostSocial");
+        let queryPostSocial = new Parse.Query(POSTSOCIAL);
+        //queryPostSocial.equalTo("workspace", workspace);
+        //queryPostSocial.equalTo("channel", channel);
+        queryPostSocial.equalTo("post", post);
+        queryPostSocial.limit(10000);
+        queryPostSocial.find({
+            useMasterKey: true
+            //sessionToken: sessionToken
+        }).then((postSocials) => {
+
+
+            if (postSocials) {
+
+                /*Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
+
+                 if (error) {
+
+                 console.error("Error deleteChannelFollowers " + error.code + ": " + error.message);
+                 return callback(error);
+
+
+                 }
+
+                 if (result) {
+
+                 return callback(null, result);
+                 }
+                 });*/
+
+                Parse.Object.destroyAll(postSocials, {
+                    success: function(result) {
+                        console.log('Did successfully delete postSocials in afterDelete Post Cloud Function');
+                        return callback(null, result);
+                    },
+                    error: function(error) {
+                        console.error("Error  delete postSocials " + error.code + ": " + error.message);
+                        return callback(error);
+                    },
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+
+            } else {
+
+                postSocials = [];
+                // no workspaceFollowers to delete return
+                return callback(null, postSocials);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+    }
+
+    function deletePostQuestion (callback) {
+
+        let POSTQUESTION = Parse.Object.extend("PostQuestion");
+        let queryPostQuestion = new Parse.Query(POSTQUESTION);
+        //queryPostQuestion.equalTo("workspace", workspace);
+        //queryPostQuestion.equalTo("channel", channel);
+        //queryPostQuestion.equalTo("postQuestions", post);
+        queryPostQuestion.equalTo("post", post);
+        queryPostQuestion.limit(10000);
+        queryPostQuestion.find({
+            useMasterKey: true
+            //sessionToken: sessionToken
+        }).then((postQuestions) => {
+
+
+            if (postQuestions) {
+
+                /*Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
+
+                 if (error) {
+
+                 console.error("Error deleteChannelFollowers " + error.code + ": " + error.message);
+                 return callback(error);
+
+
+                 }
+
+                 if (result) {
+
+                 return callback(null, result);
+                 }
+                 });*/
+
+                Parse.Object.destroyAll(postQuestions, {
+                    success: function(result) {
+                        console.log('Did successfully delete postQuestions in afterDelete Post Cloud Function');
+                        return callback(null, result);
+                    },
+                    error: function(error) {
+                        console.error("Error delete postQuestions " + error.code + ": " + error.message);
+                        return callback(error);
+                    },
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+
+            } else {
+
+                postQuestions = [];
+                // no workspaceFollowers to delete return
+                return callback(null, postQuestions);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+    }
+
+    function deletePostQuestionMessage (callback) {
+
+        let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
+        let queryPostQuestionMessage = new Parse.Query(POSTQUESTIONMESSAGE);
+        //queryPostQuestion.equalTo("workspace", workspace);
+        //queryPostQuestion.equalTo("channel", channel);
+        queryPostQuestionMessage.equalTo("post", post);
+        queryPostQuestionMessage.limit(10000);
+        queryPostQuestionMessage.find({
+            useMasterKey: true
+            //sessionToken: sessionToken
+        }).then((postQuestions) => {
+
+
+            if (postQuestions) {
+
+                /*Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
+
+                 if (error) {
+
+                 console.error("Error deleteChannelFollowers " + error.code + ": " + error.message);
+                 return callback(error);
+
+
+                 }
+
+                 if (result) {
+
+                 return callback(null, result);
+                 }
+                 });*/
+
+                Parse.Object.destroyAll(postQuestions, {
+                    success: function(result) {
+                        console.log('Did successfully delete postQuestions in afterDelete Post Cloud Function');
+                        return callback(null, result);
+                    },
+                    error: function(error) {
+                        console.error("Error delete postQuestions " + error.code + ": " + error.message);
+                        return callback(error);
+                    },
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+
+            } else {
+
+                postQuestions = [];
+                // no workspaceFollowers to delete return
+                return callback(null, postQuestions);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+
+    }
+    
+
+    async.parallel([
+        async.apply(deletePostSocial),
+        async.apply(deletePostQuestion)
+        //async.apply(deletePostQuestionMessage)
+
+
+
+    ], function (err, results) {
         if (err) {
-            throw err;
+            return response.error(err);
         }
-        console.log('Parse<>Algolia object deleted');
+
+        if (results) {
+
+            // Remove the object from Algolia
+            indexPosts.deleteObject(post.id, function(err, content) {
+                if (err) {
+                    throw err;
+                }
+                console.log('Parse<>Algolia object deleted');
+            });
+
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took afterDelete Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();
+
+
+        }
+
     });
+
 });
 
 // Delete AlgoliaSearch channel object if it's deleted from Parse
