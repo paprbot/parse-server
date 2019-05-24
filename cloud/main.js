@@ -9403,11 +9403,17 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
             // todo function get qna for question posts
 
-            function getQnA (callback) {}
+            function getPostQuestions (callback) {
+
+
+            }
 
             // todo function get messages for posts
 
-            function getMessages (callback) {}
+            function getChatMessages (callback) {
+
+                
+            }
 
             async.waterfall([
                 async.apply(prepIndex),
@@ -11516,7 +11522,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
     if (!request.master && (!currentUser || !sessionToken)) {
         response.error(JSON.stringify({
-            code: 'PAPR.ERROR.009.afterDelete-Channel.UNAUTHENTICATED_USER',
+            code: 'PAPR.ERROR.afterDelete-Post.UNAUTHENTICATED_USER',
             message: 'Unauthenticated user.'
         }));
         return;
@@ -11780,7 +11786,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
 
             let finalTime = process.hrtime(time);
-            console.log(`finalTime took afterDelete Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            console.log(`finalTime took afterDelete Post ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
             response.success();
 
