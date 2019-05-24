@@ -11613,7 +11613,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
     function deletePostQuestion (callback) {
 
-        let POSTQUESTION = Parse.Object.extend("PostQuestion");
+        let POSTQUESTION = Parse.Object.extend("Post");
         let queryPostQuestion = new Parse.Query(POSTQUESTION);
         //queryPostQuestion.equalTo("workspace", workspace);
         //queryPostQuestion.equalTo("channel", channel);
@@ -11754,11 +11754,11 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
 
     }
-    
+
 
     async.parallel([
-        async.apply(deletePostSocial),
-        async.apply(deletePostQuestion)
+        async.apply(deletePostSocial)
+        //async.apply(deletePostQuestion)
         //async.apply(deletePostQuestionMessage)
 
 
