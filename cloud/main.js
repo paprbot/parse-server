@@ -9615,7 +9615,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
             }
 
-            async.waterfall([
+            async.parallel([
                 async.apply(prepIndex),
                 async.apply(getPostQuestions),
                 async.apply(getChatMessages),
@@ -9632,7 +9632,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                     console.log("afterSave Post results length: " + JSON.stringify(results.length));
 
-                    let postToSave = results[0];
+                    postToSave = results[0];
                     let postQuestions = results[1];
                     let chatMessages = results[2];
                     let postSocial = results[3];
