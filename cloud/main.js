@@ -9398,11 +9398,12 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             function getPostQuestions (callback) {
 
                 let postQuestion = new POST();
+                postQuestion.id = post.id;
 
                 let relationPostQuestion = postQuestion.relation("postQuestions");
 
                 let querypostQuestion = relationPostQuestion.query();
-                querypostQuestion.equalTo("archive", false);
+                //querypostQuestion.equalTo("archive", false);
                 querypostQuestion.descending("likesCount");
                 querypostQuestion.limit(10);
                 querypostQuestion.find({
@@ -9410,10 +9411,14 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     //sessionToken: sessionToken
                 }).then((postQuestions) => {
 
+                    console.log("postQuestions: " + JSON.stringify(postQuestions));
 
-                    if (postQuestions) {
 
-                        postQuestions = simplifyPostQuestion(postQuestions);
+                    if (postQuestions.length !== 0) {
+
+                        console.log("postQuestions exist");
+
+                        //postQuestions = simplifyPostQuestion(postQuestions);
                         return callback (null, postQuestions);
 
 
@@ -9448,10 +9453,10 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 let POSTSOCIAL = Parse.Object.extend("PostSocial");
                 let queryPostSocial = new Parse.Query(POSTSOCIAL);
-                queryPostSocial.equalTo("workspace", workspace);
-                queryPostSocial.equalTo("channel", channel);
+                //queryPostSocial.equalTo("workspace", workspace);
+                //queryPostSocial.equalTo("channel", channel);
                 queryPostSocial.equalTo("post", post);
-                queryPostSocial.equalTo("archive", false);
+                //queryPostSocial.equalTo("archive", false);
                 queryPostSocial.limit(1000);
                 queryPostSocial.find({
                     useMasterKey: true
@@ -9459,13 +9464,18 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 }).then((PostSocials) => {
 
 
-                    if (PostSocials) {
+                    if (PostSocials.length !== 0) {
 
 
                         async.map(PostSocials, function (postSocial, cb) {
 
-                            postSocial = simplifyPostSocial(postSocial);
-                            console.log("simplifyPostSocial: " + JSON.stringify(simplifyPostSocial(postSocial))) ;
+                            let POSTSOCIAL = Parse.Object.extend("PostSocial");
+                            let PostSocial = new POSTSOCIAL();
+
+                            PostSocial = simplifyPostSocial(postSocial);
+                            console.log("simplifyPostSocial: " + JSON.stringify(PostSocial));
+
+                            postSocial = PostSocial;
 
                             return cb (null, postSocial);
 
@@ -9515,10 +9525,10 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
                 let queryPostQuestionMessage= new Parse.Query(POSTQUESTIONMESSAGE);
-                queryPostQuestionMessage.equalTo("workspace", workspace);
-                queryPostQuestionMessage.equalTo("channel", channel);
+                //queryPostQuestionMessage.equalTo("workspace", workspace);
+                //queryPostQuestionMessage.equalTo("channel", channel);
                 queryPostQuestionMessage.equalTo("post", post);
-                queryPostQuestionMessage.equalTo("archive", false);
+                //queryPostQuestionMessage.equalTo("archive", false);
                 queryPostQuestionMessage.equalTo("type", "answer");
                 queryPostQuestionMessage.descending("voteRank");
                 queryPostQuestionMessage.first({
@@ -9563,25 +9573,27 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
                 let queryPostChatMessage = new Parse.Query(POSTCHATMESSAGE);
-                queryPostChatMessage.equalTo("workspace", workspace);
-                queryPostChatMessage.equalTo("channel", channel);
+                //queryPostChatMessage.equalTo("workspace", workspace);
+                //queryPostChatMessage.equalTo("channel", channel);
                 queryPostChatMessage.equalTo("post", post);
-                queryPostChatMessage.equalTo("archive", false);
+                //queryPostChatMessage.equalTo("archive", false);
                 queryPostChatMessage.limit(5);
                 queryPostChatMessage.find({
                     useMasterKey: true
                     //sessionToken: sessionToken
                 }).then((PostChatMessages) => {
 
+                    console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
 
-                    if (PostChatMessages) {
+
+                    if (PostChatMessages.length !== 0) {
 
                         let simplifiedPostChatMessages = [];
 
                         for (var i = 0; i < PostChatMessages.length; i++) {
 
                             simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
-                            console.log("simplifyPostChatMessage: " + JSON.stringify(simplifyPostChatMessage(PostChatMessages[i]))) ;
+                            console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i])) ;
 
                         }
 
@@ -9595,6 +9607,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         return callback(null, PostChatMessages);
 
                     }
+
 
 
 
@@ -9638,15 +9651,15 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     let postSocial = results[3];
                     let topAnswerForQuestionPost = results[4];
 
-                    postToSave["postQuestions"] = postQuestions;
-                    postToSave["chatMessages"] = chatMessages;
-                    postToSave["PostSocial"] = postSocial;
+                    postToSave.postQuestions = postQuestions;
+                    postToSave.chatMessages = chatMessages;
+                    postToSave.PostSocial = postSocial;
                     postToSave.PostSocial.topAnswer = topAnswerForQuestionPost;
 
 
                     console.log("postQuestions: " + JSON.stringify(postQuestions));
                     console.log("chatMessages: " + JSON.stringify(chatMessages));
-                    console.log("PostSocial: " + JSON.stringify(PostSocial));
+                    console.log("PostSocial: " + JSON.stringify(postSocial));
                     console.log("topAnswer: " + JSON.stringify(postToSave.PostSocial.topAnswer));
 
                     indexPosts.partialUpdateObject(postToSave, true, function(err, content) {
