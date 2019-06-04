@@ -9246,37 +9246,28 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
-
     // Convert Parse.Object to JSON
     let postSocial = request.object;
-
 
 
     if (postSocial.isNew()) {
 
         console.log("isLiked: "+postSocial.get("isLiked"));
         console.log("isBookmarked: "+postSocial.get("isBookmarked"));
-        console.log("Comments: "+postSocial.get("comment"));
 
         if (!postSocial.get("isLiked")) {postSocial.set("isLiked", false); }
         if (!postSocial.get("isBookmarked")) {postSocial.set("isBookmarked", false);}
 
+        postSocial.set("isNew", true);
 
-        if(postSocial.get("isLiked") === true || postSocial.get("isBookmarked")=== true) {
-            postSocial.set("type", "1");
-        }
-        else if (postSocial.get("isLiked") === false && postSocial.get("isBookmarked")=== false && !postSocial.get("comment")) {
-            postSocial.set("type", "0");
-        }
-        else if (postSocial.get("comment")) {
-            postSocial.set("type", "2");
-        }
+    } else {
 
-    } else {}
+        postSocial.set("isNew", false);
+    }
 
 
     let diff = process.hrtime(time);
-    console.log(`PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+    console.log(`beforeSave PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
     response.success();
 
 
@@ -9289,27 +9280,88 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
-    // Convert Parse.Object to JSON
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.afterDelete-Post.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    // Get post object
+    let POSTSOCIAL = Parse.Object.extend("PostSocial");
     let postSocial = request.object;
-    let post = postSocial.get("post");
 
-    let relation = post.relation("postSocial");
-    //console.log("beforeAdd: " + JSON.stringify(relation));
+    let CHANNEL = Parse.Object.extend("Channel");
+    let channel = new CHANNEL();
+    channel.id = postSocial.get("channel").id;
 
-    relation.add(postSocial);
-    post.increment("postSocialCount");
-    //console.log("afterAdd: " + JSON.stringify(relation));
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = postSocial.get("workspace").id;
 
-    post.save(null, {
+    let POST = Parse.Object.extend("Post");
+    let post = new POST();
+    post.id = postSocial.get("post").id;
 
-        useMasterKey: true,
-        //sessionToken: sessionToken
+    //console.log("request afterDelete Post: " + JSON.stringify(request));
+
+    let USER = Parse.Object.extend("_User");
+    let owner = new USER();
+    owner.id = postSocial.get("user").id;
+
+    function incrementPostSocialCount (callback) {
+
+        if (postSocial.get("isNew") === true) {
+
+            post.increment("postSocialCount");
+            let relation = post.relation("postSocial");
+            //console.log("beforeAdd: " + JSON.stringify(relation));
+
+            relation.add(postSocial);
+            //console.log("afterAdd: " + JSON.stringify(relation));
+
+            post.save(null, {
+
+                useMasterKey: true,
+                //sessionToken: sessionToken
+
+            });
+
+            return callback (null, post);
+
+
+        }
+
+
+    }
+
+
+    async.parallel([
+        async.apply(incrementPostSocialCount)
+
+
+    ], function (err, results) {
+        if (err) {
+            return response.error(err);
+        }
+
+        if (results) {
+
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took afterSave PostSocial ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();
+
+
+        }
 
     });
 
-    let diff = process.hrtime(time);
-    console.log(`PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-    response.success();
 
 
 });
