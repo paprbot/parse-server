@@ -4449,6 +4449,30 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     var toLowerCase = function(w) { return w.toLowerCase(); };
     //console.log("post: " + JSON.stringify(post));
 
+    function setDefaultValues (callback) {
+
+        if (post.isNew()) {
+
+            if (!post.get("archive")) { post.set("archive", false); }
+            if (!post.get("likesCount")) { post.set("likesCount", 0); }
+            if (!post.get("postQuestionCount")) { post.set("postQuestionCount", 0); }
+            if (!post.get("chatMessageCount")) { post.set("chatMessageCount", 0); }
+            if (!post.get("chatMessageUnReadCount")) { post.set("chatMessageUnReadCount", 0); }
+            if (!post.get("postSocialCount")) { post.set("postSocialCount", 0); }
+            if (!post.get("isIncognito")) { post.set("isIncognito", false); }
+            if (!post.get("questionAnswerEnabled")) { post.set("questionAnswerEnabled", true); }
+            if (!post.get("chatEnabled")) { post.set("chatEnabled", true); }
+
+            return callback (null, post);
+
+        } else {
+
+            return callback (null, post);
+        }
+
+
+    }
+
     // Function to count number of posts
     function countPosts (callback) {
 
@@ -4687,7 +4711,6 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
     }
 
-
     // Function to identify if a text post hasURL
     function getURL (callback) {
 
@@ -4857,6 +4880,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         async.apply(getMentions),
         async.apply(getURL),
         async.apply(archivePostSocial),
+        async.apply(setDefaultValues)
         //async.apply(createPostSocial)
         //async.apply(getIntents)
 
@@ -9218,13 +9242,13 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 // auto-add type when isBookmarked, isLiked or Comment is added
 Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 
-    var NS_PER_SEC = 1e9;
+    const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
-    var time = process.hrtime();
+    let time = process.hrtime();
 
 
     // Convert Parse.Object to JSON
-    var postSocial = request.object;
+    let postSocial = request.object;
 
 
 
@@ -9251,7 +9275,7 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
     } else {}
 
 
-    var diff = process.hrtime(time);
+    let diff = process.hrtime(time);
     console.log(`PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
     response.success();
 
@@ -9261,18 +9285,19 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 // Create relationship from post to PostSocial after a PostSocial is saved
 Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
-    var NS_PER_SEC = 1e9;
+    const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
-    var time = process.hrtime();
+    let time = process.hrtime();
 
     // Convert Parse.Object to JSON
-    var postSocial = request.object;
-    var post = postSocial.get("post");
+    let postSocial = request.object;
+    let post = postSocial.get("post");
 
-    var relation = post.relation("postSocial");
+    let relation = post.relation("postSocial");
     //console.log("beforeAdd: " + JSON.stringify(relation));
 
     relation.add(postSocial);
+    post.increment("postSocialCount");
     //console.log("afterAdd: " + JSON.stringify(relation));
 
     post.save(null, {
@@ -12040,6 +12065,91 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
             let finalTime = process.hrtime(time);
             console.log(`finalTime took afterDelete Post ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();
+
+
+        }
+
+    });
+
+});
+
+// Delete AlgoliaSearch post object if it's deleted from Parse
+Parse.Cloud.afterDelete('PostSocial', function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.afterDelete-Post.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    // Get post object
+    let POSTSOCIAL = Parse.Object.extend("PostSocial");
+    let postSocial = request.object;
+
+    let CHANNEL = Parse.Object.extend("Channel");
+    let channel = new CHANNEL();
+    channel.id = postSocial.get("channel").id;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = postSocial.get("workspace").id;
+
+    let POST = Parse.Object.extend("Post");
+    let post = new POST();
+    post.id = postSocial.get("post").id;
+
+    console.log("request afterDelete Post: " + JSON.stringify(request));
+
+    let USER = Parse.Object.extend("_User");
+    let owner = new USER();
+    owner.id = postSocial.get("user").id;
+
+    function decrementPostSocialCount (callback) {
+
+        post.increment("postSocialCount", -1);
+        let relation = post.relation("postSocial");
+        //console.log("beforeAdd: " + JSON.stringify(relation));
+
+        relation.remove(postSocial);
+        //console.log("afterAdd: " + JSON.stringify(relation));
+
+        post.save(null, {
+
+            useMasterKey: true,
+            //sessionToken: sessionToken
+
+        });
+
+        return callback (null, post);
+
+    }
+
+
+    async.parallel([
+        async.apply(decrementPostSocialCount)
+
+
+    ], function (err, results) {
+        if (err) {
+            return response.error(err);
+        }
+
+        if (results) {
+
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took afterDelete PostSocial ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
             response.success();
 
