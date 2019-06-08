@@ -9239,6 +9239,233 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
 }, {useMasterKey: true});
 
+Parse.Cloud.define('splitObjectAndIndex', function(request, response) {
+    splitObjectAndIndex({'user':request.params.user, 'object':request.params.object, 'className':request.params.className, 'count':request.params.count,'indexCount':request.params.indexCount }, {
+        success: function(count) {
+            response.success(count);
+        },
+        error: function(error) {
+            response.error(error);
+        }
+    });
+});
+
+function splitObjectAndIndex (request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let user = request['user'];
+    console.log("user: " + JSON.stringify(user));
+
+    let object = request['object'];
+    console.log("object: " + JSON.stringify(object));
+
+    let className = request['className'];
+    console.log("className: " + JSON.stringify(className));
+
+    let count = (request['count'])? request['count'] : 0;
+    console.log("count: " + JSON.stringify(count));
+
+    let indexCount = (request['indexCount'])? request['indexCount'] : 0;
+    console.log("indexCount: " + JSON.stringify(indexCount));
+
+    let index;
+
+
+    /*
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.splitObjectToIndex.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }*/
+
+    let globalQuery = new Parse.Query(className);
+    globalQuery.limit(10);
+    globalQuery.skip(count);
+    //globalQuery.include( ["user", "workspace", "post"] );
+    globalQuery.equalTo(object.toJSON().className, object);
+    globalQuery.find({
+        useMasterKey: true
+        //sessionToken: sessionToken
+    }).then((results) => {
+
+        if (results.length > 0) {
+
+            count = count + results.length;
+            indexCount = indexCount + 1;
+            //algoliaIndexID
+
+            async.map(results, function (result, cb) {
+
+                let RESULTOBJECT = Parse.Object.extend(className);
+                let ResultObject = new RESULTOBJECT();
+                ResultObject.id = result.id;
+
+                ResultObject.set("algoliaIndexID", indexCount.toString());
+                ResultObject.save(null, {
+
+                    useMasterKey: true,
+                    //sessionToken: sessionToken
+
+                });
+
+                if (className === 'PostSocial') {
+
+                    ResultObject = simplifyPostSocial(result);
+                    console.log("simplifyPostSocial: " + JSON.stringify(ResultObject));
+
+                }
+                else if (className === 'workspace_follower') {
+
+                    ResultObject = result;
+                    console.log("ResultObject: " + JSON.stringify(ResultObject));
+
+                }
+
+                result = ResultObject;
+
+                return cb (null, result);
+
+
+            }, function (err, resultsFinal) {
+
+                console.log("results length: " + JSON.stringify(resultsFinal.length));
+
+                if (err) {
+                    response.error(err);
+                } else if (resultsFinal.length > 0) {
+
+
+
+                    if (className === 'PostSocial') {
+
+                        //object = results[0].get("post");
+                        console.log("post object: " + JSON.stringify(object));
+
+                        object = object.toJSON();
+                        object.PostSocial = resultsFinal;
+                        index = indexPosts;
+
+                    }
+                    else if (className === 'workspace_follower') {
+
+                        //object = results[0].get("workspace");
+                        console.log("workspace object: " + JSON.stringify(object));
+
+                        object = object.toJSON();
+                        object.followers = resultsFinal;
+                        index = indexWorkspaces;
+
+                    } else {
+
+                        response.error("this className is not supported, please use workspace_follower or PostSocial");
+                    }
+
+                    object.objectID = object.objectId + '-' + resultsFinal[0].get("algoliaIndexID");
+                    console.log("final object before saving to algolia: " + JSON.stringify(object));
+
+                    index.partialUpdateObject(object, true, function(err, content) {
+                        if (err) return response.error(err);
+
+                        console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
+
+                        splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className}, response);
+
+
+                    });
+
+
+                }
+
+
+                });
+
+
+        } else {
+
+            if (indexCount === 0) {
+
+                // this means there are no postSocials for this post or no workspace_followers for this workspace return empty arrays
+
+                let resultsNone = [];
+                // no results for postSocial or workspace_follower
+
+                if (className === 'PostSocial') {
+
+                    //object = results[0].get("post");
+                    console.log("no results - post object: " + JSON.stringify(object));
+
+                    object = object.toJSON();
+                    object.PostSocial = resultsNone;
+                    index = indexPosts;
+
+                }
+                else if (className === 'workspace_follower') {
+
+                    //object = results[0].get("workspace");
+                    console.log("no results - workspace object: " + JSON.stringify(object));
+
+                    object = object.toJSON();
+                    object.followers = resultsNone;
+                    index = indexWorkspaces;
+
+                }
+
+                object.objectID = object.objectId + '-' + '1';
+                console.log("final object before saving to algolia: " + JSON.stringify(object));
+
+                index.partialUpdateObject(object, true, function(err, content) {
+                    if (err) return response.error(err);
+
+                    console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
+
+                    let Final_Time = process.hrtime(time);
+                    console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                    response.success(count);
+
+
+                });
+
+
+
+
+            }
+
+            else {
+
+                    let Final_Time = process.hrtime(time);
+                    console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                    response.success(count);
+
+            }
+
+        }
+
+
+
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        //console.log(error);
+        response.error(error);
+    }, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+}
+
 // auto-add type when isBookmarked, isLiked or Comment is added
 Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 
@@ -9366,6 +9593,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
 });
 
+
 // Add and Update AlgoliaSearch post object if it's deleted from Parse
 Parse.Cloud.afterSave('Post', function(request, response) {
 
@@ -9427,7 +9655,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 Post = Post.toJSON();
 
                 // Specify Algolia's objectID with the Parse.Object unique ID
-                Post.objectID = Post.objectId;
+                //Post.objectID = Post.objectId;
 
                 // set _tags depending on the post ACL
 
@@ -9709,7 +9937,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 async.apply(prepIndex),
                 async.apply(getPostQuestions),
                 async.apply(getChatMessages),
-                async.apply(getPostSocial),
+                //async.apply(getPostSocial),
                 async.apply(getTopAnswerForQuestionPost)
 
 
@@ -9718,36 +9946,38 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     response.error(err);
                 }
 
-                if (results) {
+                if (results.length > 0) {
 
                     console.log("afterSave Post results length: " + JSON.stringify(results.length));
 
                     postToSave = results[0];
                     let postQuestions = results[1];
                     let chatMessages = results[2];
-                    let postSocial = results[3];
-                    let topAnswerForQuestionPost = results[4];
+                    //let postSocial = results[3];
+                    let topAnswerForQuestionPost = results[3];
 
                     postToSave.postQuestions = postQuestions;
                     postToSave.chatMessages = chatMessages;
-                    postToSave.PostSocial = postSocial;
-                    postToSave.PostSocial.topAnswer = topAnswerForQuestionPost;
+                    //postToSave.PostSocial = postSocial;
+                    postToSave.topAnswer = topAnswerForQuestionPost;
 
 
                     console.log("postQuestions: " + JSON.stringify(postQuestions));
                     console.log("chatMessages: " + JSON.stringify(chatMessages));
-                    console.log("PostSocial: " + JSON.stringify(postSocial));
-                    console.log("topAnswer: " + JSON.stringify(postToSave.PostSocial.topAnswer));
+                    //console.log("PostSocial: " + JSON.stringify(postSocial));
+                    console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
 
-                    indexPosts.partialUpdateObject(postToSave, true, function(err, content) {
-                        if (err) return response.error(err);
+                    splitObjectAndIndex({'user':user, 'object':postToSave, 'className':'PostSocial'}, {
+                        success: function(count) {
 
-                        console.log("Parse<>Algolia post saved from AfterSave Post function ");
+                            let Final_Time = process.hrtime(time);
+                            console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
-                        let finalTime = process.hrtime(time);
-                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-                        return response.success();
-
+                            response.success();
+                        },
+                        error: function(error) {
+                            response.error(error);
+                        }
                     });
 
 
