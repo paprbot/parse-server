@@ -9265,13 +9265,22 @@ function splitObjectAndIndex (request, response) {
     let className = request['className'];
     console.log("className: " + JSON.stringify(className));
     let objectClassName;
+    let PARSEOBJECT;
+    let parseObject;
 
     if (className === 'PostSocial') {
 
         objectClassName = 'post';
+        PARSEOBJECT = Parse.Object.extend("Post");
+        parseObject = new PARSEOBJECT();
+        parseObject.id = object.toJSON().objectId;
+
     } else if (className === 'workspace_follower') {
 
         objectClassName = 'workspace';
+        PARSEOBJECT = Parse.Object.extend("WorkSpace");
+        parseObject = new PARSEOBJECT();
+        parseObject.id = object.toJSON().objectId;
     }
 
     let count = (request['count'])? request['count'] : 0;
@@ -9281,6 +9290,7 @@ function splitObjectAndIndex (request, response) {
     console.log("indexCount: " + JSON.stringify(indexCount));
 
     let index;
+
 
 
     /*
@@ -9299,7 +9309,7 @@ function splitObjectAndIndex (request, response) {
     globalQuery.limit(1);
     globalQuery.skip(count);
     //globalQuery.include( ["user", "workspace", "post"] );
-    globalQuery.equalTo(objectClassName, object.objectId);
+    globalQuery.equalTo(objectClassName, parseObject);
     globalQuery.find({
         useMasterKey: true
         //sessionToken: sessionToken
