@@ -9264,6 +9264,15 @@ function splitObjectAndIndex (request, response) {
 
     let className = request['className'];
     console.log("className: " + JSON.stringify(className));
+    let objectClassName;
+
+    if (className === 'PostSocial') {
+
+        objectClassName = 'post';
+    } else if (className === 'workspace_follower') {
+
+        objectClassName = 'workspace';
+    }
 
     let count = (request['count'])? request['count'] : 0;
     console.log("count: " + JSON.stringify(count));
@@ -9287,10 +9296,10 @@ function splitObjectAndIndex (request, response) {
     }*/
 
     let globalQuery = new Parse.Query(className);
-    globalQuery.limit(10);
+    globalQuery.limit(1);
     globalQuery.skip(count);
     //globalQuery.include( ["user", "workspace", "post"] );
-    globalQuery.equalTo(object.toJSON().className, object);
+    globalQuery.equalTo(objectClassName, object.objectId);
     globalQuery.find({
         useMasterKey: true
         //sessionToken: sessionToken
