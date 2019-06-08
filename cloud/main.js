@@ -9261,6 +9261,7 @@ function splitObjectAndIndex (request, response) {
 
     let object = request['object'];
     console.log("object: " + JSON.stringify(object));
+    // note object needs to be toJSON()
 
     let className = request['className'];
     console.log("className: " + JSON.stringify(className));
@@ -9273,14 +9274,14 @@ function splitObjectAndIndex (request, response) {
         objectClassName = 'post';
         PARSEOBJECT = Parse.Object.extend("Post");
         parseObject = new PARSEOBJECT();
-        parseObject.id = object.toJSON().objectId;
+        parseObject.id = object.objectId;
 
     } else if (className === 'workspace_follower') {
 
         objectClassName = 'workspace';
         PARSEOBJECT = Parse.Object.extend("WorkSpace");
         parseObject = new PARSEOBJECT();
-        parseObject.id = object.toJSON().objectId;
+        parseObject.id = object.objectId;
     }
 
     let count = (request['count'])? request['count'] : 0;
@@ -9319,7 +9320,9 @@ function splitObjectAndIndex (request, response) {
 
             count = count + results.length;
             indexCount = indexCount + 1;
+            console.log("indexCount: " + JSON.stringify(indexCount));
             //algoliaIndexID
+            let finalIndexCount;
 
             async.map(results, function (result, cb) {
 
@@ -9327,13 +9330,25 @@ function splitObjectAndIndex (request, response) {
                 let ResultObject = new RESULTOBJECT();
                 ResultObject.id = result.id;
 
-                ResultObject.set("algoliaIndexID", indexCount.toString());
-                ResultObject.save(null, {
+                if (!result.get("algoliaIndexID")) {
 
-                    useMasterKey: true,
-                    //sessionToken: sessionToken
+                    finalIndexCount = indexCount.toString();
+                    ResultObject.set("algoliaIndexID", finalIndexCount);
 
-                });
+                    ResultObject.save(null, {
+
+                        useMasterKey: true,
+                        //sessionToken: sessionToken
+
+                    });
+
+                } else {
+
+                    // algoliaIndexID already exists let's use it
+                    finalIndexCount = result.get("algoliaIndexID");
+
+                }
+
 
                 if (className === 'PostSocial') {
 
@@ -9368,7 +9383,6 @@ function splitObjectAndIndex (request, response) {
                         //object = results[0].get("post");
                         console.log("post object: " + JSON.stringify(object));
 
-                        object = object.toJSON();
                         object.PostSocial = resultsFinal;
                         index = indexPosts;
 
@@ -9378,7 +9392,6 @@ function splitObjectAndIndex (request, response) {
                         //object = results[0].get("workspace");
                         console.log("workspace object: " + JSON.stringify(object));
 
-                        object = object.toJSON();
                         object.followers = resultsFinal;
                         index = indexWorkspaces;
 
@@ -9387,7 +9400,7 @@ function splitObjectAndIndex (request, response) {
                         response.error("this className is not supported, please use workspace_follower or PostSocial");
                     }
 
-                    object.objectID = object.objectId + '-' + resultsFinal[0].get("algoliaIndexID");
+                    object.objectID = object.objectId + '-' + finalIndexCount;
                     console.log("final object before saving to algolia: " + JSON.stringify(object));
 
                     index.partialUpdateObject(object, true, function(err, content) {
