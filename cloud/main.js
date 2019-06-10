@@ -9588,6 +9588,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     // Get post object
     let POSTSOCIAL = Parse.Object.extend("PostSocial");
     let postSocial = request.object;
+    let originalPostSocial = request.original;
 
     let CHANNEL = Parse.Object.extend("Channel");
     let channel = new CHANNEL();
@@ -9635,10 +9636,51 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
         } else {
 
-            // todo add logic to increment/decrement isLiked
+            if (originalPostSocial.get("isLiked") === true && postSocial.get("isLiked") === true) {
+
+                // do nothing, LikesCount is already incremented.
+
+                return callback (null, post);
 
 
-            return callback (null, post);
+            } else if (originalPostSocial.get("isLiked") === true && postSocial.get("isLiked") === false) {
+
+                // decrement likesCount for post
+                post.increment("likesCount", -1);
+
+                post.save(null, {
+
+                    useMasterKey: true,
+                    //sessionToken: sessionToken
+
+                });
+
+                return callback (null, post);
+            } else if (originalPostSocial.get("isLiked") === false && postSocial.get("isLiked") === false) {
+
+                // do nothing, user didn't like this post
+
+                return callback (null, post);
+
+            } else if (originalPostSocial.get("isLiked") === false && postSocial.get("isLiked") === true) {
+
+                // increment likesCount for post
+                post.increment("likesCount");
+
+                post.save(null, {
+
+                    useMasterKey: true,
+                    //sessionToken: sessionToken
+
+                });
+
+                return callback (null, post);
+            } else {
+
+                return callback (null, post);
+
+            }
+
 
         }
 
@@ -9671,7 +9713,8 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
 
     async.parallel([
-        async.apply(incrementPostSocialCount)
+        async.apply(incrementPostSocialCount),
+        async.apply(updatePostsAlgolia)
 
 
     ], function (err, results) {
@@ -12503,6 +12546,7 @@ Parse.Cloud.afterDelete('PostSocial', function(request, response) {
     function decrementPostSocialCount (callback) {
 
         post.increment("postSocialCount", -1);
+        if (postSocial.get("isLiked") === true) { post.increment("likesCount", -1); }
         let relation = post.relation("postSocial");
         //console.log("beforeAdd: " + JSON.stringify(relation));
 
@@ -12520,9 +12564,34 @@ Parse.Cloud.afterDelete('PostSocial', function(request, response) {
 
     }
 
+    function updatePostsAlgolia (callback) {
+
+        if (postSocial.get("isNew") === false) {
+
+            let indexCount = parseInt(postSocial.get("algoliaIndexID"));
+
+            splitObjectAndIndex({'user':owner, 'object':post, 'className':'PostSocial', 'indexCount':indexCount, 'loop':false}, {
+                success: function(count) {
+
+                    return callback (null, post);
+                },
+                error: function(error) {
+                    response.error(error);
+                }
+            });
+
+
+        } else {
+
+            return callback (null, post);
+        }
+
+    }
+
 
     async.parallel([
         async.apply(decrementPostSocialCount)
+        //async.apply(updatePostsAlgolia)
 
 
     ], function (err, results) {
