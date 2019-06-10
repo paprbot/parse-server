@@ -9240,7 +9240,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 }, {useMasterKey: true});
 
 Parse.Cloud.define('splitObjectAndIndex', function(request, response) {
-    splitObjectAndIndex({'user':request.params.user, 'object':request.params.object, 'className':request.params.className, 'count':request.params.count,'indexCount':request.params.indexCount }, {
+    splitObjectAndIndex({'user':request.params.user, 'object':request.params.object, 'className':request.params.className, 'count':request.params.count,'indexCount':request.params.indexCount, 'loop':request.params.loop  }, {
         success: function(count) {
             response.success(count);
         },
@@ -9290,8 +9290,9 @@ function splitObjectAndIndex (request, response) {
     let indexCount = (request['indexCount'])? request['indexCount'] : 0;
     console.log("indexCount: " + JSON.stringify(indexCount));
 
-    let index;
+    let loop = request['loop'];
 
+    let index;
 
 
     /*
@@ -9309,6 +9310,10 @@ function splitObjectAndIndex (request, response) {
     let globalQuery = new Parse.Query(className);
     globalQuery.limit(10);
     globalQuery.skip(count);
+    if (loop === false) {
+        globalQuery.equalTo('algoliaIndexID', indexCount);
+
+    }
     //globalQuery.include( ["user", "workspace", "post"] );
     globalQuery.equalTo(objectClassName, parseObject);
     globalQuery.find({
@@ -9405,7 +9410,7 @@ function splitObjectAndIndex (request, response) {
 
                     object.objectID = object.objectId + '-' + finalIndexCount;
                     object._tags = tags;
-                    
+
                     console.log("final tags: " + JSON.stringify(tags));
 
                     if (finalIndexCount === 1) {
@@ -9420,7 +9425,14 @@ function splitObjectAndIndex (request, response) {
 
                         console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
 
-                        splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className}, response);
+                        if (loop === true ) {
+
+                            splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true}, response);
+
+                        } else if (loop === false) {
+
+                            response.success(count);
+                        }
 
 
                     });
@@ -9515,6 +9527,17 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.beforeSave.PostSocial.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
     // Convert Parse.Object to JSON
     let postSocial = request.object;
 
@@ -9554,11 +9577,13 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     if (!request.master && (!currentUser || !sessionToken)) {
         response.error(JSON.stringify({
-            code: 'PAPR.ERROR.afterDelete-Post.UNAUTHENTICATED_USER',
+            code: 'PAPR.ERROR.afterSave.PostSocial.UNAUTHENTICATED_USER',
             message: 'Unauthenticated user.'
         }));
         return;
     }
+
+    console.log("request afterSave PostSocial: " + JSON.stringify(request));
 
     // Get post object
     let POSTSOCIAL = Parse.Object.extend("PostSocial");
@@ -9593,6 +9618,11 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
             relation.add(postSocial);
             //console.log("afterAdd: " + JSON.stringify(relation));
 
+            if (postSocial.get("isLiked") === true) {
+
+                post.increment("likesCount");
+            }
+
             post.save(null, {
 
                 useMasterKey: true,
@@ -9603,8 +9633,39 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
             return callback (null, post);
 
 
+        } else {
+
+            // todo add logic to increment/decrement isLiked
+
+
+            return callback (null, post);
+
         }
 
+
+    }
+
+    function updatePostsAlgolia (callback) {
+
+        if (postSocial.get("isNew") === false) {
+
+            let indexCount = parseInt(postSocial.get("algoliaIndexID"));
+
+            splitObjectAndIndex({'user':owner, 'object':post, 'className':'PostSocial', 'indexCount':indexCount, 'loop':false}, {
+                success: function(count) {
+
+                    return callback (null, post);
+                },
+                error: function(error) {
+                    response.error(error);
+                }
+            });
+
+
+        } else {
+
+            return callback (null, post);
+        }
 
     }
 
@@ -10009,7 +10070,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     //console.log("PostSocial: " + JSON.stringify(postSocial));
                     console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
 
-                    splitObjectAndIndex({'user':user, 'object':postToSave, 'className':'PostSocial'}, {
+                    splitObjectAndIndex({'user':user, 'object':postToSave, 'className':'PostSocial', 'loop':true}, {
                         success: function(count) {
 
                             let Final_Time = process.hrtime(time);
