@@ -9693,13 +9693,13 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
             let indexCount = parseInt(postSocial.get("algoliaIndexID"));
 
-            splitObjectAndIndex({'user':owner, 'object':post, 'className':'PostSocial', 'indexCount':indexCount, 'loop':false}, {
+            splitObjectAndIndex({'user':owner, 'object':post.toJSON(), 'className':'PostSocial', 'indexCount':indexCount, 'loop':false}, {
                 success: function(count) {
 
                     return callback (null, post);
                 },
                 error: function(error) {
-                    response.error(error);
+                    return callback (error);
                 }
             });
 
@@ -12564,34 +12564,11 @@ Parse.Cloud.afterDelete('PostSocial', function(request, response) {
 
     }
 
-    function updatePostsAlgolia (callback) {
 
-        if (postSocial.get("isNew") === false) {
-
-            let indexCount = parseInt(postSocial.get("algoliaIndexID"));
-
-            splitObjectAndIndex({'user':owner, 'object':post, 'className':'PostSocial', 'indexCount':indexCount, 'loop':false}, {
-                success: function(count) {
-
-                    return callback (null, post);
-                },
-                error: function(error) {
-                    response.error(error);
-                }
-            });
-
-
-        } else {
-
-            return callback (null, post);
-        }
-
-    }
 
 
     async.parallel([
         async.apply(decrementPostSocialCount)
-        //async.apply(updatePostsAlgolia)
 
 
     ], function (err, results) {
