@@ -9307,7 +9307,7 @@ function splitObjectAndIndex (request, response) {
     }*/
 
     let globalQuery = new Parse.Query(className);
-    globalQuery.limit(1);
+    globalQuery.limit(10);
     globalQuery.skip(count);
     //globalQuery.include( ["user", "workspace", "post"] );
     globalQuery.equalTo(objectClassName, parseObject);
@@ -9324,11 +9324,15 @@ function splitObjectAndIndex (request, response) {
             //algoliaIndexID
             let finalIndexCount;
 
+            let tags = [];
+
             async.map(results, function (result, cb) {
 
                 let RESULTOBJECT = Parse.Object.extend(className);
                 let ResultObject = new RESULTOBJECT();
                 ResultObject.id = result.id;
+
+                tags.push(result.get("user").id);
 
                 if (!result.get("algoliaIndexID")) {
 
@@ -9377,7 +9381,6 @@ function splitObjectAndIndex (request, response) {
                 } else if (resultsFinal.length > 0) {
 
 
-
                     if (className === 'PostSocial') {
 
                         //object = results[0].get("post");
@@ -9401,7 +9404,16 @@ function splitObjectAndIndex (request, response) {
                     }
 
                     object.objectID = object.objectId + '-' + finalIndexCount;
-                    console.log("final object before saving to algolia: " + JSON.stringify(object));
+                    object._tags = tags;
+                    
+                    console.log("final tags: " + JSON.stringify(tags));
+
+                    if (finalIndexCount === 1) {
+
+                        // let's make sure we also save the index =0 algolia object with * _tags
+
+                        object.objectID = object.objectId + '-' + '0';
+                    }
 
                     index.partialUpdateObject(object, true, function(err, content) {
                         if (err) return response.error(err);
@@ -9434,7 +9446,6 @@ function splitObjectAndIndex (request, response) {
                     //object = results[0].get("post");
                     console.log("no results - post object: " + JSON.stringify(object));
 
-                    object = object.toJSON();
                     object.PostSocial = resultsNone;
                     index = indexPosts;
 
@@ -9444,13 +9455,12 @@ function splitObjectAndIndex (request, response) {
                     //object = results[0].get("workspace");
                     console.log("no results - workspace object: " + JSON.stringify(object));
 
-                    object = object.toJSON();
                     object.followers = resultsNone;
                     index = indexWorkspaces;
 
                 }
 
-                object.objectID = object.objectId + '-' + '1';
+                object.objectID = object.objectId + '-' + '0';
                 console.log("final object before saving to algolia: " + JSON.stringify(object));
 
                 index.partialUpdateObject(object, true, function(err, content) {
