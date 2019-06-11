@@ -18,6 +18,9 @@ var indexMeetings = client.initIndex('dev_meetings');
 var indexChannel = client.initIndex('dev_channels');
 var indexWorkspaces = client.initIndex('dev_workspaces');
 var indexSkills = client.initIndex('dev_skills');
+var indexPostChatMessages = client.initIndex('dev_postChatMessages');
+var indexPostQuestionMessages = client.initIndex('dev_postQuestionMessages');
+
 const requestPromise = require('request-promise');
 var fs = require('fs');
 Parse.initialize('671e705a-f735-4ec0-8474-15899a475440', '', 'f24d6630-a35a-4db8-9fc7-6a851042bfd6');
@@ -2465,7 +2468,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                 workspace.set("isNew", true);
                 workspace.set("followerCount", 0);
                 workspace.set("memberCount", 0);
-                workspace.set("channelCount", 0);
+                workspace.set("channelCount", 1);
                 workspace.set("isDirtyExperts", false);
                 workspace.increment("followerCount");
                 workspace.increment("memberCount");
@@ -3122,6 +3125,9 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
     if (channel.isNew()) {
 
         //console.log("channel isNew: " + channel.isNew());
+        if (!channel.get("isNewWorkspace")) {
+            channel.set("isNewWorkspace", false);
+        }
 
         if (!channel.get("name")) {
             response.error("Channel name is required.");
@@ -3739,6 +3745,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
         channel.set("isNew", false);
         //console.log("Channel is New, and name updated");
+        if (channel.get("isNewWorkspace") === true) {channel.set("isNewWorkspace", false);}
 
 
         //var owner = new Parse.Object("_User");
@@ -11322,7 +11329,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 
         function incrementChannelCounttoWorkspace (callback) {
 
-            if (channel.get("isNew") === true) {
+            if (channel.get("isNew") === true && channel.get("isNewWorkspace") === false) {
 
                 workspace.increment("channelCount");
                 workspace.save(null, {
@@ -11335,14 +11342,42 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                 return callback (null, workspace);
 
             }
+            else {
 
+                return callback (null, workspace);
+
+            }
+
+        }
+
+        function saveGeneralChannelPointer (callback) {
+
+            if (channel.get("isNewWorkspace") === true && channel.get("name") === 'general') {
+
+                // this is the general channel let's save the pointer to the workspace
+                workspace.set("generalChannel", channel);
+                workspace.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                return callback (null, workspace);
+            }
+            else {
+
+                return callback (null, workspace);
+
+            }
         }
 
 
         async.parallel([
             async.apply(createOwnerChannelFollow),
             async.apply(addChannelsToAlgolia),
-            //async.apply(incrementChannelCounttoWorkspace)
+            async.apply(incrementChannelCounttoWorkspace),
+            async.apply(saveGeneralChannelPointer)
 
         ], function (err, results) {
             if (err) {
@@ -12170,6 +12205,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                 Channel.set("allowMemberPostCreation", false);
                 Channel.set("workspace", workspace);
                 Channel.set("user", owner);
+                Channel.set("isNewWorkspace", true);
 
                 console.log("Channel save in afterSave Workspace cloud function: " + JSON.stringify(Channel));
 
@@ -12563,8 +12599,6 @@ Parse.Cloud.afterDelete('PostSocial', function(request, response) {
         return callback (null, post);
 
     }
-
-
 
 
     async.parallel([
