@@ -2468,7 +2468,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                 workspace.set("isNew", true);
                 workspace.set("followerCount", 0);
                 workspace.set("memberCount", 0);
-                workspace.set("channelCount", 1);
+                workspace.set("channelCount", 0);
                 workspace.set("isDirtyExperts", false);
                 workspace.increment("followerCount");
                 workspace.increment("memberCount");
@@ -2818,7 +2818,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
         workspace.set("isNew", false);
 
-        console.log("workspace.dirty: " + workspace.dirty("experts"));
+        console.log("workspace Experts.dirty: " + workspace.dirty("experts"));
 
         if (workspace.dirty("experts")) {
 
@@ -4446,6 +4446,17 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!req.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.beforeSave.Post.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
     var post = req.object;
     var text = post.get("text");
     var workspace = post.get("workspace");
@@ -4463,6 +4474,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             if (!post.get("archive")) { post.set("archive", false); }
             if (!post.get("likesCount")) { post.set("likesCount", 0); }
             if (!post.get("postQuestionCount")) { post.set("postQuestionCount", 0); }
+            if (!post.get("postQuestionMessageCount")) { post.set("postQuestionMessageCount", 0); }
             if (!post.get("chatMessageCount")) { post.set("chatMessageCount", 0); }
             if (!post.get("chatMessageUnReadCount")) { post.set("chatMessageUnReadCount", 0); }
             if (!post.get("postSocialCount")) { post.set("postSocialCount", 0); }
@@ -4493,7 +4505,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
             var POST = Parse.Object.extend("Post");
             var Post = new POST();
-            Post.id = post.objectId;
+            Post.id = post.id;
 
             // add counter for posts to workspace collection
             var WORKSPACE = Parse.Object.extend("WorkSpace");
@@ -4892,6 +4904,665 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         //async.apply(getIntents)
 
     ], function (err, post) {
+        if (err) {
+            response.error(err);
+        }
+
+        //console.log("final post: " + JSON.stringify(post));
+
+        let beforeSave_Time = process.hrtime(time);
+        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+    });
+
+
+});
+
+// Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
+Parse.Cloud.beforeSave('PostQuestionMessage', function(req, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!req.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.beforeSave.PostQuestionMessage.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    let postQuestionMessage = req.object;
+    let text = postQuestionMessage.get("message");
+    let workspace = postQuestionMessage.get("workspace");
+    let post = postQuestionMessage.get("post");
+    //console.log("workspace_post: " + JSON.stringify(workspace));
+    let channel = postQuestionMessage.get("channel");
+    //console.log("channel_post: " + JSON.stringify(channel));
+
+    var toLowerCase = function(w) { return w.toLowerCase(); };
+    //console.log("post: " + JSON.stringify(post));
+
+    function setDefaultValues (callback) {
+
+        if (postQuestionMessage.isNew()) {
+
+            if (!postQuestionMessage.get("archive")) { postQuestionMessage.set("archive", false); }
+            if (!postQuestionMessage.get("numberOfDownVotes")) { postQuestionMessage.set("numberOfDownVotes", 0); }
+            if (!postQuestionMessage.get("numberOfUpVotes")) { postQuestionMessage.set("numberOfUpVotes", 0); }
+            if (!postQuestionMessage.get("voteRank")) { postQuestionMessage.set("voteRank", 0); }
+            if (!postQuestionMessage.get("upVotedByAdmin")) { postQuestionMessage.set("upVotedByAdmin", false); }
+            if (!postQuestionMessage.get("seenByChannelAdmin")) { postQuestionMessage.set("seenByChannelAdmin", false); }
+            if (!postQuestionMessage.get("postQuestionMessageVoteCount")) { postQuestionMessage.set("postQuestionMessageVoteCount", 0); }
+            if (!postQuestionMessage.get("postQuestionMessageReadStatusCount")) { postQuestionMessage.set("postQuestionMessageReadStatusCount", 0); }
+            if (!postQuestionMessage.get("isIncognito")) { postQuestionMessage.set("isIncognito", false); }
+
+            return callback (null, postQuestionMessage);
+
+        } else {
+
+            return callback (null, postQuestionMessage);
+        }
+
+
+    }
+
+    // Function to count number of posts
+    function countPostQuestionMessages (callback) {
+
+        let POST = Parse.Object.extend("Post");
+        let Post = new POST();
+        Post.id = post.id;
+
+        // if there is a post that got added, then increase counter, else ignoremyObject
+        if (postQuestionMessage.isNew()) {
+
+            let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
+            let PostQuestionMessage = new POSTQUESTIONMESSAGE();
+            PostQuestionMessage.id = postQuestionMessage.id;
+
+            // Convert Parse.Object to JSON
+            //var objectToSave = Workspace.id.toJSON();
+
+            //var Post = Parse.Object.extend("Post");
+            //var queryWorkspace = new Parse.Query(Workspace);
+            Post.increment("postQuestionMessageCount");
+            Post.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+            return callback(null, Post);
+
+        }
+
+        else {
+
+
+            return callback(null, Post);
+
+        }
+
+
+
+    }
+
+    // Function to capture hashtags from text posts
+    function getHashtags (callback) {
+        const NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        let timeCountPosts = process.hrtime();
+        let getHashtags_Time;
+
+        let hashtags;
+
+        // if there is a post that got added and no hashtags from client then add hashtags
+        if (postQuestionMessage.isNew() && !postQuestionMessage.hashtags) {
+
+            hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
+            hashtags = _.map(hashtags, toLowerCase);
+            hashtags = hashtags.map(function (hashtag) {
+                return hashtag.trim();
+            });
+            postQuestionMessage.set("hashtags", hashtags);
+            //console.log("getHashtags: " + JSON.stringify(hashtags));
+
+            getHashtags_Time = process.hrtime(timeCountPosts);
+            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, postQuestionMessage);
+        }
+
+        // if an updated for text field (only) in a post occured, and there was no hashtags from client then get hashtags
+        else if (!postQuestionMessage.isNew() && postQuestionMessage.dirty("message") && !postQuestionMessage.dirty("hashtags")) {
+
+            hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
+            hashtags = _.map(hashtags, toLowerCase);
+            hashtags = hashtags.map(function (hashtag) {
+                return hashtag.trim();
+            });
+            postQuestionMessage.set("hashtags", hashtags);
+            //console.log("getHashtags: " + JSON.stringify(hashtags));
+
+            getHashtags_Time = process.hrtime(timeCountPosts);
+            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, postQuestionMessage);
+
+        }
+        else {
+
+            getHashtags_Time = process.hrtime(timeCountPosts);
+            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, postQuestionMessage);
+
+        }
+
+
+    }
+
+    // Function to capture mentions from text posts
+    function getMentions (callback) {
+
+        const NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        let timeCountPosts = process.hrtime();
+        let getMentions_Time;
+
+        let mentions;
+
+        // if there is a post that got added and no mentions from client then add mentions
+        if (postQuestionMessage.isNew() && !postQuestionMessage.mentions) {
+
+            mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
+            mentions = _.map(mentions, toLowerCase);
+            mentions = mentions.map(function (mention) {
+                return mention.trim();
+            });
+            postQuestionMessage.set("mentions", mentions);
+            //console.log("getMentions: " + JSON.stringify(mentions));
+
+            getMentions_Time = process.hrtime(timeCountPosts);
+            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, postQuestionMessage);
+        }
+
+        // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
+        else if (!postQuestionMessage.isNew() && postQuestionMessage.dirty("message") && !postQuestionMessage.dirty("mentions")) {
+
+            mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
+            mentions = _.map(mentions, toLowerCase);
+            mentions = mentions.map(function (mention) {
+                return mention.trim();
+            });
+            postQuestionMessage.set("mentions", mentions);
+            //console.log("getMentions: " + JSON.stringify(mentions));
+
+            getMentions_Time = process.hrtime(timeCountPosts);
+            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, postQuestionMessage);
+
+        }
+        else {
+
+            getMentions_Time = process.hrtime(timeCountPosts);
+            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, postQuestionMessage);
+
+        }
+
+    }
+
+    // function to archive/unarchive postSocial relatio if a post is archived/unarchived
+    function archivePostSocial (callback) {
+        const NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        let timeArchive = process.hrtime();
+        let archive_Time;
+
+        // if post is updated and specifically the archive field is updated then update postSocial archive field.
+        if (!postQuestionMessage.isNew() && postQuestionMessage.dirty("archive")) {
+
+            let postQuestionMessageSocialRelation = postQuestionMessage.relation("postQuestionMessageSocial");
+            let postQuestionMessageSocialRelationQuery = postQuestionMessageSocialRelation.query();
+            postQuestionMessageSocialRelationQuery.find({
+                success: function(postQuestionMessageSocialResults) {
+
+                    for (var i = 0; i < postQuestionMessageSocialResults.length; i++) {
+
+                        postQuestionMessageSocialResults[i].set("archive", postQuestionMessage.get("archive"));
+                        postQuestionMessageSocialResults[i].save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                    }
+
+                    archive_Time = process.hrtime(timeArchive);
+                    console.log(`archive_Time took ${(archive_Time[0] * NS_PER_SEC + archive_Time[1]) * MS_PER_NS} milliseconds`);
+
+                    return callback(null, postQuestionMessage);
+
+                },
+                error: function(err) {
+                    // if there is no postSocial results, then just ignore
+                    return callback(null, postQuestionMessage);
+                }
+
+            });
+
+
+        } else { return callback(null, postQuestionMessage);}
+
+    }
+
+    // Function to identify if a text post hasURL
+    function getURL (callback) {
+
+        const NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        let timeCountPosts = process.hrtime();
+        let getURL_Time;
+
+        let hasurl;
+
+        // if there is a post that got added and no hasURL from client then add hasURL
+        if (postQuestionMessage.isNew() && !postQuestionMessage.hasURL) {
+
+            hasurl = urlRegex().test(text);
+            //console.log("hasURL: " + JSON.stringify(hasurl));
+
+            postQuestionMessage.set("hasURL", hasurl);
+
+            getURL_Time = process.hrtime(timeCountPosts);
+            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, postQuestionMessage);
+        }
+
+        // if an updated for text field (only) in a post occured, and there was no hasURL from client then get hashtags
+        else if (!postQuestionMessage.isNew() && postQuestionMessage.dirty("message") && !postQuestionMessage.dirty("hasURL")) {
+
+            hasurl = urlRegex().test(text);
+            //console.log("hasURL: " + JSON.stringify(hasurl));
+
+            postQuestionMessage.set("hasURL", hasurl);
+
+            getURL_Time = process.hrtime(timeCountPosts);
+            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, postQuestionMessage);
+
+        }
+        else {
+
+            getURL_Time = process.hrtime(timeCountPosts);
+            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, postQuestionMessage);
+
+        }
+
+    }
+
+
+
+    async.parallel([
+        async.apply(countPosts),
+        async.apply(getHashtags),
+        async.apply(getMentions),
+        async.apply(getURL),
+        async.apply(archivePostSocial),
+        async.apply(setDefaultValues),
+        async.apply(countPostQuestionMessages)
+
+    ], function (err, results_Final) {
+        if (err) {
+            response.error(err);
+        }
+
+        //console.log("final post: " + JSON.stringify(post));
+
+        let beforeSave_Time = process.hrtime(time);
+        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+    });
+
+
+});
+
+// Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
+Parse.Cloud.beforeSave('PostChatMessage', function(req, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!req.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.beforeSave.PostChatMessage.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    let postChatMessage = req.object;
+    let text = postChatMessage.get("message");
+    let workspace = postChatMessage.get("workspace");
+    let post = postChatMessage.get("post");
+    //console.log("workspace_post: " + JSON.stringify(workspace));
+    let channel = postChatMessage.get("channel");
+    //console.log("channel_post: " + JSON.stringify(channel));
+
+    var toLowerCase = function(w) { return w.toLowerCase(); };
+    //console.log("post: " + JSON.stringify(post));
+
+    function setDefaultValues (callback) {
+
+        if (postChatMessage.isNew()) {
+
+            if (!postChatMessage.get("archive")) { postChatMessage.set("archive", false); }
+            if (!postChatMessage.get("likedCount")) { postChatMessage.set("likedCount", 0); }
+            if (!postChatMessage.get("seenByChannelAdmin")) { postChatMessage.set("seenByChannelAdmin", false); }
+            if (!postChatMessage.get("postChatMessageSocialCount")) { postChatMessage.set("postChatMessageSocialCount", 0); }
+            if (!postChatMessage.get("postChatMessageReadStatusCount")) { postChatMessage.set("postChatMessageReadStatusCount", 0); }
+
+
+            return callback (null, postChatMessage);
+
+        } else {
+
+            return callback (null, postChatMessage);
+        }
+
+
+    }
+
+    // Function to count number of posts
+    function countPostQuestionMessages (callback) {
+
+        let POST = Parse.Object.extend("Post");
+        let Post = new POST();
+        Post.id = post.id;
+
+        // if there is a post that got added, then increase counter, else ignoremyObject
+        if (postChatMessage.isNew()) {
+
+            let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
+            let PostChatMessage = new POSTCHATMESSAGE();
+            PostChatMessage.id = postChatMessage.id;
+
+            // Convert Parse.Object to JSON
+            //var objectToSave = Workspace.id.toJSON();
+
+            //var Post = Parse.Object.extend("Post");
+            //var queryWorkspace = new Parse.Query(Workspace);
+            Post.increment("postChatMessageCount");
+            Post.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+            return callback(null, Post);
+
+        }
+
+        else {
+
+
+            return callback(null, Post);
+
+        }
+
+
+
+    }
+
+    // Function to capture hashtags from text posts
+    function getHashtags (callback) {
+        const NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        let timeCountPosts = process.hrtime();
+        let getHashtags_Time;
+
+        let hashtags;
+
+        // if there is a post that got added and no hashtags from client then add hashtags
+        if (postChatMessage.isNew() && !postChatMessage.hashtags) {
+
+            hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
+            hashtags = _.map(hashtags, toLowerCase);
+            hashtags = hashtags.map(function (hashtag) {
+                return hashtag.trim();
+            });
+            postChatMessage.set("hashtags", hashtags);
+            //console.log("getHashtags: " + JSON.stringify(hashtags));
+
+            getHashtags_Time = process.hrtime(timeCountPosts);
+            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, postChatMessage);
+        }
+
+        // if an updated for text field (only) in a post occured, and there was no hashtags from client then get hashtags
+        else if (!postChatMessage.isNew() && postChatMessage.dirty("message") && !postChatMessage.dirty("hashtags")) {
+
+            hashtags = text.match(/(^|\s)(#[a-z\d-]+)/gi);
+            hashtags = _.map(hashtags, toLowerCase);
+            hashtags = hashtags.map(function (hashtag) {
+                return hashtag.trim();
+            });
+            postChatMessage.set("hashtags", hashtags);
+            //console.log("getHashtags: " + JSON.stringify(hashtags));
+
+            getHashtags_Time = process.hrtime(timeCountPosts);
+            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, postChatMessage);
+
+        }
+        else {
+
+            getHashtags_Time = process.hrtime(timeCountPosts);
+            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, postChatMessage);
+
+        }
+
+
+    }
+
+    // Function to capture mentions from text posts
+    function getMentions (callback) {
+
+        const NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        let timeCountPosts = process.hrtime();
+        let getMentions_Time;
+
+        let mentions;
+
+        // if there is a post that got added and no mentions from client then add mentions
+        if (postChatMessage.isNew() && !postChatMessage.mentions) {
+
+            mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
+            mentions = _.map(mentions, toLowerCase);
+            mentions = mentions.map(function (mention) {
+                return mention.trim();
+            });
+            postChatMessage.set("mentions", mentions);
+            //console.log("getMentions: " + JSON.stringify(mentions));
+
+            getMentions_Time = process.hrtime(timeCountPosts);
+            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, postChatMessage);
+        }
+
+        // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
+        else if (!postChatMessage.isNew() && postChatMessage.dirty("message") && !postChatMessage.dirty("mentions")) {
+
+            mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
+            mentions = _.map(mentions, toLowerCase);
+            mentions = mentions.map(function (mention) {
+                return mention.trim();
+            });
+            postChatMessage.set("mentions", mentions);
+            //console.log("getMentions: " + JSON.stringify(mentions));
+
+            getMentions_Time = process.hrtime(timeCountPosts);
+            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, postChatMessage);
+
+        }
+        else {
+
+            getMentions_Time = process.hrtime(timeCountPosts);
+            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+
+
+            return callback(null, postChatMessage);
+
+        }
+
+    }
+
+    // function to archive/unarchive postSocial relatio if a post is archived/unarchived
+    function archivePostSocial (callback) {
+        const NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        let timeArchive = process.hrtime();
+        let archive_Time;
+
+        // if post is updated and specifically the archive field is updated then update postSocial archive field.
+        if (!postChatMessage.isNew() && postChatMessage.dirty("archive")) {
+
+            let postChatMessageSocialRelation = postChatMessage.relation("postChatMessageSocial");
+            let postChatMessageSocialRelationQuery = postChatMessageSocialRelation.query();
+            postChatMessageSocialRelationQuery.find({
+                success: function(postChatMessageSocialResults) {
+
+                    for (var i = 0; i < postChatMessageSocialResults.length; i++) {
+
+                        postChatMessageSocialResults[i].set("archive", postChatMessage.get("archive"));
+                        postChatMessageSocialResults[i].save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                    }
+
+                    archive_Time = process.hrtime(timeArchive);
+                    console.log(`archive_Time took ${(archive_Time[0] * NS_PER_SEC + archive_Time[1]) * MS_PER_NS} milliseconds`);
+
+                    return callback(null, postChatMessage);
+
+                },
+                error: function(err) {
+                    // if there is no postSocial results, then just ignore
+                    return callback(null, postChatMessage);
+                }
+
+            });
+
+
+        } else { return callback(null, postChatMessage);}
+
+    }
+
+    // Function to identify if a text post hasURL
+    function getURL (callback) {
+
+        const NS_PER_SEC = 1e9;
+        const MS_PER_NS = 1e-6;
+        let timeCountPosts = process.hrtime();
+        let getURL_Time;
+
+        let hasurl;
+
+        // if there is a post that got added and no hasURL from client then add hasURL
+        if (postChatMessage.isNew() && !postChatMessage.hasURL) {
+
+            hasurl = urlRegex().test(text);
+            //console.log("hasURL: " + JSON.stringify(hasurl));
+
+            postChatMessage.set("hasURL", hasurl);
+
+            getURL_Time = process.hrtime(timeCountPosts);
+            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, postChatMessage);
+        }
+
+        // if an updated for text field (only) in a post occured, and there was no hasURL from client then get hashtags
+        else if (!postChatMessage.isNew() && postChatMessage.dirty("message") && !postChatMessage.dirty("hasURL")) {
+
+            hasurl = urlRegex().test(text);
+            //console.log("hasURL: " + JSON.stringify(hasurl));
+
+            postChatMessage.set("hasURL", hasurl);
+
+            getURL_Time = process.hrtime(timeCountPosts);
+            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, postChatMessage);
+
+        }
+        else {
+
+            getURL_Time = process.hrtime(timeCountPosts);
+            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+
+            return callback(null, postChatMessage);
+
+        }
+
+    }
+
+
+
+    async.parallel([
+        async.apply(countPosts),
+        async.apply(getHashtags),
+        async.apply(getMentions),
+        async.apply(getURL),
+        async.apply(archivePostSocial),
+        async.apply(setDefaultValues),
+        async.apply(countPostQuestionMessages)
+
+    ], function (err, results_Final) {
         if (err) {
             response.error(err);
         }
@@ -5584,6 +6255,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                     // there was no workspace that was previously selected, return empty
 
+
                     return callback (null, result);
                 }
 
@@ -5639,8 +6311,11 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 let previousWorkspaceFollowers = results[1];
 
                 let previousWorkspaceFollowLeave = new WORKSPACEFOLLOWER();
-                previousWorkspaceFollowLeave.id = results[2].id;
-                previousWorkspaceFollowLeave.set("user", results[2].get("user"));
+                if (result[2]) {
+                    previousWorkspaceFollowLeave.id = results[2].id;
+                    previousWorkspaceFollowLeave.set("user", results[2].get("user"));
+
+                }
 
                 console.log("workspace_follower result from query: " + JSON.stringify(result.get("name")));
                 console.log("previousWorkspaceFollowJoin result from query length of array: " + JSON.stringify(previousWorkspaceFollowers.length));
@@ -9291,6 +9966,21 @@ function splitObjectAndIndex (request, response) {
         parseObject.id = object.objectId;
     }
 
+    if (className === 'PostQuestionMessageSocial') {
+
+        objectClassName = 'postQuestionMessage';
+        PARSEOBJECT = Parse.Object.extend("PostQuestionMessage");
+        parseObject = new PARSEOBJECT();
+        parseObject.id = object.objectId;
+
+    } else if (className === 'PostChatMessageSocial') {
+
+        objectClassName = 'postChatMessage';
+        PARSEOBJECT = Parse.Object.extend("PostChatMessage");
+        parseObject = new PARSEOBJECT();
+        parseObject.id = object.objectId;
+    }
+
     let count = (request['count'])? request['count'] : 0;
     console.log("count: " + JSON.stringify(count));
 
@@ -9372,7 +10062,7 @@ function splitObjectAndIndex (request, response) {
                     console.log("simplifyPostSocial: " + JSON.stringify(ResultObject));
 
                 }
-                else if (className === 'workspace_follower') {
+                else if (className === 'workspace_follower' || className === 'PostQuestionMessageSocial'  || className === 'PostChatMessageSocial'  ) {
 
                     ResultObject = result;
                     console.log("ResultObject: " + JSON.stringify(ResultObject));
@@ -9410,7 +10100,28 @@ function splitObjectAndIndex (request, response) {
                         object.followers = resultsFinal;
                         index = indexWorkspaces;
 
-                    } else {
+                    }
+                    else if (className === 'PostQuestionMessageSocial') {
+
+                        //object = results[0].get("workspace");
+                        console.log("PostQuestionMessageSocial object: " + JSON.stringify(object));
+
+                        object.postQuestionMessageSocial = resultsFinal;
+                        index = indexPostQuestionMessages;
+
+                    }
+
+                    else if (className === 'PostChatMessageSocial') {
+
+                        //object = results[0].get("workspace");
+                        console.log("PostChatMessageSocial object: " + JSON.stringify(object));
+
+                        object.postChatMessageSocial = resultsFinal;
+                        index = indexPostChatMessages;
+
+                    }
+
+                    else {
 
                         response.error("this className is not supported, please use workspace_follower or PostSocial");
                     }
@@ -9476,6 +10187,26 @@ function splitObjectAndIndex (request, response) {
 
                     object.followers = resultsNone;
                     index = indexWorkspaces;
+
+                }
+
+                else if (className === 'PostQuestionMessageSocial') {
+
+                    //object = results[0].get("workspace");
+                    console.log("PostQuestionMessageSocial object: " + JSON.stringify(object));
+
+                    object.postQuestionMessageSocial = resultsNone;
+                    index = indexPostQuestionMessages;
+
+                }
+
+                else if (className === 'PostChatMessageSocial') {
+
+                    //object = results[0].get("workspace");
+                    console.log("PostChatMessageSocial object: " + JSON.stringify(object));
+
+                    object.postChatMessageSocial = resultsNone;
+                    index = indexPostChatMessages;
 
                 }
 
@@ -9759,7 +10490,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     if (!request.master && (!currentUser || !sessionToken)) {
         response.error(JSON.stringify({
-            code: 'PAPR.ERROR.009.afterSave-User.UNAUTHENTICATED_USER',
+            code: 'PAPR.ERROR.afterSave.Post.UNAUTHENTICATED_USER',
             message: 'Unauthenticated user.'
         }));
         return;
@@ -10138,6 +10869,503 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 } else {
 
                     response.error("error in afterSave Post");
+                }
+
+
+            });
+
+        },
+        error: function(error) {
+            alert("Error: " + error.code + " " + error.message);
+        }
+    });
+
+
+});
+
+// Add and Update AlgoliaSearch post object if it's deleted from Parse
+Parse.Cloud.afterSave('PostQuestionMessage', function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.afterSave.PostQuestionMessage.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+
+    // Convert Parse.Object to JSON
+    let postQuestionMessage = request.object;
+    let postQuestionMessageToSave = postQuestionMessage.toJSON();
+
+    //var Post = Parse.Object.extend("Post");
+    let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
+    let queryPostQuestionMessage = new Parse.Query(POSTQUESTIONMESSAGE);
+    queryPostQuestionMessage.include( ["user", "workspace", "channel", "replyMessage"] );
+    //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
+    queryPostQuestionMessage.equalTo("objectId", postQuestionMessage.id);
+
+    //console.log("Request: " + JSON.stringify(request));
+    //console.log("objectID: " + objectToSave.objectId);
+    //console.log("objectID: " + objectToSave.user.objectId);
+
+    queryPostQuestionMessage.first({
+        success: function(PostQuestionMessage) {
+
+            let postQuestionMessageACL = PostQuestionMessage.getACL();
+            console.log("postQuestionMessageACL: " + JSON.stringify(postQuestionMessageACL));
+
+            user = PostQuestionMessage.get("user");
+
+            let CHANNEL = Parse.Object.extend("Channel");
+            let channel = new CHANNEL();
+            channel.id = PostQuestionMessage.get("channel").id;
+
+            let WORKSPACE = Parse.Object.extend("WorkSpace");
+            let workspace = new WORKSPACE();
+            workspace.id = PostQuestionMessage.get("workspace").id;
+
+            let POST = Parse.Object.extend("Post");
+            let Post = new POST();
+            Post.id = PostQuestionMessage.get("post").id;
+
+            function prepIndex (callback) {
+
+                // Successfully retrieved the object.
+                //console.log("ObjectToSave: " + JSON.stringify(post));
+
+                // Convert Parse.Object to JSON
+                PostQuestionMessage = PostQuestionMessage.toJSON();
+
+                // Specify Algolia's objectID with the Parse.Object unique ID
+                //Post.objectID = Post.objectId;
+
+                // set _tags depending on the post ACL
+
+                if (postQuestionMessageACL) {
+
+                    if (postQuestionMessageACL.getPublicReadAccess()) {
+
+                        // this means it's public read access is true
+                        PostQuestionMessage._tags = ['*'];
+
+                    }
+
+                    /*
+                     else if (!postACL.getPublicReadAccess() && postACL.getReadAccess(user)) {
+
+
+                     // this means this user has read access
+                     Post._tags = [user.id];
+
+                     } else if (!postACL.getPublicReadAccess() && post.ACL.getReadAccess(roleChannel)) {
+
+                     // this means any user with this channel is private and channel-role will have access i.e. they are a member of this channel
+                     Post._tags = [roleChannel];
+
+                     }
+
+
+
+                     */
+
+
+                } else if (!postQuestionMessageACL || postQuestionMessageACL === null) {
+
+                    // this means it's public read write
+                    PostQuestionMessage._tags = ['*'];
+                }
+
+
+
+
+                return callback(null, PostQuestionMessage);
+
+            }
+
+            function getPostQuestions (callback) {
+
+                let postQuestion = new POST();
+                postQuestion.id = post.id;
+
+                let relationPostQuestion = postQuestion.relation("postQuestions");
+
+                let querypostQuestion = relationPostQuestion.query();
+                //querypostQuestion.equalTo("archive", false);
+                querypostQuestion.descending("likesCount");
+                querypostQuestion.limit(10);
+                querypostQuestion.find({
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+                }).then((postQuestions) => {
+
+                    console.log("postQuestions: " + JSON.stringify(postQuestions));
+
+
+                    if (postQuestions.length !== 0) {
+
+                        console.log("postQuestions exist");
+
+                        //postQuestions = simplifyPostQuestion(postQuestions);
+                        return callback (null, postQuestions);
+
+
+                    } else {
+
+                        let postQuestions = [];
+                        // no workspaceFollowers to delete return
+                        return callback(null, postQuestions);
+
+                    }
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    console.log(error);
+                    let postQuestions = [];
+                    // no workspaceFollowers to delete return
+                    return callback(null, postQuestions);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            }
+
+
+            function getTopAnswerForQuestionPost (callback) {
+
+                let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
+                let queryPostQuestionMessage= new Parse.Query(POSTQUESTIONMESSAGE);
+                //queryPostQuestionMessage.equalTo("workspace", workspace);
+                //queryPostQuestionMessage.equalTo("channel", channel);
+                queryPostQuestionMessage.equalTo("post", post);
+                //queryPostQuestionMessage.equalTo("archive", false);
+                queryPostQuestionMessage.equalTo("type", "answer");
+                queryPostQuestionMessage.descending("voteRank");
+                queryPostQuestionMessage.first({
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+                }).then((postQuestionMessage) => {
+
+
+                    if (postQuestionMessage) {
+
+                        postQuestionMessage = simplifyPostQuestionMessage(postQuestionMessage);
+                        return callback (null, postQuestionMessage);
+
+
+                    } else {
+
+                        let postQuestionMessage = [];
+                        // no workspaceFollowers to delete return
+                        return callback(null, postQuestionMessage);
+
+                    }
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    console.log(error);
+                    let postQuestionMessage = [];
+                    // no workspaceFollowers to delete return
+                    return callback(null, postQuestionMessage);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+            }
+
+            function getChatMessages (callback) {
+
+                let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
+                let queryPostChatMessage = new Parse.Query(POSTCHATMESSAGE);
+                //queryPostChatMessage.equalTo("workspace", workspace);
+                //queryPostChatMessage.equalTo("channel", channel);
+                queryPostChatMessage.equalTo("post", post);
+                //queryPostChatMessage.equalTo("archive", false);
+                queryPostChatMessage.limit(5);
+                queryPostChatMessage.find({
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+                }).then((PostChatMessages) => {
+
+                    console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
+
+
+                    if (PostChatMessages.length !== 0) {
+
+                        let simplifiedPostChatMessages = [];
+
+                        for (var i = 0; i < PostChatMessages.length; i++) {
+
+                            simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
+                            console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i])) ;
+
+                        }
+
+                        return callback (null, simplifiedPostChatMessages);
+
+
+                    } else {
+
+                        let PostChatMessages = [];
+                        // no workspaceFollowers to delete return
+                        return callback(null, PostChatMessages);
+
+                    }
+
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    console.log(error);
+                    let PostChatMessages = [];
+                    // no workspaceFollowers to delete return
+                    return callback(null, PostChatMessages);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            }
+
+            async.parallel([
+                async.apply(prepIndex)
+                //async.apply(getPostQuestions),
+                //async.apply(getChatMessages),
+                //async.apply(getPostSocial),
+                //async.apply(getTopAnswerForQuestionPost)
+
+
+            ], function (err, results) {
+                if (err) {
+                    response.error(err);
+                }
+
+                if (results.length > 0) {
+
+                    console.log("afterSave PostQuestionMessage results length: " + JSON.stringify(results.length));
+
+                    postQuestionMessageToSave = results[0];
+                    //let postQuestions = results[1];
+                    //let chatMessages = results[2];
+                    //let postSocial = results[3];
+                    //let topAnswerForQuestionPost = results[3];
+
+                    //postToSave.postQuestions = postQuestions;
+                    //postToSave.chatMessages = chatMessages;
+                    //postToSave.PostSocial = postSocial;
+                    //postToSave.topAnswer = topAnswerForQuestionPost;
+
+
+                    //console.log("postQuestions: " + JSON.stringify(postQuestions));
+                    //console.log("chatMessages: " + JSON.stringify(chatMessages));
+                    //console.log("PostSocial: " + JSON.stringify(postSocial));
+                    //console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
+
+                    splitObjectAndIndex({'user':user, 'object':postQuestionMessageToSave, 'className':'PostQuestionMessageSocial', 'loop':true}, {
+                        success: function(count) {
+
+                            let Final_Time = process.hrtime(time);
+                            console.log(`splitObjectToIndex PostQuestionMessage took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+                        },
+                        error: function(error) {
+                            response.error(error);
+                        }
+                    });
+
+
+
+                } else {
+
+                    response.error("error in afterSave PostQuestionMessage");
+                }
+
+
+            });
+
+        },
+        error: function(error) {
+            alert("Error: " + error.code + " " + error.message);
+        }
+    });
+
+
+});
+
+// Add and Update AlgoliaSearch post object if it's deleted from Parse
+Parse.Cloud.afterSave('PostChatMessage', function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.afterSave.PostChatMessage.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+
+    // Convert Parse.Object to JSON
+    let postChatMessage = request.object;
+    let postChatMessageToSave = postChatMessage.toJSON();
+
+    //var Post = Parse.Object.extend("Post");
+    let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
+    let queryPostChatMessage = new Parse.Query(PPOSTCHATMESSAGEOST);
+    queryPostChatMessage.include( ["user", "workspace", "channel", "replyMessage"] );
+    //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
+    queryPostChatMessage.equalTo("objectId", postChatMessage.id);
+
+    //console.log("Request: " + JSON.stringify(request));
+    //console.log("objectID: " + objectToSave.objectId);
+    //console.log("objectID: " + objectToSave.user.objectId);
+
+    queryPostChatMessage.first({
+        success: function(PostChatMessage) {
+
+            let posChatMessagetACL = PostChatMessage.getACL();
+            console.log("posChatMessagetACL: " + JSON.stringify(posChatMessagetACL));
+
+            user = PostChatMessage.get("user");
+
+            let CHANNEL = Parse.Object.extend("Channel");
+            let channel = new CHANNEL();
+            channel.id = PostChatMessage.get("channel").id;
+
+            let WORKSPACE = Parse.Object.extend("WorkSpace");
+            let workspace = new WORKSPACE();
+            workspace.id = PostChatMessage.get("workspace").id;
+
+            let POST = Parse.Object.extend("Post");
+            let Post = new POST();
+            Post.id = PostChatMessage.get("post").id;
+
+            function prepIndex (callback) {
+
+                // Successfully retrieved the object.
+                //console.log("ObjectToSave: " + JSON.stringify(post));
+
+                // Convert Parse.Object to JSON
+                PostChatMessage = PostChatMessage.toJSON();
+
+                // Specify Algolia's objectID with the Parse.Object unique ID
+                //Post.objectID = Post.objectId;
+
+                // set _tags depending on the post ACL
+
+                if (posChatMessagetACL) {
+
+                    if (posChatMessagetACL.getPublicReadAccess()) {
+
+                        // this means it's public read access is true
+                        PostChatMessage._tags = ['*'];
+
+                    }
+
+                    /*
+                     else if (!postACL.getPublicReadAccess() && postACL.getReadAccess(user)) {
+
+
+                     // this means this user has read access
+                     Post._tags = [user.id];
+
+                     } else if (!postACL.getPublicReadAccess() && post.ACL.getReadAccess(roleChannel)) {
+
+                     // this means any user with this channel is private and channel-role will have access i.e. they are a member of this channel
+                     Post._tags = [roleChannel];
+
+                     }
+
+
+
+                     */
+
+
+                } else if (!posChatMessagetACL || posChatMessagetACL === null) {
+
+                    // this means it's public read write
+                    PostChatMessage._tags = ['*'];
+                }
+
+
+
+
+                return callback(null, PostChatMessage);
+
+            }
+
+
+            async.parallel([
+                async.apply(prepIndex)
+
+
+            ], function (err, results) {
+                if (err) {
+                    response.error(err);
+                }
+
+                if (results.length > 0) {
+
+                    console.log("afterSave PostChatMessage results length: " + JSON.stringify(results.length));
+
+                    postChatMessageToSave = results[0];
+
+
+                    splitObjectAndIndex({'user':user, 'object':postChatMessageToSave, 'className':'PostChatMessageSocial', 'loop':true}, {
+                        success: function(count) {
+
+                            let Final_Time = process.hrtime(time);
+                            console.log(`splitObjectToIndex PostChatMessage took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+                        },
+                        error: function(error) {
+                            response.error(error);
+                        }
+                    });
+
+
+
+                } else {
+
+                    response.error("error in afterSave PostChatMessage");
                 }
 
 
