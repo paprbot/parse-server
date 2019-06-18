@@ -5226,7 +5226,6 @@ Parse.Cloud.beforeSave('PostQuestionMessage', function(req, response) {
 
 
     async.parallel([
-        async.apply(countPosts),
         async.apply(getHashtags),
         async.apply(getMentions),
         async.apply(getURL),
@@ -5301,7 +5300,7 @@ Parse.Cloud.beforeSave('PostChatMessage', function(req, response) {
     }
 
     // Function to count number of posts
-    function countPostQuestionMessages (callback) {
+    function countPostChatMessages (callback) {
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
@@ -5554,13 +5553,12 @@ Parse.Cloud.beforeSave('PostChatMessage', function(req, response) {
 
 
     async.parallel([
-        async.apply(countPosts),
         async.apply(getHashtags),
         async.apply(getMentions),
         async.apply(getURL),
         async.apply(archivePostSocial),
         async.apply(setDefaultValues),
-        async.apply(countPostQuestionMessages)
+        async.apply(countPostChatMessages)
 
     ], function (err, results_Final) {
         if (err) {
