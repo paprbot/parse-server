@@ -5599,6 +5599,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
         return;
     }
 
+    // test
+
     let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
     let WorkspaceFollower = new WORKSPACEFOLLOWER();
     WorkspaceFollower.id = workspace_follower.id;
