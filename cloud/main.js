@@ -11248,7 +11248,7 @@ Parse.Cloud.afterSave('PostChatMessage', function(request, response) {
 
     //var Post = Parse.Object.extend("Post");
     let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
-    let queryPostChatMessage = new Parse.Query(PPOSTCHATMESSAGEOST);
+    let queryPostChatMessage = new Parse.Query(POSTCHATMESSAGE);
     queryPostChatMessage.include( ["user", "workspace", "channel", "replyMessage"] );
     //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
     queryPostChatMessage.equalTo("objectId", postChatMessage.id);
