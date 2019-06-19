@@ -5130,7 +5130,7 @@ Parse.Cloud.beforeSave('PostQuestionMessage', function(req, response) {
     }
 
     // function to archive/unarchive postSocial relatio if a post is archived/unarchived
-    function archivePostSocial (callback) {
+    function archivePostQuestionMessageVote (callback) {
         const NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
         let timeArchive = process.hrtime();
@@ -5139,7 +5139,7 @@ Parse.Cloud.beforeSave('PostQuestionMessage', function(req, response) {
         // if post is updated and specifically the archive field is updated then update postSocial archive field.
         if (!postQuestionMessage.isNew() && postQuestionMessage.dirty("archive")) {
 
-            let postQuestionMessageSocialRelation = postQuestionMessage.relation("postQuestionMessageSocial");
+            let postQuestionMessageSocialRelation = postQuestionMessage.relation("postQuestionMessageVote");
             let postQuestionMessageSocialRelationQuery = postQuestionMessageSocialRelation.query();
             postQuestionMessageSocialRelationQuery.find({
                 success: function(postQuestionMessageSocialResults) {
@@ -5229,7 +5229,7 @@ Parse.Cloud.beforeSave('PostQuestionMessage', function(req, response) {
         async.apply(getHashtags),
         async.apply(getMentions),
         async.apply(getURL),
-        async.apply(archivePostSocial),
+        async.apply(archivePostQuestionMessageVote),
         async.apply(setDefaultValues),
         async.apply(countPostQuestionMessages)
 
@@ -5241,7 +5241,7 @@ Parse.Cloud.beforeSave('PostQuestionMessage', function(req, response) {
         //console.log("final post: " + JSON.stringify(post));
 
         let beforeSave_Time = process.hrtime(time);
-        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+        console.log(`beforeSave_Time PostQuestionMessage took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
         response.success();
     });
@@ -5457,7 +5457,7 @@ Parse.Cloud.beforeSave('PostChatMessage', function(req, response) {
     }
 
     // function to archive/unarchive postSocial relatio if a post is archived/unarchived
-    function archivePostSocial (callback) {
+    function archivePostChatMessageSocial (callback) {
         const NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
         let timeArchive = process.hrtime();
@@ -5556,7 +5556,7 @@ Parse.Cloud.beforeSave('PostChatMessage', function(req, response) {
         async.apply(getHashtags),
         async.apply(getMentions),
         async.apply(getURL),
-        async.apply(archivePostSocial),
+        async.apply(archivePostChatMessageSocial),
         async.apply(setDefaultValues),
         async.apply(countPostChatMessages)
 
@@ -5568,7 +5568,7 @@ Parse.Cloud.beforeSave('PostChatMessage', function(req, response) {
         //console.log("final post: " + JSON.stringify(post));
 
         let beforeSave_Time = process.hrtime(time);
-        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+        console.log(`beforeSave_Time PostChatMessage took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
         response.success();
     });
@@ -5576,6 +5576,461 @@ Parse.Cloud.beforeSave('PostChatMessage', function(req, response) {
 
 });
 
+// Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
+Parse.Cloud.beforeSave('PostChatMessageReadStatus', function(req, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!req.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.beforeSave.PostChatMessageReadStatus.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    let postChatMessageReadStatus = req.object;
+    let originalPostChatMessageReadStatus = req.original ? req.original : null;
+    let workspace;
+    let post;
+    let channel;
+    let user;
+    let postChatMessage;
+
+    if (!postChatMessageReadStatus.get("workspace")) {
+        return response.error("Please add a workspace pointer it's a required field.")
+    } else {
+        workspace = postChatMessageReadStatus.get("workspace");
+
+    }
+    if (!postChatMessageReadStatus.get("post")) {
+        response.error("Please add a post pointer it's a required field.")
+    } else {
+
+        let post = postChatMessageReadStatus.get("post");
+
+    }
+    if (!postChatMessageReadStatus.get("channel")) {
+        return response.error("Please add a channel pointer it's a required field.")
+    } else {
+        channel = postChatMessageReadStatus.get("channel");
+
+    }
+    if (!postChatMessageReadStatus.get("user")) {
+        return response.error("Please add a user pointer it's a required field.")
+    } else {
+        user = postChatMessageReadStatus.get("user");
+
+    }
+    if (!postChatMessageReadStatus.get("postChatMessage")) {
+        return response.error("Please add a postChatMessage pointer it's a required field.")
+    } else {
+        postChatMessage = postChatMessageReadStatus.get("postChatMessage");
+
+    }
+
+    //console.log("channel_post: " + JSON.stringify(channel));
+
+
+    function setDefaultValues (callback) {
+
+        if (postChatMessageReadStatus.isNew()) {
+
+            if (!postChatMessageReadStatus.get("archive")) { postChatMessageReadStatus.set("archive", false); }
+            if (!postChatMessageReadStatus.get("isDelivered")) { postChatMessageReadStatus.set("isDelivered", false); }
+            if (!postChatMessageReadStatus.get("hasRead")) { postChatMessageReadStatus.set("hasRead", false); }
+
+            return callback (null, postChatMessageReadStatus);
+
+        } else {
+
+            return callback (null, postChatMessageReadStatus);
+        }
+
+
+    }
+
+    // Function to count number of posts
+    function countPostChatMessageReadStatus (callback) {
+
+        let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
+        let PostChatMessage = new POSTCHATMESSAGE();
+        PostChatMessage.id = postChatMessage.id;
+
+        // if there is a post that got added, then increase counter, else ignoremyObject
+        if (postChatMessageReadStatus.isNew()) {
+
+
+            PostChatMessage.increment("postChatMessageReadStatusCount");
+            PostChatMessage.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+            return callback(null, PostChatMessage);
+
+        }
+
+        else {
+
+
+            return callback(null, PostChatMessage);
+
+        }
+
+
+
+    }
+
+    function countPostChatMessageUnRead (callback) {
+
+        let POST = Parse.Object.extend("Post");
+        let Post = new POST();
+        Post.id = post.id;
+
+        if (postChatMessageReadStatus.isNew()) {
+
+            if (postChatMessageReadStatus.get("hasRead") === false || !postChatMessageReadStatus.get("hasRead")) {
+
+
+                Post.increment("chatMessageUnReadCount");
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, Post);
+
+            }
+
+            else {
+
+
+                return callback(null, Post);
+
+            }
+
+
+        } else {
+
+            // postChatMessageReadStatus already exists
+
+            if ( (postChatMessageReadStatus.get("hasRead") === false || !postChatMessageReadStatus.get("hasRead")) && (originalPostChatMessageReadStatus.get("hasRead") === false || !originalPostChatMessageReadStatus.get("hasRead")) ) {
+                // original hasRead == false and new hasRead also === false don't increment
+
+
+                return callback(null, Post);
+
+            }
+
+            else if ( (postChatMessageReadStatus.get("hasRead") === false || !postChatMessageReadStatus.get("hasRead")) && originalPostChatMessageReadStatus.get("hasRead") === true  ) {
+
+                // increment user marked previous messages that he read as unRead
+
+                Post.increment("chatMessageUnReadCount");
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, Post);
+
+            }
+
+            else if ( postChatMessageReadStatus.get("hasRead") === true  && (originalPostChatMessageReadStatus.get("hasRead") === false || !originalPostChatMessageReadStatus.get("hasRead"))  ) {
+
+                // decrement user read the message
+
+                Post.increment("chatMessageUnReadCount", -1);
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                return callback(null, Post);
+
+            }
+            else if ( postChatMessageReadStatus.get("hasRead") === true  && originalPostChatMessageReadStatus.get("hasRead") === true  ) {
+
+                // No change don't increment
+
+
+                return callback(null, Post);
+
+            }
+
+
+        }
+
+
+    }
+
+
+
+    async.parallel([
+        async.apply(setDefaultValues),
+        async.apply(countPostChatMessageReadStatus),
+        async.apply(countPostChatMessageUnRead)
+
+    ], function (err, results_Final) {
+        if (err) {
+            response.error(err);
+        }
+
+        //console.log("final post: " + JSON.stringify(post));
+
+        let beforeSave_Time = process.hrtime(time);
+        console.log(`beforeSave_Time PostChatMessageReadStatus took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+    });
+
+
+});
+
+// Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
+Parse.Cloud.beforeSave('PostQuestionMessageReadStatus', function(req, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!req.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.beforeSave.postQuestionMessageUnReadCount.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    let postQuestionMessageReadStatus = req.object;
+    let originalPostQuestionMessageReadStatus = req.original ? req.original : null;
+    let workspace;
+    let post;
+    let channel;
+    let user;
+    let postQuestionMessage;
+
+    if (!postQuestionMessageReadStatus.get("workspace")) {
+        return response.error("Please add a workspace pointer it's a required field.")
+    } else {
+        workspace = postQuestionMessageReadStatus.get("workspace");
+
+    }
+    if (!postQuestionMessageReadStatus.get("post")) {
+        response.error("Please add a post pointer it's a required field.")
+    } else {
+
+        let post = postQuestionMessageReadStatus.get("post");
+
+    }
+    if (!postQuestionMessageReadStatus.get("channel")) {
+        return response.error("Please add a channel pointer it's a required field.")
+    } else {
+        channel = postQuestionMessageReadStatus.get("channel");
+
+    }
+    if (!postQuestionMessageReadStatus.get("user")) {
+        return response.error("Please add a user pointer it's a required field.")
+    } else {
+        user = postQuestionMessageReadStatus.get("user");
+
+    }
+    if (!postQuestionMessageReadStatus.get("postChatMessage")) {
+        return response.error("Please add a postChatMessage pointer it's a required field.")
+    } else {
+        postQuestionMessage = postQuestionMessageReadStatus.get("postQuestionMessage");
+
+    }
+
+    //console.log("channel_post: " + JSON.stringify(channel));
+
+
+    function setDefaultValues (callback) {
+
+        if (postQuestionMessageReadStatus.isNew()) {
+
+            if (!postQuestionMessageReadStatus.get("archive")) { postQuestionMessageReadStatus.set("archive", false); }
+            if (!postQuestionMessageReadStatus.get("isDelivered")) { postQuestionMessageReadStatus.set("isDelivered", false); }
+            if (!postQuestionMessageReadStatus.get("hasRead")) { postQuestionMessageReadStatus.set("hasRead", false); }
+
+            return callback (null, postQuestionMessageReadStatus);
+
+        } else {
+
+            return callback (null, postQuestionMessageReadStatus);
+        }
+
+
+    }
+
+    // Function to count number of posts
+    function countPostQuestionMessageReadStatus (callback) {
+
+        let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
+        let PostQuestiontMessage = new POSTQUESTIONMESSAGE();
+        PostQuestiontMessage.id = postQuestionMessage.id;
+
+        // if there is a post that got added, then increase counter, else ignoremyObject
+        if (postQuestionMessageReadStatus.isNew()) {
+
+
+            PostQuestiontMessage.increment("postQuestionMessageReadStatusCount");
+            PostQuestiontMessage.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+            return callback(null, PostQuestiontMessage);
+
+        }
+
+        else {
+
+
+            return callback(null, PostQuestiontMessage);
+
+        }
+
+
+
+    }
+
+    function countPostQuestionMessageUnRead (callback) {
+
+        let POST = Parse.Object.extend("Post");
+        let Post = new POST();
+        Post.id = post.id;
+
+        if (postQuestionMessageReadStatus.isNew()) {
+
+            if (postQuestionMessageReadStatus.get("hasRead") === false || !postQuestionMessageReadStatus.get("hasRead")) {
+
+
+                Post.increment("postQuestionMessageUnReadCount");
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, Post);
+
+            }
+
+            else {
+
+
+                return callback(null, Post);
+
+            }
+
+
+        } else {
+
+            // postChatMessageReadStatus already exists
+
+            if ( (postQuestionMessageReadStatus.get("hasRead") === false || !postQuestionMessageReadStatus.get("hasRead")) && (originalPostQuestionMessageReadStatus.get("hasRead") === false || !originalPostQuestionMessageReadStatus.get("hasRead")) ) {
+                // original hasRead == false and new hasRead also === false don't increment
+
+
+                return callback(null, Post);
+
+            }
+
+            else if ( (postQuestionMessageReadStatus.get("hasRead") === false || !postChatMessageReadStatus.get("hasRead")) && originalPostQuestionMessageReadStatus.get("hasRead") === true  ) {
+
+                // increment user marked previous messages that he read as unRead
+
+                Post.increment("postQuestionMessageUnReadCount");
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, Post);
+
+            }
+
+            else if ( postQuestionMessageReadStatus.get("hasRead") === true  && (originalPostQuestionMessageReadStatus.get("hasRead") === false || !originalPostQuestionMessageReadStatus.get("hasRead"))  ) {
+
+                // decrement user read the message
+
+                Post.increment("postQuestionMessageUnReadCount", -1);
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                return callback(null, Post);
+
+            }
+            else if ( postQuestionMessageReadStatus.get("hasRead") === true  && originalPostQuestionMessageReadStatus.get("hasRead") === true  ) {
+
+                // No change don't increment
+
+
+                return callback(null, Post);
+
+            }
+
+
+        }
+
+
+    }
+
+
+
+    async.parallel([
+        async.apply(setDefaultValues),
+        async.apply(countPostQuestionMessageReadStatus),
+        async.apply(countPostQuestionMessageUnRead)
+
+    ], function (err, results_Final) {
+        if (err) {
+            response.error(err);
+        }
+
+        //console.log("final post: " + JSON.stringify(post));
+
+        let beforeSave_Time = process.hrtime(time);
+        console.log(`beforeSave_Time postQuestionMessageUnReadCount took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+    });
+
+
+});
 
 
 // Run beforeSave functions to count number of workspace followers abd members
