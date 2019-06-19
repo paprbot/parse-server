@@ -6875,6 +6875,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                             previousWorkspaceFollowLeave.set("isSelected", true);
                             user.set("isSelectedWorkspaceFollower", previousWorkspaceFollowLeave);
 
+                            previousWorkspaceFollowLeave.set("user", user);
+
                             previousWorkspaceFollowLeave.save(null, {
 
                                 useMasterKey: true
@@ -14608,18 +14610,19 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
             useMasterKey: true
             //sessionToken: sessionToken
 
-        }).then((WorkspaceToSelect) => {
+        }).then((WorkspaceFollowerToSelect) => {
             // The object was retrieved successfully.
 
-            if (WorkspaceToSelect) {
+            if (WorkspaceFollowerToSelect) {
 
-                let WORKSPACE = Parse.Object.extend("WorkSpace");
-                let WorkspaceToSelectSave = new WORKSPACE();
-                WorkspaceToSelectSave.id = WorkspaceToSelect.id;
+                let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+                let WorkspaceFollowerToSelectSave = new WORKSPACEFOLLOWER();
+                WorkspaceFollowerToSelectSave.id = WorkspaceFollowerToSelect.id;
 
-                WorkspaceToSelectSave.set("isSelected", true);
+                WorkspaceFollowerToSelectSave.set("user", owner);
+                WorkspaceFollowerToSelectSave.set("isSelected", true);
 
-                WorkspaceToSelectSave.save(null, {
+                WorkspaceFollowerToSelectSave.save(null, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -14656,7 +14659,7 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
                 // there was no workspace that was previously selected, return empty
 
-                return callback (null, WorkspaceToSelect);
+                return callback (null, WorkspaceFollowerToSelectSave);
             }
 
 
