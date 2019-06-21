@@ -10841,7 +10841,7 @@ function splitObjectAndIndex (request, response) {
         parseObject.id = object.objectId;
     }
 
-    if (className === 'PostQuestionMessageSocial') {
+    if (className === 'PostQuestionMessageVote') {
 
         objectClassName = 'postQuestionMessage';
         PARSEOBJECT = Parse.Object.extend("PostQuestionMessage");
@@ -10852,7 +10852,7 @@ function splitObjectAndIndex (request, response) {
 
         objectClassName = 'postChatMessage';
         PARSEOBJECT = Parse.Object.extend("PostChatMessage");
-        parseObject = new PARSEOBJECT();
+        parseObject = new PARSEOBJECTfinal tags: ();
         parseObject.id = object.objectId;
     }
 
@@ -10937,7 +10937,7 @@ function splitObjectAndIndex (request, response) {
                     console.log("simplifyPostSocial: " + JSON.stringify(ResultObject));
 
                 }
-                else if (className === 'workspace_follower' || className === 'PostQuestionMessageSocial'  || className === 'PostChatMessageSocial'  ) {
+                else if (className === 'workspace_follower' || className === 'PostQuestionMessageVote'  || className === 'PostChatMessageSocial'  ) {
 
                     ResultObject = result;
                     console.log("ResultObject: " + JSON.stringify(ResultObject));
@@ -10976,12 +10976,12 @@ function splitObjectAndIndex (request, response) {
                         index = indexWorkspaces;
 
                     }
-                    else if (className === 'PostQuestionMessageSocial') {
+                    else if (className === 'PostQuestionMessageVote') {
 
                         //object = results[0].get("workspace");
-                        console.log("PostQuestionMessageSocial object: " + JSON.stringify(object));
+                        console.log("PostQuestionMessageVote object: " + JSON.stringify(object));
 
-                        object.postQuestionMessageSocial = resultsFinal;
+                        object.PostQuestionMessageVote = resultsFinal;
                         index = indexPostQuestionMessages;
 
                     }
@@ -11065,12 +11065,12 @@ function splitObjectAndIndex (request, response) {
 
                 }
 
-                else if (className === 'PostQuestionMessageSocial') {
+                else if (className === 'PostQuestionMessageVote') {
 
                     //object = results[0].get("workspace");
-                    console.log("PostQuestionMessageSocial object: " + JSON.stringify(object));
+                    console.log("PostQuestionMessageVote object: " + JSON.stringify(object));
 
-                    object.postQuestionMessageSocial = resultsNone;
+                    object.PostQuestionMessageVote = resultsNone;
                     index = indexPostQuestionMessages;
 
                 }
