@@ -2107,6 +2107,18 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     }
     else if (!user.dirty("isOnline")) {user.set("isDirtyIsOnline", false);}
 
+    if (user.dirty("showAvailability")) {
+        user.set("isDirtyShowAvailability", true);
+
+    }
+    else if (!user.dirty("showAvailability")) {user.set("isDirtyShowAvailability", false);}
+
+    if (user.dirty("isTyping")) {
+        user.set("isDirtyTyping", true);
+
+    }
+    else if (!user.dirty("isTyping")) {user.set("isDirtyTyping", false);}
+
     if (user.isNew()) {
         user.set("isNew", true);
         user.set("showAvailability", true);
@@ -12734,14 +12746,14 @@ Parse.Cloud.afterSave('_User', function(request, response) {
         // The object was retrieved successfully.
         //console.log("Result from get " + JSON.stringify(Workspace));
 
-        console.log("isNew: " + JSON.stringify(user.get("isNew")));
-        console.log("isDirtyProfileimage: " + JSON.stringify(user.get("isDirtyProfileimage")));
+        //console.log("isNew: " + JSON.stringify(user.get("isNew")));
+        //console.log("isDirtyProfileimage: " + JSON.stringify(user.get("isDirtyProfileimage")));
 
         function updateAlgoliaWorkspaceExpertProfileImage (callback) {
 
             console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
 
-            if (user.get("isDirtyProfileimage") !== true && user.get("isDirtyIsOnline") !== true) {
+            if (user.get("isDirtyProfileimage") !== true && user.get("isDirtyIsOnline") !== true && user.get("isDirtyTyping") !== true && user.get("isDirtyShowAvailability") !== true) {
 
                 console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
 
