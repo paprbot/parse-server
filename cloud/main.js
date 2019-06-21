@@ -5867,8 +5867,8 @@ Parse.Cloud.beforeSave('PostQuestionMessageReadStatus', function(req, response) 
         user = postQuestionMessageReadStatus.get("user");
 
     }
-    if (!postQuestionMessageReadStatus.get("postChatMessage")) {
-        return response.error("Please add a postChatMessage pointer it's a required field.")
+    if (!postQuestionMessageReadStatus.get("postQuestionMessage")) {
+        return response.error("Please add a postQuestionMessage pointer it's a required field.")
     } else {
         postQuestionMessage = postQuestionMessageReadStatus.get("postQuestionMessage");
 
@@ -6288,8 +6288,8 @@ Parse.Cloud.beforeSave('PostQuestionMessageVote', function(req, response) {
         user = postQuestionMessageVote.get("user");
 
     }
-    if (!postQuestionMessageVote.get("postChatMessage")) {
-        return response.error("Please add a postChatMessage pointer it's a required field.")
+    if (!postQuestionMessageVote.get("postQuestionMessage")) {
+        return response.error("Please add a postQuestionMessage pointer it's a required field.")
     } else {
         postQuestionMessage = postQuestionMessageVote.get("postQuestionMessage");
 
