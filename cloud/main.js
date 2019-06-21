@@ -2084,7 +2084,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     let userQuery = new Parse.Query(userObject);
     userQuery.equalTo("objectId", user.id);
 
-    console.log("_User req: " + JSON.stringify(req.user));
+    console.log("_User req: " + JSON.stringify(req));
 
     //let expiresAt = session.get("expiresAt");
     let _tagPublic = '*';
@@ -6135,8 +6135,8 @@ Parse.Cloud.beforeSave('PostChatMessageSocial', function(req, response) {
             if (postChatMessageSocial.get("isLiked") === true ) {
 
 
-                POSTCHATMESSAGE.increment("likedCount");
-                POSTCHATMESSAGE.save(null, {
+                PostChatMessage.increment("likedCount");
+                PostChatMessage.save(null, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -6172,8 +6172,8 @@ Parse.Cloud.beforeSave('PostChatMessageSocial', function(req, response) {
 
                 // decrement since user unLiked
 
-                POSTCHATMESSAGE.increment("likedCount", -1);
-                POSTCHATMESSAGE.save(null, {
+                PostChatMessage.increment("likedCount", -1);
+                PostChatMessage.save(null, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -6189,8 +6189,8 @@ Parse.Cloud.beforeSave('PostChatMessageSocial', function(req, response) {
 
                 // increment because the user liked
 
-                POSTCHATMESSAGE.increment("likedCount");
-                POSTCHATMESSAGE.save(null, {
+                PostChatMessage.increment("likedCount");
+                PostChatMessage.save(null, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
