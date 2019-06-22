@@ -503,7 +503,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
 
             }).then((result_workspacefollower) => {
                 // The object was retrieved successfully.
-                //console.log("result_workspacefollower" + JSON.stringify(result_workspacefollower));
+                console.log("result_workspacefollower" + JSON.stringify(result_workspacefollower));
 
                 if (result_workspacefollower) {
 
@@ -7184,6 +7184,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 let previousWorkspaceFollowers = results[1];
 
                 let previousWorkspaceFollowLeave = new WORKSPACEFOLLOWER();
+                console.log("result-2: " + JSON.stringify(result[2]));
+
                 if (result[2]) {
                     previousWorkspaceFollowLeave.id = results[2].id;
                     previousWorkspaceFollowLeave.set("user", results[2].get("user"));
@@ -10852,7 +10854,7 @@ function splitObjectAndIndex (request, response) {
 
         objectClassName = 'postChatMessage';
         PARSEOBJECT = Parse.Object.extend("PostChatMessage");
-        parseObject = new PARSEOBJECTfinal tags: ();
+        parseObject = new PARSEOBJECT();
         parseObject.id = object.objectId;
     }
 
