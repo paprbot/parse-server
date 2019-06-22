@@ -7121,10 +7121,15 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                 if (result) {
 
+                    console.log("result from previousQueryWorkspaceFollowerLeave: " + JSON.stringify(result));
+
                     // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
                     return callback (null, result);
 
                 } else {
+
+                    console.log("else result from previousQueryWorkspaceFollowerLeave: " + JSON.stringify(result));
+
 
                     // there was no workspace that was previously selected, return empty
 
@@ -7184,9 +7189,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 let previousWorkspaceFollowers = results[1];
 
                 let previousWorkspaceFollowLeave = new WORKSPACEFOLLOWER();
-                console.log("result-2: " + JSON.stringify(result[2]));
+                console.log("result-2: " + JSON.stringify(results[2]));
 
-                if (result[2]) {
+                if (results[2]) {
                     previousWorkspaceFollowLeave.id = results[2].id;
                     previousWorkspaceFollowLeave.set("user", results[2].get("user"));
 
@@ -7196,8 +7201,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                 console.log("previousWorkspaceFollowJoin result from query length of array: " + JSON.stringify(previousWorkspaceFollowers.length));
                 console.log("previousWorkspaceFollowLeave result from query: " + JSON.stringify(previousWorkspaceFollowLeave.id));
 
-                //Workspace = result.get("workspace");
-                let workspaceACL = result.get("workspace").getACL();
+                let result_workspace = result.get("workspace");
+                let workspaceACL = result_workspace.getACL();
                 let workspaceFollowACLPrivate = result.getACL();
 
                 //user = result.get("user");
@@ -7515,7 +7520,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                         let userRolesRelation = user.relation("roles");
 
-                        if (workspace.get("type") === 'private') {
+                        if (workspace.get("type") === 'private' && workspaceACL) {
 
                             // if Workspace is private add user ACL so he/she has access to the private Workspace or workspace_follower
 
@@ -7715,11 +7720,11 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                         Workspace.remove("expertsArray", expert);
 
-                        if (workspace.get("type") === 'private') {
+                        if (workspace.get("type") === 'private' && workspaceACL) {
 
                             // check if this user is a Workspace owner then don't remove the ACL or he won't be able to come back to his Workspace
 
-                            if (workspace.get("user").toJSON().objectId === user.toJSON().objectId) {
+                            if (workspace.get("user").id === user.id) {
 
                                 // this user who is unfollowing is also the Workspace owner, don't remove his ACL.
 
@@ -8082,7 +8087,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                             console.log("increment  Member");
 
 
-                            if (workspace.get("type") === 'private') {
+                            if (workspace.get("type") === 'private' && workspaceACL) {
 
                                 // if channel is private add user ACL so he/she has access to the private channel or channelfollow
 
@@ -14178,7 +14183,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     // add _tags for this workspacefollower so it's visible in algolia
 
-                    if (workspace.get("type") === 'private') {
+                    if (workspace.get("type") === 'private' ) {
                         viewableBy.push(workspaceFollower.toJSON().user.objectId);
                         //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
                     }
