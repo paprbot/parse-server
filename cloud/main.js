@@ -455,7 +455,7 @@ Parse.Cloud.define("setAsExpert", function(request, response) {
 
     if (!request.master && (!currentUser || !sessionToken)) {
         response.error(JSON.stringify({
-            code: 'PAPR.ERROR.beforeSave.addExpert.UNAUTHENTICATED_USER',
+            code: 'PAPR.ERROR.cloudFunction.setAsExpert.UNAUTHENTICATED_USER',
             message: 'Unauthenticated user.'
         }));
         return;
@@ -491,7 +491,7 @@ Parse.Cloud.define("setAsExpert", function(request, response) {
             console.log("expert added: " + JSON.stringify(result));
 
             let finalTime = process.hrtime(time);
-            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            console.log(`finalTime  setAsExpert  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
 
             response.success(result);
@@ -500,7 +500,86 @@ Parse.Cloud.define("setAsExpert", function(request, response) {
         } else {
 
             let finalTime = process.hrtime(time);
-            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+            console.log(`finalTime setAsExpert took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+            response.error(result);
+
+        }
+
+
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        response.error(error);
+    }, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+
+}, {useMasterKey: true});
+
+// cloud API and function to removeExpert to a workspace
+Parse.Cloud.define("removeExpert", function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.cloudFunction.removeExpert.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    //get request params
+    let User = request.params.user;
+    let WorkspaceId = request.params.workspace;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = WorkspaceId;
+
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+    user.id = User;
+
+    let expertRelation = workspace.relation("experts");
+    expertRelation.remove(user);
+
+    // save workspace to add expert to it
+
+    workspace.save(null, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    }).then((result) => {
+
+        // save was successful
+        if(result) {
+
+            console.log("removeExpert: " + JSON.stringify(result));
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime removeExpert took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+            response.success(result);
+
+
+        } else {
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime removeExpert took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
 
             response.error(result);
@@ -534,7 +613,7 @@ Parse.Cloud.define("setAsFounder", function(request, response) {
 
     if (!request.master && (!currentUser || !sessionToken)) {
         response.error(JSON.stringify({
-            code: 'PAPR.ERROR.beforeSave.setAsFounder.UNAUTHENTICATED_USER',
+            code: 'PAPR.ERROR.cloudFunction.setAsFounder.UNAUTHENTICATED_USER',
             message: 'Unauthenticated user.'
         }));
         return;
@@ -598,6 +677,82 @@ Parse.Cloud.define("setAsFounder", function(request, response) {
 
 }, {useMasterKey: true});
 
+// cloud API and function to setAsOwner to a workspace
+Parse.Cloud.define("removeFounder", function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.cloudFunction.removeFounder.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    //get request params
+    let User = request.params.user;
+    let WorkspaceId = request.params.workspace;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = WorkspaceId;
+
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+    user.id = User;
+
+    let queryOwnerRole = new Parse.Query(Parse.Role);
+    let ownerName = 'owner-' + workspace.id;
+
+    queryOwnerRole.equalTo('name', ownerName);
+    queryOwnerRole.first({useMasterKey: true})
+        .then((ownerRole) => {
+            // The object was retrieved successfully.
+
+            //console.log("ownerRole" + JSON.stringify(ownerRole));
+
+            // add user to this role and save it
+            ownerRole.getUsers().remove(user);
+            ownerRole.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            // set user role now then save
+            let roleRelation = user.relation("roles");
+            roleRelation.remove(ownerRole);
+            user.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime removeFounder took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {useMasterKey: true});
+
+
+
+}, {useMasterKey: true});
+
 // cloud API and function to setAsAdmin to a workspace
 Parse.Cloud.define("setAsAdmin", function(request, response) {
 
@@ -610,7 +765,7 @@ Parse.Cloud.define("setAsAdmin", function(request, response) {
 
     if (!request.master && (!currentUser || !sessionToken)) {
         response.error(JSON.stringify({
-            code: 'PAPR.ERROR.beforeSave.setAsAdmin.UNAUTHENTICATED_USER',
+            code: 'PAPR.ERROR.cloudFunction.setAsAdmin.UNAUTHENTICATED_USER',
             message: 'Unauthenticated user.'
         }));
         return;
@@ -674,6 +829,82 @@ Parse.Cloud.define("setAsAdmin", function(request, response) {
 
 }, {useMasterKey: true});
 
+// cloud API and function to setAsAdmin to a workspace
+Parse.Cloud.define("removeAdmin", function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.cloudFunction.removeAdmin.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    //get request params
+    let User = request.params.user;
+    let WorkspaceId = request.params.workspace;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = WorkspaceId;
+
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+    user.id = User;
+
+    let queryAdminRole = new Parse.Query(Parse.Role);
+    let adminName = 'admin-' + workspace.id;
+
+    queryAdminRole.equalTo('name', adminName);
+    queryAdminRole.first({useMasterKey: true})
+        .then((adminRole) => {
+            // The object was retrieved successfully.
+
+            //console.log("ownerRole" + JSON.stringify(ownerRole));
+
+            // add user to this role and save it
+            adminRole.getUsers().remove(user);
+            adminRole.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            // set user role now then save
+            let roleRelation = user.relation("roles");
+            roleRelation.remove(adminRole);
+            user.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime removeAdmin took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {useMasterKey: true});
+
+
+
+}, {useMasterKey: true});
+
 // cloud API and function to setAsModerator to a workspace
 Parse.Cloud.define("setAsModerator", function(request, response) {
 
@@ -686,7 +917,7 @@ Parse.Cloud.define("setAsModerator", function(request, response) {
 
     if (!request.master && (!currentUser || !sessionToken)) {
         response.error(JSON.stringify({
-            code: 'PAPR.ERROR.beforeSave.setAsModerator.UNAUTHENTICATED_USER',
+            code: 'PAPR.ERROR.cloudFunction.setAsModerator.UNAUTHENTICATED_USER',
             message: 'Unauthenticated user.'
         }));
         return;
@@ -726,6 +957,80 @@ Parse.Cloud.define("setAsModerator", function(request, response) {
             // set user role now then save
             let roleRelation = user.relation("roles");
             roleRelation.add(moderatorRole);
+            user.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime moderatorRole took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {useMasterKey: true});
+
+}, {useMasterKey: true});
+
+// cloud API and function to setAsModerator to a workspace
+Parse.Cloud.define("removeModerator", function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.cloudFunction.removeModerator.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    //get request params
+    let User = request.params.user;
+    let WorkspaceId = request.params.workspace;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = WorkspaceId;
+
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+    user.id = User;
+
+    let queryModeratorRole = new Parse.Query(Parse.Role);
+    let moderatorName = 'moderator-' + workspace.id;
+
+    queryModeratorRole.equalTo('name', moderatorName);
+    queryModeratorRole.first({useMasterKey: true})
+        .then((moderatorRole) => {
+            // The object was retrieved successfully.
+
+            //console.log("ownerRole" + JSON.stringify(ownerRole));
+
+            // add user to this role and save it
+            moderatorRole.getUsers().remove(user);
+            moderatorRole.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            // set user role now then save
+            let roleRelation = user.relation("roles");
+            roleRelation.remove(moderatorRole);
             user.save(null, {
 
                 useMasterKey: true
