@@ -5540,7 +5540,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     });
 
 
-});
+}, {useMasterKey: true});
 
 // Run beforeSave functions for PostQuestionMessage
 Parse.Cloud.beforeSave('PostQuestionMessage', function(req, response) {
@@ -12067,6 +12067,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 } else if (!postACL || postACL === null) {
 
                     // this means it's public read write
+                    console.log("no postACL for this post.");
                     Post._tags = ['*'];
                 }
 
@@ -12078,6 +12079,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             }
 
             function getPostQuestions (callback) {
+
+                console.log("starting getPostQuestions function.");
 
                 let postQuestion = new POST();
                 postQuestion.id = post.id;
@@ -12205,6 +12208,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
             function getTopAnswerForQuestionPost (callback) {
 
+                console.log("starting getTopAnswerForQuestionPost function.");
+
+
                 let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
                 let queryPostQuestionMessage= new Parse.Query(POSTQUESTIONMESSAGE);
                 //queryPostQuestionMessage.equalTo("workspace", workspace);
@@ -12217,6 +12223,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     useMasterKey: true
                     //sessionToken: sessionToken
                 }).then((postQuestionMessage) => {
+
+                    console.log("starting postQuestionMessage: " + JSON.stringify(postQuestionMessage));
 
 
                     if (postQuestionMessage) {
@@ -12252,6 +12260,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             }
 
             function getChatMessages (callback) {
+
+                console.log("starting getChatMessages function.");
+
 
                 let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
                 let queryPostChatMessage = new Parse.Query(POSTCHATMESSAGE);
@@ -12323,6 +12334,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     response.error(err);
                 }
 
+                console.log("starting show results " + JSON.stringify(results.length));
+
+
                 if (results.length > 0) {
 
                     console.log("afterSave Post results length: " + JSON.stringify(results.length));
@@ -12374,7 +12388,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     });
 
 
-});
+}, {useMasterKey: true});
 
 // Add and Update AlgoliaSearch post object if it's deleted from Parse
 Parse.Cloud.afterSave('PostQuestionMessage', function(request, response) {
