@@ -7220,16 +7220,46 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     console.log("channelFollow final before save: " + JSON.stringify(channelFollower));
 
+
                                     channelFollower.save(null, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+
+                                    }).then((result) => {
+
+                                        // save was successful
+                                        if(result) {
+
+                                            //console.log("default channelFollow save from createDefaultChannelFollows: " + JSON.stringify(result));
+
+                                            defaultChannelObject = result;
+
+                                            return cb (null, defaultChannelObject);
+
+
+
+                                        } else {
+
+                                            defaultChannelObject = channelFollower;
+
+                                            return cb (null, defaultChannelObject);
+
+                                        }
+
+
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                         return cb (error);
+                                    }, {
 
                                         useMasterKey: true
                                         //sessionToken: sessionToken
 
                                     });
 
-                                    defaultChannelObject = channelFollower;
-
-                                    return cb (null, defaultChannelObject);
 
 
                                 }, function (err, defaultChannels) {
