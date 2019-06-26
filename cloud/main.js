@@ -6722,6 +6722,8 @@ Parse.Cloud.beforeSave('PostChatMessageSocial', function(req, response) {
 
             if (!postChatMessageSocial.get("archive")) { postChatMessageSocial.set("archive", false); }
             if (!postChatMessageSocial.get("isLiked")) { postChatMessageSocial.set("isLiked", false); }
+            if (!postChatMessageSocial.get("isDelivered")) { postChatMessageSocial.set("isDelivered", false); }
+            if (!postChatMessageSocial.get("hasRead")) { postChatMessageSocial.set("hasRead", false); }
 
             return callback (null, postChatMessageSocial);
 
@@ -6826,11 +6828,104 @@ Parse.Cloud.beforeSave('PostChatMessageSocial', function(req, response) {
 
     }
 
+    function countPostChatMessageUnRead (callback) {
+
+        let POST = Parse.Object.extend("Post");
+        let Post = new POST();
+        Post.id = post.id;
+
+        if (postChatMessageSocial.isNew()) {
+
+            if (postChatMessageSocial.get("hasRead") === false || !postChatMessageSocial.get("hasRead")) {
+
+
+                Post.increment("chatMessageUnReadCount");
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, Post);
+
+            }
+
+            else {
+
+
+                return callback(null, Post);
+
+            }
+
+
+        } else {
+
+            // postChatMessageReadStatus already exists
+
+            if ( (postChatMessageSocial.get("hasRead") === false || !postChatMessageSocial.get("hasRead")) && (originalPostChatMessageSocial.get("hasRead") === false || !originalPostChatMessageSocial.get("hasRead")) ) {
+                // original hasRead == false and new hasRead also === false don't increment
+
+
+                return callback(null, Post);
+
+            }
+
+            else if ( (postChatMessageSocial.get("hasRead") === false ) && originalPostChatMessageSocial.get("hasRead") === true  ) {
+
+                // increment user marked previous messages that he read as unRead
+
+                Post.increment("chatMessageUnReadCount");
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, Post);
+
+            }
+
+            else if ( postChatMessageSocial.get("hasRead") === true  && (originalPostChatMessageSocial.get("hasRead") === false || !originalPostChatMessageSocial.get("hasRead"))  ) {
+
+                // decrement user read the message
+
+                Post.increment("chatMessageUnReadCount", -1);
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                return callback(null, Post);
+
+            }
+            else if ( postChatMessageSocial.get("hasRead") === true  && originalPostChatMessageSocial.get("hasRead") === true  ) {
+
+                // No change don't increment
+
+
+                return callback(null, Post);
+
+            }
+
+
+        }
+
+
+    }
+
+
 
 
     async.parallel([
         async.apply(setDefaultValues),
-        async.apply(countPostChatMessageLikes)
+        async.apply(countPostChatMessageLikes),
+        async.apply(countPostChatMessageUnRead)
 
     ], function (err, results_Final) {
         if (err) {
@@ -6914,6 +7009,9 @@ Parse.Cloud.beforeSave('PostQuestionMessageVote', function(req, response) {
         if (postQuestionMessageVote.isNew()) {
 
             if (!postQuestionMessageVote.get("archive")) { postQuestionMessageVote.set("archive", false); }
+            if (!postQuestionMessageVote.get("isDelivered")) { postQuestionMessageVote.set("isDelivered", false); }
+            if (!postQuestionMessageVote.get("hasRead")) { postQuestionMessageVote.set("hasRead", false); }
+
 
             return callback (null, postQuestionMessageVote);
 
@@ -7039,11 +7137,102 @@ Parse.Cloud.beforeSave('PostQuestionMessageVote', function(req, response) {
 
     }
 
+    function countPostQuestionMessageUnRead (callback) {
+
+        let POST = Parse.Object.extend("Post");
+        let Post = new POST();
+        Post.id = post.id;
+
+        if (postQuestionMessageVote.isNew()) {
+
+            if (postQuestionMessageVote.get("hasRead") === false || !postQuestionMessageVote.get("hasRead")) {
+
+
+                Post.increment("postQuestionMessageUnReadCount");
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, Post);
+
+            }
+
+            else {
+
+
+                return callback(null, Post);
+
+            }
+
+
+        } else {
+
+            // postChatMessageReadStatus already exists
+
+            if ( (postQuestionMessageVote.get("hasRead") === false || !postQuestionMessageVote.get("hasRead")) && (originalPostQuestionMessageVote.get("hasRead") === false || !originalPostQuestionMessageVote.get("hasRead")) ) {
+                // original hasRead == false and new hasRead also === false don't increment
+
+
+                return callback(null, Post);
+
+            }
+
+            else if ( (postQuestionMessageVote.get("hasRead") === false) && originalPostQuestionMessageVote.get("hasRead") === true  ) {
+
+                // increment user marked previous messages that he read as unRead
+
+                Post.increment("postQuestionMessageUnReadCount");
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, Post);
+
+            }
+
+            else if ( postQuestionMessageVote.get("hasRead") === true  && (originalPostQuestionMessageVote.get("hasRead") === false || !originalPostQuestionMessageVote.get("hasRead"))  ) {
+
+                // decrement user read the message
+
+                Post.increment("postQuestionMessageUnReadCount", -1);
+                Post.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                return callback(null, Post);
+
+            }
+            else if ( postQuestionMessageVote.get("hasRead") === true  && originalPostQuestionMessageVote.get("hasRead") === true  ) {
+
+                // No change don't increment
+
+
+                return callback(null, Post);
+
+            }
+
+
+        }
+
+
+    }
 
 
     async.parallel([
         async.apply(setDefaultValues),
-        async.apply(countPostQuestionMessageVote)
+        async.apply(countPostQuestionMessageVote),
+        async.apply(countPostQuestionMessageUnRead)
 
     ], function (err, results_Final) {
         if (err) {
