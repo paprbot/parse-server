@@ -5102,8 +5102,9 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             if (!post.get("chatMessageUnReadCount")) { post.set("chatMessageUnReadCount", 0); }
             if (!post.get("postSocialCount")) { post.set("postSocialCount", 0); }
             if (!post.get("isIncognito")) { post.set("isIncognito", false); }
-            if (!post.get("questionAnswerEnabled")) { post.set("questionAnswerEnabled", true); }
-            if (!post.get("chatEnabled")) { post.set("chatEnabled", true); }
+            if (!post.get("questionAnswerEnabled") && post.get("questionAnswerEnabled") !== false) { post.set("questionAnswerEnabled", true); }
+            if (!post.get("chatEnabled") && post.get("chatEnabled") !== false) { post.set("chatEnabled", true); }
+
 
             return callback (null, post);
 
@@ -14897,7 +14898,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
     }
 
-    function deletePostQuestion (callback) {
+    function deletePostQuestionMessage (callback) {
 
         let POSTQUESTION = Parse.Object.extend("Post");
         let queryPostQuestion = new Parse.Query(POSTQUESTION);
@@ -14969,7 +14970,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
     }
 
-    function deletePostQuestionMessage (callback) {
+    function deletePostChatMessage (callback) {
 
         let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
         let queryPostQuestionMessage = new Parse.Query(POSTQUESTIONMESSAGE);
@@ -15044,8 +15045,8 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
     async.parallel([
         async.apply(deletePostSocial)
-        //async.apply(deletePostQuestion)
         //async.apply(deletePostQuestionMessage)
+        //async.apply(deletePostChatMessage)
 
 
 
@@ -15059,16 +15060,16 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
             // Remove the object from Algolia
             indexPosts.deleteObject(post.id, function(err, content) {
                 if (err) {
-                    throw err;
+                    response.error(err);
                 }
                 console.log('Parse<>Algolia object deleted');
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took afterDelete Post ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                response.success();
             });
-
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime took afterDelete Post ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-            response.success();
+            
 
 
         }
