@@ -469,24 +469,27 @@ Parse.Cloud.define("setAsExpert", function(request, response) {
     let workspace = new WORKSPACE();
     workspace.id = WorkspaceId;
 
-    let expertRelation = workspace.relation("experts");
-    
-    async.forEach(UserIdArray, function (userId, cb) {
+    async.map(UserIdArray, function (userId, cb) {
+
+        userId = userId.objectId;
+
+        console.log("userId: " + JSON.stringify(userId));
 
         let USER = Parse.Object.extend("_User");
         let user = new USER();
         user.id = userId;
 
-        expertRelation.add(user);
-
-        return cb (null, userId);
+        return cb (null, user);
 
 
-    }, function (err) {
+    }, function (err, result) {
 
         //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
 
         if (err) {response.error(err);} else {
+
+            let expertRelation = workspace.relation("experts");
+            expertRelation.add(result);
 
             workspace.save(null, {
 
@@ -537,7 +540,6 @@ Parse.Cloud.define("setAsExpert", function(request, response) {
 
 
 
-
 }, {useMasterKey: true});
 
 // cloud API and function to removeExpert to a workspace
@@ -559,63 +561,83 @@ Parse.Cloud.define("removeExpert", function(request, response) {
     }
 
     //get request params
-    let User = request.params.user;
-    let WorkspaceId = request.params.workspace;
+    let User = request.params.userIdArray;
+    let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
     workspace.id = WorkspaceId;
 
-    let USER = Parse.Object.extend("_User");
-    let user = new USER();
-    user.id = User;
+    async.map(UserIdArray, function (userId, cb) {
 
-    let expertRelation = workspace.relation("experts");
-    expertRelation.remove(user);
+        userId = userId.objectId;
 
-    // save workspace to add expert to it
+        console.log("userId: " + JSON.stringify(userId));
 
-    workspace.save(null, {
+        let USER = Parse.Object.extend("_User");
+        let user = new USER();
+        user.id = userId;
 
-        useMasterKey: true
-        //sessionToken: sessionToken
-
-    }).then((result) => {
-
-        // save was successful
-        if(result) {
-
-            console.log("removeExpert: " + JSON.stringify(result));
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime removeExpert took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+        return cb (null, user);
 
 
-            response.success(result);
+    }, function (err, result) {
+
+        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+        if (err) {response.error(err);} else {
+
+            let expertRelation = workspace.relation("experts");
+            expertRelation.remove(result);
+
+            workspace.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((result) => {
+
+                // save was successful
+                if(result) {
+
+                    console.log("expert added: " + JSON.stringify(result));
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime  removeExpert  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
 
-        } else {
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime removeExpert took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.success(result);
 
 
-            response.error(result);
+                } else {
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime removeExpert took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                    response.error(result);
+
+                }
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
 
         }
 
-
-    }, (error) => {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
-        response.error(error);
-    }, {
-
-        useMasterKey: true
-        //sessionToken: sessionToken
-
     });
 
+    
 
 }, {useMasterKey: true});
 
