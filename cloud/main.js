@@ -462,62 +462,80 @@ Parse.Cloud.define("setAsExpert", function(request, response) {
     }
 
     //get request params
-    let User = request.params.user;
-    let WorkspaceId = request.params.workspace;
+    let UserIdArray = request.params.userIdArray;
+    let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
     workspace.id = WorkspaceId;
 
-    let USER = Parse.Object.extend("_User");
-    let user = new USER();
-    user.id = User;
-
     let expertRelation = workspace.relation("experts");
-    expertRelation.add(user);
+    
+    async.forEach(UserIdArray, function (userId, cb) {
 
-    // save workspace to add expert to it
+        let USER = Parse.Object.extend("_User");
+        let user = new USER();
+        user.id = userId;
 
-    workspace.save(null, {
+        expertRelation.add(user);
 
-        useMasterKey: true
-        //sessionToken: sessionToken
-
-    }).then((result) => {
-
-        // save was successful
-        if(result) {
-
-            console.log("expert added: " + JSON.stringify(result));
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime  setAsExpert  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+        return cb (null, userId);
 
 
-            response.success(result);
+    }, function (err) {
+
+        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+        if (err) {response.error(err);} else {
+
+            workspace.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((result) => {
+
+                // save was successful
+                if(result) {
+
+                    console.log("expert added: " + JSON.stringify(result));
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime  setAsExpert  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
 
-        } else {
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime setAsExpert took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                    response.success(result);
 
 
-            response.error(result);
+                } else {
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime setAsExpert took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                    response.error(result);
+
+                }
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
 
         }
 
-
-    }, (error) => {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
-        response.error(error);
-    }, {
-
-        useMasterKey: true
-        //sessionToken: sessionToken
-
     });
+
+
 
 
 }, {useMasterKey: true});
@@ -11791,6 +11809,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let workspace = new WORKSPACE();
         workspace.id = Post.get("workspace").id;
+
+        // todo check for post thread parent, if it exists add this child post to parent post and save parent post to update parent algolia
 
         function prepIndex (callback) {
 
