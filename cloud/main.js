@@ -561,7 +561,7 @@ Parse.Cloud.define("removeExpert", function(request, response) {
     }
 
     //get request params
-    let User = request.params.userIdArray;
+    let UserIdArray = request.params.userIdArray;
     let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
@@ -637,7 +637,7 @@ Parse.Cloud.define("removeExpert", function(request, response) {
 
     });
 
-    
+
 
 }, {useMasterKey: true});
 
@@ -660,19 +660,16 @@ Parse.Cloud.define("setAsFounder", function(request, response) {
     }
 
     //get request params
-    let User = request.params.user;
-    let WorkspaceId = request.params.workspace;
+    let UserIdArray = request.params.userIdArray;
+    let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
     workspace.id = WorkspaceId;
 
-    let USER = Parse.Object.extend("_User");
-    let user = new USER();
-    user.id = User;
-
     let queryOwnerRole = new Parse.Query(Parse.Role);
     let ownerName = 'owner-' + workspace.id;
+
 
     queryOwnerRole.equalTo('name', ownerName);
     queryOwnerRole.first({useMasterKey: true})
@@ -681,29 +678,55 @@ Parse.Cloud.define("setAsFounder", function(request, response) {
 
             //console.log("ownerRole" + JSON.stringify(ownerRole));
 
-            // add user to this role and save it
-            ownerRole.getUsers().add(user);
-            ownerRole.save(null, {
+            async.map(UserIdArray, function (userId, cb) {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                userId = userId.objectId;
+
+                console.log("userId: " + JSON.stringify(userId));
+
+                let USER = Parse.Object.extend("_User");
+                let user = new USER();
+                user.id = userId;
+
+                // set user role now then save
+                let roleRelation = user.relation("roles");
+                roleRelation.add(ownerRole);
+                user.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                return cb (null, user);
+
+
+            }, function (err, result) {
+
+                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                if (err) {response.error(err);} else {
+
+                    // add user to this role and save it
+                    ownerRole.getUsers().add(result);
+                    ownerRole.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime setAsFounder took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                    response.success();
+
+
+
+                }
 
             });
-
-            // set user role now then save
-            let roleRelation = user.relation("roles");
-            roleRelation.add(ownerRole);
-            user.save(null, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime setAsFounder took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-            response.success();
 
 
 
