@@ -14898,7 +14898,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
     }
 
-    function deletePostQuestionMessage (callback) {
+    function deletePostQuestion (callback) {
 
         let POSTQUESTION = Parse.Object.extend("Post");
         let queryPostQuestion = new Parse.Query(POSTQUESTION);
@@ -14970,7 +14970,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
     }
 
-    function deletePostChatMessage (callback) {
+    function deletePostQuestionMessage (callback) {
 
         let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
         let queryPostQuestionMessage = new Parse.Query(POSTQUESTIONMESSAGE);
@@ -14981,10 +14981,10 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
         queryPostQuestionMessage.find({
             useMasterKey: true
             //sessionToken: sessionToken
-        }).then((postQuestions) => {
+        }).then((postQuestionMessages) => {
 
 
-            if (postQuestions) {
+            if (postQuestionMessages) {
 
                 /*Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
 
@@ -15002,13 +15002,13 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
                  }
                  });*/
 
-                Parse.Object.destroyAll(postQuestions, {
+                Parse.Object.destroyAll(postQuestionMessages, {
                     success: function(result) {
-                        console.log('Did successfully delete postQuestions in afterDelete Post Cloud Function');
+                        console.log('Did successfully delete postQuestionMessages in afterDelete Post Cloud Function');
                         return callback(null, result);
                     },
                     error: function(error) {
-                        console.error("Error delete postQuestions " + error.code + ": " + error.message);
+                        console.error("Error delete postQuestionMessages " + error.code + ": " + error.message);
                         return callback(error);
                     },
                     useMasterKey: true
@@ -15020,9 +15020,81 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
             } else {
 
-                postQuestions = [];
+                postQuestionMessages = [];
                 // no workspaceFollowers to delete return
-                return callback(null, postQuestions);
+                return callback(null, postQuestionMessages);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+
+    }
+
+    function deletePostChatMessage (callback) {
+
+        let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
+        let queryPostChatMessage = new Parse.Query(POSTCHATMESSAGE);
+        //queryPostQuestion.equalTo("workspace", workspace);
+        //queryPostQuestion.equalTo("channel", channel);
+        queryPostChatMessage.equalTo("post", post);
+        queryPostChatMessage.limit(10000);
+        queryPostChatMessage.find({
+            useMasterKey: true
+            //sessionToken: sessionToken
+        }).then((postChatMessages) => {
+
+
+            if (postChatMessages) {
+
+                /*Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
+
+                 if (error) {
+
+                 console.error("Error deleteChannelFollowers " + error.code + ": " + error.message);
+                 return callback(error);
+
+
+                 }
+
+                 if (result) {
+
+                 return callback(null, result);
+                 }
+                 });*/
+
+                Parse.Object.destroyAll(postChatMessages, {
+                    success: function(result) {
+                        console.log('Did successfully delete postChatMessages in afterDelete Post Cloud Function');
+                        return callback(null, result);
+                    },
+                    error: function(error) {
+                        console.error("Error delete postChatMessages " + error.code + ": " + error.message);
+                        return callback(error);
+                    },
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+
+            } else {
+
+                postChatMessages = [];
+                // no workspaceFollowers to delete return
+                return callback(null, postChatMessages);
 
             }
 
@@ -15044,10 +15116,10 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
 
     async.parallel([
-        async.apply(deletePostSocial)
-        //async.apply(deletePostQuestionMessage)
-        //async.apply(deletePostChatMessage)
-
+        async.apply(deletePostSocial),
+        async.apply(deletePostQuestion),
+        async.apply(deletePostQuestionMessage),
+        async.apply(deletePostChatMessage)
 
 
     ], function (err, results) {
@@ -15069,7 +15141,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
                 response.success();
             });
-            
+
 
 
         }
