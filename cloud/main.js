@@ -12136,109 +12136,48 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         let workspace = new WORKSPACE();
         workspace.id = Post.get("workspace").id;
 
-        // todo check for post thread parent, if it exists add this child post to parent post and save parent post to update parent algolia
+        if (post.get("post")) {
+            // this is a child post, so save it in relation array in it's parent post
 
-        function prepIndex (callback) {
+            let parentPost = post.get("post");
 
-            // Successfully retrieved the object.
-            //console.log("ObjectToSave: " + JSON.stringify(post));
+            let postQuestionRelation = parentPost.relation("postQuestions");
+            postQuestionRelation.add(post);
 
-            // Convert Parse.Object to JSON
-            Post = Post.toJSON();
+            parentPost.save(null, {
 
-            // Specify Algolia's objectID with the Parse.Object unique ID
-            //Post.objectID = Post.objectId;
-
-            // set _tags depending on the post ACL
-
-            if (postACL) {
-
-                if (postACL.getPublicReadAccess()) {
-
-                    // this means it's public read access is true
-                    Post._tags = ['*'];
-
-                }
-
-                /*
-                 else if (!postACL.getPublicReadAccess() && postACL.getReadAccess(user)) {
-
-
-                 // this means this user has read access
-                 Post._tags = [user.id];
-
-                 } else if (!postACL.getPublicReadAccess() && post.ACL.getReadAccess(roleChannel)) {
-
-                 // this means any user with this channel is private and channel-role will have access i.e. they are a member of this channel
-                 Post._tags = [roleChannel];
-
-                 }
-
-
-
-                 */
-
-
-            } else if (!postACL || postACL === null) {
-
-                // this means it's public read write
-                console.log("no postACL for this post.");
-                Post._tags = ['*'];
-            }
-
-
-
-
-            return callback(null, Post);
-
-        }
-
-        function getPostQuestions (callback) {
-
-            console.log("starting getPostQuestions function.");
-
-            let postQuestion = new POST();
-            postQuestion.id = post.id;
-
-            let relationPostQuestion = postQuestion.relation("postQuestions");
-
-            let querypostQuestion = relationPostQuestion.query();
-            //querypostQuestion.equalTo("archive", false);
-            querypostQuestion.descending("likesCount");
-            querypostQuestion.limit(10);
-            querypostQuestion.find({
                 useMasterKey: true
                 //sessionToken: sessionToken
-            }).then((postQuestions) => {
 
-                console.log("postQuestions: " + JSON.stringify(postQuestions));
+            }).then((result) => {
+
+                // save was successful
+                if(result) {
+
+                    //console.log("parent post saved: " + JSON.stringify(result));
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime  afterSave Post parentPost took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
 
-                if (postQuestions.length !== 0) {
-
-                    console.log("postQuestions exist");
-
-                    //postQuestions = simplifyPostQuestion(postQuestions);
-                    return callback (null, postQuestions);
+                    return response.success();
 
 
                 } else {
 
-                    let postQuestions = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, postQuestions);
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime  afterSave Post parentPost  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                    return response.error();
 
                 }
-
 
 
             }, (error) => {
                 // The object was not retrieved successfully.
                 // error is a Parse.Error with an error code and message.
-                console.log(error);
-                let postQuestions = [];
-                // no workspaceFollowers to delete return
-                return callback(null, postQuestions);
+                response.error(error);
             }, {
 
                 useMasterKey: true
@@ -12247,268 +12186,376 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             });
 
 
+
         }
 
-        function getPostSocial (callback) {
+        else {
+            // this post is not a child post of a parent post (not threaded post) so save this parent post to algolia
 
-            let POSTSOCIAL = Parse.Object.extend("PostSocial");
-            let queryPostSocial = new Parse.Query(POSTSOCIAL);
-            //queryPostSocial.equalTo("workspace", workspace);
-            //queryPostSocial.equalTo("channel", channel);
-            queryPostSocial.equalTo("post", post);
-            //queryPostSocial.equalTo("archive", false);
-            queryPostSocial.limit(1000);
-            queryPostSocial.find({
-                useMasterKey: true
-                //sessionToken: sessionToken
-            }).then((PostSocials) => {
+            function prepIndex(callback) {
 
+                // Successfully retrieved the object.
+                //console.log("ObjectToSave: " + JSON.stringify(post));
 
-                if (PostSocials.length !== 0) {
+                // Convert Parse.Object to JSON
+                Post = Post.toJSON();
 
+                // Specify Algolia's objectID with the Parse.Object unique ID
+                //Post.objectID = Post.objectId;
 
-                    async.map(PostSocials, function (postSocial, cb) {
+                // set _tags depending on the post ACL
 
-                        let POSTSOCIAL = Parse.Object.extend("PostSocial");
-                        let PostSocial = new POSTSOCIAL();
+                if (postACL) {
 
-                        PostSocial = simplifyPostSocial(postSocial);
-                        console.log("simplifyPostSocial: " + JSON.stringify(PostSocial));
+                    if (postACL.getPublicReadAccess()) {
 
-                        postSocial = PostSocial;
+                        // this means it's public read access is true
+                        Post._tags = ['*'];
 
-                        return cb (null, postSocial);
+                    }
+
+                    /*
+                     else if (!postACL.getPublicReadAccess() && postACL.getReadAccess(user)) {
 
 
-                    }, function (err, PostSocials) {
+                     // this means this user has read access
+                     Post._tags = [user.id];
 
-                        //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
+                     } else if (!postACL.getPublicReadAccess() && post.ACL.getReadAccess(roleChannel)) {
 
-                        if (err) {
-                            return callback (err);
-                        } else {
+                     // this means any user with this channel is private and channel-role will have access i.e. they are a member of this channel
+                     Post._tags = [roleChannel];
 
-                            return callback (null, PostSocials);
+                     }
+
+
+
+                     */
+
+
+                } else if (!postACL || postACL === null) {
+
+                    // this means it's public read write
+                    console.log("no postACL for this post.");
+                    Post._tags = ['*'];
+                }
+
+
+                return callback(null, Post);
+
+            }
+
+            function getPostQuestions(callback) {
+
+                console.log("starting getPostQuestions function.");
+
+                let postQuestion = new POST();
+                postQuestion.id = post.id;
+
+                let relationPostQuestion = postQuestion.relation("postQuestions");
+
+                let querypostQuestion = relationPostQuestion.query();
+                //querypostQuestion.equalTo("archive", false);
+                querypostQuestion.descending("likesCount");
+                querypostQuestion.limit(10);
+                querypostQuestion.find({
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+                }).then((postQuestions) => {
+
+                    console.log("postQuestions: " + JSON.stringify(postQuestions));
+
+
+                    if (postQuestions.length !== 0) {
+
+                        console.log("postQuestions exist");
+
+                        //postQuestions = simplifyPostQuestion(postQuestions);
+                        return callback(null, postQuestions);
+
+
+                    } else {
+
+                        let postQuestions = [];
+                        // no workspaceFollowers to delete return
+                        return callback(null, postQuestions);
+
+                    }
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    console.log(error);
+                    let postQuestions = [];
+                    // no workspaceFollowers to delete return
+                    return callback(null, postQuestions);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            }
+
+            function getPostSocial(callback) {
+
+                let POSTSOCIAL = Parse.Object.extend("PostSocial");
+                let queryPostSocial = new Parse.Query(POSTSOCIAL);
+                //queryPostSocial.equalTo("workspace", workspace);
+                //queryPostSocial.equalTo("channel", channel);
+                queryPostSocial.equalTo("post", post);
+                //queryPostSocial.equalTo("archive", false);
+                queryPostSocial.limit(1000);
+                queryPostSocial.find({
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+                }).then((PostSocials) => {
+
+
+                    if (PostSocials.length !== 0) {
+
+
+                        async.map(PostSocials, function (postSocial, cb) {
+
+                            let POSTSOCIAL = Parse.Object.extend("PostSocial");
+                            let PostSocial = new POSTSOCIAL();
+
+                            PostSocial = simplifyPostSocial(postSocial);
+                            console.log("simplifyPostSocial: " + JSON.stringify(PostSocial));
+
+                            postSocial = PostSocial;
+
+                            return cb(null, postSocial);
+
+
+                        }, function (err, PostSocials) {
+
+                            //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
+
+                            if (err) {
+                                return callback(err);
+                            } else {
+
+                                return callback(null, PostSocials);
+
+                            }
+
+                        });
+
+
+                    } else {
+
+                        let PostSocials = [];
+                        // no workspaceFollowers to delete return
+                        return callback(null, PostSocials);
+
+                    }
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    console.log(error);
+                    let PostSocials = [];
+                    // no workspaceFollowers to delete return
+                    return callback(null, PostSocials);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+            }
+
+            function getTopAnswerForQuestionPost(callback) {
+
+                console.log("starting getTopAnswerForQuestionPost function.");
+
+
+                let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
+                let queryPostQuestionMessage = new Parse.Query(POSTQUESTIONMESSAGE);
+                //queryPostQuestionMessage.equalTo("workspace", workspace);
+                //queryPostQuestionMessage.equalTo("channel", channel);
+                queryPostQuestionMessage.equalTo("post", post);
+                //queryPostQuestionMessage.equalTo("archive", false);
+                queryPostQuestionMessage.equalTo("type", "answer");
+                queryPostQuestionMessage.descending("voteRank");
+                queryPostQuestionMessage.first({
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+                }).then((postQuestionMessage) => {
+
+                    console.log("starting postQuestionMessage: " + JSON.stringify(postQuestionMessage));
+
+
+                    if (postQuestionMessage) {
+
+                        postQuestionMessage = simplifyPostQuestionMessage(postQuestionMessage);
+                        return callback(null, postQuestionMessage);
+
+
+                    } else {
+
+                        let postQuestionMessage = [];
+                        // no workspaceFollowers to delete return
+                        return callback(null, postQuestionMessage);
+
+                    }
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    console.log(error);
+                    let postQuestionMessage = [];
+                    // no workspaceFollowers to delete return
+                    return callback(null, postQuestionMessage);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+            }
+
+            function getChatMessages(callback) {
+
+                console.log("starting getChatMessages function.");
+
+
+                let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
+                let queryPostChatMessage = new Parse.Query(POSTCHATMESSAGE);
+                //queryPostChatMessage.equalTo("workspace", workspace);
+                //queryPostChatMessage.equalTo("channel", channel);
+                queryPostChatMessage.equalTo("post", post);
+                //queryPostChatMessage.equalTo("archive", false);
+                queryPostChatMessage.limit(5);
+                queryPostChatMessage.find({
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+                }).then((PostChatMessages) => {
+
+                    console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
+
+
+                    if (PostChatMessages.length !== 0) {
+
+                        let simplifiedPostChatMessages = [];
+
+                        for (var i = 0; i < PostChatMessages.length; i++) {
+
+                            simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
+                            console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i]));
 
                         }
 
+                        return callback(null, simplifiedPostChatMessages);
+
+
+                    } else {
+
+                        let PostChatMessages = [];
+                        // no workspaceFollowers to delete return
+                        return callback(null, PostChatMessages);
+
+                    }
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    console.log(error);
+                    let PostChatMessages = [];
+                    // no workspaceFollowers to delete return
+                    return callback(null, PostChatMessages);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            }
+
+            async.parallel([
+                async.apply(prepIndex),
+                async.apply(getPostQuestions),
+                async.apply(getChatMessages),
+                //async.apply(getPostSocial),
+                async.apply(getTopAnswerForQuestionPost)
+
+
+            ], function (err, results) {
+                if (err) {
+                    response.error(err);
+                }
+
+                console.log("starting show results " + JSON.stringify(results.length));
+
+
+                if (results.length > 0) {
+
+                    console.log("afterSave Post results length: " + JSON.stringify(results.length));
+
+                    postToSave = results[0];
+                    let postQuestions = results[1];
+                    let chatMessages = results[2];
+                    //let postSocial = results[3];
+                    let topAnswerForQuestionPost = results[3];
+
+                    postToSave.postQuestions = postQuestions;
+                    postToSave.chatMessages = chatMessages;
+                    //postToSave.PostSocial = postSocial;
+                    postToSave.topAnswer = topAnswerForQuestionPost;
+
+
+                    console.log("postQuestions: " + JSON.stringify(postQuestions));
+                    console.log("chatMessages: " + JSON.stringify(chatMessages));
+                    //console.log("PostSocial: " + JSON.stringify(postSocial));
+                    console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
+
+                    splitObjectAndIndex({'user': user, 'object': postToSave, 'className': 'PostSocial', 'loop': true}, {
+                        success: function (count) {
+
+                            let Final_Time = process.hrtime(time);
+                            console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+                        },
+                        error: function (error) {
+                            response.error(error);
+                        }
                     });
 
 
                 } else {
 
-                    let PostSocials = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, PostSocials);
-
+                    response.error("error in afterSave Post");
                 }
 
 
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                console.log(error);
-                let PostSocials = [];
-                // no workspaceFollowers to delete return
-                return callback(null, PostSocials);
-            }, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
             });
-
         }
 
-        function getTopAnswerForQuestionPost (callback) {
 
-            console.log("starting getTopAnswerForQuestionPost function.");
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            console.log(error);
 
+            return response.error(error);
+        }, {
 
-            let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
-            let queryPostQuestionMessage= new Parse.Query(POSTQUESTIONMESSAGE);
-            //queryPostQuestionMessage.equalTo("workspace", workspace);
-            //queryPostQuestionMessage.equalTo("channel", channel);
-            queryPostQuestionMessage.equalTo("post", post);
-            //queryPostQuestionMessage.equalTo("archive", false);
-            queryPostQuestionMessage.equalTo("type", "answer");
-            queryPostQuestionMessage.descending("voteRank");
-            queryPostQuestionMessage.first({
-                useMasterKey: true
-                //sessionToken: sessionToken
-            }).then((postQuestionMessage) => {
-
-                console.log("starting postQuestionMessage: " + JSON.stringify(postQuestionMessage));
-
-
-                if (postQuestionMessage) {
-
-                    postQuestionMessage = simplifyPostQuestionMessage(postQuestionMessage);
-                    return callback (null, postQuestionMessage);
-
-
-                } else {
-
-                    let postQuestionMessage = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, postQuestionMessage);
-
-                }
-
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                console.log(error);
-                let postQuestionMessage = [];
-                // no workspaceFollowers to delete return
-                return callback(null, postQuestionMessage);
-            }, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-        }
-
-        function getChatMessages (callback) {
-
-            console.log("starting getChatMessages function.");
-
-
-            let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
-            let queryPostChatMessage = new Parse.Query(POSTCHATMESSAGE);
-            //queryPostChatMessage.equalTo("workspace", workspace);
-            //queryPostChatMessage.equalTo("channel", channel);
-            queryPostChatMessage.equalTo("post", post);
-            //queryPostChatMessage.equalTo("archive", false);
-            queryPostChatMessage.limit(5);
-            queryPostChatMessage.find({
-                useMasterKey: true
-                //sessionToken: sessionToken
-            }).then((PostChatMessages) => {
-
-                console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
-
-
-                if (PostChatMessages.length !== 0) {
-
-                    let simplifiedPostChatMessages = [];
-
-                    for (var i = 0; i < PostChatMessages.length; i++) {
-
-                        simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
-                        console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i])) ;
-
-                    }
-
-                    return callback (null, simplifiedPostChatMessages);
-
-
-                } else {
-
-                    let PostChatMessages = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, PostChatMessages);
-
-                }
-
-
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                console.log(error);
-                let PostChatMessages = [];
-                // no workspaceFollowers to delete return
-                return callback(null, PostChatMessages);
-            }, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-
-        }
-
-        async.parallel([
-            async.apply(prepIndex),
-            async.apply(getPostQuestions),
-            async.apply(getChatMessages),
-            //async.apply(getPostSocial),
-            async.apply(getTopAnswerForQuestionPost)
-
-
-        ], function (err, results) {
-            if (err) {
-                response.error(err);
-            }
-
-            console.log("starting show results " + JSON.stringify(results.length));
-
-
-            if (results.length > 0) {
-
-                console.log("afterSave Post results length: " + JSON.stringify(results.length));
-
-                postToSave = results[0];
-                let postQuestions = results[1];
-                let chatMessages = results[2];
-                //let postSocial = results[3];
-                let topAnswerForQuestionPost = results[3];
-
-                postToSave.postQuestions = postQuestions;
-                postToSave.chatMessages = chatMessages;
-                //postToSave.PostSocial = postSocial;
-                postToSave.topAnswer = topAnswerForQuestionPost;
-
-
-                console.log("postQuestions: " + JSON.stringify(postQuestions));
-                console.log("chatMessages: " + JSON.stringify(chatMessages));
-                //console.log("PostSocial: " + JSON.stringify(postSocial));
-                console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
-
-                splitObjectAndIndex({'user':user, 'object':postToSave, 'className':'PostSocial', 'loop':true}, {
-                    success: function(count) {
-
-                        let Final_Time = process.hrtime(time);
-                        console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
-
-                        response.success();
-                    },
-                    error: function(error) {
-                        response.error(error);
-                    }
-                });
-
-
-
-            } else {
-
-                response.error("error in afterSave Post");
-            }
-
+            useMasterKey: true
+            //sessionToken: sessionToken
 
         });
-
-
-    }, (error) => {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
-        console.log(error);
-
-        return response.error(error);
-    }, {
-
-        useMasterKey: true
-        //sessionToken: sessionToken
-
-    });
 
 
 
