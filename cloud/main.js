@@ -16450,12 +16450,75 @@ Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
 
     }
 
+    function deleteRoles (callback) {
+
+        let queryWorkspaceRole = new Parse.Query(Parse.Role);
+        queryWorkspaceRole.equalTo("workspace", workspace);
+        //queryWorkspaceRole.limit(10000);
+        queryWorkspaceRole.find({
+            useMasterKey: true
+        }).then((workspaceRoles) => {
+
+
+            if (workspaceRoles) {
+
+                /*Parse.Object.destroyAll(workspacefollowers, {useMasterKey: true}).catch(function(error, result) {
+
+                 if (error) {
+
+                 console.error("Error deleteWorkspaceFollowers " + error.code + ": " + error.message);
+                 return callback(error);
+
+
+                 }
+
+                 if (result) {
+                 console.log('Did successfully delete posts in afterDeleteChannel Cloud Function');
+
+                 return callback(null, result);
+                 }
+                 });*/
+
+                Parse.Object.destroyAll(workspaceRoles, {
+                    success: function(result) {
+                        console.log('Did successfully deleteRoles afterDelete-WorkSpace Cloud Function');
+                        return callback(null, result);
+                    },
+                    error: function(error) {
+                        console.error("Error deleteRoles afterDelete-WorkSpace Cloud Function " + error.code + ": " + error.message);
+                        return callback(error);
+                    },
+                    useMasterKey: true
+                });
+
+
+            } else {
+
+                workspaceRoles = [];
+                // no workspaceFollowers to delete return
+                return callback(null, workspaceRoles);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            response.error(error);
+        }, {
+            useMasterKey: true
+            //sessionToken: sessionToken
+        });
+
+    }
 
     async.parallel([
         async.apply(deleteWorkspaceAlgolia),
         async.apply(deleteChannels),
-        async.apply(deleteWorkspaceFollowers)
+        async.apply(deleteWorkspaceFollowers),
         //async.apply(selectPreviouslySelectedWorkspace)
+        async.apply(deleteRoles)
 
     ], function (err, results) {
         if (err) {
