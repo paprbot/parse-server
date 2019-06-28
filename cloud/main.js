@@ -709,18 +709,47 @@ Parse.Cloud.define("setAsFounder", function(request, response) {
 
                     // add user to this role and save it
                     ownerRole.getUsers().add(result);
+
                     ownerRole.save(null, {
 
                         useMasterKey: true
                         //sessionToken: sessionToken
 
+                    }).then((final_result) => {
+
+                        // save was successful
+                        if(final_result) {
+
+                            //console.log("expert added: " + JSON.stringify(final_result));
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime  setAsFounder  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.success(final_result);
+
+
+                        } else {
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime setAsFounder took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.error(final_result);
+
+                        }
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
                     });
-
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime setAsFounder took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                    response.success();
 
 
 
