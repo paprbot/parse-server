@@ -802,6 +802,7 @@ Parse.Cloud.define("removeFounder", function(request, response) {
     let queryOwnerRole = new Parse.Query(Parse.Role);
     let ownerName = 'owner-' + workspace.id;
 
+
     queryOwnerRole.equalTo('name', ownerName);
     queryOwnerRole.first({useMasterKey: true})
         .then((ownerRole) => {
@@ -809,29 +810,84 @@ Parse.Cloud.define("removeFounder", function(request, response) {
 
             //console.log("ownerRole" + JSON.stringify(ownerRole));
 
-            // add user to this role and save it
-            ownerRole.getUsers().remove(user);
-            ownerRole.save(null, {
+            async.map(UserIdArray, function (userId, cb) {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                userId = userId.objectId;
+
+                console.log("userId: " + JSON.stringify(userId));
+
+                let USER = Parse.Object.extend("_User");
+                let user = new USER();
+                user.id = userId;
+
+                // set user role now then save
+                let roleRelation = user.relation("roles");
+                roleRelation.remove(ownerRole);
+                user.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                return cb (null, user);
+
+
+            }, function (err, result) {
+
+                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                if (err) {response.error(err);} else {
+
+                    // add user to this role and save it
+                    ownerRole.getUsers().remove(result);
+
+                    ownerRole.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((final_result) => {
+
+                        // save was successful
+                        if(final_result) {
+
+                            //console.log("expert added: " + JSON.stringify(final_result));
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime  setAsFounder  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.success(final_result);
+
+
+                        } else {
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime setAsFounder took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.error(final_result);
+
+                        }
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+
+                }
 
             });
-
-            // set user role now then save
-            let roleRelation = user.relation("roles");
-            roleRelation.remove(ownerRole);
-            user.save(null, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime removeFounder took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-            response.success();
 
 
 
@@ -840,7 +896,6 @@ Parse.Cloud.define("removeFounder", function(request, response) {
             // error is a Parse.Error with an error code and message.
             response.error(error);
         }, {useMasterKey: true});
-
 
 
 }, {useMasterKey: true});
