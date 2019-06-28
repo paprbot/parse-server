@@ -670,7 +670,6 @@ Parse.Cloud.define("setAsFounder", function(request, response) {
     let queryOwnerRole = new Parse.Query(Parse.Role);
     let ownerName = 'owner-' + workspace.id;
 
-
     queryOwnerRole.equalTo('name', ownerName);
     queryOwnerRole.first({useMasterKey: true})
         .then((ownerRole) => {
@@ -788,20 +787,15 @@ Parse.Cloud.define("removeFounder", function(request, response) {
     }
 
     //get request params
-    let User = request.params.user;
-    let WorkspaceId = request.params.workspace;
+    let UserIdArray = request.params.userIdArray;
+    let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
     workspace.id = WorkspaceId;
 
-    let USER = Parse.Object.extend("_User");
-    let user = new USER();
-    user.id = User;
-
     let queryOwnerRole = new Parse.Query(Parse.Role);
     let ownerName = 'owner-' + workspace.id;
-
 
     queryOwnerRole.equalTo('name', ownerName);
     queryOwnerRole.first({useMasterKey: true})
@@ -855,7 +849,7 @@ Parse.Cloud.define("removeFounder", function(request, response) {
                             //console.log("expert added: " + JSON.stringify(final_result));
 
                             let finalTime = process.hrtime(time);
-                            console.log(`finalTime  setAsFounder  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                            console.log(`finalTime  removeFounder  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
 
                             response.success(final_result);
@@ -864,7 +858,7 @@ Parse.Cloud.define("removeFounder", function(request, response) {
                         } else {
 
                             let finalTime = process.hrtime(time);
-                            console.log(`finalTime setAsFounder took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                            console.log(`finalTime removeFounder took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
 
                             response.error(final_result);
@@ -919,16 +913,12 @@ Parse.Cloud.define("setAsAdmin", function(request, response) {
     }
 
     //get request params
-    let User = request.params.user;
-    let WorkspaceId = request.params.workspace;
+    let UserIdArray = request.params.UserIdArray;
+    let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
     workspace.id = WorkspaceId;
-
-    let USER = Parse.Object.extend("_User");
-    let user = new USER();
-    user.id = User;
 
     let queryAdminRole = new Parse.Query(Parse.Role);
     let adminName = 'admin-' + workspace.id;
@@ -940,29 +930,84 @@ Parse.Cloud.define("setAsAdmin", function(request, response) {
 
             //console.log("ownerRole" + JSON.stringify(ownerRole));
 
-            // add user to this role and save it
-            adminRole.getUsers().add(user);
-            adminRole.save(null, {
+            async.map(UserIdArray, function (userId, cb) {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                userId = userId.objectId;
+
+                console.log("userId: " + JSON.stringify(userId));
+
+                let USER = Parse.Object.extend("_User");
+                let user = new USER();
+                user.id = userId;
+
+                // set user role now then save
+                let roleRelation = user.relation("roles");
+                roleRelation.add(adminRole);
+                user.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                return cb (null, user);
+
+
+            }, function (err, result) {
+
+                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                if (err) {response.error(err);} else {
+
+                    // add user to this role and save it
+                    adminRole.getUsers().add(result);
+
+                    adminRole.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((final_result) => {
+
+                        // save was successful
+                        if(final_result) {
+
+                            //console.log("expert added: " + JSON.stringify(final_result));
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime  setAsAdmin  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.success(final_result);
+
+
+                        } else {
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime setAsAdmin took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.error(final_result);
+
+                        }
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+
+                }
 
             });
-
-            // set user role now then save
-            let roleRelation = user.relation("roles");
-            roleRelation.add(adminRole);
-            user.save(null, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime setAsOwner took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-            response.success();
 
 
 
@@ -995,16 +1040,12 @@ Parse.Cloud.define("removeAdmin", function(request, response) {
     }
 
     //get request params
-    let User = request.params.user;
-    let WorkspaceId = request.params.workspace;
+    let UserIdArray = request.params.userIdArray;
+    let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
     workspace.id = WorkspaceId;
-
-    let USER = Parse.Object.extend("_User");
-    let user = new USER();
-    user.id = User;
 
     let queryAdminRole = new Parse.Query(Parse.Role);
     let adminName = 'admin-' + workspace.id;
@@ -1016,29 +1057,84 @@ Parse.Cloud.define("removeAdmin", function(request, response) {
 
             //console.log("ownerRole" + JSON.stringify(ownerRole));
 
-            // add user to this role and save it
-            adminRole.getUsers().remove(user);
-            adminRole.save(null, {
+            async.map(UserIdArray, function (userId, cb) {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                userId = userId.objectId;
+
+                console.log("userId: " + JSON.stringify(userId));
+
+                let USER = Parse.Object.extend("_User");
+                let user = new USER();
+                user.id = userId;
+
+                // set user role now then save
+                let roleRelation = user.relation("roles");
+                roleRelation.remove(adminRole);
+                user.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                return cb (null, user);
+
+
+            }, function (err, result) {
+
+                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                if (err) {response.error(err);} else {
+
+                    // add user to this role and save it
+                    adminRole.getUsers().remove(result);
+
+                    adminRole.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((final_result) => {
+
+                        // save was successful
+                        if(final_result) {
+
+                            //console.log("expert added: " + JSON.stringify(final_result));
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime  removeAdmin  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.success(final_result);
+
+
+                        } else {
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime removeAdmin took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.error(final_result);
+
+                        }
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+
+                }
 
             });
-
-            // set user role now then save
-            let roleRelation = user.relation("roles");
-            roleRelation.remove(adminRole);
-            user.save(null, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime removeAdmin took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-            response.success();
 
 
 
@@ -1047,6 +1143,7 @@ Parse.Cloud.define("removeAdmin", function(request, response) {
             // error is a Parse.Error with an error code and message.
             response.error(error);
         }, {useMasterKey: true});
+
 
 
 
@@ -1070,17 +1167,12 @@ Parse.Cloud.define("setAsModerator", function(request, response) {
         return;
     }
 
-    //get request params
-    let User = request.params.user;
-    let WorkspaceId = request.params.workspace;
+    let UserIdArray = request.params.UserIdArray;
+    let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
     workspace.id = WorkspaceId;
-
-    let USER = Parse.Object.extend("_User");
-    let user = new USER();
-    user.id = User;
 
     let queryModeratorRole = new Parse.Query(Parse.Role);
     let moderatorName = 'moderator-' + workspace.id;
@@ -1092,29 +1184,84 @@ Parse.Cloud.define("setAsModerator", function(request, response) {
 
             //console.log("ownerRole" + JSON.stringify(ownerRole));
 
-            // add user to this role and save it
-            moderatorRole.getUsers().add(user);
-            moderatorRole.save(null, {
+            async.map(UserIdArray, function (userId, cb) {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                userId = userId.objectId;
+
+                console.log("userId: " + JSON.stringify(userId));
+
+                let USER = Parse.Object.extend("_User");
+                let user = new USER();
+                user.id = userId;
+
+                // set user role now then save
+                let roleRelation = user.relation("roles");
+                roleRelation.add(moderatorRole);
+                user.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                return cb (null, user);
+
+
+            }, function (err, result) {
+
+                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                if (err) {response.error(err);} else {
+
+                    // add user to this role and save it
+                    moderatorRole.getUsers().add(result);
+
+                    moderatorRole.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((final_result) => {
+
+                        // save was successful
+                        if(final_result) {
+
+                            //console.log("expert added: " + JSON.stringify(final_result));
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime  setAsModerator  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.success(final_result);
+
+
+                        } else {
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime setAsModerator took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.error(final_result);
+
+                        }
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+
+                }
 
             });
-
-            // set user role now then save
-            let roleRelation = user.relation("roles");
-            roleRelation.add(moderatorRole);
-            user.save(null, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime moderatorRole took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-            response.success();
 
 
 
@@ -1144,17 +1291,12 @@ Parse.Cloud.define("removeModerator", function(request, response) {
         return;
     }
 
-    //get request params
-    let User = request.params.user;
-    let WorkspaceId = request.params.workspace;
+    let UserIdArray = request.params.UserIdArray;
+    let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
     workspace.id = WorkspaceId;
-
-    let USER = Parse.Object.extend("_User");
-    let user = new USER();
-    user.id = User;
 
     let queryModeratorRole = new Parse.Query(Parse.Role);
     let moderatorName = 'moderator-' + workspace.id;
@@ -1166,29 +1308,84 @@ Parse.Cloud.define("removeModerator", function(request, response) {
 
             //console.log("ownerRole" + JSON.stringify(ownerRole));
 
-            // add user to this role and save it
-            moderatorRole.getUsers().remove(user);
-            moderatorRole.save(null, {
+            async.map(UserIdArray, function (userId, cb) {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                userId = userId.objectId;
+
+                console.log("userId: " + JSON.stringify(userId));
+
+                let USER = Parse.Object.extend("_User");
+                let user = new USER();
+                user.id = userId;
+
+                // set user role now then save
+                let roleRelation = user.relation("roles");
+                roleRelation.remove(moderatorRole);
+                user.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                return cb (null, user);
+
+
+            }, function (err, result) {
+
+                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                if (err) {response.error(err);} else {
+
+                    // add user to this role and save it
+                    moderatorRole.getUsers().remove(result);
+
+                    moderatorRole.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((final_result) => {
+
+                        // save was successful
+                        if(final_result) {
+
+                            //console.log("expert added: " + JSON.stringify(final_result));
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime  removeModerator  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.success(final_result);
+
+
+                        } else {
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime removeModerator took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                            response.error(final_result);
+
+                        }
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+
+                }
 
             });
-
-            // set user role now then save
-            let roleRelation = user.relation("roles");
-            roleRelation.remove(moderatorRole);
-            user.save(null, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime moderatorRole took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-            response.success();
 
 
 
