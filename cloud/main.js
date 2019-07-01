@@ -34,6 +34,7 @@ let simplifyPostAudio = require('./simplifyClass/Post/simplifyPostAudio');
 let simplifyPostChatMessage = require('./simplifyClass/Post/simplifyPostChatMessage');
 let simplifyPostSocial = require('./simplifyClass/Post/simplifyPostSocial');
 let simplifyPostQuestionMessage = require('./simplifyClass/Post/simplifyPostQuestionMessage');
+let simplifyWorkspaceFollowersUserIndex = require('./simplifyClass/WorkspaceFollowers/simplifyWorkspaceFollowersUserIndex');
 
 
 
@@ -442,6 +443,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
 
 
 });
+
 
 // cloud API and function to addExperts to a workspace
 Parse.Cloud.define("setAsExpert", function(request, response) {
@@ -11568,7 +11570,7 @@ function splitObjectAndIndex (request, response) {
         parseObject.id = object.objectId;
     }
 
-    if (className === 'PostQuestionMessageVote') {
+     else if (className === 'PostQuestionMessageVote') {
 
         objectClassName = 'postQuestionMessage';
         PARSEOBJECT = Parse.Object.extend("PostQuestionMessage");
@@ -11581,6 +11583,20 @@ function splitObjectAndIndex (request, response) {
         PARSEOBJECT = Parse.Object.extend("PostChatMessage");
         parseObject = new PARSEOBJECT();
         parseObject.id = object.objectId;
+    } else if (className === 'Role') {
+
+        objectClassName = '_User';
+        PARSEOBJECT = Parse.Object.extend("_User");
+        parseObject = new PARSEOBJECT();
+        parseObject.id = object.objectId;
+
+        var workspaceFollowers = request['workspaceFollowers'];
+        console.log("workspaceFollowers: " + JSON.stringify(workspaceFollowers));
+
+        var countIndexUser = workspaceFollowers[0].index;
+
+        workspaceFollowers[0]['index'] = countIndexUser + 1;
+
     }
 
     let count = (request['count'])? request['count'] : 0;
@@ -11593,19 +11609,6 @@ function splitObjectAndIndex (request, response) {
 
     let index;
 
-
-    /*
-    let currentUser = request.user;
-    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
-
-    if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.splitObjectToIndex.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
-    }*/
-
     let globalQuery = new Parse.Query(className);
     globalQuery.limit(10);
     globalQuery.skip(count);
@@ -11613,6 +11616,11 @@ function splitObjectAndIndex (request, response) {
         globalQuery.equalTo('algoliaIndexID', indexCount);
 
     }
+    if (className === 'Role') {
+        globalQuery.equalTo('workspace', workspaceFollowers[countIndexUser].workspace.objectId);
+
+    }
+
     //globalQuery.include( ["user", "workspace", "post"] );
     globalQuery.equalTo(objectClassName, parseObject);
     globalQuery.find({
@@ -11623,12 +11631,22 @@ function splitObjectAndIndex (request, response) {
         if (results.length > 0) {
 
             count = count + results.length;
+            let finalIndexCount;
+            let tags = [];
+
             indexCount = indexCount + 1;
             console.log("indexCount: " + JSON.stringify(indexCount));
             //algoliaIndexID
-            let finalIndexCount;
 
-            let tags = [];
+            let algoliaIDMax = indexCount.toString();
+            parseObject.set("algoliaIDMax", algoliaIDMax);
+            parseObject.save(null, {
+
+                useMasterKey: true,
+                //sessionToken: sessionToken
+
+            });
+
 
             async.map(results, function (result, cb) {
 
@@ -11664,7 +11682,7 @@ function splitObjectAndIndex (request, response) {
                     console.log("simplifyPostSocial: " + JSON.stringify(ResultObject));
 
                 }
-                else if (className === 'workspace_follower' || className === 'PostQuestionMessageVote'  || className === 'PostChatMessageSocial'  ) {
+                else if (className === 'workspace_follower' || className === 'PostQuestionMessageVote'  || className === 'PostChatMessageSocial' || className === 'Role' ) {
 
                     ResultObject = result;
                     console.log("ResultObject: " + JSON.stringify(ResultObject));
@@ -11721,6 +11739,14 @@ function splitObjectAndIndex (request, response) {
                         object.postChatMessageSocial = resultsFinal;
                         index = indexPostChatMessages;
 
+                    } else if (className === 'Role') {
+
+                        //object = results[0].get("workspace");
+                        console.log("Role object: " + JSON.stringify(object));
+
+                        object.roles = resultsFinal;
+                        index = indexUsers;
+
                     }
 
                     else {
@@ -11747,7 +11773,7 @@ function splitObjectAndIndex (request, response) {
 
                         if (loop === true ) {
 
-                            splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true}, response);
+                            splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true, 'workspaceFollowers': workspaceFollowers}, response);
 
                         } else if (loop === false) {
 
@@ -11809,6 +11835,15 @@ function splitObjectAndIndex (request, response) {
 
                     object.postChatMessageSocial = resultsNone;
                     index = indexPostChatMessages;
+
+                }
+                else if (className === 'Role') {
+
+                    //object = results[0].get("workspace");
+                    console.log("Roel object: " + JSON.stringify(object));
+
+                    object.roles = resultsNone;
+                    index = indexUsers;
 
                 }
 
@@ -12496,7 +12531,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     response.error(err);
                 }
 
-                console.log("starting show results " + JSON.stringify(results.length));
+                // console.log("starting show results " + JSON.stringify(results.length));
 
 
                 if (results.length > 0) {
@@ -13558,15 +13593,15 @@ Parse.Cloud.afterSave('_User', function(request, response) {
         return;
     }
 
-    let objectToSave = request.object.toJSON();
+    let User = request.object;
+    let userToSave = request.object.toJSON();
 
     let queryUser = new Parse.Query("_User");
     queryUser.include( ["currentCompany"] );
 
+        //queryUser.equalTo("objectId", userToSave.objectId);
 
-    //queryUser.equalTo("objectId", objectToSave.objectId);
-
-    queryUser.get(objectToSave.objectId , {
+    queryUser.get(userToSave.objectId , {
 
         useMasterKey: true
         //sessionToken: sessionToken
@@ -13574,6 +13609,10 @@ Parse.Cloud.afterSave('_User', function(request, response) {
     }).then((user) => {
         // The object was retrieved successfully.
         //console.log("Result from get " + JSON.stringify(Workspace));
+
+        let userACL = user.getACL();
+        //console.log("userACL: " + JSON.stringify(userACL));
+
 
         //console.log("isNew: " + JSON.stringify(user.get("isNew")));
         //console.log("isDirtyProfileimage: " + JSON.stringify(user.get("isDirtyProfileimage")));
@@ -13602,8 +13641,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
             var userQuery = new Parse.Query(User);
 
 
-            userQuery.equalTo("objectId", objectToSave.objectId);
-            console.log("username: " + JSON.stringify(objectToSave.username));
+            userQuery.equalTo("objectId", userToSave.objectId);
+            console.log("username: " + JSON.stringify(userToSave.username));
             workspaceQuery.matchesQuery("experts", userQuery);
             workspaceQuery.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "image"]);
 
@@ -13617,7 +13656,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                 console.log("Result from get " + JSON.stringify(objectsToIndex.length));
 
                 var workspaces = objectsToIndex;
-                console.log("ObjectToSave length: " + JSON.stringify(workspaces.length));
+                console.log("workspaces length: " + JSON.stringify(workspaces.length));
 
                 async.map(objectsToIndex, function (object, cb) {
 
@@ -13666,8 +13705,6 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
                         console.log("Parse<>Algolia workspace saved from afterSave _User function ");
 
-                        var finalTime = process.hrtime(time);
-                        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
                         return callback (null, objectsToIndex);
 
                     });
@@ -13687,161 +13724,83 @@ Parse.Cloud.afterSave('_User', function(request, response) {
             });
 
 
-            /*workspaceQuery.find({
-
-             success: function (workspaces) {
-
-
-             async.map(workspaces, function (workspace, cb){
-
-             //var workspace = workspaces[i];
-             var skillObject = Parse.Object.extend("Skill");
-             //var skillsRelation = new skillObject.relation("skills");
-             skillObject = workspace.get("skills");
-             //console.log("Skills: " + JSON.stringify(skillObject));
-             //console.log("Skill Length:" + skillObject);
-
-             var expertObject = Parse.Object.extend("_User");
-             expertObject = workspace.get("experts");
-             //console.log("Experts: " + JSON.stringify(expertObject));
-
-             // if (skillObject.length===0) {console.log("cool skillObject" + skillObject); return callback (null, workspace);}
-             var skillObjectQuery = skillObject.query();
-             skillObjectQuery.ascending("level");
-             skillObjectQuery.find({
-
-             success: function(skills) {
-
-
-             // Convert Parse.Object to JSON
-             //workspace = workspace.toJSON();
-
-             let arraySkill = [];
-
-             skills.forEach(v => arraySkill.push(v));
-
-
-             //console.log("skills: " + JSON.stringify(arraySkill));
-
-             workspace.set("objectID", workspace.toJSON().objectId);
-             var WorkSpace = workspace.toJSON();
-             WorkSpace.skills =  arraySkill;
-             //console.log("Updated workspace with skills: " + JSON.stringify(WorkSpace));
-
-             // Specify Algolia's objectID with the Parse.Object unique ID
-             //workspace.objectID = workspace.objectId;
-
-             //return callback(null, Workspace);
-
-             expertObject.query().find({
-
-             success: function(experts) {
-
-             // Convert Parse.Object to JSON
-             //workspace = workspace.toJSON();
-             //var User = new Parse.Object("_User");
-             let arrayExperts = [];
-
-             WorkSpace.experts = arrayExperts;
-             //console.log("New Workspace experts: " + JSON.stringify(WorkSpace));
-
-
-             //workspace = JSON.parse(WorkSpace);
-             // tell async that that particular element of the iterator is done
-             return cb(null, WorkSpace);
-
-
-             },
-             error: function(error) {
-             alert("Error: " + error.code + " " + error.message);
-             return callback (error);
-             }
-             }, {useMasterKey: true});
-
-
-             },
-             error: function(error) {
-             alert("Error: " + error.code + " " + error.message);
-             return callback (error);
-             }
-             }, {useMasterKey: true});
-
-
-             //console.log("skill:s " + JSON.stringify(skillObjects));
-
-
-             }, function(err, results) {
-
-             if (err) return callback (err);
-             var diff = process.hrtime(time);
-             console.log(`queryFinal took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-             //console.log("FinalResults: " + JSON.stringify(results));
-             //response.render('userPosts', results);
-             //console.log("partialWorkspaces: " + JSON.stringify(results));
-
-             // update Algolia index for Workspaces if user objects changes or got updated
-             indexWorkspaces.partialUpdateObjects(results, function(err, content) {
-             if (err) return callback (err);
-
-             console.log("Parse<>Algolia workspaces with updated user profile images saved: "+ JSON.stringify(content));
-
-             return callback (null, user);
-
-             });
-
-             });
-
-
-
-             },
-             error: function(error) {
-             console.log("Error _User afterSave WorkspaceQuery.find: " + error.code + " " + error.message);
-             //user is not an expert don't update aloglia workspace index
-             return callback (null, user);
-             }
-
-             }, {useMasterKey: true}); */
-
 
         }
 
-        function addUserAlgolia (callback) {
+        function prepIndex(callback) {
 
-            var mySkillObject = Parse.Object.extend("Skill");
+            // Successfully retrieved the object.
+            //console.log("ObjectToSave: " + JSON.stringify(post));
+
+            // Convert Parse.Object to JSON
+            user = user.toJSON();
+
+            // Specify Algolia's objectID with the Parse.Object unique ID
+            //Post.objectID = Post.objectId;
+
+            // set _tags depending on the post ACL
+
+            if (userACL) {
+
+                if (userACL.getPublicReadAccess()) {
+
+                    // this means it's public read access is true
+                    user._tags = ['*'];
+
+                }
+
+                /*
+                 else if (!postACL.getPublicReadAccess() && postACL.getReadAccess(user)) {
+
+
+                 // this means this user has read access
+                 Post._tags = [user.id];
+
+                 } else if (!postACL.getPublicReadAccess() && post.ACL.getReadAccess(roleChannel)) {
+
+                 // this means any user with this channel is private and channel-role will have access i.e. they are a member of this channel
+                 Post._tags = [roleChannel];
+
+                 }
+
+
+
+                 */
+
+
+            } else if (!userACL || userACL === null) {
+
+                // this means it's public read write
+                console.log("no userACL for this post.");
+                user._tags = ['*'];
+            }
+
+
+            return callback(null, user);
+
+        }
+
+        function getMySkills (callback) {
+
+            let mySkillObject = Parse.Object.extend("Skill");
             //var skillsRelation = new skillObject.relation("skills");
             mySkillObject = user.get("mySkills");
             //console.log("Skills: " + JSON.stringify(mySkillObject));
 
-            var mySkillObjectQuery = mySkillObject.query();
+            let mySkillObjectQuery = mySkillObject.query();
             mySkillObjectQuery.ascending("level");
             mySkillObjectQuery.find({
 
-                success: function(skill) {
+                success: function(skills) {
 
                     //skill;
                     //skill.add(workspace);
 
                     //console.log("Skills: " + JSON.stringify(skill));
 
+                    return callback (null, skills);
 
-                    // Convert Parse.Object to JSON
-                    user = user.toJSON();
 
-                    user['mySkills'] = skill;
-                    //console.log("New User: " + JSON.stringify(user));
-
-                    // Specify Algolia's objectID with the Parse.Object unique ID
-                    user.objectID = user.objectId;
-
-                    // Add or update object
-                    indexUsers.saveObject(user, function(err, content) {
-                        if (err) {
-                            throw err;
-                        }
-                        console.log('Parse<>Algolia object saved: ' + JSON.stringify(content));
-                        return callback (null, content);
-
-                    });
                 },
                 error: function(error) {
                     alert("Error: " + error.code + " " + error.message);
@@ -13852,19 +13811,129 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
         }
 
+        function getSkillsToLearn (callback) {
+
+            let mySkillObject = Parse.Object.extend("Skill");
+            //var skillsRelation = new skillObject.relation("skills");
+            mySkillObject = user.get("skillsToLearn");
+            //console.log("Skills: " + JSON.stringify(mySkillObject));
+
+            let mySkillObjectQuery = mySkillObject.query();
+            mySkillObjectQuery.ascending("level");
+            mySkillObjectQuery.find({
+
+                success: function(skills) {
+
+                    //skill;
+                    //skill.add(workspace);
+
+                    //console.log("Skills: " + JSON.stringify(skill));
+
+                    return callback (null, skills);
+
+
+                },
+                error: function(error) {
+                    alert("Error: " + error.code + " " + error.message);
+                    return callback (error);
+                }
+            }, {useMasterKey: true});
+
+
+        }
+
+        function getWorkspaceFollowers (callback) {
+
+
+            let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+            let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+
+            queryWorkspaceFollower.equalTo("user", user);
+
+            queryWorkspaceFollower.limit(10000);
+            // queryWorkspaceFollower.include( ["workspace"] );
+
+            queryWorkspaceFollower.find({
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((followers) => {
+
+                //console.log("user workspace followers: " + JSON.stringify(followers));
+
+
+                return callback (null, followers);
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+
+        }
+
         async.parallel([
-            async.apply(addUserAlgolia),
-            async.apply(updateAlgoliaWorkspaceExpertProfileImage)
+            async.apply(updateAlgoliaWorkspaceExpertProfileImage),
+            async.apply(prepIndex),
+            async.apply(getMySkills),
+            async.apply(getSkillsToLearn),
+            async.apply(getWorkspaceFollowers)
+
 
         ], function (err, results) {
             if (err) {
                 response.error(err);
             }
 
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime took afterSave _User {(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-            response.success();
-            //return callback (null, resultsToMap);
+            console.log("starting show results " + JSON.stringify(results.length));
+
+
+            if (results.length > 0) {
+
+                console.log("afterSave _User results length: " + JSON.stringify(results.length));
+
+                userToSave = results[1];
+                let mySkills = results[2];
+                let skillsToLearn = results[3];
+                let workspaceFollowers = results[4];
+                workspaceFollowers = simplifyWorkspaceFollowersUserIndex(workspaceFollowers[0]);
+                console.log("workspaceFollowers simplified for _User index: " + JSON.stringify(workspaceFollowers));
+
+                userToSave.mySkills = mySkills;
+                userToSave.skillsToLearn = skillsToLearn;
+
+                console.log("mySkills: " + JSON.stringify(mySkills));
+                console.log("skillsToLearn: " + JSON.stringify(skillsToLearn));
+
+                splitObjectAndIndex({'user': user, 'object': userToSave, 'className': 'Role', 'loop': true, 'workspaceFollowers': workspaceFollowers}, {
+                    success: function (count) {
+
+                        let Final_Time = process.hrtime(time);
+                        console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                        response.success();
+                    },
+                    error: function (error) {
+                        response.error(error);
+                    }
+                });
+
+
+            } else {
+
+                response.error("error in afterSave Post");
+            }
+
+
 
         });
 
@@ -15507,13 +15576,38 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
     }
 
+    function generateAlgoliaObjectIDs (callback) {
+
+        let algoliaObjectIds = [];
+
+
+        for (var i = 0; i < parseInt(post.get("algoliaIDMax")); i++) {
+
+            let objectID = post.id + '-' + post.get("algoliaIDMax");
+            algoliaObjectIds.push(objectID);
+
+            if (i === (parseInt(post.get("algoliaIDMax"))-1)) {
+
+                // finished iterating through all items
+
+                return callback (null, algoliaObjectIds);
+
+
+            }
+
+
+        }
+
+
+    }
+
 
     async.parallel([
         async.apply(deletePostSocial),
         async.apply(deletePostQuestion),
         async.apply(deletePostQuestionMessage),
-        async.apply(deletePostChatMessage)
-
+        async.apply(deletePostChatMessage),
+        async.apply(generateAlgoliaObjectIDs)
 
     ], function (err, results) {
         if (err) {
@@ -15522,12 +15616,15 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
         if (results) {
 
+            let postIdArray = results[4];
+            //console.log("postIDArray: " + JSON.stringify(postIdArray));
+
             // Remove the object from Algolia
-            indexPosts.deleteObject(post.id, function(err, content) {
+            indexPosts.deleteObjects(postIdArray, function(err, content) {
                 if (err) {
                     response.error(err);
                 }
-                console.log('Parse<>Algolia object deleted');
+                console.log('Parse<>Algolia post deleted');
 
                 let finalTime = process.hrtime(time);
                 console.log(`finalTime took afterDelete Post ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
