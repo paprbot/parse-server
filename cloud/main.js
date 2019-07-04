@@ -11638,14 +11638,14 @@ function splitObjectAndIndex (request, response) {
             console.log("indexCount: " + JSON.stringify(indexCount));
             //algoliaIndexID
 
-            let algoliaIDMax = indexCount.toString();
+            /*let algoliaIDMax = indexCount.toString();
             parseObject.set("algoliaIDMax", algoliaIDMax);
             parseObject.save(null, {
 
                 useMasterKey: true,
                 //sessionToken: sessionToken
 
-            });
+            });*/
 
 
             async.map(results, function (result, cb) {
@@ -11679,13 +11679,13 @@ function splitObjectAndIndex (request, response) {
                 if (className === 'PostSocial') {
 
                     ResultObject = simplifyPostSocial(result);
-                    console.log("simplifyPostSocial: " + JSON.stringify(ResultObject));
+                    //console.log("simplifyPostSocial: " + JSON.stringify(ResultObject));
 
                 }
                 else if (className === 'workspace_follower' || className === 'PostQuestionMessageVote'  || className === 'PostChatMessageSocial' || className === 'Role' ) {
 
                     ResultObject = result;
-                    console.log("ResultObject: " + JSON.stringify(ResultObject));
+                    //console.log("ResultObject: " + JSON.stringify(ResultObject));
 
                 }
 
@@ -11706,7 +11706,7 @@ function splitObjectAndIndex (request, response) {
                     if (className === 'PostSocial') {
 
                         //object = results[0].get("post");
-                        console.log("post object: " + JSON.stringify(object));
+                        //console.log("post object: " + JSON.stringify(object));
 
                         object.PostSocial = resultsFinal;
                         index = indexPosts;
@@ -11715,7 +11715,7 @@ function splitObjectAndIndex (request, response) {
                     else if (className === 'workspace_follower') {
 
                         //object = results[0].get("workspace");
-                        console.log("workspace object: " + JSON.stringify(object));
+                        //console.log("workspace object: " + JSON.stringify(object));
 
                         object.followers = resultsFinal;
                         index = indexWorkspaces;
@@ -11724,7 +11724,7 @@ function splitObjectAndIndex (request, response) {
                     else if (className === 'PostQuestionMessageVote') {
 
                         //object = results[0].get("workspace");
-                        console.log("PostQuestionMessageVote object: " + JSON.stringify(object));
+                        //console.log("PostQuestionMessageVote object: " + JSON.stringify(object));
 
                         object.PostQuestionMessageVote = resultsFinal;
                         index = indexPostQuestionMessages;
@@ -11734,7 +11734,7 @@ function splitObjectAndIndex (request, response) {
                     else if (className === 'PostChatMessageSocial') {
 
                         //object = results[0].get("workspace");
-                        console.log("PostChatMessageSocial object: " + JSON.stringify(object));
+                        //console.log("PostChatMessageSocial object: " + JSON.stringify(object));
 
                         object.postChatMessageSocial = resultsFinal;
                         index = indexPostChatMessages;
@@ -11742,7 +11742,7 @@ function splitObjectAndIndex (request, response) {
                     } else if (className === 'Role') {
 
                         //object = results[0].get("workspace");
-                        console.log("Role object: " + JSON.stringify(object));
+                        //console.log("Role object: " + JSON.stringify(object));
 
                         object.roles = resultsFinal;
                         index = indexUsers;
@@ -11757,7 +11757,7 @@ function splitObjectAndIndex (request, response) {
                     object.objectID = object.objectId + '-' + finalIndexCount;
                     object._tags = tags;
 
-                    console.log("final tags: " + JSON.stringify(tags));
+                    //console.log("final tags: " + JSON.stringify(tags));
 
                     if (finalIndexCount === 1) {
 
@@ -11795,6 +11795,15 @@ function splitObjectAndIndex (request, response) {
             if (indexCount === 0) {
 
                 // this means there are no postSocials for this post or no workspace_followers for this workspace return empty arrays
+
+                let algoliaIDMax = indexCount.toString();
+                parseObject.set("algoliaIDMax", algoliaIDMax);
+                parseObject.save(null, {
+
+                    useMasterKey: true,
+                    //sessionToken: sessionToken
+
+                });
 
                 let resultsNone = [];
                 // no results for postSocial or workspace_follower
@@ -15350,7 +15359,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
         }, (error) => {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
-            response.error(error);
+            return callback(error);
         }, {
 
             useMasterKey: true
@@ -15422,7 +15431,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
         }, (error) => {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
-            response.error(error);
+            return callback(error);
         }, {
 
             useMasterKey: true
@@ -15493,7 +15502,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
         }, (error) => {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
-            response.error(error);
+            return callback(error);
         }, {
 
             useMasterKey: true
@@ -15565,7 +15574,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
         }, (error) => {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
-            response.error(error);
+            return callback(error);
         }, {
 
             useMasterKey: true
@@ -15580,15 +15589,63 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
         let algoliaObjectIds = [];
 
+        let objectID_Zero = post.id + '-' + '0';
 
-        for (var i = 0; i < parseInt(post.get("algoliaIDMax")); i++) {
+        let POSTSOCIAL = Parse.Object.extend("PostSocial");
+        let queryPostSocial = new Parse.Query(POSTSOCIAL);
+        //queryPostQuestion.equalTo("workspace", workspace);
+        //queryPostQuestion.equalTo("channel", channel);
+        queryPostSocial.descending("algoliaIndexID");
+        queryPostSocial.equalTo("post", post);
+        queryPostSocial.first({
+            useMasterKey: true
+            //sessionToken: sessionToken
+        }).then((postSocial) => {
 
-            let objectID = post.id + '-' + post.get("algoliaIDMax");
-            algoliaObjectIds.push(objectID);
 
-            if (i === (parseInt(post.get("algoliaIDMax"))-1)) {
+            if (postSocial) {
 
-                // finished iterating through all items
+                if (postSocial.get("algoliaIndexID")) {
+
+                    console.log("algoliaIndexID: " + parseInt(postSocial.get("algoliaIndexID")));
+
+
+                    for (var i = 0; i < parseInt(postSocial.get("algoliaIndexID")); i++) {
+
+                        let objectID = post.id + '-' + i.toString();
+                        algoliaObjectIds.push(objectID);
+                        console.log("algoliaObjectIds: " + JSON.stringify(algoliaObjectIds));
+
+                        if (i === (parseInt(postSocial.get("algoliaIndexID"))-1)) {
+
+                            // finished iterating through all items
+
+                            return callback (null, algoliaObjectIds);
+
+                        }
+
+
+                    }
+
+
+                } else {
+
+                    algoliaObjectIds.push(objectID_Zero);
+
+                    //console.log("algoliaObjectIds: " + JSON.stringify(algoliaObjectIds));
+
+                    return callback (null, algoliaObjectIds);
+
+
+                }
+
+
+
+            } else {
+
+                algoliaObjectIds.push(objectID_Zero);
+
+                //console.log("algoliaObjectIds: " + JSON.stringify(algoliaObjectIds));
 
                 return callback (null, algoliaObjectIds);
 
@@ -15596,7 +15653,18 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
             }
 
 
-        }
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            return callback(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
 
 
     }
@@ -15617,7 +15685,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
         if (results) {
 
             let postIdArray = results[4];
-            //console.log("postIDArray: " + JSON.stringify(postIdArray));
+            console.log("postIDArray: " + JSON.stringify(postIdArray));
 
             // Remove the object from Algolia
             indexPosts.deleteObjects(postIdArray, function(err, content) {
