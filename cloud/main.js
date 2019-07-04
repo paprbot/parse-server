@@ -2347,7 +2347,6 @@ Parse.Cloud.define("QueryPostFeed2", function(request, response) {
 });
 
 
-
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
 Parse.Cloud.define("testQueryPerformance", function(request, response) {
 
@@ -2650,6 +2649,131 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
 
 
 });
+
+// cloud API and function to index and import all posts from Parse to AlgoliaSearch indexUsers
+Parse.Cloud.define("indexAlgolia", function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let collection = request.params.collection;
+    let index;
+
+    let query = new Parse.Query(collection);
+    query.limit(10000); // todo limit to at most 1000 results need to change and iterate until done todo
+
+    console.log('collection: ' + request.params.collection);
+
+    switch (collection) {
+        case "Post":
+
+            break;
+        case "_User":
+
+            break;
+        case "Channel":
+
+            break;
+        case "Meeting":
+
+            break;
+        case "WorkSpace":
+
+            break;
+        case "Skill":
+
+            break;
+        case "PostQuestionMessage":
+
+            break;
+
+        case "PostChatMessage":
+
+            break;
+
+        default:
+            return response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Channel, Meeting, PostChatMessage or PostQuestionMessage");
+    }
+
+    query.find({useMasterKey: true})
+        .then((objectsToIndex) => {
+            // The object was retrieved successfully.
+            //console.log("Result from get " + JSON.stringify(Workspace));
+
+            let objects = objectsToIndex;
+            console.log("ObjectToSave length: " + JSON.stringify(objects.length));
+
+            async.forEach(objects, function (object, cb) {
+
+                let PARSEOBJECT = Parse.Object.extend(collection);
+                let parseObject = new PARSEOBJECT();
+                parseObject.id = object.id;
+
+                parseObject.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((result) => {
+
+                    // save was successful
+                    if(result) {
+
+                        return cb (null, object);
+
+
+                    } else {
+
+                        return cb (null, object);
+
+                         //
+
+                    }
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return cb (error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            }, function (err) {
+
+                if (err) {
+
+                    return response.error(err);
+                } else {
+
+                    console.log("PrepIndex completed: " + JSON.stringify(objects.length));
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took indexAlgolia ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                    return response.success();
+
+                }
+
+
+            });
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            return response.error(error);
+        }, {useMasterKey: true});
+
+
+}, {useMasterKey: true});
 
 
 
