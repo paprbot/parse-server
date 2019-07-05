@@ -1179,12 +1179,14 @@ Parse.Cloud.define("setAsModerator", function(request, response) {
     let queryModeratorRole = new Parse.Query(Parse.Role);
     let moderatorName = 'moderator-' + workspace.id;
 
+    console.log("running queryModeratorRole");
+
     queryModeratorRole.equalTo('name', moderatorName);
     queryModeratorRole.first({useMasterKey: true})
         .then((moderatorRole) => {
             // The object was retrieved successfully.
 
-            //console.log("ownerRole" + JSON.stringify(ownerRole));
+            console.log("moderatorRole" + JSON.stringify(moderatorRole));
 
             async.map(UserIdArray, function (userId, cb) {
 
@@ -1196,17 +1198,37 @@ Parse.Cloud.define("setAsModerator", function(request, response) {
                 let user = new USER();
                 user.id = userId;
 
-                // set user role now then save
-                let roleRelation = user.relation("roles");
-                roleRelation.add(moderatorRole);
-                user.save(null, {
+                user.fetch(user.id , {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((User) => {
+
+
+                    // set user role now then save
+                    let roleRelation = User.relation("roles");
+                    roleRelation.add(moderatorRole);
+                    User.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    return cb (null, User);
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
 
                 });
 
-                return cb (null, user);
 
 
             }, function (err, result) {
@@ -11893,7 +11915,7 @@ function splitObjectAndIndex (request, response) {
             if (indexCount === 0) {
 
                 // this means there are no postSocials for this post or no workspace_followers for this workspace return empty arrays
-                
+
 
                 let resultsNone = [];
                 // no results for postSocial or workspace_follower
