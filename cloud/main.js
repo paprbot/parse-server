@@ -14115,9 +14115,9 @@ Parse.Cloud.afterSave('_User', function(request, response) {
         async.parallel([
             async.apply(updateAlgoliaWorkspaceExpertProfileImage),
             async.apply(prepIndex),
-            async.apply(getMySkills),
-            async.apply(getSkillsToLearn),
-            async.apply(getWorkspaceFollowers)
+            async.apply(getMySkills)
+            //async.apply(getSkillsToLearn),
+            //async.apply(getWorkspaceFollowers)
 
 
         ], function (err, results) {
