@@ -2719,19 +2719,6 @@ Parse.Cloud.define("indexAlgolia", function(request, response) {
 
                 return cb (null, object);
 
-
-            }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    return cb (error);
-                }, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-
             }, function (err) {
 
                 if (err) {
@@ -11906,15 +11893,7 @@ function splitObjectAndIndex (request, response) {
             if (indexCount === 0) {
 
                 // this means there are no postSocials for this post or no workspace_followers for this workspace return empty arrays
-
-                let algoliaIDMax = indexCount.toString();
-                parseObject.set("algoliaIDMax", algoliaIDMax);
-                parseObject.save(null, {
-
-                    useMasterKey: true,
-                    //sessionToken: sessionToken
-
-                });
+                
 
                 let resultsNone = [];
                 // no results for postSocial or workspace_follower
