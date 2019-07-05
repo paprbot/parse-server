@@ -13915,43 +13915,55 @@ Parse.Cloud.afterSave('_User', function(request, response) {
             let skillObject = Parse.Object.extend("Skill");
             skillObject = user.get("skills");
 
-            let skillObjectQuery = skillObject.query();
-            skillObjectQuery.ascending("level");
+            if (skillObject) {
 
-            skillObjectQuery.find({
+                let skillObjectQuery = skillObject.query();
+                skillObjectQuery.ascending("level");
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                skillObjectQuery.find({
 
-            }).then((skill) => {
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((skill) => {
+
+                    let skillObject = [];
+
+                    if (skill) {
+
+                        // skills exist return then then
+                        skillObject = skill;
+                    } else {
+
+                        // do nothing and return empty skill object no skills;
+
+                    }
+
+                    return callback (null, skillObject);
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback (error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            } else {
 
                 let skillObject = [];
 
-                if (skill) {
-
-                    // skills exist return then then
-                    skillObject = skill;
-                } else {
-
-                    // do nothing and return empty skill object no skills;
-
-                }
 
                 return callback (null, skillObject);
 
 
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                return callback (error);
-            }, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-
+            }
+            
 
 
         }
