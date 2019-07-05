@@ -13908,6 +13908,111 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
         function getMySkills (callback) {
 
+            //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
+            //console.log("Skill Length:" + skillObject);
+
+            let skillObject = Parse.Object.extend("Skill");
+            //var skillsRelation = new skillObject.relation("skills");
+            skillObject = user.get("mySkills");
+
+            let skillObjectQuery = skillObject.query();
+            skillObjectQuery.ascending("level");
+
+            skillObjectQuery.find({
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((skill) => {
+
+                let skillObject = [];
+
+                if (skill) {
+
+                    // skills exist return then then
+                    skillObject = skill;
+
+                    console.log("skillObject: " + JSON.stringify(skillObject));
+
+                } else {
+
+                    // do nothing and return empty skill object no skills;
+                    console.log("skill: " + JSON.stringify(skillObject));
+
+                }
+
+                return callback (null, skillObject);
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+        }
+
+        function getSkillsToLearn (callback) {
+
+            //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
+            //console.log("Skill Length:" + skillObject);
+
+            let skillObject = Parse.Object.extend("Skill");
+            //var skillsRelation = new skillObject.relation("skills");
+            skillObject = user.get("skillsToLearn");
+
+            let skillObjectQuery = skillObject.query();
+            skillObjectQuery.ascending("level");
+
+            skillObjectQuery.find({
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((skill) => {
+
+                let skillObject = [];
+
+                if (skill) {
+
+                    // skills exist return then then
+                    skillObject = skill;
+
+                    console.log("skillsToLearn: " + JSON.stringify(skillObject));
+
+                } else {
+
+                    // do nothing and return empty skill object no skills;
+                    console.log("skillsToLearn: " + JSON.stringify(skillObject));
+
+                }
+
+                return callback (null, skillObject);
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+        }
+
+
+        function getMySkills_1 (callback) {
+
             let mySkillObject = Parse.Object.extend("Skill");
             //var skillsRelation = new skillObject.relation("skills");
             mySkillObject = user.get("mySkills");
@@ -13937,7 +14042,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
         }
 
-        function getSkillsToLearn (callback) {
+        function getSkillsToLearn_2 (callback) {
 
             let mySkillObject = Parse.Object.extend("Skill");
             //var skillsRelation = new skillObject.relation("skills");
