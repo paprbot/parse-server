@@ -13899,6 +13899,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                 user._tags = ['*'];
             }
 
+            console.log("user: " + JSON.stringify(user));
+
 
             return callback(null, user);
 
@@ -13920,7 +13922,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                     //skill;
                     //skill.add(workspace);
 
-                    //console.log("Skills: " + JSON.stringify(skill));
+                    console.log("Skills: " + JSON.stringify(skills));
 
                     return callback (null, skills);
 
@@ -13951,7 +13953,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                     //skill;
                     //skill.add(workspace);
 
-                    //console.log("Skills: " + JSON.stringify(skill));
+                    console.log("Skills: " + JSON.stringify(skills));
 
                     return callback (null, skills);
 
@@ -13984,7 +13986,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
             }).then((followers) => {
 
-                //console.log("user workspace followers: " + JSON.stringify(followers));
+                console.log("user workspace followers: " + JSON.stringify(followers));
 
 
                 return callback (null, followers);
