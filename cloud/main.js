@@ -915,7 +915,7 @@ Parse.Cloud.define("setAsAdmin", function(request, response) {
     }
 
     //get request params
-    let UserIdArray = request.params.UserIdArray;
+    let UserIdArray = request.params.userIdArray;
     let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
@@ -1169,7 +1169,7 @@ Parse.Cloud.define("setAsModerator", function(request, response) {
         return;
     }
 
-    let UserIdArray = request.params.UserIdArray;
+    let UserIdArray = request.params.userIdArray;
     let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
@@ -1180,6 +1180,9 @@ Parse.Cloud.define("setAsModerator", function(request, response) {
     let moderatorName = 'moderator-' + workspace.id;
 
     console.log("running queryModeratorRole");
+
+    console.log("UserIdArray" + JSON.stringify(UserIdArray));
+
 
     queryModeratorRole.equalTo('name', moderatorName);
     queryModeratorRole.first({useMasterKey: true})
@@ -1315,7 +1318,7 @@ Parse.Cloud.define("removeModerator", function(request, response) {
         return;
     }
 
-    let UserIdArray = request.params.UserIdArray;
+    let UserIdArray = request.params.userIdArray;
     let WorkspaceId = request.params.workspaceId;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
