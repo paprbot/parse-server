@@ -13723,6 +13723,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
     let queryUser = new Parse.Query("_User");
     queryUser.include( ["currentCompany"] );
 
+    console.log("request User: " + JSON.stringify(User));
+
         //queryUser.equalTo("objectId", userToSave.objectId);
 
     queryUser.get(userToSave.objectId , {
@@ -13905,6 +13907,55 @@ Parse.Cloud.afterSave('_User', function(request, response) {
             return callback(null, user);
 
         }
+
+        function getSkills (callback) {
+
+            //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
+            //console.log("Skill Length:" + skillObject);
+            let skillObject = Parse.Object.extend("Skill");
+            skillObject = user.get("skills");
+
+            let skillObjectQuery = skillObject.query();
+            skillObjectQuery.ascending("level");
+
+            skillObjectQuery.find({
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((skill) => {
+
+                let skillObject = [];
+
+                if (skill) {
+
+                    // skills exist return then then
+                    skillObject = skill;
+                } else {
+
+                    // do nothing and return empty skill object no skills;
+
+                }
+
+                return callback (null, skillObject);
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+
+
+        }
+
 
         function getMySkills (callback) {
 
@@ -14115,7 +14166,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
         async.parallel([
             async.apply(updateAlgoliaWorkspaceExpertProfileImage),
             async.apply(prepIndex),
-            async.apply(getMySkills)
+            async.apply(getSkills)
             //async.apply(getSkillsToLearn),
             //async.apply(getWorkspaceFollowers)
 
@@ -14986,6 +15037,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
             //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
             //console.log("Skill Length:" + skillObject);
+
 
             let skillObjectQuery = skillObject.query();
             skillObjectQuery.ascending("level");
