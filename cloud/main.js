@@ -2715,25 +2715,12 @@ Parse.Cloud.define("indexAlgolia", function(request, response) {
                     useMasterKey: true
                     //sessionToken: sessionToken
 
-                }).then((result) => {
+                });
 
-                    // save was successful
-                    if(result) {
-
-                        return cb (null, object);
+                return cb (null, object);
 
 
-                    } else {
-
-                        return cb (null, object);
-
-                         //
-
-                    }
-
-
-
-                }, (error) => {
+            }, (error) => {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
                     return cb (error);
