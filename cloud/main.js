@@ -11721,7 +11721,14 @@ function splitObjectAndIndex (request, response) {
 
         var countIndexUser = workspaceFollowerIndex;
 
-        workspaceFollowers[0]['index'] = countIndexUser + 1;
+        var workspaceFollowerObject = workspaceFollowers[0];
+
+        workspaceFollowerObject = workspaceFollowerObject.toJSON();
+
+        workspaceFollowerObject.index = countIndexUser + 1;
+        console.log("workspaceFollowerObject: " + JSON.stringify(workspaceFollowerObject));
+        console.log("workspace loop: " + JSON.stringify(workspaceFollowers[countIndexUser].get("workspace")));
+
 
     }
 
@@ -11743,12 +11750,22 @@ function splitObjectAndIndex (request, response) {
 
     }
     if (className === 'Role') {
-        globalQuery.equalTo('workspace', workspaceFollowers[countIndexUser].workspace.objectId);
+        globalQuery.equalTo('workspace', workspaceFollowers[countIndexUser].get("workspace"));
+
+        var user = Parse.Object.fromJSON(object);
+
+        let userRoles= user.get("roles");
+
+        console.log("userRoles: " + JSON.stringify(userRoles));
+
+        globalQuery = userRoles.query();
+
+    } else {
+
+        globalQuery.equalTo(objectClassName, parseObject);
 
     }
 
-    //globalQuery.include( ["user", "workspace", "post"] );
-    globalQuery.equalTo(objectClassName, parseObject);
     globalQuery.find({
         useMasterKey: true
         //sessionToken: sessionToken
