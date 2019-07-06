@@ -11714,6 +11714,7 @@ function splitObjectAndIndex (request, response) {
         parseObject.id = object.objectId;
 
         var workspaceFollowers = request['workspaceFollowers'];
+
         console.log("workspaceFollowers: " + JSON.stringify(workspaceFollowers));
 
         var countIndexUser = workspaceFollowers[0].index;
@@ -11759,17 +11760,6 @@ function splitObjectAndIndex (request, response) {
 
             indexCount = indexCount + 1;
             console.log("indexCount: " + JSON.stringify(indexCount));
-            //algoliaIndexID
-
-            /*let algoliaIDMax = indexCount.toString();
-            parseObject.set("algoliaIDMax", algoliaIDMax);
-            parseObject.save(null, {
-
-                useMasterKey: true,
-                //sessionToken: sessionToken
-
-            });*/
-
 
             async.map(results, function (result, cb) {
 
@@ -11822,7 +11812,7 @@ function splitObjectAndIndex (request, response) {
                 console.log("results length: " + JSON.stringify(resultsFinal.length));
 
                 if (err) {
-                    response.error(err);
+                    return response.error(err);
                 } else if (resultsFinal.length > 0) {
 
 
@@ -11874,7 +11864,7 @@ function splitObjectAndIndex (request, response) {
 
                     else {
 
-                        response.error("this className is not supported, please use workspace_follower or PostSocial");
+                        return response.error("this className is not supported, please use a supported className");
                     }
 
                     object.objectID = object.objectId + '-' + finalIndexCount;
@@ -11900,7 +11890,7 @@ function splitObjectAndIndex (request, response) {
 
                         } else if (loop === false) {
 
-                            response.success(count);
+                            return response.success(count);
                         }
 
 
@@ -11982,7 +11972,7 @@ function splitObjectAndIndex (request, response) {
                     let Final_Time = process.hrtime(time);
                     console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
-                    response.success(count);
+                    return response.success(count);
 
 
                 });
@@ -11997,7 +11987,7 @@ function splitObjectAndIndex (request, response) {
                     let Final_Time = process.hrtime(time);
                     console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
-                    response.success(count);
+                    return response.success(count);
 
             }
 
@@ -12009,7 +11999,7 @@ function splitObjectAndIndex (request, response) {
         // The object was not retrieved successfully.
         // error is a Parse.Error with an error code and message.
         //console.log(error);
-        response.error(error);
+        return response.error(error);
     }, {
 
         useMasterKey: true
@@ -13908,66 +13898,63 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
         }
 
-        function getSkills (callback) {
+        function getSkills(callback) {
 
             //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
             //console.log("Skill Length:" + skillObject);
-            let skillObject = Parse.Object.extend("Skill");
-            skillObject = user.get("skills");
 
-            if (skillObject) {
+            //let skillObject = Parse.Object.extend("Skill");
+            //var skillsRelation = new skillObject.relation("skills");
+            let skillRelation= user.get("skills");
 
-                let skillObjectQuery = skillObject.query();
-                skillObjectQuery.ascending("level");
-
-                skillObjectQuery.find({
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                }).then((skill) => {
-
-                    let skillObject = [];
-
-                    if (skill) {
-
-                        // skills exist return then then
-                        skillObject = skill;
-                    } else {
-
-                        // do nothing and return empty skill object no skills;
-
-                    }
-
-                    return callback (null, skillObject);
+            console.log("user in getSkills: " + JSON.stringify(user));
 
 
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    return callback (error);
-                }, {
+            let skillRelationQuery = skillRelation.query();
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+            skillRelationQuery.ascending("level");
 
-                });
+            console.log("skillObject Exists: " + JSON.stringify(skillRelation));
 
+            skillRelationQuery.find({
 
-            } else {
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((skill) => {
+
+                console.log("skill: " + JSON.stringify(skill));
 
                 let skillObject = [];
 
+                if (skill) {
 
-                return callback (null, skillObject);
+                    // skills exist return then then
+                    skillObject = skill;
+                } else {
+
+                    // do nothing and return empty skill object no skills;
+
+                }
+
+                return callback(null, skillObject);
 
 
-            }
-            
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                console.log("error: " + JSON.stringify(error));
+                return callback(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
 
 
         }
-
 
         function getMySkills (callback) {
 
@@ -14200,7 +14187,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                 let skillsToLearn = results[3];
                 let workspaceFollowers = results[4];
                 workspaceFollowers = simplifyWorkspaceFollowersUserIndex(workspaceFollowers[0]);
-                console.log("workspaceFollowers simplified for _User index: " + JSON.stringify(workspaceFollowers));
+                //console.log("workspaceFollowers simplified for _User index: " + JSON.stringify(workspaceFollowers));
 
                 userToSave.mySkills = mySkills;
                 userToSave.skillsToLearn = skillsToLearn;
@@ -14208,23 +14195,46 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                 console.log("mySkills: " + JSON.stringify(mySkills));
                 console.log("skillsToLearn: " + JSON.stringify(skillsToLearn));
 
-                splitObjectAndIndex({'user': user, 'object': userToSave, 'className': 'Role', 'loop': true, 'workspaceFollowers': workspaceFollowers}, {
-                    success: function (count) {
+                if (!workspaceFollowers || workspaceFollowers.length === 0) {
 
-                        let Final_Time = process.hrtime(time);
-                        console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                    userToSave.workspaceFollowers = [];
+                    userToSave.roles = [];
 
-                        response.success();
-                    },
-                    error: function (error) {
-                        response.error(error);
-                    }
-                });
+                    userToSave.objectID = userToSave.objectId + '-' + '0';
+
+                    index.partialUpdateObject(userToSave, true, function(err, content) {
+                        if (err) return response.error(err);
+
+                        console.log("Parse<>Algolia object saved from _User afterSave function ");
+
+                        return response.success();
+
+
+                    });
+                } else {
+
+                    splitObjectAndIndex({'user': user, 'object': userToSave, 'className': 'Role', 'loop': true, 'workspaceFollowers': workspaceFollowers}, {
+                        success: function (count) {
+
+                            let Final_Time = process.hrtime(time);
+                            console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            return response.success();
+                        },
+                        error: function (error) {
+                            return response.error(error);
+                        }
+                    });
+
+
+
+                }
+
 
 
             } else {
 
-                response.error("error in afterSave Post");
+                return response.error("error in afterSave Post");
             }
 
 
@@ -15049,7 +15059,6 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
             //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
             //console.log("Skill Length:" + skillObject);
-
 
             let skillObjectQuery = skillObject.query();
             skillObjectQuery.ascending("level");
