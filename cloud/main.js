@@ -11693,7 +11693,7 @@ function splitObjectAndIndex (request, response) {
         parseObject.id = object.objectId;
     }
 
-     else if (className === 'PostQuestionMessageVote') {
+    else if (className === 'PostQuestionMessageVote') {
 
         objectClassName = 'postQuestionMessage';
         PARSEOBJECT = Parse.Object.extend("PostQuestionMessage");
@@ -11723,6 +11723,10 @@ function splitObjectAndIndex (request, response) {
 
         var workspaceFollowerObject = workspaceFollowers[0];
 
+        var userObject = workspaceFollowers[countIndexUser].get("user");
+
+        let userRoles= userObject.get("roles");
+
         workspaceFollowerObject = workspaceFollowerObject.toJSON();
 
         workspaceFollowerObject.index = countIndexUser + 1;
@@ -11743,18 +11747,14 @@ function splitObjectAndIndex (request, response) {
     let index;
 
     let globalQuery = new Parse.Query(className);
-    globalQuery.limit(10);
-    globalQuery.skip(count);
-    if (loop === false) {
-        globalQuery.equalTo('algoliaIndexID', indexCount);
 
-    }
+
     if (className === 'Role') {
         globalQuery.equalTo('workspace', workspaceFollowers[countIndexUser].get("workspace"));
 
-        var user = Parse.Object.fromJSON(object);
+        //var userObject = Parse.Object.fromJSON(object);
 
-        let userRoles= user.get("roles");
+        let userRoles= userObject.get("roles");
 
         console.log("userRoles: " + JSON.stringify(userRoles));
 
@@ -11765,6 +11765,14 @@ function splitObjectAndIndex (request, response) {
         globalQuery.equalTo(objectClassName, parseObject);
 
     }
+
+    if (loop === false) {
+        globalQuery.equalTo('algoliaIndexID', indexCount);
+
+    }
+
+    globalQuery.limit(10);
+    globalQuery.skip(count);
 
     globalQuery.find({
         useMasterKey: true
@@ -11782,16 +11790,33 @@ function splitObjectAndIndex (request, response) {
 
             async.map(results, function (result, cb) {
 
+                //console.log("className: " + JSON.stringify(className));
+
                 let RESULTOBJECT = Parse.Object.extend(className);
                 let ResultObject = new RESULTOBJECT();
                 ResultObject.id = result.id;
 
-                tags.push(result.get("user").id);
+                if (className === 'Role') {
+
+                    console.log("className userObject: " + JSON.stringify(userObject.id));
+
+                    tags.push(userObject.id);
+
+                } else {
+
+                    tags.push(result.get("user").id);
+
+                }
+
+
 
                 if (!result.get("algoliaIndexID")) {
 
+
                     finalIndexCount = indexCount.toString();
                     ResultObject.set("algoliaIndexID", finalIndexCount);
+
+                    console.log("result.get.algoliaIndexID: " + JSON.stringify(ResultObject.get("algoliaIndexID")));
 
                     ResultObject.save(null, {
 
@@ -11919,7 +11944,7 @@ function splitObjectAndIndex (request, response) {
                 }
 
 
-                });
+            });
 
 
         } else {
@@ -12003,10 +12028,256 @@ function splitObjectAndIndex (request, response) {
 
             else {
 
+                let Final_Time = process.hrtime(time);
+                console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                return response.success(count);
+
+            }
+
+        }
+
+
+
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        //console.log(error);
+        return response.error(error);
+    }, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+}
+
+function splitUserAndIndex (request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let user = request['user'];
+    console.log("user: " + JSON.stringify(user));
+
+    let object = request['object'];
+    console.log("object: " + JSON.stringify(object));
+    // note object needs to be toJSON()
+
+    let className = request['className'];
+    console.log("className: " + JSON.stringify(className));
+    let objectClassName;
+    let PARSEOBJECT;
+    let parseObject;
+
+     if (className !== 'Role') {
+
+         response.error("className for this function nees to be Role.");
+     }
+
+    objectClassName = '_User';
+    PARSEOBJECT = Parse.Object.extend("_User");
+    parseObject = new PARSEOBJECT();
+    parseObject.id = object.objectId;
+
+    var workspaceFollowers = request['workspaceFollowers'];
+
+    //console.log("workspaceFollowers: " + JSON.stringify(workspaceFollowers));
+    var workspaceFollowerIndex = (workspaceFollowers[0].index)? workspaceFollowers[0].index : 0;
+    console.log("workspaceFollowerIndex: " + JSON.stringify(workspaceFollowerIndex));
+
+    var countIndexUser = workspaceFollowerIndex;
+
+    var workspaceFollowerObject = workspaceFollowers[0];
+
+    var userObject = workspaceFollowers[countIndexUser].get("user");
+
+    let userRoles= userObject.get("roles");
+
+    workspaceFollowerObject = workspaceFollowerObject.toJSON();
+
+    workspaceFollowerObject.index = countIndexUser + 1;
+    console.log("workspaceFollowerObject: " + JSON.stringify(workspaceFollowerObject));
+    console.log("workspace loop: " + JSON.stringify(workspaceFollowers[countIndexUser].get("workspace")));
+
+    let count = (request['count'])? request['count'] : 0;
+    console.log("count: " + JSON.stringify(count));
+
+    let indexCount = (request['indexCount'])? request['indexCount'] : 0;
+    console.log("indexCount: " + JSON.stringify(indexCount));
+
+    let loop = request['loop'];
+
+    let index;
+
+    let globalQuery = new Parse.Query(className);
+
+    globalQuery.equalTo('workspace', workspaceFollowers[countIndexUser].get("workspace"));
+
+    //var userObject = Parse.Object.fromJSON(object);
+
+    let userRoles= userObject.get("roles");
+
+    console.log("userRoles: " + JSON.stringify(userRoles));
+
+    globalQuery = userRoles.query();
+
+
+    if (loop === false) {
+        globalQuery.equalTo('algoliaIndexID', indexCount);
+
+    }
+
+    globalQuery.limit(1000);
+    globalQuery.skip(count);
+
+    globalQuery.find({
+        useMasterKey: true
+        //sessionToken: sessionToken
+    }).then((results) => {
+
+        if (results.length > 0) {
+
+            count = count + results.length;
+            let finalIndexCount;
+            let tags = [];
+
+            indexCount = indexCount + 1;
+            console.log("indexCount: " + JSON.stringify(indexCount));
+
+            async.map(results, function (result, cb) {
+
+                //console.log("className: " + JSON.stringify(className));
+
+                let RESULTOBJECT = Parse.Object.extend(className);
+                let ResultObject = new RESULTOBJECT();
+                ResultObject.id = result.id;
+
+                console.log("className userObject: " + JSON.stringify(userObject.id));
+
+                tags.push(userObject.id);
+
+                if (!result.get("algoliaIndexID")) {
+
+                    indexCount = indexCount + results.indexOf(result);
+                    finalIndexCount = indexCount.toString();
+                    ResultObject.set("algoliaIndexID", finalIndexCount);
+
+                    console.log("result.get.algoliaIndexID: " + JSON.stringify(ResultObject.get("algoliaIndexID")));
+
+                    ResultObject.save(null, {
+
+                        useMasterKey: true,
+                        //sessionToken: sessionToken
+
+                    });
+
+                } else {
+
+                    // algoliaIndexID already exists let's use it
+                    finalIndexCount = result.get("algoliaIndexID");
+
+                }
+
+                object.roles = result;
+                index = indexUsers;
+
+                object.objectID = object.objectId + '-' + finalIndexCount;
+
+                if (finalIndexCount === 1) {
+
+                    // let's make sure we also save the index =0 algolia object with * _tags
+
+                    object.objectID = object.objectId + '-' + '0';
+                }
+
+                object._tags = tags;
+
+                result = object;
+
+                return cb (null, result);
+
+
+            }, function (err, resultsFinal) {
+
+                console.log("results length: " + JSON.stringify(resultsFinal.length));
+
+                if (err) {
+                    return response.error(err);
+                } else if (resultsFinal.length > 0) {
+
+
+                    //console.log("final tags: " + JSON.stringify(tags));
+
+
+                    index.partialUpdateObjects(resultsFinal, true, function(err, content) {
+                        if (err) return response.error(err);
+
+                        console.log("Parse<>Algolia _User saved from splitUserAndIndex function ");
+
+                        if (loop === true ) {
+
+                            splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true, 'workspaceFollowers': workspaceFollowers}, response);
+
+                        } else if (loop === false) {
+
+                            return response.success(count);
+                        }
+
+
+                    });
+
+
+                }
+
+
+            });
+
+
+        } else {
+
+            if (indexCount === 0) {
+
+                // this means there are no postSocials for this post or no workspace_followers for this workspace return empty arrays
+
+
+                let resultsNone = [];
+                // no results for postSocial or workspace_follower
+
+                //object = results[0].get("workspace");
+                //console.log("Roel object: " + JSON.stringify(object));
+
+                object.roles = resultsNone;
+                index = indexUsers;
+
+                object.objectID = object.objectId + '-' + '0';
+                console.log("final object before saving to algolia: " + JSON.stringify(object));
+
+                index.partialUpdateObject(object, true, function(err, content) {
+                    if (err) return response.error(err);
+
+                    console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
                     let Final_Time = process.hrtime(time);
-                    console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                    console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
                     return response.success(count);
+
+
+                });
+
+
+
+            }
+
+            else {
+
+                let Final_Time = process.hrtime(time);
+                console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                return response.success(count);
 
             }
 
@@ -14114,11 +14385,11 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                     });
                 } else {
 
-                    splitObjectAndIndex({'user': user, 'object': userToSaveFinal, 'className': 'Role', 'loop': true, 'workspaceFollowers': workspaceFollowers}, {
+                    splitUserAndIndex({'user': user, 'object': userToSaveFinal, 'className': 'Role', 'loop': true, 'workspaceFollowers': workspaceFollowers}, {
                         success: function (count) {
 
                             let Final_Time = process.hrtime(time);
-                            console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                            console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
                             return response.success();
                         },
