@@ -12148,7 +12148,7 @@ function splitUserAndIndex (request, response) {
             //indexCount = results.indexOf(result);
             let indexCountString = indexCount.toString();
 
-            async.map(results, function (result, cb) {
+            async.forEach(results, function (result, cb) {
 
                 console.log("indexOf async.map: " + JSON.stringify(results.indexOf(result)));
 
@@ -12181,44 +12181,42 @@ function splitUserAndIndex (request, response) {
                 return cb (null, result);
 
 
-            }, function (err, resultsFinal) {
+            }, function (err) {
 
-                console.log("results length: " + JSON.stringify(resultsFinal.length));
 
                 if (err) {
                     return response.error(err);
-                } else if (resultsFinal.length > 0) {
-
-                    object.roles = resultsFinal;
-                    index = indexUsers;
-
-                    console.log("className userObject: " + JSON.stringify(userObject.id));
-
-                    tags.push(userObject.id);
-
-                    object.objectID = object.objectId + '-' + indexCountString;
-
-                    console.log("objectID: " + JSON.stringify(object.objectID));
-
-                    object._tags = tags;
-
-
-                    //console.log("final tags: " + JSON.stringify(tags));
-
-                    index.partialUpdateObjects(resultsFinal, true, function(err, content) {
-                        if (err)
-                            console.log("got an error from algolia");
-                            return response.error(err);
-
-                        console.log("Parse<>Algolia _User saved from splitUserAndIndex function ");
-
-                        return response.success(count);
-
-
-                    });
-
-
                 }
+
+                object.roles = results;
+                index = indexUsers;
+
+                console.log("className userObject: " + JSON.stringify(userObject.id));
+
+                tags.push(userObject.id);
+
+                object.objectID = object.objectId + '-' + indexCountString;
+
+                object._tags = tags;
+
+                console.log("object: " + JSON.stringify(object));
+
+                //console.log("final tags: " + JSON.stringify(tags));
+
+                index.partialUpdateObject(object, true, function(err, content) {
+                    if (err)
+                        console.log("got an error from algolia");
+                        return response.error(err);
+
+                    console.log("Parse<>Algolia _User saved from splitUserAndIndex function ");
+
+                    return response.success(count);
+
+
+                });
+
+
+
 
 
             });
