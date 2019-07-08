@@ -12106,7 +12106,7 @@ function splitUserAndIndex (request, response) {
     console.log("count: " + JSON.stringify(count));
 
     let indexCount = (request['indexCount'])? request['indexCount'] : 0;
-    console.log("indexCount: " + JSON.stringify(indexCount));
+    //console.log("indexCount: " + JSON.stringify(indexCount));
 
     let loop = request['loop'];
 
@@ -12117,8 +12117,6 @@ function splitUserAndIndex (request, response) {
     globalQuery.equalTo('workspace', workspaceFollowers[countIndexUser].get("workspace"));
 
     //var userObject = Parse.Object.fromJSON(object);
-
-    let userRoles= userObject.get("roles");
 
     console.log("userRoles: " + JSON.stringify(userRoles));
 
@@ -12141,11 +12139,11 @@ function splitUserAndIndex (request, response) {
         if (results.length > 0) {
 
             count = count + results.length;
-            let finalIndexCount;
+            //let finalIndexCount;
             let tags = [];
 
-            indexCount = indexCount + 1;
-            console.log("indexCount: " + JSON.stringify(indexCount));
+            //indexCount = indexCount + 1;
+            //console.log("indexCount: " + JSON.stringify(indexCount));
 
             async.map(results, function (result, cb) {
 
@@ -12155,15 +12153,16 @@ function splitUserAndIndex (request, response) {
                 let ResultObject = new RESULTOBJECT();
                 ResultObject.id = result.id;
 
+                indexCount = indexCount + results.indexOf(result);
+                let indexCountString = indexCount.toString();
+
                 console.log("className userObject: " + JSON.stringify(userObject.id));
 
                 tags.push(userObject.id);
 
                 if (!result.get("algoliaIndexID")) {
 
-                    indexCount = indexCount + results.indexOf(result);
-                    finalIndexCount = indexCount.toString();
-                    ResultObject.set("algoliaIndexID", finalIndexCount);
+                    ResultObject.set("algoliaIndexID", indexCountString);
 
                     console.log("result.get.algoliaIndexID: " + JSON.stringify(ResultObject.get("algoliaIndexID")));
 
@@ -12177,21 +12176,16 @@ function splitUserAndIndex (request, response) {
                 } else {
 
                     // algoliaIndexID already exists let's use it
-                    finalIndexCount = result.get("algoliaIndexID");
+                    indexCountString = result.get("algoliaIndexID");
 
                 }
 
                 object.roles = result;
                 index = indexUsers;
 
-                object.objectID = object.objectId + '-' + finalIndexCount;
+                object.objectID = object.objectId + '-' + indexCountString;
 
-                if (finalIndexCount === 1) {
-
-                    // let's make sure we also save the index =0 algolia object with * _tags
-
-                    object.objectID = object.objectId + '-' + '0';
-                }
+                console.log("objectID: " + JSON.stringify(object.objectID));
 
                 object._tags = tags;
 
@@ -12211,9 +12205,10 @@ function splitUserAndIndex (request, response) {
 
                     //console.log("final tags: " + JSON.stringify(tags));
 
-
                     index.partialUpdateObjects(resultsFinal, true, function(err, content) {
-                        if (err) return response.error(err);
+                        if (err)
+                            console.log("got an error from algolia");
+                            return response.error(err);
 
                         console.log("Parse<>Algolia _User saved from splitUserAndIndex function ");
 
@@ -14302,7 +14297,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
             queryWorkspaceFollower.equalTo("user", user);
 
             queryWorkspaceFollower.limit(10000);
-            // queryWorkspaceFollower.include( ["workspace"] );
+            queryWorkspaceFollower.include( ["user"] );
 
             queryWorkspaceFollower.find({
 
