@@ -12147,7 +12147,7 @@ function splitUserAndIndex (request, response) {
 
             async.map(results, function (result, cb) {
 
-                //console.log("className: " + JSON.stringify(className));
+                console.log("indexOf async.map: " + JSON.stringify(results.indexOf(result)));
 
                 let RESULTOBJECT = Parse.Object.extend(className);
                 let ResultObject = new RESULTOBJECT();
