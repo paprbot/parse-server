@@ -12213,19 +12213,15 @@ function splitUserAndIndex (request, response) {
 
                     console.log("Parse<>Algolia _User saved from splitUserAndIndex function ");
 
+                    if (loop === true ) {
 
-                    splitUserAndIndex({'user': user, 'object': object, 'className': 'Role', 'loop': true, 'workspaceFollowers': workspaceFollowers}, {
-                        success: function (count) {
+                        splitUserAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true, 'workspaceFollowers': workspaceFollowers}, response);
 
-                            let Final_Time = process.hrtime(time);
-                            console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                    } else if (loop === false) {
 
-                            return response.success();
-                        },
-                        error: function (error) {
-                            return response.error(error);
-                        }
-                    });
+                        return response.success(count);
+                    }
+
 
 
                 });
