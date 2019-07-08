@@ -12128,7 +12128,7 @@ function splitUserAndIndex (request, response) {
 
     }
 
-    globalQuery.limit(1000);
+    globalQuery.limit(10);
     globalQuery.skip(count);
 
     globalQuery.find({
@@ -12145,6 +12145,9 @@ function splitUserAndIndex (request, response) {
             //indexCount = indexCount + 1;
             //console.log("indexCount: " + JSON.stringify(indexCount));
 
+            //indexCount = results.indexOf(result);
+            let indexCountString = indexCount.toString();
+
             async.map(results, function (result, cb) {
 
                 console.log("indexOf async.map: " + JSON.stringify(results.indexOf(result)));
@@ -12152,13 +12155,6 @@ function splitUserAndIndex (request, response) {
                 let RESULTOBJECT = Parse.Object.extend(className);
                 let ResultObject = new RESULTOBJECT();
                 ResultObject.id = result.id;
-
-                indexCount = indexCount + results.indexOf(result);
-                let indexCountString = indexCount.toString();
-
-                console.log("className userObject: " + JSON.stringify(userObject.id));
-
-                tags.push(userObject.id);
 
                 if (!result.get("algoliaIndexID")) {
 
@@ -12180,16 +12176,7 @@ function splitUserAndIndex (request, response) {
 
                 }
 
-                object.roles = result;
-                index = indexUsers;
 
-                object.objectID = object.objectId + '-' + indexCountString;
-
-                console.log("objectID: " + JSON.stringify(object.objectID));
-
-                object._tags = tags;
-
-                result = object;
 
                 return cb (null, result);
 
@@ -12202,6 +12189,19 @@ function splitUserAndIndex (request, response) {
                     return response.error(err);
                 } else if (resultsFinal.length > 0) {
 
+                    object.roles = resultsFinal;
+                    index = indexUsers;
+
+                    console.log("className userObject: " + JSON.stringify(userObject.id));
+
+                    tags.push(userObject.id);
+
+                    object.objectID = object.objectId + '-' + indexCountString;
+
+                    console.log("objectID: " + JSON.stringify(object.objectID));
+
+                    object._tags = tags;
+
 
                     //console.log("final tags: " + JSON.stringify(tags));
 
@@ -12212,14 +12212,7 @@ function splitUserAndIndex (request, response) {
 
                         console.log("Parse<>Algolia _User saved from splitUserAndIndex function ");
 
-                        if (loop === true ) {
-
-                            splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true, 'workspaceFollowers': workspaceFollowers}, response);
-
-                        } else if (loop === false) {
-
-                            return response.success(count);
-                        }
+                        return response.success(count);
 
 
                     });
@@ -14187,14 +14180,14 @@ Parse.Cloud.afterSave('_User', function(request, response) {
             //var skillsRelation = new skillObject.relation("skills");
             let skillRelation= user.get("mySkills");
 
-            console.log("user in getSkills: " + JSON.stringify(user));
+            //console.log("user in getSkills: " + JSON.stringify(user));
 
 
             let skillRelationQuery = skillRelation.query();
 
             skillRelationQuery.ascending("level");
 
-            console.log("skillObject Exists: " + JSON.stringify(skillRelation));
+            //console.log("skillObject Exists: " + JSON.stringify(skillRelation));
 
             skillRelationQuery.find({
 
@@ -14203,7 +14196,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
             }).then((skill) => {
 
-                console.log("skill: " + JSON.stringify(skill));
+                //console.log("skill: " + JSON.stringify(skill));
 
                 let skillObject = [];
 
@@ -14262,12 +14255,12 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                     // skills exist return then then
                     skillObject = skill;
 
-                    console.log("skillsToLearn: " + JSON.stringify(skillObject));
+                    //console.log("skillsToLearn: " + JSON.stringify(skillObject));
 
                 } else {
 
                     // do nothing and return empty skill object no skills;
-                    console.log("skillsToLearn: " + JSON.stringify(skillObject));
+                    //console.log("skillsToLearn: " + JSON.stringify(skillObject));
 
                 }
 
@@ -14306,7 +14299,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
             }).then((followers) => {
 
-                console.log("user workspace followers: " + JSON.stringify(followers));
+                //console.log("user workspace followers: " + JSON.stringify(followers));
 
 
                 return callback (null, followers);
@@ -14345,20 +14338,20 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
             if (results.length > 0) {
 
-                console.log("afterSave _User results length: " + JSON.stringify(results.length));
+                //console.log("afterSave _User results length: " + JSON.stringify(results.length));
 
                 let userToSaveFinal = results[1];
                 let mySkills = results[2];
                 let skillsToLearn = results[3];
                 let workspaceFollowers = results[4];
                 //workspaceFollowers = simplifyWorkspaceFollowersUserIndex(workspaceFollowers[0]);
-                console.log("workspaceFollowers simplified for _User index: " + JSON.stringify(workspaceFollowers));
+                //console.log("workspaceFollowers simplified for _User index: " + JSON.stringify(workspaceFollowers));
 
                 userToSaveFinal.mySkills = mySkills;
                 userToSaveFinal.skillsToLearn = skillsToLearn;
 
-                console.log("mySkills: " + JSON.stringify(mySkills));
-                console.log("skillsToLearn: " + JSON.stringify(skillsToLearn));
+                //console.log("mySkills: " + JSON.stringify(mySkills));
+                //console.log("skillsToLearn: " + JSON.stringify(skillsToLearn));
 
                 if (!workspaceFollowers || workspaceFollowers.length === 0) {
 
@@ -14367,7 +14360,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
                     userToSaveFinal.objectID = userToSaveFinal.objectId + '-' + '0';
 
-                    console.log("userToSaveFinal: " + JSON.stringify(userToSaveFinal));
+                    //console.log("userToSaveFinal: " + JSON.stringify(userToSaveFinal));
 
                     indexUsers.partialUpdateObject(userToSaveFinal, true, function(err, content) {
                         if (err) return response.error(err);
