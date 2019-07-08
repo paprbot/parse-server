@@ -12099,7 +12099,9 @@ function splitUserAndIndex (request, response) {
     workspaceFollowerObject = workspaceFollowerObject.toJSON();
 
     workspaceFollowerObject.index = countIndexUser + 1;
-    console.log("workspaceFollowerObject: " + JSON.stringify(workspaceFollowerObject));
+    workspaceFollowers[0] = workspaceFollowerObject;
+
+    console.log("workspaceFollowerObject: " + JSON.stringify(workspaceFollowers[0]));
     console.log("workspace loop: " + JSON.stringify(workspaceFollowers[countIndexUser].get("workspace")));
 
     let count = (request['count'])? request['count'] : 0;
@@ -12114,13 +12116,14 @@ function splitUserAndIndex (request, response) {
 
     let globalQuery = new Parse.Query(className);
 
-    globalQuery.equalTo('workspace', workspaceFollowers[countIndexUser].get("workspace"));
-
     //var userObject = Parse.Object.fromJSON(object);
 
-    console.log("userRoles: " + JSON.stringify(userRoles));
+    //console.log("userRoles: " + JSON.stringify(userRoles));
+
 
     globalQuery = userRoles.query();
+
+    globalQuery.equalTo('workspace', workspaceFollowers[countIndexUser].get("workspace"));
 
 
     if (loop === false) {
@@ -12210,7 +12213,19 @@ function splitUserAndIndex (request, response) {
 
                     console.log("Parse<>Algolia _User saved from splitUserAndIndex function ");
 
-                    return response.success(count);
+
+                    splitUserAndIndex({'user': user, 'object': object, 'className': 'Role', 'loop': true, 'workspaceFollowers': workspaceFollowers}, {
+                        success: function (count) {
+
+                            let Final_Time = process.hrtime(time);
+                            console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            return response.success();
+                        },
+                        error: function (error) {
+                            return response.error(error);
+                        }
+                    });
 
 
                 });
