@@ -35,6 +35,8 @@ let simplifyPostChatMessage = require('./simplifyClass/Post/simplifyPostChatMess
 let simplifyPostSocial = require('./simplifyClass/Post/simplifyPostSocial');
 let simplifyPostQuestionMessage = require('./simplifyClass/Post/simplifyPostQuestionMessage');
 let simplifyWorkspaceFollowersUserIndex = require('./simplifyClass/WorkspaceFollowers/simplifyWorkspaceFollowersUserIndex');
+let selectUser = require('./simplifyClass/_User/selectUser');
+let selectPostChatMessage = require('./simplifyClass/Post/selectPostChatMessage');
 
 
 
@@ -12695,7 +12697,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 querypostQuestion.descending("likesCount");
 
                 querypostQuestion.limit(10);
-                querypostQuestion.include( ["user"] );
+                //querypostQuestion.include( ["user"] );
                 querypostQuestion.find({
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -12821,7 +12823,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 //queryPostQuestionMessage.equalTo("archive", false);
                 queryPostQuestionMessage.equalTo("type", "answer");
                 queryPostQuestionMessage.descending("voteRank");
-                queryPostQuestionMessage.include( ["user"] );
+                //queryPostQuestionMessage.include( ["user"] );
                 queryPostQuestionMessage.first({
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -12865,6 +12867,10 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 console.log("starting getChatMessages function.");
 
+                let selectChatMessage = selectPostChatMessage();
+                let selectUser = selectUser();
+
+                let chatMessageSelect = selectChatMessage.concat(selectUser);
 
                 let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
                 let queryPostChatMessage = new Parse.Query(POSTCHATMESSAGE);
@@ -12873,6 +12879,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 queryPostChatMessage.equalTo("post", post);
                 //queryPostChatMessage.equalTo("archive", false);
                 queryPostChatMessage.include( ["user"] );
+                queryPostChatMessage.select(chatMessageSelect);
                 queryPostChatMessage.limit(5);
                 queryPostChatMessage.find({
                     useMasterKey: true
