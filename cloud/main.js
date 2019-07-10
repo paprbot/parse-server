@@ -12548,7 +12548,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     //var Post = Parse.Object.extend("Post");
     let POST = Parse.Object.extend("Post");
     let queryPost = new Parse.Query(POST);
-    queryPost.include( ["user"] );
+    queryPost.include( ["user", "workspace", "channel"] );
     //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
     queryPost.equalTo("objectId", post.id);
 
@@ -12903,7 +12903,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                                 // finished iterating through all items
 
-                                return callback(null, simplifiedPostChatMessages);;
+                                return callback(null, simplifiedPostChatMessages);
 
                             }
 
@@ -12966,6 +12966,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     postToSave.chatMessages = chatMessages;
                     //postToSave.PostSocial = postSocial;
                     postToSave.topAnswer = topAnswerForQuestionPost;
+                    postToSave.user = simplifyUser(user);
 
 
                     console.log("postQuestions: " + JSON.stringify(postQuestions));

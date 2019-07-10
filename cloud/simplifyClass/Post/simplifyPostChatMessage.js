@@ -5,7 +5,7 @@
  * Created by shawk on 5/10/2019.
  */
 
-let simplifyUser = require('./simplifyClass/_User/simplifyUser');
+let simplifyUser = require('./../_User/simplifyUser');
 
 
 
@@ -20,10 +20,6 @@ function simplifyPostChatMessage (PostChatMessage) {
     if (postChatMessage.likedCount) {delete postChatMessage.likedCount;}
     if (postChatMessage.replyMessage) {delete postChatMessage.replyMessage;}
     if (postChatMessage.archive) {delete postChatMessage.archive;}
-    if (postChatMessage.user) {
-
-        postChatMessage.user = simplifyUser(postChatMessage.user);
-    }
 
 
     return postChatMessage;

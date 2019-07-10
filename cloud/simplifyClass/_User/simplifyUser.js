@@ -5,7 +5,7 @@
 function simplifyUser (User) {
 
     let expertOwner = User.toJSON();
-    if (expertOwner.socialProfilePicURL) {delete expertOwner.socialProfilePicURL;}
+    if (expertOwner.socialProfilePicURL || expertOwner.socialProfilePicURL === null) {delete expertOwner.socialProfilePicURL;}
     if (expertOwner.isTyping === true || expertOwner.isTyping === false) {delete expertOwner.isTyping;}
     if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
     if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
@@ -19,15 +19,22 @@ function simplifyUser (User) {
     if (expertOwner.email) {delete expertOwner.email;}
     if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
     if (expertOwner.isDirtyIsOnline === true || expertOwner.isDirtyIsOnline === false) {delete expertOwner.isDirtyIsOnline;}
-    if (expertOwner.website) {delete expertOwner.website;}
+    if (expertOwner.website || expertOwner.website === '') {delete expertOwner.website;}
     if (expertOwner.isNew === true || expertOwner.isNew === false) {delete expertOwner.isNew;}
-    if (expertOwner.phoneNumber) {delete expertOwner.phoneNumber;}
+    if (expertOwner.phoneNumber || expertOwner.phoneNumber === '') {delete expertOwner.phoneNumber;}
     if (expertOwner.createdAt) {delete expertOwner.createdAt;}
     if (expertOwner.updatedAt) {delete expertOwner.updatedAt;}
     if (expertOwner.mySkills) {delete expertOwner.mySkills;}
     if (expertOwner.skillsToLearn) {delete expertOwner.skillsToLearn;}
     if (expertOwner.roles) {delete expertOwner.roles;}
     if (expertOwner.algoliaSecureAPIKey) {delete expertOwner.algoliaSecureAPIKey;}
+    if (expertOwner.currentCompany) {delete expertOwner.currentCompany;}
+    if (expertOwner.title) { delete  expertOwner.title;}
+    if (expertOwner.isLogin === true || expertOwner.isLogin === false) {delete expertOwner.isLogin;}
+    if (expertOwner.isDirtyShowAvailability === true || expertOwner.isDirtyShowAvailability === false) {delete expertOwner.isDirtyShowAvailability;}
+    if (expertOwner.isDirtyTyping === true || expertOwner.isDirtyTyping === false) {delete expertOwner.isDirtyTyping;}
+    if (expertOwner.ACL) {delete expertOwner.ACL}
+    if (expertOwner.isSelectedWorkspaceFollower) {delete expertOwner.isSelectedWorkspaceFollower}
 
 
     return expertOwner;
