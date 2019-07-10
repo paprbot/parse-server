@@ -12102,7 +12102,7 @@ function splitUserAndIndex (request, response) {
     workspaceFollowers[0] = workspaceFollowerObject;
 
     console.log("workspaceFollowerObject: " + JSON.stringify(workspaceFollowers[0]));
-    console.log("workspace loop: " + JSON.stringify(workspaceFollowers[countIndexUser].get("workspace")));
+    console.log("workspace loop: " + JSON.stringify(workspaceFollowers[workspaceFollowerIndex].get("workspace")));
 
     let count = (request['count'])? request['count'] : 0;
     console.log("count: " + JSON.stringify(count));
@@ -12123,7 +12123,7 @@ function splitUserAndIndex (request, response) {
 
     globalQuery = userRoles.query();
 
-    globalQuery.equalTo('workspace', workspaceFollowers[countIndexUser].get("workspace"));
+    globalQuery.equalTo('workspace', workspaceFollowers[workspaceFollowerIndex].get("workspace"));
 
 
     if (loop === false) {
@@ -12693,7 +12693,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 let querypostQuestion = relationPostQuestion.query();
                 //querypostQuestion.equalTo("archive", false);
                 querypostQuestion.descending("likesCount");
+
                 querypostQuestion.limit(10);
+                querypostQuestion.include( ["user"] );
                 querypostQuestion.find({
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -12706,7 +12708,6 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                         console.log("postQuestions exist");
 
-                        //postQuestions = simplifyPostQuestion(postQuestions);
                         return callback(null, postQuestions);
 
 
@@ -12820,6 +12821,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 //queryPostQuestionMessage.equalTo("archive", false);
                 queryPostQuestionMessage.equalTo("type", "answer");
                 queryPostQuestionMessage.descending("voteRank");
+                querypostQuestion.include( ["user"] );
                 queryPostQuestionMessage.first({
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -12870,6 +12872,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 //queryPostChatMessage.equalTo("channel", channel);
                 queryPostChatMessage.equalTo("post", post);
                 //queryPostChatMessage.equalTo("archive", false);
+                querypostQuestion.include( ["user"] );
                 queryPostChatMessage.limit(5);
                 queryPostChatMessage.find({
                     useMasterKey: true
@@ -13165,13 +13168,13 @@ Parse.Cloud.afterSave('PostQuestionMessage', function(request, response) {
         }
 
 
-        function getTopAnswerForQuestionPost (callback) {
+        function getTopAnswerForQuestionMessage (callback) {
 
             let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
             let queryPostQuestionMessage= new Parse.Query(POSTQUESTIONMESSAGE);
             //queryPostQuestionMessage.equalTo("workspace", workspace);
             //queryPostQuestionMessage.equalTo("channel", channel);
-            queryPostQuestionMessage.equalTo("post", post);
+            queryPostQuestionMessage.equalTo("replyMessage", postQuestionMessage);
             //queryPostQuestionMessage.equalTo("archive", false);
             queryPostQuestionMessage.equalTo("type", "answer");
             queryPostQuestionMessage.descending("voteRank");
@@ -13273,11 +13276,11 @@ Parse.Cloud.afterSave('PostQuestionMessage', function(request, response) {
         }
 
         async.parallel([
-            async.apply(prepIndex)
+            async.apply(prepIndex),
             //async.apply(getPostQuestions),
             //async.apply(getChatMessages),
             //async.apply(getPostSocial),
-            //async.apply(getTopAnswerForQuestionPost)
+            async.apply(getTopAnswerForQuestionMessage)
 
 
         ], function (err, results) {
