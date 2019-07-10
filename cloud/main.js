@@ -13216,71 +13216,22 @@ Parse.Cloud.afterSave('PostQuestionMessage', function(request, response) {
 
         }
 
-        function getChatMessages (callback) {
+        function saveParentPost (callback) {
 
-            let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
-            let queryPostChatMessage = new Parse.Query(POSTCHATMESSAGE);
-            //queryPostChatMessage.equalTo("workspace", workspace);
-            //queryPostChatMessage.equalTo("channel", channel);
-            queryPostChatMessage.equalTo("post", post);
-            //queryPostChatMessage.equalTo("archive", false);
-            queryPostChatMessage.limit(5);
-            queryPostChatMessage.find({
-                useMasterKey: true
-                //sessionToken: sessionToken
-            }).then((PostChatMessages) => {
-
-                console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
-
-
-                if (PostChatMessages.length !== 0) {
-
-                    let simplifiedPostChatMessages = [];
-
-                    for (var i = 0; i < PostChatMessages.length; i++) {
-
-                        simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
-                        console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i])) ;
-
-                    }
-
-                    return callback (null, simplifiedPostChatMessages);
-
-
-                } else {
-
-                    let PostChatMessages = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, PostChatMessages);
-
-                }
-
-
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                console.log(error);
-                let PostChatMessages = [];
-                // no workspaceFollowers to delete return
-                return callback(null, PostChatMessages);
-            }, {
+            Post.save(null, {
 
                 useMasterKey: true
                 //sessionToken: sessionToken
 
             });
 
-
+            return callback(null, Post);
         }
 
         async.parallel([
             async.apply(prepIndex),
-            //async.apply(getPostQuestions),
-            //async.apply(getChatMessages),
-            //async.apply(getPostSocial),
-            async.apply(getTopAnswerForQuestionMessage)
+            async.apply(getTopAnswerForQuestionMessage),
+            async.apply(saveParentPost)
 
 
         ], function (err, results) {
@@ -13464,9 +13415,22 @@ Parse.Cloud.afterSave('PostChatMessage', function(request, response) {
 
         }
 
+        function saveParentPost (callback) {
+
+            Post.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            return callback(null, Post);
+        }
+
 
         async.parallel([
-            async.apply(prepIndex)
+            async.apply(prepIndex),
+            async.apply(saveParentPost)
 
 
         ], function (err, results) {
