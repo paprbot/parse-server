@@ -12821,7 +12821,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 //queryPostQuestionMessage.equalTo("archive", false);
                 queryPostQuestionMessage.equalTo("type", "answer");
                 queryPostQuestionMessage.descending("voteRank");
-                querypostQuestion.include( ["user"] );
+                queryPostQuestionMessage.include( ["user"] );
                 queryPostQuestionMessage.first({
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -12872,7 +12872,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 //queryPostChatMessage.equalTo("channel", channel);
                 queryPostChatMessage.equalTo("post", post);
                 //queryPostChatMessage.equalTo("archive", false);
-                querypostQuestion.include( ["user"] );
+                queryPostChatMessage.include( ["user"] );
                 queryPostChatMessage.limit(5);
                 queryPostChatMessage.find({
                     useMasterKey: true
