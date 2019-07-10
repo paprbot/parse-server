@@ -35,8 +35,10 @@ let simplifyPostChatMessage = require('./simplifyClass/Post/simplifyPostChatMess
 let simplifyPostSocial = require('./simplifyClass/Post/simplifyPostSocial');
 let simplifyPostQuestionMessage = require('./simplifyClass/Post/simplifyPostQuestionMessage');
 let simplifyWorkspaceFollowersUserIndex = require('./simplifyClass/WorkspaceFollowers/simplifyWorkspaceFollowersUserIndex');
-let selectUser = require('./simplifyClass/_User/selectUser');
-let selectPostChatMessage = require('./simplifyClass/Post/selectPostChatMessage');
+
+var selectChatMessage = ["seenByWorkspaceAdmins", "message", "likedCount"];
+var selectUser = ["user.displayName", "user.fullname","user.profileimage","user.showAvailability","user.isOnline"];
+
 
 
 
@@ -12546,7 +12548,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     //var Post = Parse.Object.extend("Post");
     let POST = Parse.Object.extend("Post");
     let queryPost = new Parse.Query(POST);
-    queryPost.include( ["user", "workspace", "channel"] );
+    queryPost.include( ["user"] );
     //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
     queryPost.equalTo("objectId", post.id);
 
@@ -12867,10 +12869,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 console.log("starting getChatMessages function.");
 
-                let selectChatMessage = selectPostChatMessage();
-                let selectUser = selectUser();
-
                 let chatMessageSelect = selectChatMessage.concat(selectUser);
+
+                console.log("chatMessageSelect: " + JSON.stringify(chatMessageSelect));
 
                 let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
                 let queryPostChatMessage = new Parse.Query(POSTCHATMESSAGE);
@@ -12898,9 +12899,15 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                             simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
                             console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i]));
 
-                        }
+                            if (i === (PostChatMessages.length-1)) {
 
-                        return callback(null, simplifiedPostChatMessages);
+                                // finished iterating through all items
+
+                                return callback(null, simplifiedPostChatMessages);;
+
+                            }
+
+                        }
 
 
                     } else {
