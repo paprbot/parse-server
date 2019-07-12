@@ -16717,9 +16717,9 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
     }
 
-    function deletePostQuestionMessage (callback) {
+    function deletePostMessage (callback) {
 
-        let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
+        let POSTQUESTIONMESSAGE = Parse.Object.extend("PostMessage");
         let queryPostQuestionMessage = new Parse.Query(POSTQUESTIONMESSAGE);
         //queryPostQuestion.equalTo("workspace", workspace);
         //queryPostQuestion.equalTo("channel", channel);
@@ -16751,11 +16751,11 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
                 Parse.Object.destroyAll(postQuestionMessages, {
                     success: function(result) {
-                        console.log('Did successfully delete postQuestionMessages in afterDelete Post Cloud Function');
+                        console.log('Did successfully delete postMessages in afterDelete Post Cloud Function');
                         return callback(null, result);
                     },
                     error: function(error) {
-                        console.error("Error delete postQuestionMessages " + error.code + ": " + error.message);
+                        console.error("Error delete postMessages " + error.code + ": " + error.message);
                         return callback(error);
                     },
                     useMasterKey: true
@@ -16949,8 +16949,7 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
     async.parallel([
         async.apply(deletePostSocial),
         async.apply(deletePostQuestion),
-        async.apply(deletePostQuestionMessage),
-        async.apply(deletePostChatMessage),
+        async.apply(deletePostMessage),
         async.apply(generateAlgoliaObjectIDs)
 
     ], function (err, results) {
@@ -16972,6 +16971,309 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
                 let finalTime = process.hrtime(time);
                 console.log(`finalTime took afterDelete Post ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                response.success();
+            });
+
+
+
+        }
+
+    });
+
+}, {useMasterKey: true});
+
+// Delete AlgoliaSearch PostMessage object if it's deleted from Parse
+Parse.Cloud.afterDelete('PostMessage', function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.PostMessage.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    // Get post object
+    let POSTMESSAGE = Parse.Object.extend("PostMessage");
+    let postMessage = request.object;
+
+    let POST = Parse.Object.extend("Post");
+    let post = new POST();
+    post.id = postMessage.get("post").id;
+
+    let CHANNEL = Parse.Object.extend("Channel");
+    let channel = new CHANNEL();
+    channel.id = postMessage.get("channel").id;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = postMessage.get("workspace").id;
+
+    console.log("request afterDelete PostMessage: " + JSON.stringify(request));
+
+    let USER = Parse.Object.extend("_User");
+    let owner = new USER();
+    owner.id = postMessage.get("user").id;
+
+    function deletePostMessageSocial (callback) {
+
+        let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
+        let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
+        //queryPostSocial.equalTo("workspace", workspace);
+        //queryPostSocial.equalTo("channel", channel);
+        queryPostMessageSocial.equalTo("post", post);
+        queryPostMessageSocial.limit(10000);
+        queryPostMessageSocial.find({
+            useMasterKey: true
+            //sessionToken: sessionToken
+        }).then((postMessageSocial) => {
+
+
+            if (postMessageSocial) {
+
+                /*Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
+
+                 if (error) {
+
+                 console.error("Error deleteChannelFollowers " + error.code + ": " + error.message);
+                 return callback(error);
+
+
+                 }
+
+                 if (result) {
+
+                 return callback(null, result);
+                 }
+                 });*/
+
+                Parse.Object.destroyAll(postMessageSocial, {
+                    success: function(result) {
+                        console.log('Did successfully delete postSocials in afterDelete postMessageSocial Cloud Function');
+                        return callback(null, result);
+                    },
+                    error: function(error) {
+                        console.error("Error  delete postMessageSocial " + error.code + ": " + error.message);
+                        return callback(error);
+                    },
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+
+            } else {
+
+                postMessageSocial = [];
+                // no workspaceFollowers to delete return
+                return callback(null, postMessageSocial);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            return callback(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+    }
+
+    function deletePostMessageThreads (callback) {
+
+        let POSTMESSAGE = Parse.Object.extend("PostMessage");
+        let queryPostMessage = new Parse.Query(POSTMESSAGE);
+        //queryPostSocial.equalTo("workspace", workspace);
+        //queryPostSocial.equalTo("channel", channel);
+        queryPostMessage.equalTo("post", post);
+        queryPostMessage.limit(10000);
+        queryPostMessage.find({
+            useMasterKey: true
+            //sessionToken: sessionToken
+        }).then((postMessage) => {
+
+
+            if (postMessage) {
+
+                /*Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
+
+                 if (error) {
+
+                 console.error("Error deleteChannelFollowers " + error.code + ": " + error.message);
+                 return callback(error);
+
+
+                 }
+
+                 if (result) {
+
+                 return callback(null, result);
+                 }
+                 });*/
+
+                Parse.Object.destroyAll(postMessage, {
+                    success: function(result) {
+                        console.log('Did successfully delete postSocials in afterDelete postMessageSocial Cloud Function');
+                        return callback(null, result);
+                    },
+                    error: function(error) {
+                        console.error("Error  delete postMessageSocial " + error.code + ": " + error.message);
+                        return callback(error);
+                    },
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+
+            } else {
+
+                postMessage = [];
+                // no workspaceFollowers to delete return
+                return callback(null, postMessage);
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            return callback(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+    }
+
+    function generateAlgoliaObjectIDs (callback) {
+
+        let algoliaObjectIds = [];
+
+        let objectID_Zero = postMessage.id + '-' + '0';
+
+        let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
+        let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
+        //queryPostQuestion.equalTo("workspace", workspace);
+        //queryPostQuestion.equalTo("channel", channel);
+        queryPostMessageSocial.descending("algoliaIndexID");
+        queryPostMessageSocial.equalTo("postMessage", postMessage);
+        queryPostMessageSocial.first({
+            useMasterKey: true
+            //sessionToken: sessionToken
+        }).then((postMessageSocial) => {
+
+
+            if (postMessageSocial) {
+
+                if (postMessageSocial.get("algoliaIndexID")) {
+
+                    console.log("algoliaIndexID: " + parseInt(postMessageSocial.get("algoliaIndexID")));
+
+
+                    for (var i = 0; i < parseInt(postMessageSocial.get("algoliaIndexID")); i++) {
+
+                        let objectID = postMessage.id + '-' + i.toString();
+                        algoliaObjectIds.push(objectID);
+                        console.log("algoliaObjectIds: " + JSON.stringify(algoliaObjectIds));
+
+                        if (i === (parseInt(postMessageSocial.get("algoliaIndexID"))-1)) {
+
+                            // finished iterating through all items
+
+                            return callback (null, algoliaObjectIds);
+
+                        }
+
+
+                    }
+
+
+                } else {
+
+                    algoliaObjectIds.push(objectID_Zero);
+
+                    //console.log("algoliaObjectIds: " + JSON.stringify(algoliaObjectIds));
+
+                    return callback (null, algoliaObjectIds);
+
+
+                }
+
+
+
+            } else {
+
+                algoliaObjectIds.push(objectID_Zero);
+
+                //console.log("algoliaObjectIds: " + JSON.stringify(algoliaObjectIds));
+
+                return callback (null, algoliaObjectIds);
+
+
+            }
+
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            return callback(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+
+
+    }
+
+
+    async.parallel([
+        async.apply(deletePostMessageSocial),
+        async.apply(deletePostMessageThreads),
+        async.apply(generateAlgoliaObjectIDs)
+
+    ], function (err, results) {
+        if (err) {
+            return response.error(err);
+        }
+
+        if (results) {
+
+            let postIdArray = results[2];
+            console.log("postIDArray: " + JSON.stringify(postIdArray));
+
+            // Remove the object from Algolia
+            indexPosts.deleteObjects(postIdArray, function(err, content) {
+                if (err) {
+                    response.error(err);
+                }
+                console.log('Parse<>Algolia PostMessage deleted');
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took afterDelete PostMessage ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
                 response.success();
             });
