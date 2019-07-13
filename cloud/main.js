@@ -12576,12 +12576,12 @@ function splitUserAndIndex (request, response) {
 
                 console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectID));
 
-                let CHANNELFOLLOW = Parse.extend("ChannelFollow");
+                let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
                 let queryChannelFollow = new Parse.Query(CHANNELFOLLOW);
 
                 queryChannelFollow.equalTo("workspace", workspace);
                 queryChannelFollow.equalTo("isFollower", true);
-                queryChannelFollow.select(["channel.objectId", "isFollower", "isMember"]);
+                queryChannelFollow.select(["channel.objectId"]);
 
                 queryChannelFollow.find({
 
@@ -12591,30 +12591,61 @@ function splitUserAndIndex (request, response) {
                 }).then((channelFollow) => {
                     // The object was retrieved successfully.
 
+                    let finalChannelFollowers = [];
+
                     if (channelFollow.length > 0) {
 
-                        objectToSave.channelFollowers = results;
+
+                        for (var i = 0; i < channelFollow.length; i++) {
+
+                            finalChannelFollowers.push(channelFollow[i].channel.objectId);
+
+
+                            if (i === (channelFollow.length-1)) {
+
+                                // finished iterating through all items
+
+                                objectToSave.channels = finalChannelFollowers;
+
+
+                                indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                                    if (err) {
+
+                                        return response.error(err);
+                                    }
+
+                                    console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
+                                    return cb (null, workspaceFollower);
+
+
+                                });
+
+                            }
+
+                        }
+
+
 
 
                     } else {
 
-                        objectToSave.channelFollowers = [];
+                        objectToSave.channels = [];
+
+                        indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                            if (err) {
+
+                                return response.error(err);
+                            }
+
+                            console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
+                            return cb (null, workspaceFollower);
+
+
+                        });
 
                     }
-
-
-                    indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
-                        if (err) {
-
-                            return response.error(err);
-                        }
-
-                        console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
-
-                        return cb (null, workspaceFollower);
-
-
-                    });
 
 
                 }, (error) => {
@@ -12647,12 +12678,12 @@ function splitUserAndIndex (request, response) {
 
                 console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectID));
 
-                let CHANNELFOLLOW = Parse.extend("ChannelFollow");
+                let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
                 let queryChannelFollow = new Parse.Query(CHANNELFOLLOW);
 
                 queryChannelFollow.equalTo("workspace", workspace);
                 queryChannelFollow.equalTo("isFollower", true);
-                queryChannelFollow.select(["channel.objectId", "isFollower", "isMember"]);
+                queryChannelFollow.select(["channel.objectId"]);
 
                 queryChannelFollow.find({
 
@@ -12662,30 +12693,63 @@ function splitUserAndIndex (request, response) {
                 }).then((channelFollow) => {
                     // The object was retrieved successfully.
 
+                    let finalChannelFollowers = [];
+
                     if (channelFollow.length > 0) {
 
-                        objectToSave.channelFollowers = results;
+
+                        for (var i = 0; i < channelFollow.length; i++) {
+
+                            finalChannelFollowers.push(channelFollow[i].channel.objectId);
+
+
+                            if (i === (channelFollow.length-1)) {
+
+                                // finished iterating through all items
+
+                                objectToSave.channels = finalChannelFollowers;
+
+
+                                indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                                    if (err) {
+
+                                        return response.error(err);
+                                    }
+
+                                    console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
+                                    return cb (null, workspaceFollower);
+
+
+                                });
+
+                            }
+
+                        }
+
+
 
 
                     } else {
 
-                        objectToSave.channelFollowers = [];
+                        objectToSave.channels = [];
+
+                        indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                            if (err) {
+
+                                return response.error(err);
+                            }
+
+                            console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
+                            return cb (null, workspaceFollower);
+
+
+                        });
 
                     }
 
 
-                    indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
-                        if (err) {
-
-                            return response.error(err);
-                        }
-
-                        console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
-
-                        return cb (null, workspaceFollower);
-
-
-                    });
 
 
                 }, (error) => {
@@ -15186,7 +15250,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
                     userToSaveFinal.workspaceFollowers = [];
                     userToSaveFinal.roles = [];
-                    userToSaveFinal.channelFollowers = [];
+                    userToSaveFinal.channels = [];
 
 
                     userToSaveFinal.objectID = userToSaveFinal.objectId + '-' + '0';
