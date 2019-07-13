@@ -12518,24 +12518,37 @@ function splitUserAndIndex (request, response) {
     console.log("className: " + JSON.stringify(className));
 
     var workspaceFollowers = request['workspaceFollowers'];
+    console.log("workspaceFollowers: " + JSON.stringify(workspaceFollowers.length));
 
-    async.map(workspaceFollowers, function (Workspace, cb) {
+
+    async.map(workspaceFollowers, function (workspaceFollower, cb) {
 
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let workspace = new WORKSPACE();
-        workspace.id = Workspace.workspace.objectId;
+        workspace.id = workspaceFollower.get("workspace").id;
+        console.log("workspace: " + JSON.stringify(workspace));
 
-        console.log("indexOf async.map: " + JSON.stringify(workspaceFollowers.indexOf(Workspace)));
+        let objectToSave = object;
 
-        let async_map_index = workspaceFollowers.indexOf(Workspace);
+        console.log("indexOf async.map: " + JSON.stringify(workspaceFollowers.indexOf(workspaceFollower)));
+
+        let async_map_index = workspaceFollowers.indexOf(workspaceFollower);
 
         var userObject = workspaceFollowers[async_map_index].get("user");
+        console.log("userObject: " + JSON.stringify(userObject));
 
         let userRoles= userObject.get("roles");
 
-        let queryRole = userRoles.query();
+        console.log('userRoles: ' + JSON.stringify(userRoles));
+
+        let queryRole = new Parse.Query(Parse.Role);
+        queryRole = userRoles.query();
+
+
 
         queryRole.equalTo('workspace', workspace);
+
+        console.log("queryRole: " + JSON.stringify(queryRole));
 
         queryRole.limit(10);
         queryRole.find({
@@ -12543,22 +12556,24 @@ function splitUserAndIndex (request, response) {
             //sessionToken: sessionToken
         }).then((results) => {
 
+            console.log("results.length: " + JSON.stringify(results.length));
+
             if (results.length > 0) {
 
                 let tags = [];
 
-                object.roles = results;
+                objectToSave.roles = results;
                 console.log("userObject.id: " + JSON.stringify(userObject.id));
 
                 tags.push(userObject.id);
 
-                object.objectID = object.objectId + '-' + workspace.id;
+                objectToSave.objectID = object.objectId + '-' + workspace.id;
 
-                object._tags = tags;
+                objectToSave._tags = tags;
 
-                console.log("object: " + JSON.stringify(object));
+                console.log("object: " + JSON.stringify(objectToSave));
 
-                return cb (null, object);
+                return cb (null, objectToSave);
 
 
             } else {
@@ -12566,18 +12581,18 @@ function splitUserAndIndex (request, response) {
                 // this case is when a user is following a workspace but for some reason there is no roles assigned to this user so return empty roles.
                 let tags = [];
 
-                object.roles = [];
+                objectToSave.roles = [];
                 console.log("userObject.id: " + JSON.stringify(userObject.id));
 
                 tags.push(userObject.id);
 
-                object.objectID = object.objectId + '-' + workspace.id;
+                objectToSave.objectID = object.objectId + '-' + workspace.id;
 
-                object._tags = tags;
+                objectToSave._tags = tags;
 
-                console.log("object: " + JSON.stringify(object));
+                console.log("object no results: " + JSON.stringify(objectToSave));
 
-                return cb (null, object);
+                return cb (null, objectToSave);
             }
 
 
@@ -12632,6 +12647,7 @@ function splitUserAndIndex (request, response) {
 
 
 }
+
 
 // auto-add type when isBookmarked, isLiked or Comment is added
 Parse.Cloud.beforeSave('PostSocial', function(request, response) {
