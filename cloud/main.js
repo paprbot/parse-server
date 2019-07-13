@@ -12515,40 +12515,37 @@ function splitUserAndIndex (request, response) {
     // note object needs to be toJSON()
 
     let className = request['className'];
-    console.log("className: " + JSON.stringify(className));
+    //console.log("className: " + JSON.stringify(className));
 
     var workspaceFollowers = request['workspaceFollowers'];
     console.log("workspaceFollowers: " + JSON.stringify(workspaceFollowers.length));
 
+    let objectToSave = object;
 
-    async.map(workspaceFollowers, function (workspaceFollower, cb) {
+    async.forEach(workspaceFollowers, function (workspaceFollower, cb) {
 
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let workspace = new WORKSPACE();
         workspace.id = workspaceFollower.get("workspace").id;
-        console.log("workspace: " + JSON.stringify(workspace));
+        //console.log("workspace: " + JSON.stringify(workspace));
 
-        let objectToSave = object;
-
-        console.log("indexOf async.map: " + JSON.stringify(workspaceFollowers.indexOf(workspaceFollower)));
+        //console.log("indexOf async.map: " + JSON.stringify(workspaceFollowers.indexOf(workspaceFollower)));
 
         let async_map_index = workspaceFollowers.indexOf(workspaceFollower);
 
         var userObject = workspaceFollowers[async_map_index].get("user");
-        console.log("userObject: " + JSON.stringify(userObject));
+        //console.log("userObject: " + JSON.stringify(userObject));
 
         let userRoles= userObject.get("roles");
 
-        console.log('userRoles: ' + JSON.stringify(userRoles));
+        //console.log('userRoles: ' + JSON.stringify(userRoles));
 
         let queryRole = new Parse.Query(Parse.Role);
         queryRole = userRoles.query();
 
-
-
         queryRole.equalTo('workspace', workspace);
 
-        console.log("queryRole: " + JSON.stringify(queryRole));
+        //console.log("queryRole: " + JSON.stringify(queryRole));
 
         queryRole.limit(10);
         queryRole.find({
@@ -12563,7 +12560,7 @@ function splitUserAndIndex (request, response) {
                 let tags = [];
 
                 objectToSave.roles = results;
-                console.log("userObject.id: " + JSON.stringify(userObject.id));
+                //console.log("userObject.id: " + JSON.stringify(userObject.id));
 
                 tags.push(userObject.id);
 
@@ -12571,9 +12568,67 @@ function splitUserAndIndex (request, response) {
 
                 objectToSave._tags = tags;
 
-                console.log("object: " + JSON.stringify(objectToSave));
+                //final_users_toSave.push(objectToSave);
 
-                return cb (null, objectToSave);
+                //console.log("object: " + JSON.stringify(objectToSave));
+
+                //workspaceFollower = objectToSave;
+
+                console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectID));
+
+                let CHANNELFOLLOW = Parse.extend("ChannelFollow");
+                let queryChannelFollow = new Parse.Query(CHANNELFOLLOW);
+
+                queryChannelFollow.equalTo("workspace", workspace);
+                queryChannelFollow.equalTo("isFollower", true);
+                queryChannelFollow.select(["channel.objectId", "isFollower", "isMember"]);
+
+                queryChannelFollow.find({
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((channelFollow) => {
+                    // The object was retrieved successfully.
+
+                    if (channelFollow.length > 0) {
+
+                        objectToSave.channelFollowers = results;
+
+
+                    } else {
+
+                        objectToSave.channelFollowers = [];
+
+                    }
+
+
+                    indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                        if (err) {
+
+                            return response.error(err);
+                        }
+
+                        console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
+                        return cb (null, workspaceFollower);
+
+
+                    });
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
 
 
             } else {
@@ -12582,7 +12637,7 @@ function splitUserAndIndex (request, response) {
                 let tags = [];
 
                 objectToSave.roles = [];
-                console.log("userObject.id: " + JSON.stringify(userObject.id));
+                //console.log("userObject.id: " + JSON.stringify(userObject.id));
 
                 tags.push(userObject.id);
 
@@ -12590,9 +12645,59 @@ function splitUserAndIndex (request, response) {
 
                 objectToSave._tags = tags;
 
-                console.log("object no results: " + JSON.stringify(objectToSave));
+                console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectID));
 
-                return cb (null, objectToSave);
+                let CHANNELFOLLOW = Parse.extend("ChannelFollow");
+                let queryChannelFollow = new Parse.Query(CHANNELFOLLOW);
+
+                queryChannelFollow.equalTo("workspace", workspace);
+                queryChannelFollow.equalTo("isFollower", true);
+                queryChannelFollow.select(["channel.objectId", "isFollower", "isMember"]);
+
+                queryChannelFollow.find({
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((channelFollow) => {
+                    // The object was retrieved successfully.
+
+                    if (channelFollow.length > 0) {
+
+                        objectToSave.channelFollowers = results;
+
+
+                    } else {
+
+                        objectToSave.channelFollowers = [];
+
+                    }
+
+
+                    indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                        if (err) {
+
+                            return response.error(err);
+                        }
+
+                        console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
+                        return cb (null, workspaceFollower);
+
+
+                    });
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
             }
 
 
@@ -12609,7 +12714,7 @@ function splitUserAndIndex (request, response) {
         });
 
 
-    }, function (err, FinalResults) {
+    }, function (err) {
 
         //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
 
@@ -12619,23 +12724,20 @@ function splitUserAndIndex (request, response) {
 
             // return success async.map
 
-            console.log("FinalResults: " + JSON.stringify(FinalResults));
+            /*console.log("final_users_toSave: " + JSON.stringify(final_users_toSave.length));
 
-            indexUsers.partialUpdateObjects(FinalResults, true, function(err, content) {
-                if (err) {
+             for (let i = 0; i < final_users_toSave.length; i++) {
 
-                    return response.error(err);
-                }
+             console.log("FinalResults_objectID: " + JSON.stringify(final_users_toSave[i].objectID));
 
-                console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+             }*/
 
-                let Final_Time = process.hrtime(time);
-                console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+            let Final_Time = process.hrtime(time);
+            console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
-                return response.success();
+            return response.success();
 
 
-            });
 
 
 
@@ -15017,6 +15119,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
             queryWorkspaceFollower.limit(10000);
             queryWorkspaceFollower.include( ["user"] );
+            queryWorkspaceFollower.equalTo("isFollower", true);
 
             queryWorkspaceFollower.find({
 
@@ -15083,6 +15186,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
                     userToSaveFinal.workspaceFollowers = [];
                     userToSaveFinal.roles = [];
+                    userToSaveFinal.channelFollowers = [];
+
 
                     userToSaveFinal.objectID = userToSaveFinal.objectId + '-' + '0';
 
