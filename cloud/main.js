@@ -18,8 +18,7 @@ var indexMeetings = client.initIndex('dev_meetings');
 var indexChannel = client.initIndex('dev_channels');
 var indexWorkspaces = client.initIndex('dev_workspaces');
 var indexSkills = client.initIndex('dev_skills');
-var indexPostChatMessages = client.initIndex('dev_postChatMessages');
-var indexPostQuestionMessages = client.initIndex('dev_postQuestionMessages');
+var indexPostMessage = client.initIndex('dev_postMessages');
 
 const requestPromise = require('request-promise');
 var fs = require('fs');
@@ -12141,20 +12140,14 @@ function splitObjectAndIndex (request, response) {
         parseObject.id = object.objectId;
     }
 
-    else if (className === 'PostQuestionMessageVote') {
+    else if (className === 'PostMessageSocial') {
 
-        objectClassName = 'postQuestionMessage';
-        PARSEOBJECT = Parse.Object.extend("PostQuestionMessage");
+        objectClassName = 'postMessage';
+        PARSEOBJECT = Parse.Object.extend("PostMessage");
         parseObject = new PARSEOBJECT();
         parseObject.id = object.objectId;
 
-    } else if (className === 'PostChatMessageSocial') {
-
-        objectClassName = 'postChatMessage';
-        PARSEOBJECT = Parse.Object.extend("PostChatMessage");
-        parseObject = new PARSEOBJECT();
-        parseObject.id = object.objectId;
-    } else if (className === 'Role') {
+    }  else if (className === 'Role') {
 
         objectClassName = '_User';
         PARSEOBJECT = Parse.Object.extend("_User");
@@ -12287,7 +12280,7 @@ function splitObjectAndIndex (request, response) {
                     //console.log("simplifyPostSocial: " + JSON.stringify(ResultObject));
 
                 }
-                else if (className === 'workspace_follower' || className === 'PostQuestionMessageVote'  || className === 'PostChatMessageSocial' || className === 'Role' ) {
+                else if (className === 'workspace_follower' || className === 'PostMessageSocial'  || className === 'Role' ) {
 
                     ResultObject = result;
                     //console.log("ResultObject: " + JSON.stringify(ResultObject));
@@ -12326,25 +12319,17 @@ function splitObjectAndIndex (request, response) {
                         index = indexWorkspaces;
 
                     }
-                    else if (className === 'PostQuestionMessageVote') {
+                    else if (className === 'PostMessageSocial') {
 
                         //object = results[0].get("workspace");
                         //console.log("PostQuestionMessageVote object: " + JSON.stringify(object));
 
-                        object.PostQuestionMessageVote = resultsFinal;
-                        index = indexPostQuestionMessages;
+                        object.PostMessageSocial = resultsFinal;
+                        index = indexPostMessage;
 
                     }
 
-                    else if (className === 'PostChatMessageSocial') {
-
-                        //object = results[0].get("workspace");
-                        //console.log("PostChatMessageSocial object: " + JSON.stringify(object));
-
-                        object.postChatMessageSocial = resultsFinal;
-                        index = indexPostChatMessages;
-
-                    } else if (className === 'Role') {
+                    else if (className === 'Role') {
 
                         //object = results[0].get("workspace");
                         //console.log("Role object: " + JSON.stringify(object));
@@ -12424,25 +12409,17 @@ function splitObjectAndIndex (request, response) {
 
                 }
 
-                else if (className === 'PostQuestionMessageVote') {
+                else if (className === 'PostMessageSocial') {
 
                     //object = results[0].get("workspace");
-                    console.log("PostQuestionMessageVote object: " + JSON.stringify(object));
+                    console.log("PostMessageSocial object: " + JSON.stringify(object));
 
-                    object.PostQuestionMessageVote = resultsNone;
-                    index = indexPostQuestionMessages;
+                    object.PostMessageSocial = resultsNone;
+                    index = indexPostMessage;
 
                 }
 
-                else if (className === 'PostChatMessageSocial') {
 
-                    //object = results[0].get("workspace");
-                    console.log("PostChatMessageSocial object: " + JSON.stringify(object));
-
-                    object.postChatMessageSocial = resultsNone;
-                    index = indexPostChatMessages;
-
-                }
                 else if (className === 'Role') {
 
                     //object = results[0].get("workspace");
@@ -12564,8 +12541,6 @@ function splitUserAndIndex (request, response) {
 
                 tags.push(userObject.id);
 
-                objectToSave.objectID = object.objectId + '-' + workspace.id;
-
                 objectToSave._tags = tags;
 
                 //final_users_toSave.push(objectToSave);
@@ -12600,8 +12575,11 @@ function splitUserAndIndex (request, response) {
 
                             //finalChannelFollowers.push(channelFollow[i].channel.objectId);
 
-                            objectToSave.objectID = objectToSave.objectID + '-' + channelFollow[i].channel.objectId;
-                            objectToSave.channel = channelFollow[i].channel.objectId;
+                            let channelFollowObject =  channelFollow[i];
+
+                            objectToSave.objectID = object.objectId + '-' + workspace.id + '-' + channelFollowObject.get("channel").id;
+
+                            objectToSave.channel = channelFollowObject.get("channel").id;
 
                             indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
                                 if (err) {
@@ -12666,8 +12644,6 @@ function splitUserAndIndex (request, response) {
 
                 tags.push(userObject.id);
 
-                objectToSave.objectID = object.objectId + '-' + workspace.id;
-
                 objectToSave._tags = tags;
 
                 console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectID));
@@ -12696,8 +12672,10 @@ function splitUserAndIndex (request, response) {
 
                             //finalChannelFollowers.push(channelFollow[i].channel.objectId);
 
-                            objectToSave.objectID = objectToSave.objectID + '-' + channelFollow[i].channel.objectId;
-                            objectToSave.channel = channelFollow[i].channel.objectId;
+                            let channelFollowObject =  channelFollow[i];
+                            objectToSave.objectID = object.objectId + '-' + workspace.id + '-' + channelFollowObject.get("channel").id;
+
+                            objectToSave.channel = channelFollowObject.get("channel").id;
 
                             indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
                                 if (err) {
@@ -13866,7 +13844,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                 //console.log("PostSocial: " + JSON.stringify(postSocial));
                 //console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
 
-                splitObjectAndIndex({'user':user, 'object':postMessageToSave, 'className':'PostQuestionMessageVote', 'loop':true}, {
+                splitObjectAndIndex({'user':user, 'object':postMessageToSave, 'className':'PostMessageSocial', 'loop':true}, {
                     success: function(count) {
 
                         let Final_Time = process.hrtime(time);
