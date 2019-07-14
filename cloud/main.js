@@ -13620,29 +13620,29 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
     queryPostMessage.first({
         useMasterKey: true
         //sessionToken: sessionToken
-    }).then((PostQuestionMessage) => {
+    }).then((PostMessage) => {
 
 
-        let postQuestionMessageACL = PostQuestionMessage.getACL();
-        console.log("postQuestionMessageACL: " + JSON.stringify(postQuestionMessageACL));
+        let postMessageACL = PostMessage.getACL();
+        console.log("postMessageACL: " + JSON.stringify(postMessageACL));
 
-        user = PostQuestionMessage.get("user");
+        user = PostMessage.get("user");
 
         let CHANNEL = Parse.Object.extend("Channel");
         let channel = new CHANNEL();
-        channel.id = PostQuestionMessage.get("channel").id;
+        channel.id = PostMessage.get("channel").id;
 
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let workspace = new WORKSPACE();
-        workspace.id = PostQuestionMessage.get("workspace").id;
+        workspace.id = PostMessage.get("workspace").id;
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
-        Post.id = PostQuestionMessage.get("post").id;
+        Post.id = PostMessage.get("post").id;
 
         let PARENTPOSTMESSAGE = Parse.Object.extend("PostMessage");
         let ParentPostMessage = new PARENTPOSTMESSAGE();
-        ParentPostMessage.id = PostQuestionMessage.get("parentPostMessage").id;
+        ParentPostMessage.id = PostMessage.get("parentPostMessage").id;
 
         function prepIndex (callback) {
 
@@ -13650,19 +13650,19 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
             //console.log("ObjectToSave: " + JSON.stringify(post));
 
             // Convert Parse.Object to JSON
-            PostQuestionMessage = PostQuestionMessage.toJSON();
+            PostMessage = PostMessage.toJSON();
 
             // Specify Algolia's objectID with the Parse.Object unique ID
             //Post.objectID = Post.objectId;
 
             // set _tags depending on the post ACL
 
-            if (postQuestionMessageACL) {
+            if (postMessageACL) {
 
-                if (postQuestionMessageACL.getPublicReadAccess()) {
+                if (postMessageACL.getPublicReadAccess()) {
 
                     // this means it's public read access is true
-                    PostQuestionMessage._tags = ['*'];
+                    PostMessage._tags = ['*'];
 
                 }
 
@@ -13685,100 +13685,46 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                  */
 
 
-            } else if (!postQuestionMessageACL || postQuestionMessageACL === null) {
+            } else if (!postMessageACL || postMessageACL === null) {
 
                 // this means it's public read write
-                PostQuestionMessage._tags = ['*'];
+                PostMessage._tags = ['*'];
             }
 
 
 
 
-            return callback(null, PostQuestionMessage);
-
-        }
-
-        function getPostQuestions (callback) {
-
-            let postQuestion = new POST();
-            postQuestion.id = post.id;
-
-            let relationPostQuestion = postQuestion.relation("postQuestions");
-
-            let querypostQuestion = relationPostQuestion.query();
-            //querypostQuestion.equalTo("archive", false);
-            querypostQuestion.descending("likesCount");
-            querypostQuestion.limit(10);
-            querypostQuestion.find({
-                useMasterKey: true
-                //sessionToken: sessionToken
-            }).then((postQuestions) => {
-
-                console.log("postQuestions: " + JSON.stringify(postQuestions));
-
-
-                if (postQuestions.length !== 0) {
-
-                    console.log("postQuestions exist");
-
-                    //postQuestions = simplifyPostQuestion(postQuestions);
-                    return callback (null, postQuestions);
-
-
-                } else {
-
-                    let postQuestions = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, postQuestions);
-
-                }
-
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                console.log(error);
-                let postQuestions = [];
-                // no workspaceFollowers to delete return
-                return callback(null, postQuestions);
-            }, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
+            return callback(null, PostMessage);
 
         }
 
         function getTopAnswerForQuestionMessage (callback) {
 
-            let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
-            let queryPostQuestionMessage= new Parse.Query(POSTQUESTIONMESSAGE);
+            let POSTMESSAGE = Parse.Object.extend("PostMessage");
+            let queryPostQuestionMessage= new Parse.Query(POSTMESSAGE);
             //queryPostQuestionMessage.equalTo("workspace", workspace);
             //queryPostQuestionMessage.equalTo("channel", channel);
-            queryPostQuestionMessage.equalTo("replyMessage", postQuestionMessage);
+            queryPostQuestionMessage.equalTo("parentPostMessage", PostMessage);
             //queryPostQuestionMessage.equalTo("archive", false);
             queryPostQuestionMessage.equalTo("type", "answer");
             queryPostQuestionMessage.descending("voteRank");
             queryPostQuestionMessage.first({
                 useMasterKey: true
                 //sessionToken: sessionToken
-            }).then((postQuestionMessage) => {
+            }).then((postMessage) => {
 
 
-                if (postQuestionMessage) {
+                if (postMessage) {
 
-                    postQuestionMessage = simplifyPostQuestionMessage(postQuestionMessage);
-                    return callback (null, postQuestionMessage);
+                    postMessage = simplifyPostQuestionMessage(postMessage);
+                    return callback (null, postMessage);
 
 
                 } else {
 
-                    let postQuestionMessage = [];
+                    let postMessage = [];
                     // no workspaceFollowers to delete return
-                    return callback(null, postQuestionMessage);
+                    return callback(null, postMessage);
 
                 }
 
@@ -13788,9 +13734,9 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                 // The object was not retrieved successfully.
                 // error is a Parse.Error with an error code and message.
                 console.log(error);
-                let postQuestionMessage = [];
+                let postMessage = [];
                 // no workspaceFollowers to delete return
-                return callback(null, postQuestionMessage);
+                return callback(null, postMessage);
             }, {
 
                 useMasterKey: true
@@ -13825,7 +13771,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
             if (results.length > 0) {
 
-                console.log("afterSave PostQuestionMessage results length: " + JSON.stringify(results.length));
+                console.log("afterSave postMessage results length: " + JSON.stringify(results.length));
 
                 postMessageToSave = results[0];
                 //let postQuestions = results[1];
@@ -13848,7 +13794,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                     success: function(count) {
 
                         let Final_Time = process.hrtime(time);
-                        console.log(`splitObjectToIndex PostQuestionMessage took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                        console.log(`splitObjectToIndex postMessage took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
                         response.success();
                     },
@@ -13861,7 +13807,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
             } else {
 
-                response.error("error in afterSave PostQuestionMessage");
+                response.error("error in afterSave postMessage");
             }
 
 
