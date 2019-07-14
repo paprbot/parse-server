@@ -6481,43 +6481,43 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
         return;
     }
 
-    let postChatMessageSocial = req.object;
-    let originalPostChatMessageSocial = req.original ? req.original : null;
+    let postMessageSocial = req.object;
+    let originalPostMessageSocial = req.original ? req.original : null;
     let workspace;
     let post;
     let channel;
     let user;
-    let postChatMessage;
+    let postMessage;
 
-    if (!postChatMessageSocial.get("workspace")) {
+    if (!postMessageSocial.get("workspace")) {
         return response.error("Please add a workspace pointer it's a required field.")
     } else {
-        workspace = postChatMessageSocial.get("workspace");
+        workspace = postMessageSocial.get("workspace");
 
     }
-    if (!postChatMessageSocial.get("post")) {
+    if (!postMessageSocial.get("post")) {
         response.error("Please add a post pointer it's a required field.")
     } else {
 
-        let post = postChatMessageSocial.get("post");
+        let post = postMessageSocial.get("post");
 
     }
-    if (!postChatMessageSocial.get("channel")) {
+    if (!postMessageSocial.get("channel")) {
         return response.error("Please add a channel pointer it's a required field.")
     } else {
-        channel = postChatMessageSocial.get("channel");
+        channel = postMessageSocial.get("channel");
 
     }
-    if (!postChatMessageSocial.get("user")) {
+    if (!postMessageSocial.get("user")) {
         return response.error("Please add a user pointer it's a required field.")
     } else {
-        user = postChatMessageSocial.get("user");
+        user = postMessageSocial.get("user");
 
     }
-    if (!postChatMessageSocial.get("postChatMessage")) {
-        return response.error("Please add a postChatMessage pointer it's a required field.")
+    if (!postMessageSocial.get("postMessage")) {
+        return response.error("Please add a postMessage pointer it's a required field.")
     } else {
-        postChatMessage = postChatMessageSocial.get("postChatMessage");
+        postMessage = postMessageSocial.get("postMessage");
 
     }
 
@@ -6526,38 +6526,38 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
     function setDefaultValues (callback) {
 
-        if (postChatMessageSocial.isNew()) {
+        if (postMessageSocial.isNew()) {
 
-            if (!postChatMessageSocial.get("archive")) { postChatMessageSocial.set("archive", false); }
-            if (!postChatMessageSocial.get("isLiked")) { postChatMessageSocial.set("isLiked", false); }
-            if (!postChatMessageSocial.get("isDelivered")) { postChatMessageSocial.set("isDelivered", false); }
-            if (!postChatMessageSocial.get("hasRead")) { postChatMessageSocial.set("hasRead", false); }
+            if (!postMessageSocial.get("archive")) { postMessageSocial.set("archive", false); }
+            if (!postMessageSocial.get("isLiked")) { postMessageSocial.set("isLiked", false); }
+            if (!postMessageSocial.get("isDelivered")) { postMessageSocial.set("isDelivered", false); }
+            if (!postMessageSocial.get("hasRead")) { postMessageSocial.set("hasRead", false); }
 
-            return callback (null, postChatMessageSocial);
+            return callback (null, postMessageSocial);
 
         } else {
 
-            return callback (null, postChatMessageSocial);
+            return callback (null, postMessageSocial);
         }
 
 
     }
 
-    function countPostChatMessageLikes (callback) {
+    function countPostMessageLikes (callback) {
 
-        let POSTCHATMESSAGE = Parse.Object.extend("PostChatMessage");
-        let PostChatMessage = new POSTCHATMESSAGE();
-        PostChatMessage.id = postChatMessage.id;
+        let POSTMESSAGE = Parse.Object.extend("PostMessage");
+        let PostMessage = new POSTMESSAGE();
+        PostMessage.id = postMessage.id;
 
-        if (postChatMessageSocial.isNew()) {
+        if (PostMessage.isNew()) {
 
-            PostChatMessage.increment("postChatMessageSocialCount");
+            PostMessage.increment("postMessageSocialCount");
 
-            if (postChatMessageSocial.get("isLiked") === true ) {
+            if (postMessageSocial.get("isLiked") === true ) {
 
 
-                PostChatMessage.increment("likedCount");
-                PostChatMessage.save(null, {
+                PostMessage.increment("likedCount");
+                PostMessage.save(null, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -6565,14 +6565,14 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                 });
 
 
-                return callback(null, POSTCHATMESSAGE);
+                return callback(null, PostMessage);
 
             }
 
             else {
 
 
-                return callback(null, POSTCHATMESSAGE);
+                return callback(null, PostMessage);
 
             }
 
@@ -6581,20 +6581,20 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
             // postChatMessageSocial already exists
 
-            if ( (postChatMessageSocial.get("isLiked") === false || !postChatMessageSocial.get("isLiked")) && (originalPostChatMessageSocial.get("isLiked") === false || !originalPostChatMessageSocial.get("isLiked")) ) {
+            if ( (postMessageSocial.get("isLiked") === false || !postMessageSocial.get("isLiked")) && (originalPostMessageSocial.get("isLiked") === false || !originalPostMessageSocial.get("isLiked")) ) {
                 // original isLiked == false and new isLiked also === false don't increment
 
 
-                return callback(null, POSTCHATMESSAGE);
+                return callback(null, PostMessage);
 
             }
 
-            else if ( (postChatMessageSocial.get("isLiked") === false) && originalPostChatMessageSocial.get("isLiked") === true  ) {
+            else if ( (postMessageSocial.get("isLiked") === false) && originalPostMessageSocial.get("isLiked") === true  ) {
 
                 // decrement since user unLiked
 
-                PostChatMessage.increment("likedCount", -1);
-                PostChatMessage.save(null, {
+                PostMessage.increment("likedCount", -1);
+                PostMessage.save(null, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -6602,31 +6602,31 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                 });
 
 
-                return callback(null, POSTCHATMESSAGE);
+                return callback(null, PostMessage);
 
             }
 
-            else if ( postChatMessageSocial.get("isLiked") === true  && (originalPostChatMessageSocial.get("isLiked") === false || !originalPostChatMessageSocial.get("isLiked"))  ) {
+            else if ( postMessageSocial.get("isLiked") === true  && (originalPostMessageSocial.get("isLiked") === false || !originalPostMessageSocial.get("isLiked"))  ) {
 
                 // increment because the user liked
 
-                PostChatMessage.increment("likedCount");
-                PostChatMessage.save(null, {
+                PostMessage.increment("likedCount");
+                PostMessage.save(null, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
 
                 });
 
-                return callback(null, POSTCHATMESSAGE);
+                return callback(null, PostMessage);
 
             }
-            else if ( postChatMessageSocial.get("isLiked") === true  && originalPostChatMessageSocial.get("isLiked") === true  ) {
+            else if ( postMessageSocial.get("isLiked") === true  && originalPostMessageSocial.get("isLiked") === true  ) {
 
                 // No change don't increment
 
 
-                return callback(null, POSTCHATMESSAGE);
+                return callback(null, PostMessage);
 
             }
 
@@ -6636,18 +6636,18 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
     }
 
-    function countPostChatMessageUnRead (callback) {
+    function countPostMessageUnRead (callback) {
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
         Post.id = post.id;
 
-        if (postChatMessageSocial.isNew()) {
+        if (postMessageSocial.isNew()) {
 
-            if (postChatMessageSocial.get("hasRead") === false || !postChatMessageSocial.get("hasRead")) {
+            if (postMessageSocial.get("hasRead") === false || !postMessageSocial.get("hasRead")) {
 
 
-                Post.increment("chatMessageUnReadCount");
+                Post.increment("postMessageUnReadCount");
                 Post.save(null, {
 
                     useMasterKey: true
@@ -6672,7 +6672,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
             // postChatMessageReadStatus already exists
 
-            if ( (postChatMessageSocial.get("hasRead") === false || !postChatMessageSocial.get("hasRead")) && (originalPostChatMessageSocial.get("hasRead") === false || !originalPostChatMessageSocial.get("hasRead")) ) {
+            if ( (postMessageSocial.get("hasRead") === false || !postMessageSocial.get("hasRead")) && (originalPostMessageSocial.get("hasRead") === false || !originalPostMessageSocial.get("hasRead")) ) {
                 // original hasRead == false and new hasRead also === false don't increment
 
 
@@ -6680,11 +6680,11 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
             }
 
-            else if ( (postChatMessageSocial.get("hasRead") === false ) && originalPostChatMessageSocial.get("hasRead") === true  ) {
+            else if ( (postMessageSocial.get("hasRead") === false ) && originalPostMessageSocial.get("hasRead") === true  ) {
 
                 // increment user marked previous messages that he read as unRead
 
-                Post.increment("chatMessageUnReadCount");
+                Post.increment("postMessageUnReadCount");
                 Post.save(null, {
 
                     useMasterKey: true
@@ -6697,11 +6697,11 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
             }
 
-            else if ( postChatMessageSocial.get("hasRead") === true  && (originalPostChatMessageSocial.get("hasRead") === false || !originalPostChatMessageSocial.get("hasRead"))  ) {
+            else if ( postMessageSocial.get("hasRead") === true  && (originalPostMessageSocial.get("hasRead") === false || !originalPostMessageSocial.get("hasRead"))  ) {
 
                 // decrement user read the message
 
-                Post.increment("chatMessageUnReadCount", -1);
+                Post.increment("postMessageUnReadCount", -1);
                 Post.save(null, {
 
                     useMasterKey: true
@@ -6712,7 +6712,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                 return callback(null, Post);
 
             }
-            else if ( postChatMessageSocial.get("hasRead") === true  && originalPostChatMessageSocial.get("hasRead") === true  ) {
+            else if ( postMessageSocial.get("hasRead") === true  && originalPostMessageSocial.get("hasRead") === true  ) {
 
                 // No change don't increment
 
@@ -6727,13 +6727,153 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
     }
 
+    function countPostMessageVote (callback) {
 
+        let POSTMESSAGE = Parse.Object.extend("PostMessage");
+        let PostMessage = new POSTMESSAGE();
+        PostMessage.id = postMessage.id;
+
+        if (PostMessage.isNew()) {
+
+            PostMessage.increment("postMessageVoteCount");
+
+
+            if (postMessageSocial.get("voteValue") === 0 ) {
+
+
+                PostMessage.increment("numberOfDownVotes");
+                PostMessage.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, PostMessage);
+
+            }
+            else if (postMessageSocial.get("voteValue") === 1 ) {
+
+
+                PostMessage.increment("numberOfUpVotes");
+                PostMessage.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, PostMessage);
+
+            }
+
+            else {
+
+
+                return callback(null, PostMessage);
+
+            }
+
+
+        } else {
+
+        else {
+
+                // postQuestionMessageVote already exists
+
+                if ( (postMessageSocial.get("voteValue") === 0 ) && (originalPostMessageSocial.get("voteValue") === 0) ) {
+                    // user previously downVoted but is downVoting again do nothing since it's already downVoted
+
+
+                    return callback(null, PostMessage);
+
+                }
+
+                else if ( (postMessageSocial.get("voteValue") === 1) && originalPostMessageSocial.get("voteValue") === 0  ) {
+
+                    // User previously downVoted this question but now changed their mind and upVoted it.
+
+                    PostMessage.increment("numberOfDownVotes", -1);
+                    PostMessage.increment("numberOfUpVotes");
+                    PostMessage.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+                    return callback(null, PostMessage);
+
+                }
+
+                else if ( postMessageSocial.get("voteValue") === 1  && originalPostMessageSocial.get("voteValue") === 1  ) {
+
+                    // User previously upVoted and is upVoting again, do nothing
+
+
+                    return callback(null, PostMessage);
+
+                }
+                else if ( postMessageSocial.get("voteValue") === 0  && originalPostMessageSocial.get("voteValue") === 1  ) {
+
+                    // User previously upVoted but changed their mind and now downVoted this question
+
+                    // User previously downVoted this question but now changed their mind and upVoted it.
+
+                    PostMessage.increment("numberOfDownVotes");
+                    PostMessage.increment("numberOfUpVotes", -1);
+                    PostMessage.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+                    return callback(null, PostMessage);
+
+                }
+
+
+            }
+
+
+
+        }
+
+
+
+        async.parallel([
+            async.apply(setDefaultValues),
+            async.apply(countPostMessageLikes),
+            async.apply(countPostMessageUnRead),
+            async.apply(countPostMessageVote)
+
+        ], function (err, results_Final) {
+            if (err) {
+                response.error(err);
+            }
+
+            //console.log("final post: " + JSON.stringify(post));
+
+            let beforeSave_Time = process.hrtime(time);
+            console.log(`beforeSave_Time PostMessageSocial took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+            response.success();
+        });
+
+
+    }
 
 
     async.parallel([
         async.apply(setDefaultValues),
-        async.apply(countPostChatMessageLikes),
-        async.apply(countPostChatMessageUnRead)
+        async.apply(countPostMessageLikes),
+        async.apply(countPostMessageUnRead),
+        async.apply(countPostMessageVote)
 
     ], function (err, results_Final) {
         if (err) {
@@ -6743,314 +6883,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
         //console.log("final post: " + JSON.stringify(post));
 
         let beforeSave_Time = process.hrtime(time);
-        console.log(`beforeSave_Time PostChatMessageSocial took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-        response.success();
-    });
-
-
-});
-
-// Run beforeSave functions PostQuestionMessageVote
-Parse.Cloud.beforeSave('PostQuestionMessageVote', function(req, response) {
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let currentUser = req.user;
-    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
-
-    if (!req.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.beforeSave.PostQuestionMessageVote.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
-    }
-
-    let postQuestionMessageVote = req.object;
-    let originalPostQuestionMessageVote = req.original ? req.original : null;
-    let workspace;
-    let post;
-    let channel;
-    let user;
-    let postQuestionMessage;
-
-    if (!postQuestionMessageVote.get("workspace")) {
-        return response.error("Please add a workspace pointer it's a required field.")
-    } else {
-        workspace = postQuestionMessageVote.get("workspace");
-
-    }
-    if (!postQuestionMessageVote.get("post")) {
-        response.error("Please add a post pointer it's a required field.")
-    } else {
-
-        let post = postQuestionMessageVote.get("post");
-
-    }
-    if (!postQuestionMessageVote.get("channel")) {
-        return response.error("Please add a channel pointer it's a required field.")
-    } else {
-        channel = postQuestionMessageVote.get("channel");
-
-    }
-    if (!postQuestionMessageVote.get("user")) {
-        return response.error("Please add a user pointer it's a required field.")
-    } else {
-        user = postQuestionMessageVote.get("user");
-
-    }
-    if (!postQuestionMessageVote.get("postQuestionMessage")) {
-        return response.error("Please add a postQuestionMessage pointer it's a required field.")
-    } else {
-        postQuestionMessage = postQuestionMessageVote.get("postQuestionMessage");
-
-    }
-
-    //console.log("channel_post: " + JSON.stringify(channel));
-
-
-    function setDefaultValues (callback) {
-
-        if (postQuestionMessageVote.isNew()) {
-
-            if (!postQuestionMessageVote.get("archive")) { postQuestionMessageVote.set("archive", false); }
-            if (!postQuestionMessageVote.get("isDelivered")) { postQuestionMessageVote.set("isDelivered", false); }
-            if (!postQuestionMessageVote.get("hasRead")) { postQuestionMessageVote.set("hasRead", false); }
-
-
-            return callback (null, postQuestionMessageVote);
-
-        } else {
-
-            return callback (null, postQuestionMessageVote);
-        }
-
-
-    }
-
-    function countPostQuestionMessageVote (callback) {
-
-        let POSTQUESTIONMESSAGE = Parse.Object.extend("PostQuestionMessage");
-        let PostQuestionMessage = new POSTQUESTIONMESSAGE();
-        PostQuestionMessage.id = postQuestionMessage.id;
-
-        if (postQuestionMessageVote.isNew()) {
-
-            PostQuestionMessage.increment("postQuestionMessageVoteCount");
-
-            if (postQuestionMessageVote.get("voteValue") === 0 ) {
-
-                // voteValue === 0 means downVote
-
-                PostQuestionMessage.increment("numberOfDownVotes");
-                PostQuestionMessage.save(null, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-
-                return callback(null, PostQuestionMessage);
-
-            } else if (postQuestionMessageVote.get("voteValue") === 1 ) {
-
-                // voteValue === 1 means upVote
-
-                PostQuestionMessage.increment("numberOfUpVotes");
-                PostQuestionMessage.save(null, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-
-                return callback(null, PostQuestionMessage);
-
-            }
-
-            else {
-
-
-                return callback(null, PostQuestionMessage);
-
-            }
-
-
-        } else {
-
-            // postQuestionMessageVote already exists
-
-            if ( (postQuestionMessageVote.get("voteValue") === 0 ) && (originalPostQuestionMessageVote.get("voteValue") === 0) ) {
-                // user previously downVoted but is downVoting again do nothing since it's already downVoted
-
-
-                return callback(null, PostQuestionMessage);
-
-            }
-
-            else if ( (postQuestionMessageVote.get("voteValue") === 1) && originalPostQuestionMessageVote.get("voteValue") === 0  ) {
-
-                // User previously downVoted this question but now changed their mind and upVoted it.
-
-                PostQuestionMessage.increment("numberOfDownVotes", -1);
-                PostQuestionMessage.increment("numberOfUpVotes");
-                PostQuestionMessage.save(null, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-
-                return callback(null, PostQuestionMessage);
-
-            }
-
-            else if ( postQuestionMessageVote.get("voteValue") === 1  && originalPostQuestionMessageVote.get("voteValue") === 1  ) {
-
-                // User previously upVoted and is upVoting again, do nothing
-
-
-                return callback(null, PostQuestionMessage);
-
-            }
-            else if ( postQuestionMessageVote.get("voteValue") === 0  && originalPostQuestionMessageVote.get("voteValue") === 1  ) {
-
-                // User previously upVoted but changed their mind and now downVoted this question
-
-                // User previously downVoted this question but now changed their mind and upVoted it.
-
-                PostQuestionMessage.increment("numberOfDownVotes");
-                PostQuestionMessage.increment("numberOfUpVotes", -1);
-                PostQuestionMessage.save(null, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-
-                return callback(null, PostQuestionMessage);
-
-            }
-
-
-        }
-
-
-    }
-
-    function countPostQuestionMessageUnRead (callback) {
-
-        let POST = Parse.Object.extend("Post");
-        let Post = new POST();
-        Post.id = post.id;
-
-        if (postQuestionMessageVote.isNew()) {
-
-            if (postQuestionMessageVote.get("hasRead") === false || !postQuestionMessageVote.get("hasRead")) {
-
-
-                Post.increment("postQuestionMessageUnReadCount");
-                Post.save(null, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-
-                return callback(null, Post);
-
-            }
-
-            else {
-
-
-                return callback(null, Post);
-
-            }
-
-
-        } else {
-
-            // postChatMessageReadStatus already exists
-
-            if ( (postQuestionMessageVote.get("hasRead") === false || !postQuestionMessageVote.get("hasRead")) && (originalPostQuestionMessageVote.get("hasRead") === false || !originalPostQuestionMessageVote.get("hasRead")) ) {
-                // original hasRead == false and new hasRead also === false don't increment
-
-
-                return callback(null, Post);
-
-            }
-
-            else if ( (postQuestionMessageVote.get("hasRead") === false) && originalPostQuestionMessageVote.get("hasRead") === true  ) {
-
-                // increment user marked previous messages that he read as unRead
-
-                Post.increment("postQuestionMessageUnReadCount");
-                Post.save(null, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-
-                return callback(null, Post);
-
-            }
-
-            else if ( postQuestionMessageVote.get("hasRead") === true  && (originalPostQuestionMessageVote.get("hasRead") === false || !originalPostQuestionMessageVote.get("hasRead"))  ) {
-
-                // decrement user read the message
-
-                Post.increment("postQuestionMessageUnReadCount", -1);
-                Post.save(null, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-                return callback(null, Post);
-
-            }
-            else if ( postQuestionMessageVote.get("hasRead") === true  && originalPostQuestionMessageVote.get("hasRead") === true  ) {
-
-                // No change don't increment
-
-
-                return callback(null, Post);
-
-            }
-
-
-        }
-
-
-    }
-
-
-    async.parallel([
-        async.apply(setDefaultValues),
-        async.apply(countPostQuestionMessageVote),
-        async.apply(countPostQuestionMessageUnRead)
-
-    ], function (err, results_Final) {
-        if (err) {
-            response.error(err);
-        }
-
-        //console.log("final post: " + JSON.stringify(post));
-
-        let beforeSave_Time = process.hrtime(time);
-        console.log(`beforeSave_Time PostQuestionMessageVote took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+        console.log(`beforeSave_Time PostMessageSocial took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
         response.success();
     });
@@ -16188,7 +16021,6 @@ Parse.Cloud.afterDelete('PostMessage', function(request, response) {
     });
 
 }, {useMasterKey: true});
-
 
 // Delete AlgoliaSearch post object if it's deleted from Parse
 Parse.Cloud.afterDelete('PostSocial', function(request, response) {
