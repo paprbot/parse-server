@@ -13367,136 +13367,168 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
             function getPostMessageComments(callback) {
 
-                console.log("starting getPostMessageComments function.");
+                if (Post.type === 'post') {
 
-                let POSTMESSAGECOMMENT = Parse.Object.extend("PostMessage");
-                let queryPostMessageComment = new Parse.Query(POSTMESSAGECOMMENT);
-                //queryPostChatMessage.equalTo("workspace", workspace);
-                //queryPostChatMessage.equalTo("channel", channel);
-                queryPostMessageComment.equalTo("post", post);
-                queryPostMessageComment.equalTo("type", "comment");
-                queryPostMessageComment.include( ["user"] );
-                queryPostMessageComment.select(PostMessageCommentArray);
-                queryPostMessageComment.limit(2);
-                //queryPostMessageComment.doesNotExist("parentPostMessage");
-                queryPostMessageComment.find({
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-                }).then((PostChatMessages) => {
+                    console.log("starting getPostMessageComments function.");
 
-                    console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
+                    let POSTMESSAGECOMMENT = Parse.Object.extend("PostMessage");
+                    let queryPostMessageComment = new Parse.Query(POSTMESSAGECOMMENT);
+                    //queryPostChatMessage.equalTo("workspace", workspace);
+                    //queryPostChatMessage.equalTo("channel", channel);
+                    queryPostMessageComment.equalTo("post", post);
+                    queryPostMessageComment.equalTo("type", "comment");
+                    queryPostMessageComment.include( ["user"] );
+                    queryPostMessageComment.select(PostMessageCommentArray);
+                    queryPostMessageComment.limit(2);
+                    //queryPostMessageComment.doesNotExist("parentPostMessage");
+                    queryPostMessageComment.find({
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+                    }).then((PostChatMessages) => {
+
+                        console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
 
 
-                    if (PostChatMessages.length !== 0) {
+                        if (PostChatMessages.length !== 0) {
 
-                        let simplifiedPostChatMessages = [];
+                            let simplifiedPostChatMessages = [];
 
-                        for (var i = 0; i < PostChatMessages.length; i++) {
+                            for (var i = 0; i < PostChatMessages.length; i++) {
 
-                            simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
-                            console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i]));
+                                simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
+                                console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i]));
 
-                            if (i === (PostChatMessages.length-1)) {
+                                if (i === (PostChatMessages.length-1)) {
 
-                                // finished iterating through all items
+                                    // finished iterating through all items
 
-                                return callback(null, simplifiedPostChatMessages);
+                                    return callback(null, simplifiedPostChatMessages);
+
+                                }
 
                             }
+
+
+                        } else {
+
+                            let PostChatMessages = [];
+                            // no workspaceFollowers to delete return
+                            return callback(null, PostChatMessages);
 
                         }
 
 
-                    } else {
-
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        console.log(error);
                         let PostChatMessages = [];
                         // no workspaceFollowers to delete return
                         return callback(null, PostChatMessages);
+                    }, {
 
-                    }
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
 
 
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    console.log(error);
+                } else {
+
+
                     let PostChatMessages = [];
                     // no workspaceFollowers to delete return
                     return callback(null, PostChatMessages);
-                }, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
 
-                });
+                }
+
+
+
 
 
             }
 
             function getPostMessageQuestions(callback) {
 
-                console.log("starting getPostMessageQuestions function.");
+                if (Post.type === 'post') {
 
-                let POSTMESSAGEQUESTION = Parse.Object.extend("PostMessage");
-                let queryPostMessageQuestion = new Parse.Query(POSTMESSAGEQUESTION);
-                //queryPostChatMessage.equalTo("workspace", workspace);
-                //queryPostChatMessage.equalTo("channel", channel);
-                queryPostMessageQuestion.equalTo("post", post);
-                queryPostMessageQuestion.equalTo("type", "question");
-                queryPostMessageQuestion.include( ["user"] );
-                queryPostMessageQuestion.select(PostMessageQuestionArray);
-                queryPostMessageQuestion.limit(10);
-                queryPostMessageQuestion.doesNotExist("parentPostMessage");
-                queryPostMessageQuestion.find({
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-                }).then((PostChatMessages) => {
+                    console.log("starting getPostMessageQuestions function.");
 
-                    console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
+                    let POSTMESSAGEQUESTION = Parse.Object.extend("PostMessage");
+                    let queryPostMessageQuestion = new Parse.Query(POSTMESSAGEQUESTION);
+                    //queryPostChatMessage.equalTo("workspace", workspace);
+                    //queryPostChatMessage.equalTo("channel", channel);
+                    queryPostMessageQuestion.equalTo("post", post);
+                    queryPostMessageQuestion.equalTo("type", "question");
+                    queryPostMessageQuestion.include( ["user"] );
+                    queryPostMessageQuestion.select(PostMessageQuestionArray);
+                    queryPostMessageQuestion.limit(10);
+                    queryPostMessageQuestion.doesNotExist("parentPostMessage");
+                    queryPostMessageQuestion.find({
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+                    }).then((PostChatMessages) => {
+
+                        console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
 
 
-                    if (PostChatMessages.length !== 0) {
+                        if (PostChatMessages.length !== 0) {
 
-                        let simplifiedPostChatMessages = [];
+                            let simplifiedPostChatMessages = [];
 
-                        for (var i = 0; i < PostChatMessages.length; i++) {
+                            for (var i = 0; i < PostChatMessages.length; i++) {
 
-                            simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
-                            console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i]));
+                                simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
+                                console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i]));
 
-                            if (i === (PostChatMessages.length-1)) {
+                                if (i === (PostChatMessages.length-1)) {
 
-                                // finished iterating through all items
+                                    // finished iterating through all items
 
-                                return callback(null, simplifiedPostChatMessages);
+                                    return callback(null, simplifiedPostChatMessages);
+
+                                }
 
                             }
+
+
+                        } else {
+
+                            let PostChatMessages = [];
+                            // no workspaceFollowers to delete return
+                            return callback(null, PostChatMessages);
 
                         }
 
 
-                    } else {
-
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        console.log(error);
                         let PostChatMessages = [];
                         // no workspaceFollowers to delete return
                         return callback(null, PostChatMessages);
+                    }, {
 
-                    }
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
 
 
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    console.log(error);
+                }
+
+                else {
+
                     let PostChatMessages = [];
                     // no workspaceFollowers to delete return
                     return callback(null, PostChatMessages);
-                }, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
 
-                });
+                }
+
+
 
 
             }
@@ -13623,8 +13655,6 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
         //sessionToken: sessionToken
     }).then((PostMessage) => {
 
-        PostMessage = simplifyPostMessage(PostMessage);
-
 
         let postMessageACL = PostMessage.getACL();
         console.log("postMessageACL: " + JSON.stringify(postMessageACL));
@@ -13660,6 +13690,9 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
             // Convert Parse.Object to JSON
             PostMessage = PostMessage.toJSON();
+
+            PostMessage = simplifyPostMessage(PostMessage);
+
 
             // Specify Algolia's objectID with the Parse.Object unique ID
             //Post.objectID = Post.objectId;
