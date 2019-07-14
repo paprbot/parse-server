@@ -34,6 +34,7 @@ let simplifyPostChatMessage = require('./simplifyClass/Post/simplifyPostChatMess
 let simplifyPostSocial = require('./simplifyClass/Post/simplifyPostSocial');
 let simplifyPostQuestionMessage = require('./simplifyClass/Post/simplifyPostQuestionMessage');
 let simplifyWorkspaceFollowersUserIndex = require('./simplifyClass/WorkspaceFollowers/simplifyWorkspaceFollowersUserIndex');
+let simplifyPostMessage = require('./simplifyClass/Post/simplifyPostMessage');
 
 var selectPostMessageComment = ["message", "likedCount", "updatedAt"];
 var selectPostMessageQuestion = ["message", "likedCount", "updatedAt", "childPostMessageCount"];
@@ -50,8 +51,8 @@ var selectChannel = ["channel.expertsArray", "channel.name", "channel.purpose"];
 var PostMessageCommentArray = selectPostMessageComment.concat(selectUser);
 var PostMessageQuestionArray = selectPostMessageQuestion.concat(selectUser);
 var PostMessageAnswerArray = selectPostMessageAnswer.concat(selectUser);
-var PostMessageArray = selectPostMessage.concat(selectUser, selectParentPostMessage);
-
+var PostMessageArray = selectPostMessage.concat(selectUser);
+PostMessageArray = PostMessageArray.concat(selectParentPostMessage);
 
 // var im = require('imagemagick');
 
@@ -13622,27 +13623,35 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
         //sessionToken: sessionToken
     }).then((PostMessage) => {
 
+        PostMessage = simplifyPostMessage(PostMessage);
+
 
         let postMessageACL = PostMessage.getACL();
         console.log("postMessageACL: " + JSON.stringify(postMessageACL));
 
         user = PostMessage.get("user");
+        console.log("user: " + JSON.stringify(user));
 
         let CHANNEL = Parse.Object.extend("Channel");
         let channel = new CHANNEL();
         channel.id = PostMessage.get("channel").id;
+        console.log("channel: " + JSON.stringify(channel));
 
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let workspace = new WORKSPACE();
         workspace.id = PostMessage.get("workspace").id;
+        console.log("workspace: " + JSON.stringify(workspace));
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
         Post.id = PostMessage.get("post").id;
+        console.log("Post: " + JSON.stringify(Post));
 
         let PARENTPOSTMESSAGE = Parse.Object.extend("PostMessage");
         let ParentPostMessage = new PARENTPOSTMESSAGE();
-        ParentPostMessage.id = PostMessage.get("parentPostMessage").id;
+        if (PostMessage.get("parentPostMessage")) {
+            ParentPostMessage.id = PostMessage.get("parentPostMessage").id;
+        }
 
         function prepIndex (callback) {
 
@@ -13716,7 +13725,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
                 if (postMessage) {
 
-                    postMessage = simplifyPostQuestionMessage(postMessage);
+                    //postMessage = simplifyPostQuestionMessage(postMessage);
                     return callback (null, postMessage);
 
 
