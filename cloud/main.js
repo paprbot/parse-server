@@ -13089,49 +13089,62 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
         function getTopAnswerForQuestionMessage (callback) {
 
-            let POSTMESSAGE = Parse.Object.extend("PostMessage");
-            let queryPostQuestionMessage= new Parse.Query(POSTMESSAGE);
-            //queryPostQuestionMessage.equalTo("workspace", workspace);
-            //queryPostQuestionMessage.equalTo("channel", channel);
-            queryPostQuestionMessage.equalTo("parentPostMessage", PostMessage);
-            //queryPostQuestionMessage.equalTo("archive", false);
-            queryPostQuestionMessage.equalTo("type", "answer");
-            queryPostQuestionMessage.descending("voteRank");
-            queryPostQuestionMessage.first({
-                useMasterKey: true
-                //sessionToken: sessionToken
-            }).then((postMessage) => {
+            if (PostMessage.type === 'question') {
+
+                let POSTMESSAGE = Parse.Object.extend("PostMessage");
+                let queryPostQuestionMessage= new Parse.Query(POSTMESSAGE);
+                //queryPostQuestionMessage.equalTo("workspace", workspace);
+                //queryPostQuestionMessage.equalTo("channel", channel);
+                queryPostQuestionMessage.equalTo("parentPostMessage", PostMessage);
+                //queryPostQuestionMessage.equalTo("archive", false);
+                queryPostQuestionMessage.equalTo("type", "answer");
+                queryPostQuestionMessage.descending("voteRank");
+                queryPostQuestionMessage.first({
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+                }).then((postMessage) => {
 
 
-                if (postMessage) {
+                    if (postMessage) {
 
-                    //postMessage = simplifyPostQuestionMessage(postMessage);
-                    return callback (null, postMessage);
+                        //postMessage = simplifyPostQuestionMessage(postMessage);
+                        return callback (null, postMessage);
 
 
-                } else {
+                    } else {
 
+                        let postMessage = [];
+                        // no workspaceFollowers to delete return
+                        return callback(null, postMessage);
+
+                    }
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    console.log(error);
                     let postMessage = [];
                     // no workspaceFollowers to delete return
                     return callback(null, postMessage);
+                }, {
 
-                }
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
 
 
+            } else {
 
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                console.log(error);
                 let postMessage = [];
-                // no workspaceFollowers to delete return
                 return callback(null, postMessage);
-            }, {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
 
-            });
+            }
+
+
 
         }
 
