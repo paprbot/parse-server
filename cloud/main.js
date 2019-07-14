@@ -13783,7 +13783,6 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                 console.log("afterSave postMessage results length: " + JSON.stringify(results.length));
 
                 postMessageToSave = results[0];
-                //let postQuestions = results[1];
                 //let chatMessages = results[2];
                 //let postSocial = results[3];
                 //let topAnswerForQuestionPost = results[3];
