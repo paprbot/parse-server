@@ -11689,242 +11689,312 @@ function splitUserAndIndex (request, response) {
         var userObject = workspaceFollowers[async_map_index].get("user");
         //console.log("userObject: " + JSON.stringify(userObject));
 
-        let userRoles= userObject.get("roles");
-
-        //console.log('userRoles: ' + JSON.stringify(userRoles));
-
         let queryRole = new Parse.Query(Parse.Role);
-        queryRole = userRoles.query();
 
-        queryRole.equalTo('workspace', workspace);
+        let rolesArray;
 
-        //console.log("queryRole: " + JSON.stringify(queryRole));
+        function getChannelFollow (callback) {
 
-        queryRole.limit(10);
-        queryRole.find({
-            useMasterKey: true
-            //sessionToken: sessionToken
-        }).then((roles) => {
+            let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
+            let queryChannelFollow = new Parse.Query(CHANNELFOLLOW);
 
-            console.log("roles.length: " + JSON.stringify(roles.length));
+            queryChannelFollow.equalTo("workspace", workspace);
+            queryChannelFollow.equalTo("isFollower", true);
 
-            let rolesArray = roles;
+            queryChannelFollow.find({
 
-            if (roles.length > 0) {
+                useMasterKey: true
+                //sessionToken: sessionToken
 
-                let tags = [];
+            }).then((channelFollow) => {
+                // The object was retrieved successfully.
 
-                objectToSave.roles = rolesArray;
-                //console.log("userObject.id: " + JSON.stringify(userObject.id));
+                //let finalChannelFollowers = [];
 
-                tags.push(userObject.id);
+                if (channelFollow.length > 0) {
 
-                objectToSave._tags = tags;
 
-                //final_users_toSave.push(objectToSave);
+                    return callback (null, channelFollow);
 
-                //console.log("object: " + JSON.stringify(objectToSave));
 
-                //workspaceFollower = objectToSave;
 
-                console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectID));
+                } else {
 
-                let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
-                let queryChannelFollow = new Parse.Query(CHANNELFOLLOW);
+                    return callback (null, channelFollow);
 
-                queryChannelFollow.equalTo("workspace", workspace);
-                queryChannelFollow.equalTo("isFollower", true);
-                queryChannelFollow.select(["channel.objectId"]);
+                }
 
-                queryChannelFollow.find({
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
+            }, {
 
-                }).then((channelFollow) => {
-                    // The object was retrieved successfully.
+                useMasterKey: true
+                //sessionToken: sessionToken
 
-                    //let finalChannelFollowers = [];
+            });
+        }
 
-                    if (channelFollow.length > 0) {
 
+        async.parallel([
+            async.apply(getChannelFollow)
 
-                        for (var i = 0; i < channelFollow.length; i++) {
 
-                            //finalChannelFollowers.push(channelFollow[i].channel.objectId);
-
-                            let channelFollowObject =  channelFollow[i];
-
-                            objectToSave.objectID = object.objectId + '-' + workspace.id + '-' + channelFollowObject.get("channel").id;
-
-                            objectToSave.channel = channelFollowObject.get("channel").id;
-                            objectToSave.workspace = channelFollowObject.get("workspace").id;
-
-                            indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
-                                if (err) {
-
-                                    return response.error(err);
-                                }
-
-                                console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
-
-                                if (i === (channelFollow.length-1)) {
-
-                                    return cb (null, workspaceFollower);
-
-
-                                }
-
-                            });
-
-
-                        }
-
-
-                    } else {
-
-                        indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
-                            if (err) {
-
-                                return response.error(err);
-                            }
-
-                            console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
-
-                            return cb (null, workspaceFollower);
-
-
-                        });
-
-                    }
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    response.error(error);
-                }, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-
-
-
-            } else {
-
-                // this case is when a user is following a workspace but for some reason there is no roles assigned to this user so return empty roles.
-                let tags = [];
-
-                objectToSave.roles = [];
-                //console.log("userObject.id: " + JSON.stringify(userObject.id));
-
-                tags.push(userObject.id);
-
-                objectToSave._tags = tags;
-
-                console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectID));
-
-                let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
-                let queryChannelFollow = new Parse.Query(CHANNELFOLLOW);
-
-                queryChannelFollow.equalTo("workspace", workspace);
-                queryChannelFollow.equalTo("isFollower", true);
-                queryChannelFollow.select(["channel.objectId"]);
-
-                queryChannelFollow.find({
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                }).then((channelFollow) => {
-                    // The object was retrieved successfully.
-
-                    let finalChannelFollowers = [];
-
-                    if (channelFollow.length > 0) {
-
-
-                        for (var i = 0; i < channelFollow.length; i++) {
-
-                            //finalChannelFollowers.push(channelFollow[i].channel.objectId);
-
-                            let channelFollowObject =  channelFollow[i];
-                            objectToSave.objectID = object.objectId + '-' + workspace.id + '-' + channelFollowObject.get("channel").id;
-
-                            objectToSave.channel = channelFollowObject.get("channel").id;
-                            objectToSave.workspace = channelFollowObject.get("workspace").id;
-
-
-                            indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
-                                if (err) {
-
-                                    return response.error(err);
-                                }
-
-                                console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
-
-                                if (i === (channelFollow.length-1)) {
-
-                                    return cb (null, workspaceFollower);
-
-
-                                }
-
-                            });
-
-
-                        }
-
-
-
-                    } else {
-
-
-                        indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
-                            if (err) {
-
-                                return response.error(err);
-                            }
-
-                            console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
-
-                            return cb (null, workspaceFollower);
-
-
-                        });
-
-                    }
-
-
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    response.error(error);
-                }, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
+        ], function (err, results) {
+            if (err) {
+                return cb (err);
             }
 
 
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            //console.log(error);
-            return response.error(error);
-        }, {
+            if (results.length > 0) {
 
-            useMasterKey: true
-            //sessionToken: sessionToken
+                let ChannelFollow = results[0];
+
+                if (ChannelFollow) {
+
+                    for (let i = 0; i < ChannelFollow.length; i++) {
+
+                        //finalChannelFollowers.push(channelFollow[i].channel.objectId);
+
+                        let channelFollowObject =  ChannelFollow[i];
+
+                        objectToSave.objectID = object.objectId + '-' + ChannelFollow.get("workspace").id + '-' + ChannelFollow.get("channel").id;
+
+                        objectToSave.channel = ChannelFollow.get("channel").id;
+                        objectToSave.workspace = ChannelFollow.get("workspace").id;
+
+                        let tags = [];
+                        tags.push(userObject.id);
+
+                        objectToSave._tags = tags;
+
+                        let userRoles= userObject.get("roles");
+
+                        //console.log('userRoles: ' + JSON.stringify(userRoles));
+
+
+                        queryRole = userRoles.query();
+
+                        queryRole.equalTo('workspace', ChannelFollow.get("workspace").id);
+
+                        queryRole.limit(10);
+                        queryRole.find({
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+                        }).then((roles) => {
+
+                            console.log("roles.length: " + JSON.stringify(roles.length));
+
+                            rolesArray = roles;
+
+                            if (roles.length > 0) {
+
+                                objectToSave.roles = rolesArray;
+                                //console.log("userObject.id: " + JSON.stringify(userObject.id));
+
+
+                                console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectId));
+
+                                indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                                    if (err) {
+
+                                        return response.error(err);
+                                    }
+
+                                    console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
+                                    if (i === (ChannelFollow.length-1)) {
+
+                                        return cb (null, workspaceFollower);
+
+
+                                    }
+
+                                });
+
+
+
+                            } else {
+
+                                console.error("User doesn't have any roles, function splitUserAndIndex function.");
+
+                                // this case is when a user is following a workspace but for some reason there is no roles assigned to this user so return empty roles.
+                                let tags = [];
+
+                                objectToSave.roles = [];
+                                //console.log("userObject.id: " + JSON.stringify(userObject.id));
+
+                                tags.push(userObject.id);
+
+                                objectToSave._tags = tags;
+
+                                console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectId));
+
+                                indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                                    if (err) {
+
+                                        return response.error(err);
+                                    }
+
+                                    console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
+                                    if (i === (ChannelFollow.length-1)) {
+
+                                        return cb (null, workspaceFollower);
+
+
+                                    }
+
+                                });
+                            }
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            //console.log(error);
+                            return response.error(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+
+
+                    }
+
+
+                }
+                else {
+
+                    // ChannelFollow doesn't exist, user doesn't have any channels followed.
+
+                    objectToSave.objectID = object.objectId + '-' + '0';
+
+                    let tags = [];
+                    tags.push(userObject.id);
+
+                    objectToSave._tags = tags;
+
+                    let userRoles= userObject.get("roles");
+
+                    //console.log('userRoles: ' + JSON.stringify(userRoles));
+
+                    queryRole = userRoles.query();
+
+                    queryRole.equalTo('workspace', workspace);
+
+                    queryRole.limit(10);
+                    queryRole.find({
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+                    }).then((roles) => {
+
+                        console.log("roles.length: " + JSON.stringify(roles.length));
+
+                        rolesArray = roles;
+
+                        if (roles.length > 0) {
+
+                            objectToSave.roles = rolesArray;
+                            //console.log("userObject.id: " + JSON.stringify(userObject.id));
+
+
+                            console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectId));
+
+                            indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                                if (err) {
+
+                                    return response.error(err);
+                                }
+
+                                console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
+                                return cb (null, workspaceFollower);
+
+
+                            });
+
+
+
+                        } else {
+
+                            console.error("User doesn't have any roles, function splitUserAndIndex function.");
+
+
+                            objectToSave.roles = [];
+                            //console.log("userObject.id: " + JSON.stringify(userObject.id));
+
+                            console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectId));
+
+                            indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                                if (err) {
+
+                                    return response.error(err);
+                                }
+
+                                console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
+
+                                return cb (null, workspaceFollower);
+
+
+                            });
+                        }
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        //console.log(error);
+                        return response.error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+                }
+
+
+            }  else {
+
+                console.error("User doesn't have any roles assigned or no channel follows.");
+
+                objectToSave.objectID = object.objectId + '-' + '0';
+
+                let tags = [];
+                tags.push(userObject.id);
+
+                objectToSave._tags = tags;
+
+                indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                    if (err) {
+
+                        return response.error(err);
+                    }
+
+                    console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+
+
+                    return cb (null, workspaceFollower);
+
+
+                });
+
+            }
+
+
 
         });
+
+
 
 
     }, function (err) {
@@ -11935,23 +12005,11 @@ function splitUserAndIndex (request, response) {
             return response.error(err);
         } else {
 
-            // return success async.map
-
-            /*console.log("final_users_toSave: " + JSON.stringify(final_users_toSave.length));
-
-             for (let i = 0; i < final_users_toSave.length; i++) {
-
-             console.log("FinalResults_objectID: " + JSON.stringify(final_users_toSave[i].objectID));
-
-             }*/
 
             let Final_Time = process.hrtime(time);
             console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
             return response.success();
-
-
-
 
 
         }
