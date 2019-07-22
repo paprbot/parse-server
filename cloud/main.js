@@ -6462,7 +6462,6 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
 }, {useMasterKey: true});
 
 
-
 // Run beforeSave functions PostChatMessageSocial
 Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
@@ -6777,7 +6776,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
             }
 
 
-        } else {
+        }
 
         else {
 
@@ -6865,8 +6864,6 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
             response.success();
         });
 
-
-    }
 
 
     async.parallel([
@@ -11707,15 +11704,17 @@ function splitUserAndIndex (request, response) {
         queryRole.find({
             useMasterKey: true
             //sessionToken: sessionToken
-        }).then((results) => {
+        }).then((roles) => {
 
-            console.log("results.length: " + JSON.stringify(results.length));
+            console.log("roles.length: " + JSON.stringify(roles.length));
 
-            if (results.length > 0) {
+            let rolesArray = roles;
+
+            if (roles.length > 0) {
 
                 let tags = [];
 
-                objectToSave.roles = results;
+                objectToSave.roles = rolesArray;
                 //console.log("userObject.id: " + JSON.stringify(userObject.id));
 
                 tags.push(userObject.id);
@@ -11759,6 +11758,7 @@ function splitUserAndIndex (request, response) {
                             objectToSave.objectID = object.objectId + '-' + workspace.id + '-' + channelFollowObject.get("channel").id;
 
                             objectToSave.channel = channelFollowObject.get("channel").id;
+                            objectToSave.workspace = channelFollowObject.get("workspace").id;
 
                             indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
                                 if (err) {
@@ -11855,6 +11855,8 @@ function splitUserAndIndex (request, response) {
                             objectToSave.objectID = object.objectId + '-' + workspace.id + '-' + channelFollowObject.get("channel").id;
 
                             objectToSave.channel = channelFollowObject.get("channel").id;
+                            objectToSave.workspace = channelFollowObject.get("workspace").id;
+
 
                             indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
                                 if (err) {
@@ -12497,7 +12499,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         //sessionToken: sessionToken
                     }).then((postQuestionMessage) => {
 
-                        console.log("starting postQuestionMessage: " + JSON.stringify(postQuestionMessage));
+                        console.log("starting getTopAnswerForQuestionPost: " + JSON.stringify(postQuestionMessage));
 
 
                         if (postQuestionMessage) {
