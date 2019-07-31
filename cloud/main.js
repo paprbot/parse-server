@@ -12618,6 +12618,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     queryPostMessageComment.include( ["user"] );
                     queryPostMessageComment.select(PostMessageCommentArray);
                     queryPostMessageComment.limit(2);
+                    queryPostMessageComment.descending("createdAt");
+
                     //queryPostMessageComment.doesNotExist("parentPostMessage");
                     queryPostMessageComment.find({
                         useMasterKey: true
@@ -12703,6 +12705,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     queryPostMessageQuestion.select(PostMessageQuestionArray);
                     queryPostMessageQuestion.limit(10);
                     queryPostMessageQuestion.doesNotExist("parentPostMessage");
+                    queryPostMessageComment.descending("likedCount");
+
                     queryPostMessageQuestion.find({
                         useMasterKey: true
                         //sessionToken: sessionToken
