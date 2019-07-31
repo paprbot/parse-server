@@ -37,9 +37,9 @@ let simplifyWorkspaceFollowersUserIndex = require('./simplifyClass/WorkspaceFoll
 let simplifyPostMessage = require('./simplifyClass/Post/simplifyPostMessage');
 
 var selectPostMessageComment = ["message", "likedCount", "updatedAt"];
-var selectPostMessageQuestion = ["message", "likedCount", "updatedAt", "childPostMessageCount"];
+var selectPostMessageQuestion = ["message", "likedCount", "updatedAt", "childPostMessageCount", "type", "mediaType", "file", "video", "image", "videoThumbnail", "thumbnailRatio"];
 var selectPostMessageAnswer = ["message", "numberOfUpVotes", "numberOfDownVotes", "updatedAt", "seenByExpert", "upVotedByExpert"];
-var selectPostMessage = ["message", "type", "mediaType", "workspace", "channel", "post", "parentPostMessage", "hasURL", "hashtags", "mentions", "ACL", "file", "image" , "video", "numberOfUpVotes", "numberOfDownVotes", "createdAt", "seenByExpert", "upVotedByExpert",  "likedCount", "updatedAt", "childPostMessageCount"];
+var selectPostMessage = ["message", "type", "mediaType", "workspace", "channel", "post", "parentPostMessage", "hasURL", "hashtags", "mentions", "ACL", "file", "image" , "video", "numberOfUpVotes", "numberOfDownVotes", "createdAt", "seenByExpert", "upVotedByExpert",  "likedCount", "updatedAt", "childPostMessageCount", "videoThumbnail", "thumbnailRatio"];
 var selectParentPostMessage = ["parentPostMessage.message"];
 
 
@@ -11760,10 +11760,10 @@ function splitUserAndIndex (request, response) {
 
                         let channelFollowObject =  ChannelFollow[i];
 
-                        objectToSave.objectID = object.objectId + '-' + ChannelFollow.get("workspace").id + '-' + ChannelFollow.get("channel").id;
+                        objectToSave.objectID = object.objectId + '-' + channelFollowObject.get("workspace").id + '-' + channelFollowObject.get("channel").id;
 
-                        objectToSave.channel = ChannelFollow.get("channel").id;
-                        objectToSave.workspace = ChannelFollow.get("workspace").id;
+                        objectToSave.channel = channelFollowObject.get("channel").id;
+                        objectToSave.workspace = channelFollowObject.get("workspace").id;
 
                         let tags = [];
                         tags.push(userObject.id);
@@ -11777,7 +11777,7 @@ function splitUserAndIndex (request, response) {
 
                         queryRole = userRoles.query();
 
-                        queryRole.equalTo('workspace', ChannelFollow.get("workspace").id);
+                        queryRole.equalTo('workspace', channelFollowObject.get("workspace").id);
 
                         queryRole.limit(10);
                         queryRole.find({
@@ -12568,7 +12568,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                         } else {
 
-                            let postQuestionMessage = [];
+                            let postQuestionMessage = null;
                             // no workspaceFollowers to delete return
                             return callback(null, postQuestionMessage);
 
@@ -12579,7 +12579,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         // The object was not retrieved successfully.
                         // error is a Parse.Error with an error code and message.
                         console.log(error);
-                        let postQuestionMessage = [];
+                        let postQuestionMessage = null;
                         // no workspaceFollowers to delete return
                         return callback(null, postQuestionMessage);
                     }, {
@@ -12594,7 +12594,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                     // this post is not a question post but a normal post so no answer
 
-                    let postQuestionMessage = [];
+                    let postQuestionMessage = null;
                     // no workspaceFollowers to delete return
                     return callback(null, postQuestionMessage);
                 }
