@@ -14121,7 +14121,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                 userToSave._tags = ['*'];
             }
 
-            console.log("userToSave: " + JSON.stringify(userToSave));
+            //console.log("userToSave: " + JSON.stringify(userToSave));
 
 
             return callback(null, userToSave);
@@ -14302,11 +14302,14 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                 let mySkills = results[2];
                 let skillsToLearn = results[3];
                 let workspaceFollowers = results[4];
-                //workspaceFollowers = simplifyWorkspaceFollowersUserIndex(workspaceFollowers[0]);
-                //console.log("workspaceFollowers simplified for _User index: " + JSON.stringify(workspaceFollowers));
 
-                userToSaveFinal.mySkills = mySkills;
-                userToSaveFinal.skillsToLearn = skillsToLearn;
+                console.log("userToSaveFinal: " + JSON.stringify(userToSaveFinal));
+
+                //workspaceFollowers = simplifyWorkspaceFollowersUserIndex(workspaceFollowers[0]);
+                console.log("workspaceFollowers simplified for _User index: " + JSON.stringify(workspaceFollowers));
+
+                //userToSaveFinal.mySkills = mySkills;
+                //userToSaveFinal.skillsToLearn = skillsToLearn;
 
                 //console.log("mySkills: " + JSON.stringify(mySkills));
                 //console.log("skillsToLearn: " + JSON.stringify(skillsToLearn));
@@ -14333,6 +14336,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
 
                     if (user.get("isUpdateAlgoliaIndex") === true) {
+
+                        console.log("isUpdateAlgoliaIndex: " + JSON.stringify(user.get("isUpdateAlgoliaIndex")));
 
                         splitUserAndIndex({'user': user, 'object': userToSaveFinal, 'className': 'Role', 'loop': true, 'workspaceFollowers': workspaceFollowers}, {
                             success: function (count) {
