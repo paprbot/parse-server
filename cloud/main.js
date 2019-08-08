@@ -25,6 +25,7 @@ var fs = require('fs');
 Parse.initialize('671e705a-f735-4ec0-8474-15899a475440', '', 'f24d6630-a35a-4db8-9fc7-6a851042bfd6');
 
 let simplifyUser = require('./simplifyClass/_User/simplifyUser');
+let simplifyUserMentions = require('./simplifyClass/_User/simplifyUserMentions');
 let simplifyPost = require('./simplifyClass/Post/simplifyPost');
 let simplifyPostQuestion = require('./simplifyClass/Post/simplifyPostQuestion');
 let simplifyPostText = require('./simplifyClass/Post/simplifyPostText');
@@ -3185,6 +3186,27 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     //let expiresAt = session.get("expiresAt");
     let _tagPublic = '*';
     let _tagUserId = user.id;
+
+
+    if (user.dirty("profileimage") || user.get("isWorkspaceUpdated") === true || user.get("isChannelUpdated") === true || user.dirty("title") || user.dirty("displayName") || user.dirty("fullname") || user.dirty("roles") || user.dirty("isOnline") || user.dirty("showAvailability")) {
+
+        user.set("isUpdateAlgoliaIndex", true);
+
+
+    } else {
+
+        user.set("isUpdateAlgoliaIndex", false);
+
+    }
+
+    if ( !user.get("isWorkspaceUpdated")  || !user.get("isChannelUpdated") ) {
+
+        user.set("isWorkspaceUpdated", false);
+        user.set("isChannelUpdated", false);
+
+
+    }
+
 
 
     if (user.dirty("profileimage")) {
@@ -7344,6 +7366,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                             }
 
+                            user.set("isWorkspaceUpdated", true);
+
                             user.save(null, {
 
                                 useMasterKey: true
@@ -7397,6 +7421,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                             if (followerRole) {
                                 userRolesRelation.add(followerRole);
                             }
+
+                            user.set("isWorkspaceUpdated", true);
 
                             user.save(null, {
 
@@ -7454,6 +7480,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                 userRolesRelation.add(memberRole);
 
                             }
+
+                            user.set("isWorkspaceUpdated", true);
 
                             user.save(null, {
 
@@ -8298,6 +8326,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         userRolesRelation.remove(followerRole);
                                     }
 
+                                    user.set("isWorkspaceUpdated", true);
+
+
 
                                     user.save(null, {
 
@@ -8350,6 +8381,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     }
 
+                                    user.set("isWorkspaceUpdated", true);
+
+
                                     user.save(null, {
 
                                         useMasterKey: true
@@ -8401,6 +8435,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
                                     }
 
+                                    user.set("isWorkspaceUpdated", true);
+
+
                                     user.save(null, {
 
                                         useMasterKey: true
@@ -8450,6 +8487,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         userRolesRelation.add(memberRole);
 
                                     }
+
+                                    user.set("isWorkspaceUpdated", true);
+
 
                                     user.save(null, {
 
@@ -8504,6 +8544,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         userRolesRelation.remove(memberRole);
 
                                     }
+
+                                    user.set("isWorkspaceUpdated", true);
+
 
                                     user.save(null, {
 
@@ -8620,6 +8663,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
                                         userRolesRelation.add(memberRole);
 
                                     }
+
+                                    user.set("isWorkspaceUpdated", true);
+
 
                                     user.save(null, {
 
@@ -9048,6 +9094,22 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                         }
 
+                        function updateAlgoliaUserMentionIndex (callback) {
+
+                            user.set("isChannelUpdated", true);
+
+                            user.save(null, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+
+                            return callback (null, user);
+
+
+                        }
+
                         channelfollow.set("name", channelFollowName);
                         //console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
 
@@ -9086,7 +9148,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
 
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9123,7 +9186,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9163,7 +9227,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9231,7 +9297,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9267,7 +9335,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9305,7 +9375,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9374,7 +9446,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9428,7 +9502,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9492,7 +9568,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9524,7 +9602,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9560,7 +9640,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9626,7 +9708,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9680,7 +9764,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9744,7 +9830,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9778,7 +9866,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 channelfollow.set("isSelected", true);
                                 ChannelFollowIsSelected("isSelected", false);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9814,7 +9904,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9875,7 +9967,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9909,7 +10003,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -9946,7 +10042,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 // set isSelected for this channel to true and set previous channel that was selected to false
                                 channelfollow.set("isSelected", true);
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -10260,6 +10358,22 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                     }
 
+                    function updateAlgoliaUserMentionIndex (callback) {
+
+                        user.set("isChannelUpdated", true);
+
+                        user.save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                        return callback (null, user);
+
+
+                    }
+
                     // expert role exists, add as channel expert
                     console.log("channelExpert: " + JSON.stringify(results));
 
@@ -10314,7 +10428,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 });
 
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
 
                                 ], function (err, results) {
                                     if (err) {
@@ -10356,7 +10471,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 });
 
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -10397,7 +10514,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 });
 
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -10437,7 +10556,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 });
 
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -10540,7 +10661,36 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     //sessionToken: sessionToken
                                 });
 
-                                response.success();
+                                async.parallel([
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    //console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
 
                             } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -10552,7 +10702,36 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     //sessionToken: sessionToken
                                 });
 
-                                response.success();
+                                async.parallel([
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    //console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
 
                             } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -10566,7 +10745,36 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     //sessionToken: sessionToken
                                 });
 
-                                response.success();
+                                async.parallel([
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    //console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
 
                             } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
 
@@ -10581,7 +10789,36 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     //sessionToken: sessionToken
                                 });
 
-                                response.success();
+                                async.parallel([
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    //console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
 
                             }
 
@@ -10685,7 +10922,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 });
 
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
 
                                 ], function (err, results) {
                                     if (err) {
@@ -10808,7 +11046,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 });
 
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
 
                                 ], function (err, results) {
                                     if (err) {
@@ -10848,7 +11087,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 });
 
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -10889,7 +11130,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 });
 
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -10929,7 +11172,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 });
 
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
 
                                 ], function (err, results) {
                                     if (err) {
@@ -11020,7 +11265,36 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     //sessionToken: sessionToken
                                 });
 
-                                response.success();
+                                async.parallel([
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
 
                             } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -11032,7 +11306,36 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     //sessionToken: sessionToken
                                 });
 
-                                response.success();
+                                async.parallel([
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
 
                             } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
 
@@ -11046,7 +11349,36 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     //sessionToken: sessionToken
                                 });
 
-                                response.success();
+                                async.parallel([
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
 
                             } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
 
@@ -11061,7 +11393,36 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     //sessionToken: sessionToken
                                 });
 
-                                response.success();
+                                async.parallel([
+                                    async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                ], function (err, results) {
+                                    if (err) {
+                                        response.error(err);
+                                    }
+
+                                    if (results) {
+
+
+                                        response.success();
+
+                                    } else {
+
+                                        response.success();
+                                    }
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    console.log("channelQuery not found");
+                                    return response.error(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
 
                             }
 
@@ -11156,7 +11517,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 });
 
                                 async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin)
+                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                    async.apply(updateAlgoliaUserMentionIndex)
 
                                 ], function (err, results) {
                                     if (err) {
@@ -12628,7 +12990,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
 
                         if (PostChatMessages.length !== 0) {
-                            
+
                             let simplifiedPostChatMessages = [];
 
                             if (PostChatMessages.length === 2) {
@@ -13603,7 +13965,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
         let userObject = new USER();
         userObject.id = user.objectId;
 
-        let userToSave = user.toJSON();
+        let userToSave = simplifyUserMentions(user);
 
         let userACL = user.getACL();
 
@@ -13969,18 +14331,28 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                     });
                 } else {
 
-                    splitUserAndIndex({'user': user, 'object': userToSaveFinal, 'className': 'Role', 'loop': true, 'workspaceFollowers': workspaceFollowers}, {
-                        success: function (count) {
 
-                            let Final_Time = process.hrtime(time);
-                            console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                    if (user.get("isUpdateAlgoliaIndex") === true) {
 
-                            return response.success();
-                        },
-                        error: function (error) {
-                            return response.error(error);
-                        }
-                    });
+                        splitUserAndIndex({'user': user, 'object': userToSaveFinal, 'className': 'Role', 'loop': true, 'workspaceFollowers': workspaceFollowers}, {
+                            success: function (count) {
+
+                                let Final_Time = process.hrtime(time);
+                                console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                return response.success();
+                            },
+                            error: function (error) {
+                                return response.error(error);
+                            }
+                        });
+
+
+                    } else {
+
+                        response.success();
+                    }
+
 
 
 
