@@ -12033,7 +12033,7 @@ function splitUserAndIndex (request, response) {
     //console.log("className: " + JSON.stringify(className));
 
     var workspaceFollowers = request['workspaceFollowers'];
-    console.log("workspaceFollowers: " + JSON.stringify(workspaceFollowers.length));
+    console.log("workspaceFollowers length: " + JSON.stringify(workspaceFollowers.length));
 
     let objectToSave = object;
 
@@ -12127,7 +12127,7 @@ function splitUserAndIndex (request, response) {
                         objectToSave.channel = channelFollowObject.get("channel").id;
                         objectToSave.workspace = channelFollowObject.get("workspace").id;
 
-                        let tags = [];
+                        let tags = ["*"];
                         tags.push(userObject.id);
 
                         objectToSave._tags = tags;
@@ -12139,7 +12139,7 @@ function splitUserAndIndex (request, response) {
 
                         queryRole = userRoles.query();
 
-                        queryRole.equalTo('workspace', channelFollowObject.get("workspace").id);
+                        queryRole.equalTo('workspace', channelFollowObject.get("workspace"));
 
                         queryRole.limit(10);
                         queryRole.find({
@@ -12200,7 +12200,7 @@ function splitUserAndIndex (request, response) {
                                         return response.error(err);
                                     }
 
-                                    console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+                                    console.log("Parse<>Algolia User saved from splitUserAndIndex function role.length === 0");
 
                                     if (i === (ChannelFollow.length-1)) {
 

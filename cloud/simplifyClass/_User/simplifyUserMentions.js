@@ -10,7 +10,7 @@ function simplifyUser (User) {
     if (userMention.deviceToken) {delete userMention.deviceToken;}
     if (userMention.emailVerified === true || userMention.emailVerified === false) {delete userMention.emailVerified;}
     if (userMention.user_location) {delete userMention.user_location;}
-    if (userMention.LinkedInURL || userMention.LinkedInURL === null) {delete userMention.LinkedInURL;}
+    if (userMention.LinkedInURL || userMention.LinkedInURL === null ||  userMention.LinkedInURL === "") {delete userMention.LinkedInURL;}
     if (userMention.authData) {delete userMention.authData;}
     if (userMention.username) {delete userMention.username;}
     if (userMention.completedProfileSignup === true || userMention.completedProfileSignup ===  false) {delete userMention.completedProfileSignup;}
