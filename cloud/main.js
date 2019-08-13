@@ -53,6 +53,9 @@ var PostMessageCommentArray = selectPostMessageComment.concat(selectUser);
 var PostMessageQuestionArray = selectPostMessageQuestion.concat(selectUser);
 var PostMessageAnswerArray = selectPostMessageAnswer.concat(selectUser);
 var PostMessageArray = selectPostMessage.concat(selectUser);
+var PostMessageReplyArray_1 = PostMessageCommentArray.concat(selectPostMessageQuestion);
+PostMessageReplyArray_1 = PostMessageReplyArray_1.concat(selectPostMessageAnswer);
+var PostMessageReplyArray_2 = PostMessageCommentArray.concat(selectPostMessageAnswer);
 PostMessageArray = PostMessageArray.concat(selectParentPostMessage);
 
 // var im = require('imagemagick');
@@ -3181,7 +3184,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     let userQuery = new Parse.Query(userObject);
     userQuery.equalTo("objectId", user.id);
 
-    console.log("_User req: " + JSON.stringify(req));
+    //console.log("_User req: " + JSON.stringify(req));
 
     //let expiresAt = session.get("expiresAt");
     let _tagPublic = '*';
@@ -6919,7 +6922,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
     let time = process.hrtime();
 
     let workspace_follower = req.object;
-    console.log("req beforeSave Workspace_follower: " + JSON.stringify(req));
+    //console.log("req beforeSave Workspace_follower: " + JSON.stringify(req));
 
     let currentUser = req.user;
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
@@ -6946,7 +6949,7 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
         user.id = workspace_follower.get("user").id;
         var userRolesRelation = user.relation("roles");
-        console.log("user beforeSave workspace_follower userRoleRelation: " + JSON.stringify(user));
+        //console.log("user beforeSave workspace_follower userRoleRelation: " + JSON.stringify(user));
 
     } else if (!workspace_follower.get("user")) {
 
@@ -12870,7 +12873,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                             let PostSocial = new POSTSOCIAL();
 
                             PostSocial = simplifyPostSocial(postSocial);
-                            console.log("simplifyPostSocial: " + JSON.stringify(PostSocial));
+                            //console.log("simplifyPostSocial: " + JSON.stringify(PostSocial));
 
                             postSocial = PostSocial;
 
@@ -12995,10 +12998,22 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     //queryPostChatMessage.equalTo("channel", channel);
                     queryPostMessageComment.equalTo("post", post);
                     queryPostMessageComment.equalTo("type", "comment");
+                    if (Post.type === 'question') {
+                        queryPostMessageComment.equalTo("type", "question");
+                        queryPostMessageComment.equalTo("type", "answer");
+
+                        queryPostMessageComment.select(PostMessageReplyArray_1);
+
+
+                    } else if (Post.type === 'post') {
+
+                        queryPostMessageComment.equalTo("type", "answer");
+                        queryPostMessageComment.select(PostMessageReplyArray_2);
+
+                    }
                     queryPostMessageComment.include( ["user"] );
-                    queryPostMessageComment.select(PostMessageCommentArray);
                     queryPostMessageComment.limit(2);
-                    queryPostMessageComment.descending("createdAt");
+                    queryPostMessageComment.ascending("createdAt");
 
                     //queryPostMessageComment.doesNotExist("parentPostMessage");
                     queryPostMessageComment.find({
@@ -13137,7 +13152,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 async.apply(prepIndex),
                 async.apply(getPostMessageQuestions),
                 async.apply(getPostMessageComments),
-                async.apply(getTopAnswerForQuestionPost)
+                async.apply(getTopAnswerForQuestionPost),
+                async.apply(getPostSocial)
 
 
             ], function (err, results) {
@@ -13155,12 +13171,12 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     postToSave = results[0];
                     let postMessageQuestions = results[1];
                     let postMessageComments = results[2];
-                    //let postSocial = results[3];
+                    let postSocial = results[4];
                     let topAnswerForQuestionPost = results[3];
 
                     postToSave.postQuestions = postMessageQuestions;
                     postToSave.chatMessages = postMessageComments;
-                    //postToSave.PostSocial = postSocial;
+                    postToSave.PostSocial = postSocial;
                     postToSave.topAnswer = topAnswerForQuestionPost;
                     postToSave.user = simplifyUser(user);
 
@@ -13968,7 +13984,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
     let queryUser = new Parse.Query("_User");
     queryUser.include( ["currentCompany"] );
 
-    console.log("request User: " + JSON.stringify(User));
+    //console.log("request User: " + JSON.stringify(User));
 
         //queryUser.equalTo("objectId", userToSave.objectId);
 
@@ -14323,10 +14339,10 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                 let skillsToLearn = results[3];
                 let workspaceFollowers = results[4];
 
-                console.log("userToSaveFinal: " + JSON.stringify(userToSaveFinal));
+                //console.log("userToSaveFinal: " + JSON.stringify(userToSaveFinal));
 
                 //workspaceFollowers = simplifyWorkspaceFollowersUserIndex(workspaceFollowers[0]);
-                console.log("workspaceFollowers simplified for _User index: " + JSON.stringify(workspaceFollowers));
+                //console.log("workspaceFollowers simplified for _User index: " + JSON.stringify(workspaceFollowers));
 
                 //userToSaveFinal.mySkills = mySkills;
                 //userToSaveFinal.skillsToLearn = skillsToLearn;
@@ -14587,7 +14603,7 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
     workspace_follower.id = workspace_follow.id;
 
 
-    console.log("afterSave workspace_follower: " + JSON.stringify(workspace_follow));
+    //console.log("afterSave workspace_follower: " + JSON.stringify(workspace_follow));
 
     let currentUser = request.user;
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
@@ -14603,11 +14619,11 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
 
     function addIsSelectedWorkspaceFollowPointerToUser (callback) {
 
-        console.log("workspace_follow.isSelected: " + workspace_follow.toJSON().isSelected);
+        //console.log("workspace_follow.isSelected: " + workspace_follow.toJSON().isSelected);
 
         if (workspace_follow.toJSON().isSelected === true) {
 
-            console.log("workspaceFollow aftersave user: " + JSON.stringify(user));
+            //console.log("workspaceFollow aftersave user: " + JSON.stringify(user));
 
             user.set("isSelectedWorkspaceFollower", workspace_follower);
             user.save(null, {
