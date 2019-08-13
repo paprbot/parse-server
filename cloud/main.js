@@ -12157,7 +12157,7 @@ function splitUserAndIndex (request, response) {
                                 //console.log("userObject.id: " + JSON.stringify(userObject.id));
 
 
-                                console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectId));
+                                console.log("objectToSave.objectID: " + JSON.stringify(objectToSave.objectID));
 
                                 indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
                                     if (err) {
@@ -12166,8 +12166,12 @@ function splitUserAndIndex (request, response) {
                                     }
 
                                     console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
+                                    console.log("i: " + JSON.stringify(i));
+                                    console.log("ChannelFollow.length: " + JSON.stringify(ChannelFollow.length));
 
                                     if (i === (ChannelFollow.length-1)) {
+
+                                        console.log("iterating done on channels");
 
                                         return cb (null, workspaceFollower);
 
@@ -12183,7 +12187,7 @@ function splitUserAndIndex (request, response) {
                                 console.error("User doesn't have any roles, function splitUserAndIndex function.");
 
                                 // this case is when a user is following a workspace but for some reason there is no roles assigned to this user so return empty roles.
-                                let tags = [];
+                                let tags = ["*"];
 
                                 objectToSave.roles = [];
                                 //console.log("userObject.id: " + JSON.stringify(userObject.id));
@@ -12193,6 +12197,8 @@ function splitUserAndIndex (request, response) {
                                 objectToSave._tags = tags;
 
                                 console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectId));
+                                console.log("i: " + JSON.stringify(i));
+                                console.log("ChannelFollow.length: " + JSON.stringify(ChannelFollow.length));
 
                                 indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
                                     if (err) {
@@ -12203,6 +12209,9 @@ function splitUserAndIndex (request, response) {
                                     console.log("Parse<>Algolia User saved from splitUserAndIndex function role.length === 0");
 
                                     if (i === (ChannelFollow.length-1)) {
+
+                                        console.log("iterating done on channels");
+
 
                                         return cb (null, workspaceFollower);
 
@@ -12237,7 +12246,7 @@ function splitUserAndIndex (request, response) {
 
                     objectToSave.objectID = object.objectId + '-' + '0';
 
-                    let tags = [];
+                    let tags = ["*"];
                     tags.push(userObject.id);
 
                     objectToSave._tags = tags;
@@ -12331,7 +12340,7 @@ function splitUserAndIndex (request, response) {
 
                 objectToSave.objectID = object.objectId + '-' + '0';
 
-                let tags = [];
+                let tags = ["*"];
                 tags.push(userObject.id);
 
                 objectToSave._tags = tags;
@@ -12978,7 +12987,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     queryPostMessageComment.include( ["user"] );
                     queryPostMessageComment.select(PostMessageCommentArray);
                     queryPostMessageComment.limit(2);
-                    queryPostMessageComment.ascending("createdAt");
+                    queryPostMessageComment.descending("createdAt");
 
                     //queryPostMessageComment.doesNotExist("parentPostMessage");
                     queryPostMessageComment.find({

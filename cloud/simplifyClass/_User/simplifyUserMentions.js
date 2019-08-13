@@ -18,6 +18,9 @@ function simplifyUser (User) {
     if (userMention.identities) {delete userMention.identities;}
     if (userMention.email) {delete userMention.email;}
     if (userMention.isDirtyProfileimage === true || userMention.isDirtyProfileimage === false) {delete userMention.isDirtyProfileimage;}
+    if (userMention.isChannelUpdated === true || userMention.isChannelUpdated === false) {delete userMention.isChannelUpdated;}
+    if (userMention.isUpdateAlgoliaIndex === true || userMention.isUpdateAlgoliaIndex === false) {delete userMention.isUpdateAlgoliaIndex;}
+    if (userMention.isWorkspaceUpdated === true || userMention.isWorkspaceUpdated === false) {delete userMention.isWorkspaceUpdated;}
     if (userMention.isDirtyIsOnline === true || userMention.isDirtyIsOnline === false) {delete userMention.isDirtyIsOnline;}
     if (userMention.website || userMention.website === '') {delete userMention.website;}
     if (userMention.isNew === true || userMention.isNew === false) {delete userMention.isNew;}
@@ -34,6 +37,7 @@ function simplifyUser (User) {
     if (userMention.isDirtyTyping === true || userMention.isDirtyTyping === false) {delete userMention.isDirtyTyping;}
     if (userMention.ACL) {delete userMention.ACL}
     if (userMention.isSelectedWorkspaceFollower) {delete userMention.isSelectedWorkspaceFollower}
+
 
 
     return userMention;
