@@ -12037,7 +12037,7 @@ function splitUserAndIndex (request, response) {
 
     let objectToSave = object;
 
-    async.forEach(workspaceFollowers, function (workspaceFollower, cb1) {
+    async.forEachSeries(workspaceFollowers, function (workspaceFollower, cb1) {
 
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let workspace = new WORKSPACE();
@@ -12116,19 +12116,29 @@ function splitUserAndIndex (request, response) {
 
                 if (ChannelFollows) {
 
-                    async.forEach(ChannelFollows, function (channelFollowObject, cb) {
+                    async.forEachSeries(ChannelFollows, function (channelFollowObject, cb) {
 
-                        let newObjectToSave = objectToSave;
+                        //let newObjectToSave = objectToSave;
 
-                        newObjectToSave.objectID = object.objectId + '-' + channelFollowObject.get("workspace").id + '-' + channelFollowObject.get("channel").id;
+                        let channelFollowWorkspaceId = channelFollowObject.get("workspace").id;
+                        let channelFollowChannelId = channelFollowObject.get("channel").id;
+                        let channelFollowWorkspace = channelFollowObject.get("workspace");
+                        let channelFollowClassName = channelFollowObject.get("className");
+                        let channelFollowObjectId = channelFollowObject.id;
 
-                        newObjectToSave.channel = channelFollowObject.get("channel").id;
-                        newObjectToSave.workspace = channelFollowObject.get("workspace").id;
+                        channelFollowObject = objectToSave
+
+                        channelFollowObject.objectID = object.objectId + '-' + channelFollowWorkspaceId + '-' + channelFollowChannelId;
+
+                        console.log("channelFollowObject.objectID: " + JSON.stringify(channelFollowObject.objectID));
+
+                        channelFollowObject.channel = channelFollowChannelId;
+                        channelFollowObject.workspace = channelFollowWorkspaceId;
 
                         let tags = ["*"];
                         tags.push(userObject.id);
 
-                        newObjectToSave._tags = tags;
+                        channelFollowObject._tags = tags;
 
                         let userRoles= userObject.get("roles");
 
@@ -12136,7 +12146,7 @@ function splitUserAndIndex (request, response) {
 
                         queryRole = userRoles.query();
 
-                        queryRole.equalTo('workspace', channelFollowObject.get("workspace"));
+                        queryRole.equalTo('workspace', channelFollowWorkspace);
 
                         queryRole.limit(10);
                         queryRole.find({
@@ -12150,13 +12160,13 @@ function splitUserAndIndex (request, response) {
 
                             if (roles.length > 0) {
 
-                                newObjectToSave.roles = rolesArray;
+                                channelFollowObject.roles = rolesArray;
                                 //console.log("userObject.id: " + JSON.stringify(userObject.id));
 
 
-                                console.log("newObjectToSave.objectID: " + JSON.stringify(newObjectToSave.objectID));
 
-                                indexUsers.partialUpdateObject(newObjectToSave, true, function(err, content) {
+
+                                indexUsers.partialUpdateObject(channelFollowObject, true, function(err, content) {
                                     if (err) {
 
                                         return response.error(err);
@@ -12164,10 +12174,12 @@ function splitUserAndIndex (request, response) {
 
                                     console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
 
+
                                     return cb (null, channelFollowObject);
 
-
                                 });
+
+
 
 
 
@@ -12178,16 +12190,16 @@ function splitUserAndIndex (request, response) {
                                 // this case is when a user is following a workspace but for some reason there is no roles assigned to this user so return empty roles.
                                 let tags = ["*"];
 
-                                newObjectToSave.roles = [];
+                                channelFollowObject.roles = [];
                                 //console.log("userObject.id: " + JSON.stringify(userObject.id));
 
                                 tags.push(userObject.id);
 
-                                newObjectToSave._tags = tags;
+                                channelFollowObject._tags = tags;
 
-                                console.log("newObjectToSave.objectId: " + JSON.stringify(newObjectToSave.objectId));
+                                console.log("channelFollowObject.objectId: " + JSON.stringify(channelFollowObject.objectId));
 
-                                indexUsers.partialUpdateObject(newObjectToSave, true, function(err, content) {
+                                indexUsers.partialUpdateObject(channelFollowObject, true, function(err, content) {
                                     if (err) {
 
                                         return response.error(err);
@@ -12195,11 +12207,10 @@ function splitUserAndIndex (request, response) {
 
                                     console.log("Parse<>Algolia User saved from splitUserAndIndex function role.length === 0");
 
-
                                     return cb (null, channelFollowObject);
-
-
                                 });
+
+
                             }
 
 
@@ -12216,22 +12227,22 @@ function splitUserAndIndex (request, response) {
                         });
 
 
-                }, function (err) {
+                    }, function (err) {
 
-                    //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
+                        //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
 
-                    if (err) {
-                        return response.error(err);
-                    } else {
-
-
-                        return cb1 (null, workspaceFollower);
+                        if (err) {
+                            return response.error(err);
+                        } else {
 
 
+                            return cb1 (null, workspaceFollower);
 
-                    }
 
-                });
+
+                        }
+
+                    });
 
 
                 }
@@ -12392,7 +12403,6 @@ function splitUserAndIndex (request, response) {
 
 
 }
-
 
 // auto-add type when isBookmarked, isLiked or Comment is added
 Parse.Cloud.beforeSave('PostSocial', function(request, response) {
