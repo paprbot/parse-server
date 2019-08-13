@@ -12042,14 +12042,14 @@ function splitUserAndIndex (request, response) {
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let workspace = new WORKSPACE();
         workspace.id = workspaceFollower.get("workspace").id;
-        //console.log("workspace: " + JSON.stringify(workspace));
+        console.log("workspace: " + JSON.stringify(workspace));
 
         //console.log("indexOf async.map: " + JSON.stringify(workspaceFollowers.indexOf(workspaceFollower)));
 
         let async_map_index = workspaceFollowers.indexOf(workspaceFollower);
 
         var userObject = workspaceFollowers[async_map_index].get("user");
-        //console.log("userObject: " + JSON.stringify(userObject));
+        console.log("userObject: " + JSON.stringify(userObject));
 
         let queryRole = new Parse.Query(Parse.Role);
 
@@ -12118,15 +12118,17 @@ function splitUserAndIndex (request, response) {
 
                     async.forEach(ChannelFollows, function (channelFollowObject, cb) {
 
-                        objectToSave.objectID = object.objectId + '-' + channelFollowObject.get("workspace").id + '-' + channelFollowObject.get("channel").id;
+                        let newObjectToSave = objectToSave;
 
-                        objectToSave.channel = channelFollowObject.get("channel").id;
-                        objectToSave.workspace = channelFollowObject.get("workspace").id;
+                        newObjectToSave.objectID = object.objectId + '-' + channelFollowObject.get("workspace").id + '-' + channelFollowObject.get("channel").id;
+
+                        newObjectToSave.channel = channelFollowObject.get("channel").id;
+                        newObjectToSave.workspace = channelFollowObject.get("workspace").id;
 
                         let tags = ["*"];
                         tags.push(userObject.id);
 
-                        objectToSave._tags = tags;
+                        newObjectToSave._tags = tags;
 
                         let userRoles= userObject.get("roles");
 
@@ -12148,13 +12150,13 @@ function splitUserAndIndex (request, response) {
 
                             if (roles.length > 0) {
 
-                                objectToSave.roles = rolesArray;
+                                newObjectToSave.roles = rolesArray;
                                 //console.log("userObject.id: " + JSON.stringify(userObject.id));
 
 
-                                console.log("objectToSave.objectID: " + JSON.stringify(objectToSave.objectID));
+                                console.log("newObjectToSave.objectID: " + JSON.stringify(newObjectToSave.objectID));
 
-                                indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                                indexUsers.partialUpdateObject(newObjectToSave, true, function(err, content) {
                                     if (err) {
 
                                         return response.error(err);
@@ -12176,16 +12178,16 @@ function splitUserAndIndex (request, response) {
                                 // this case is when a user is following a workspace but for some reason there is no roles assigned to this user so return empty roles.
                                 let tags = ["*"];
 
-                                objectToSave.roles = [];
+                                newObjectToSave.roles = [];
                                 //console.log("userObject.id: " + JSON.stringify(userObject.id));
 
                                 tags.push(userObject.id);
 
-                                objectToSave._tags = tags;
+                                newObjectToSave._tags = tags;
 
-                                console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectId));
+                                console.log("newObjectToSave.objectId: " + JSON.stringify(newObjectToSave.objectId));
 
-                                indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                                indexUsers.partialUpdateObject(newObjectToSave, true, function(err, content) {
                                     if (err) {
 
                                         return response.error(err);
@@ -12223,7 +12225,7 @@ function splitUserAndIndex (request, response) {
                     } else {
 
 
-                        return cb1 (null, workspaceFollowers);
+                        return cb1 (null, workspaceFollower);
 
 
 
@@ -12237,12 +12239,15 @@ function splitUserAndIndex (request, response) {
 
                     // ChannelFollow doesn't exist, user doesn't have any channels followed.
 
-                    objectToSave.objectID = object.objectId + '-' + '0';
+                    let newObjectToSave = objectToSave;
+
+
+                    newObjectToSave.objectID = object.objectId + '-' + '0';
 
                     let tags = ["*"];
                     tags.push(userObject.id);
 
-                    objectToSave._tags = tags;
+                    newObjectToSave._tags = tags;
 
                     let userRoles= userObject.get("roles");
 
@@ -12264,13 +12269,13 @@ function splitUserAndIndex (request, response) {
 
                         if (roles.length > 0) {
 
-                            objectToSave.roles = rolesArray;
+                            newObjectToSave.roles = rolesArray;
                             //console.log("userObject.id: " + JSON.stringify(userObject.id));
 
 
-                            console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectId));
+                            console.log("newObjectToSave.objectId: " + JSON.stringify(newObjectToSave.objectId));
 
-                            indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                            indexUsers.partialUpdateObject(newObjectToSave, true, function(err, content) {
                                 if (err) {
 
                                     return response.error(err);
@@ -12290,12 +12295,12 @@ function splitUserAndIndex (request, response) {
                             console.error("User doesn't have any roles, function splitUserAndIndex function.");
 
 
-                            objectToSave.roles = [];
+                            newObjectToSave.roles = [];
                             //console.log("userObject.id: " + JSON.stringify(userObject.id));
 
-                            console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectId));
+                            console.log("newObjectToSave.objectId: " + JSON.stringify(newObjectToSave.objectId));
 
-                            indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                            indexUsers.partialUpdateObject(newObjectToSave, true, function(err, content) {
                                 if (err) {
 
                                     return response.error(err);
@@ -12331,14 +12336,17 @@ function splitUserAndIndex (request, response) {
 
                 console.error("User doesn't have any roles assigned or no channel follows.");
 
-                objectToSave.objectID = object.objectId + '-' + '0';
+                let newObjectToSave = objectToSave;
+
+
+                newObjectToSave.objectID = object.objectId + '-' + '0';
 
                 let tags = ["*"];
                 tags.push(userObject.id);
 
-                objectToSave._tags = tags;
+                newObjectToSave._tags = tags;
 
-                indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
+                indexUsers.partialUpdateObject(newObjectToSave, true, function(err, content) {
                     if (err) {
 
                         return response.error(err);
