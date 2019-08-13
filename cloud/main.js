@@ -12037,7 +12037,7 @@ function splitUserAndIndex (request, response) {
 
     let objectToSave = object;
 
-    async.forEach(workspaceFollowers, function (workspaceFollower, cb) {
+    async.forEach(workspaceFollowers, function (workspaceFollower, cb1) {
 
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let workspace = new WORKSPACE();
@@ -12106,21 +12106,17 @@ function splitUserAndIndex (request, response) {
 
         ], function (err, results) {
             if (err) {
-                return cb (err);
+                return cb1 (err);
             }
 
 
             if (results.length > 0) {
 
-                let ChannelFollow = results[0];
+                let ChannelFollows = results[0];
 
-                if (ChannelFollow) {
+                if (ChannelFollows) {
 
-                    for (let i = 0; i < ChannelFollow.length; i++) {
-
-                        //finalChannelFollowers.push(channelFollow[i].channel.objectId);
-
-                        let channelFollowObject =  ChannelFollow[i];
+                    async.forEach(ChannelFollows, function (channelFollowObject, cb) {
 
                         objectToSave.objectID = object.objectId + '-' + channelFollowObject.get("workspace").id + '-' + channelFollowObject.get("channel").id;
 
@@ -12135,7 +12131,6 @@ function splitUserAndIndex (request, response) {
                         let userRoles= userObject.get("roles");
 
                         //console.log('userRoles: ' + JSON.stringify(userRoles));
-
 
                         queryRole = userRoles.query();
 
@@ -12166,17 +12161,9 @@ function splitUserAndIndex (request, response) {
                                     }
 
                                     console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
-                                    console.log("i: " + JSON.stringify(i));
-                                    console.log("ChannelFollow.length: " + JSON.stringify(ChannelFollow.length));
 
-                                    if (i === (ChannelFollow.length-1)) {
+                                    return cb (null, channelFollowObject);
 
-                                        console.log("iterating done on channels");
-
-                                        return cb (null, workspaceFollower);
-
-
-                                    }
 
                                 });
 
@@ -12197,8 +12184,6 @@ function splitUserAndIndex (request, response) {
                                 objectToSave._tags = tags;
 
                                 console.log("objectToSave.objectId: " + JSON.stringify(objectToSave.objectId));
-                                console.log("i: " + JSON.stringify(i));
-                                console.log("ChannelFollow.length: " + JSON.stringify(ChannelFollow.length));
 
                                 indexUsers.partialUpdateObject(objectToSave, true, function(err, content) {
                                     if (err) {
@@ -12208,15 +12193,9 @@ function splitUserAndIndex (request, response) {
 
                                     console.log("Parse<>Algolia User saved from splitUserAndIndex function role.length === 0");
 
-                                    if (i === (ChannelFollow.length-1)) {
 
-                                        console.log("iterating done on channels");
+                                    return cb (null, channelFollowObject);
 
-
-                                        return cb (null, workspaceFollower);
-
-
-                                    }
 
                                 });
                             }
@@ -12235,8 +12214,22 @@ function splitUserAndIndex (request, response) {
                         });
 
 
+                }, function (err) {
+
+                    //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
+
+                    if (err) {
+                        return response.error(err);
+                    } else {
+
+
+                        return cb1 (null, workspaceFollowers);
+
+
 
                     }
+
+                });
 
 
                 }
@@ -12285,7 +12278,7 @@ function splitUserAndIndex (request, response) {
 
                                 console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
 
-                                return cb (null, workspaceFollower);
+                                return cb1 (null, workspaceFollower);
 
 
                             });
@@ -12311,7 +12304,7 @@ function splitUserAndIndex (request, response) {
                                 console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
 
 
-                                return cb (null, workspaceFollower);
+                                return cb1 (null, workspaceFollower);
 
 
                             });
@@ -12354,7 +12347,7 @@ function splitUserAndIndex (request, response) {
                     console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
 
 
-                    return cb (null, workspaceFollower);
+                    return cb1 (null, workspaceFollower);
 
 
                 });
