@@ -6544,6 +6544,16 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
         postMessage = postMessageSocial.get("postMessage");
 
     }
+    if (postMessageSocial.isNew()) {
+
+        postMessageSocial.set("isNew", true);
+
+    } else {
+        postMessageSocial.set("isNew", false);
+
+
+    }
+
 
 
 
@@ -6556,6 +6566,8 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
             if (!postMessageSocial.get("isDelivered")) { postMessageSocial.set("isDelivered", false); }
             if (!postMessageSocial.get("hasRead")) { postMessageSocial.set("hasRead", false); }
             if (!postMessageSocial.get("voteValue")) { postMessageSocial.set("voteValue", 0);}
+            if (!postMessageSocial.get("algoliaIndexID")) { postMessageSocial.set("algoliaIndexID", '0');}
+
 
 
             return callback (null, postMessageSocial);
@@ -6611,6 +6623,8 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
     //var Post = Parse.Object.extend("Post");
     let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
     let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
+    queryPostMessageSocial.include(["postMessage"]);
+
     queryPostMessageSocial.equalTo("objectId", postMessageSocial.id);
     //queryPostMessageSocial.select(PostMessageArray);
 
@@ -6650,14 +6664,14 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
         let POSTMESSAGE = Parse.Object.extend("PostMessage");
         let PostMessage = new POSTMESSAGE();
         if (PostMessageSocialResult.get("postMessage")) {
-            PostMessage.id = PostMessageSocialResult.get("postMessage").id;
+            PostMessage = PostMessageSocialResult.get("postMessage");
         }
 
 
         function countPostMessageLikes(callback) {
 
 
-            if (postMessageSocial.isNew()) {
+            if (postMessageSocial.get("isNew") === true) {
 
                 PostMessage.increment("postMessageSocialCount");
 
@@ -6750,7 +6764,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
             let Post = new POST();
             Post.id = post.id;
 
-            if (postMessageSocial.isNew()) {
+            if ((postMessageSocial.get("isNew") === true)) {
 
                 if (postMessageSocial.get("hasRead") === false || !postMessageSocial.get("hasRead")) {
 
@@ -6841,7 +6855,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
             let PostMessage = new POSTMESSAGE();
             PostMessage.id = postMessage.id;
 
-            if (PostMessage.isNew()) {
+            if ((postMessageSocial.get("isNew") === true)) {
 
                 PostMessage.increment("postMessageVoteCount");
 
@@ -6951,11 +6965,36 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
         }
 
+        function updatePostsAlgolia (callback) {
+
+            if (postMessageSocial.get("isNew") === false) {
+
+                let indexCount = parseInt(postMessageSocial.get("algoliaIndexID"));
+
+                splitObjectAndIndex({'user':user, 'object':PostMessage.toJSON(), 'className':'PostMessageSocial', 'indexCount':indexCount, 'loop':false}, {
+                    success: function(count) {
+
+                        return callback (null, PostMessage);
+                    },
+                    error: function(error) {
+                        return callback (error);
+                    }
+                });
+
+
+            } else {
+
+                return callback (null, PostMessage);
+            }
+
+        }
+
 
         async.parallel([
             async.apply(countPostMessageLikes),
             async.apply(countPostMessageUnRead),
-            async.apply(countPostMessageVote)
+            async.apply(countPostMessageVote),
+            async.apply(updatePostsAlgolia)
 
         ], function (err, results_Final) {
             if (err) {
