@@ -6961,6 +6961,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
         function updatePostsAlgolia (callback) {
 
+            if (postMessageSocial.get("isNew") === false) {
 
                 let indexCount = parseInt(postMessageSocial.get("algoliaIndexID"));
 
@@ -6975,7 +6976,11 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                 });
 
 
-           
+            } else {
+
+                return callback (null, PostMessage);
+            }
+
         }
 
 
@@ -11917,13 +11922,13 @@ function splitObjectAndIndex (request, response) {
                 if (className === 'PostSocial') {
 
                     ResultObject = simplifyPostSocial(result);
-                    //console.log("simplifyPostSocial: " + JSON.stringify(ResultObject));
+                    console.log("simplifyPostSocial: " + JSON.stringify(ResultObject));
 
                 }
                 else if (className === 'workspace_follower' || className === 'PostMessageSocial'  || className === 'Role' ) {
 
                     ResultObject = result;
-                    //console.log("ResultObject: " + JSON.stringify(ResultObject));
+                    console.log("ResultObject: " + JSON.stringify(ResultObject));
 
                 }
 
