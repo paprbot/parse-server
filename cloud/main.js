@@ -6760,9 +6760,6 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
         function countPostMessageUnRead(callback) {
 
-            let POST = Parse.Object.extend("Post");
-            let Post = new POST();
-            Post.id = post.id;
 
             if ((postMessageSocial.get("isNew") === true)) {
 
@@ -6851,9 +6848,6 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
         function countPostMessageVote(callback) {
 
-            let POSTMESSAGE = Parse.Object.extend("PostMessage");
-            let PostMessage = new POSTMESSAGE();
-            PostMessage.id = postMessage.id;
 
             if ((postMessageSocial.get("isNew") === true)) {
 
@@ -6967,7 +6961,6 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
         function updatePostsAlgolia (callback) {
 
-            if (postMessageSocial.get("isNew") === false) {
 
                 let indexCount = parseInt(postMessageSocial.get("algoliaIndexID"));
 
@@ -6982,11 +6975,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                 });
 
 
-            } else {
-
-                return callback (null, PostMessage);
-            }
-
+           
         }
 
 
