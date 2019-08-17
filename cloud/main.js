@@ -6545,7 +6545,6 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
     }
 
-    //console.log("channel_post: " + JSON.stringify(channel));
 
 
     function setDefaultValues (callback) {
@@ -6556,6 +6555,8 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
             if (!postMessageSocial.get("isLiked")) { postMessageSocial.set("isLiked", false); }
             if (!postMessageSocial.get("isDelivered")) { postMessageSocial.set("isDelivered", false); }
             if (!postMessageSocial.get("hasRead")) { postMessageSocial.set("hasRead", false); }
+            if (!postMessageSocial.get("voteValue")) { postMessageSocial.set("voteValue", 0);}
+
 
             return callback (null, postMessageSocial);
 
@@ -6566,6 +6567,85 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
 
     }
+
+    async.parallel([
+        async.apply(setDefaultValues)
+
+    ], function (err, results_Final) {
+        if (err) {
+            response.error(err);
+        }
+
+        //console.log("final post: " + JSON.stringify(post));
+
+        let beforeSave_Time = process.hrtime(time);
+        console.log(`beforeSave_Time PostMessageSocial took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+        response.success();
+    });
+
+
+});
+
+Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!req.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.beforeSave.PostMessageSocial.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    let postMessageSocial = req.object;
+    let originalPostMessageSocial = req.original ? req.original : null;
+    let workspace;
+    let post;
+    let channel;
+    let user;
+    let postMessage;
+
+    console.log("req: " + JSON.stringify(req));
+
+    if (!postMessageSocial.get("workspace")) {
+        return response.error("Please add a workspace pointer it's a required field.")
+    } else {
+        workspace = postMessageSocial.get("workspace");
+
+    }
+    if (!postMessageSocial.get("post")) {
+        response.error("Please add a post pointer it's a required field.")
+    } else {
+
+        let post = postMessageSocial.get("post");
+
+    }
+    if (!postMessageSocial.get("channel")) {
+        return response.error("Please add a channel pointer it's a required field.")
+    } else {
+        channel = postMessageSocial.get("channel");
+
+    }
+    if (!postMessageSocial.get("user")) {
+        return response.error("Please add a user pointer it's a required field.")
+    } else {
+        user = postMessageSocial.get("user");
+
+    }
+    if (!postMessageSocial.get("postMessage")) {
+        return response.error("Please add a postMessage pointer it's a required field.")
+    } else {
+        postMessage = postMessageSocial.get("postMessage");
+
+    }
+
 
     function countPostMessageLikes (callback) {
 
@@ -6805,94 +6885,71 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
         else {
 
-                // postQuestionMessageVote already exists
+            // postQuestionMessageVote already exists
 
-                if ( (postMessageSocial.get("voteValue") === 0 ) && (originalPostMessageSocial.get("voteValue") === 0) ) {
-                    // user previously downVoted but is downVoting again do nothing since it's already downVoted
-
-
-                    return callback(null, PostMessage);
-
-                }
-
-                else if ( (postMessageSocial.get("voteValue") === 1) && originalPostMessageSocial.get("voteValue") === 0  ) {
-
-                    // User previously downVoted this question but now changed their mind and upVoted it.
-
-                    PostMessage.increment("numberOfDownVotes", -1);
-                    PostMessage.increment("numberOfUpVotes");
-                    PostMessage.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
+            if ( (postMessageSocial.get("voteValue") === 0 ) && (originalPostMessageSocial.get("voteValue") === 0) ) {
+                // user previously downVoted but is downVoting again do nothing since it's already downVoted
 
 
-                    return callback(null, PostMessage);
-
-                }
-
-                else if ( postMessageSocial.get("voteValue") === 1  && originalPostMessageSocial.get("voteValue") === 1  ) {
-
-                    // User previously upVoted and is upVoting again, do nothing
-
-
-                    return callback(null, PostMessage);
-
-                }
-                else if ( postMessageSocial.get("voteValue") === 0  && originalPostMessageSocial.get("voteValue") === 1  ) {
-
-                    // User previously upVoted but changed their mind and now downVoted this question
-
-                    // User previously downVoted this question but now changed their mind and upVoted it.
-
-                    PostMessage.increment("numberOfDownVotes");
-                    PostMessage.increment("numberOfUpVotes", -1);
-                    PostMessage.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-                    return callback(null, PostMessage);
-
-                }
-
+                return callback(null, PostMessage);
 
             }
 
+            else if ( (postMessageSocial.get("voteValue") === 1) && originalPostMessageSocial.get("voteValue") === 0  ) {
+
+                // User previously downVoted this question but now changed their mind and upVoted it.
+
+                PostMessage.increment("numberOfDownVotes", -1);
+                PostMessage.increment("numberOfUpVotes");
+                PostMessage.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, PostMessage);
+
+            }
+
+            else if ( postMessageSocial.get("voteValue") === 1  && originalPostMessageSocial.get("voteValue") === 1  ) {
+
+                // User previously upVoted and is upVoting again, do nothing
+
+
+                return callback(null, PostMessage);
+
+            }
+            else if ( postMessageSocial.get("voteValue") === 0  && originalPostMessageSocial.get("voteValue") === 1  ) {
+
+                // User previously upVoted but changed their mind and now downVoted this question
+
+                // User previously downVoted this question but now changed their mind and upVoted it.
+
+                PostMessage.increment("numberOfDownVotes");
+                PostMessage.increment("numberOfUpVotes", -1);
+                PostMessage.save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+                return callback(null, PostMessage);
+
+            }
 
 
         }
 
 
 
-        async.parallel([
-            async.apply(setDefaultValues),
-            async.apply(countPostMessageLikes),
-            async.apply(countPostMessageUnRead),
-            async.apply(countPostMessageVote)
-
-        ], function (err, results_Final) {
-            if (err) {
-                response.error(err);
-            }
-
-            //console.log("final post: " + JSON.stringify(post));
-
-            let beforeSave_Time = process.hrtime(time);
-            console.log(`beforeSave_Time PostMessageSocial took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-            response.success();
-        });
-
+    }
 
 
     async.parallel([
-        async.apply(setDefaultValues),
         async.apply(countPostMessageLikes),
         async.apply(countPostMessageUnRead),
         async.apply(countPostMessageVote)
@@ -6905,13 +6962,14 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
         //console.log("final post: " + JSON.stringify(post));
 
         let beforeSave_Time = process.hrtime(time);
-        console.log(`beforeSave_Time PostMessageSocial took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+        console.log(`afterSave PostMessageSocial took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
         response.success();
     });
 
 
 });
+
 
 
 // Run beforeSave functions to count number of workspace followers abd members
@@ -11934,7 +11992,7 @@ function splitObjectAndIndex (request, response) {
                 if (className === 'PostSocial') {
 
                     //object = results[0].get("post");
-                    console.log("no results - post object: " + JSON.stringify(object));
+                    //console.log("no results - post object: " + JSON.stringify(object));
 
                     object.PostSocial = resultsNone;
                     index = indexPosts;
@@ -11943,7 +12001,7 @@ function splitObjectAndIndex (request, response) {
                 else if (className === 'workspace_follower') {
 
                     //object = results[0].get("workspace");
-                    console.log("no results - workspace object: " + JSON.stringify(object));
+                    //console.log("no results - workspace object: " + JSON.stringify(object));
 
                     object.followers = resultsNone;
                     index = indexWorkspaces;
@@ -11953,7 +12011,7 @@ function splitObjectAndIndex (request, response) {
                 else if (className === 'PostMessageSocial') {
 
                     //object = results[0].get("workspace");
-                    console.log("PostMessageSocial object: " + JSON.stringify(object));
+                    //console.log("PostMessageSocial object: " + JSON.stringify(object));
 
                     object.PostMessageSocial = resultsNone;
                     index = indexPostMessage;
@@ -13152,8 +13210,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 async.apply(prepIndex),
                 async.apply(getPostMessageQuestions),
                 async.apply(getPostMessageComments),
-                async.apply(getTopAnswerForQuestionPost),
-                async.apply(getPostSocial)
+                async.apply(getTopAnswerForQuestionPost)
+                //async.apply(getPostSocial)
 
 
             ], function (err, results) {
@@ -13171,12 +13229,12 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     postToSave = results[0];
                     let postMessageQuestions = results[1];
                     let postMessageComments = results[2];
-                    let postSocial = results[4];
+                    //let postSocial = results[4];
                     let topAnswerForQuestionPost = results[3];
 
                     postToSave.postQuestions = postMessageQuestions;
                     postToSave.chatMessages = postMessageComments;
-                    postToSave.PostSocial = postSocial;
+                    //postToSave.PostSocial = postSocial;
                     postToSave.topAnswer = topAnswerForQuestionPost;
                     postToSave.user = simplifyUser(user);
 
@@ -13185,8 +13243,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     //console.log("chatMessages: " + JSON.stringify(postMessageComments));
                     //console.log("PostSocial: " + JSON.stringify(postSocial));
                     //console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
+                    let PostSocial_txt = 'PostSocial';
 
-                    splitObjectAndIndex({'user': user, 'object': postToSave, 'className': 'PostSocial', 'loop': true}, {
+                    splitObjectAndIndex({'user': user, 'object': postToSave, 'className': PostSocial_txt, 'loop': true}, {
                         success: function (count) {
 
                             let Final_Time = process.hrtime(time);
