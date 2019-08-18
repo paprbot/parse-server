@@ -5,11 +5,19 @@
  * Created by shawk on 5/10/2019.
  */
 
-let simplifyUser = require('./../_User/simplifyUser');
+let simplifyUserMentions = require('../_User/simplifyUserMentions');
 
 
 
 function simplifyPostChatMessage (PostChatMessage) {
+
+    let user = PostChatMessage.get("user");
+
+    user = simplifyUserMentions(user);
+
+    //console.log("simplifyUserMentions User: " + JSON.stringify(user));
+
+    PostChatMessage.set("user", user);
 
     let postChatMessage = PostChatMessage.toJSON();
     if (postChatMessage.image) {delete postChatMessage.image;}

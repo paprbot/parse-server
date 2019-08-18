@@ -5606,10 +5606,10 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
             if (!post.get("archive")) { post.set("archive", false); }
             if (!post.get("likesCount")) { post.set("likesCount", 0); }
-            if (!post.get("postQuestionCount")) { post.set("postQuestionCount", 0); }
-            if (!post.get("postQuestionMessageCount")) { post.set("postQuestionMessageCount", 0); }
-            if (!post.get("chatMessageCount")) { post.set("chatMessageCount", 0); }
-            if (!post.get("chatMessageUnReadCount")) { post.set("chatMessageUnReadCount", 0); }
+            //if (!post.get("postQuestionCount")) { post.set("postQuestionCount", 0); }
+            //if (!post.get("postQuestionMessageCount")) { post.set("postQuestionMessageCount", 0); }
+            //if (!post.get("chatMessageCount")) { post.set("chatMessageCount", 0); }
+            //if (!post.get("chatMessageUnReadCount")) { post.set("chatMessageUnReadCount", 0); }
             if (!post.get("postSocialCount")) { post.set("postSocialCount", 0); }
             if (!post.get("isIncognito")) { post.set("isIncognito", false); }
             if (!post.get("questionAnswerEnabled") && post.get("questionAnswerEnabled") !== false) { post.set("questionAnswerEnabled", true); }
@@ -11953,6 +11953,7 @@ function splitObjectAndIndex (request, response) {
                         //object = results[0].get("post");
                         //console.log("post object: " + JSON.stringify(object));
 
+                        delete object.postSocial;
                         object.PostSocial = resultsFinal;
                         index = indexPosts;
 
@@ -13051,7 +13052,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         //sessionToken: sessionToken
                     }).then((postQuestionMessage) => {
 
-                        console.log("starting getTopAnswerForQuestionPost: " + JSON.stringify(postQuestionMessage));
+                        //console.log("starting getTopAnswerForQuestionPost: " + JSON.stringify(postQuestionMessage));
 
 
                         if (postQuestionMessage) {
@@ -13131,7 +13132,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         //sessionToken: sessionToken
                     }).then((PostChatMessages) => {
 
-                        console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
+                        //console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
 
 
                         if (PostChatMessages.length !== 0) {
@@ -13150,7 +13151,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                             }
 
-                            console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages));
+                            //console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages));
 
 
                             return callback(null, simplifiedPostChatMessages);
@@ -13206,7 +13207,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         //sessionToken: sessionToken
                     }).then((PostChatMessages) => {
 
-                        console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
+                        //console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
 
 
                         if (PostChatMessages.length !== 0) {
