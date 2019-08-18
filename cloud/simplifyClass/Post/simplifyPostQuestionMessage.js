@@ -1,10 +1,14 @@
 /**
  * Created by shawk on 5/24/2019.
  */
-
+let simplifyUserMentions = require('././_User/simplifyUserMentions');
 
 
 function simplifyPostQuestionMessage (PostQuestionMessage) {
+
+    let user = PostQuestionMessage.get("user");
+
+    user = simplifyUserMentions(user);
 
     let postQuestionMessage = PostQuestionMessage.toJSON();
     if (postQuestionMessage.post) {delete PostQuestionMessage.post;}
@@ -16,6 +20,13 @@ function simplifyPostQuestionMessage (PostQuestionMessage) {
     if (postQuestionMessage.video) {delete PostQuestionMessage.video;}
     if (postQuestionMessage.image) {delete PostQuestionMessage.image;}
     if (postQuestionMessage.replyMessage) {delete PostQuestionMessage.replyMessage;}
+    if (postQuestionMessage.user) {
+
+        delete postQuestionMessage.user;
+        postQuestionMessage['user'] = user;
+
+    }
+
 
 
     return postQuestionMessage;

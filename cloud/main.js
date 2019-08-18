@@ -12595,7 +12595,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     let POST = Parse.Object.extend("Post");
     let post = new POST();
-    post.id = postSocial.get("post");
+    post = postSocial.get("post");
 
     //console.log("request afterDelete Post: " + JSON.stringify(request));
 
@@ -13106,23 +13106,24 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     //queryPostChatMessage.equalTo("workspace", workspace);
                     //queryPostChatMessage.equalTo("channel", channel);
                     queryPostMessageComment.equalTo("post", post);
-                    queryPostMessageComment.equalTo("type", "comment");
+                    //queryPostMessageComment.select(PostMessageReplyArray_1);
+                    //queryPostMessageComment.equalTo("type", "comment");
                     if (Post.type === 'question') {
-                        queryPostMessageComment.equalTo("type", "question");
-                        queryPostMessageComment.equalTo("type", "answer");
+                        //queryPostMessageComment.equalTo("type", "question");
+                        //queryPostMessageComment.equalTo("type", "answer");
 
                         queryPostMessageComment.select(PostMessageReplyArray_1);
 
 
                     } else if (Post.type === 'post') {
 
-                        queryPostMessageComment.equalTo("type", "answer");
+                        queryPostMessageComment.notEqualTo("type", "question");
                         queryPostMessageComment.select(PostMessageReplyArray_2);
 
                     }
                     queryPostMessageComment.include( ["user"] );
                     queryPostMessageComment.limit(2);
-                    queryPostMessageComment.ascending("createdAt");
+                    queryPostMessageComment.descending("createdAt");
 
                     //queryPostMessageComment.doesNotExist("parentPostMessage");
                     queryPostMessageComment.find({
