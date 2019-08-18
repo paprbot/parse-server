@@ -36,6 +36,9 @@ let simplifyPostSocial = require('./simplifyClass/Post/simplifyPostSocial');
 let simplifyPostQuestionMessage = require('./simplifyClass/Post/simplifyPostQuestionMessage');
 let simplifyWorkspaceFollowersUserIndex = require('./simplifyClass/WorkspaceFollowers/simplifyWorkspaceFollowersUserIndex');
 let simplifyPostMessage = require('./simplifyClass/Post/simplifyPostMessage');
+let simplifyWorkspace = require('./simplifyClass/Workspace/simplifyWorkspace');
+let simplifyChannel = require('./simplifyClass/Channel/simplifyChannel');
+
 
 var selectPostMessageComment = ["message", "likedCount", "updatedAt"];
 var selectPostMessageQuestion = ["message", "likedCount", "updatedAt", "childPostMessageCount", "type", "mediaType", "file", "video", "image", "videoThumbnail", "thumbnailRatio"];
@@ -11953,7 +11956,6 @@ function splitObjectAndIndex (request, response) {
                         //object = results[0].get("post");
                         //console.log("post object: " + JSON.stringify(object));
 
-                        delete object.postSocial;
                         object.PostSocial = resultsFinal;
                         index = indexPosts;
 

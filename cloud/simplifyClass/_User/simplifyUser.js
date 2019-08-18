@@ -35,6 +35,10 @@ function simplifyUser (User) {
     if (expertOwner.isDirtyTyping === true || expertOwner.isDirtyTyping === false) {delete expertOwner.isDirtyTyping;}
     if (expertOwner.ACL) {delete expertOwner.ACL}
     if (expertOwner.isSelectedWorkspaceFollower) {delete expertOwner.isSelectedWorkspaceFollower}
+    if (expertOwner.isChannelUpdated === true || expertOwner.isChannelUpdated === false) {delete expertOwner.isChannelUpdated;}
+    if (expertOwner.isUpdateAlgoliaIndex === true || expertOwner.isUpdateAlgoliaIndex === false) {delete expertOwner.isUpdateAlgoliaIndex;}
+    if (expertOwner.isWorkspaceUpdated === true || expertOwner.isWorkspaceUpdated === false) {delete expertOwner.isWorkspaceUpdated;}
+
 
 
     return expertOwner;
