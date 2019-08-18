@@ -11766,7 +11766,7 @@ function splitObjectAndIndex (request, response) {
 
     let className = request['className'];
     console.log("className: " + JSON.stringify(className));
-    let objectClassName;
+    var objectClassName;
     let PARSEOBJECT;
     let parseObject;
 
@@ -11849,11 +11849,13 @@ function splitObjectAndIndex (request, response) {
     } else {
 
         globalQuery.equalTo(objectClassName, parseObject);
+        console.log("objectClassName: " + JSON.stringify(objectClassName));
+        console.log("parseObject: " + JSON.stringify(parseObject));
 
     }
 
     if (loop === false) {
-        globalQuery.equalTo('algoliaIndexID', indexCount);
+        globalQuery.equalTo('algoliaIndexID', indexCount.toString());
 
     }
 
@@ -12540,6 +12542,8 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 
         if (!postSocial.get("isLiked")) {postSocial.set("isLiked", false); }
         if (!postSocial.get("isBookmarked")) {postSocial.set("isBookmarked", false);}
+        if (!postSocial.get("archive")) {postSocial.set("archive", false);}
+
 
         postSocial.set("isNew", true);
 
@@ -12591,7 +12595,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     let POST = Parse.Object.extend("Post");
     let post = new POST();
-    post.id = postSocial.get("post").id;
+    post.id = postSocial.get("post");
 
     //console.log("request afterDelete Post: " + JSON.stringify(request));
 
@@ -12681,6 +12685,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     function updatePostsAlgolia (callback) {
 
         if (postSocial.get("isNew") === false) {
+
 
             let indexCount = parseInt(postSocial.get("algoliaIndexID"));
 
@@ -13291,7 +13296,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     //console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
                     let PostSocial_txt = 'PostSocial';
 
-                    splitObjectAndIndex({'user': user, 'object': postToSave, 'className': PostSocial_txt, 'loop': true}, {
+                    console.log("postToSave afterSave Post: " + JSON.stringify(postToSave));
+
+                    splitObjectAndIndex({'user':user, 'object':postToSave, 'className':'PostSocial', 'loop':true}, {
                         success: function (count) {
 
                             let Final_Time = process.hrtime(time);
