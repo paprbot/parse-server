@@ -6626,7 +6626,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
     //var Post = Parse.Object.extend("Post");
     let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
     let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
-    queryPostMessageSocial.include(["postMessage"]);
+    queryPostMessageSocial.include(["postMessage", "post"]);
 
     queryPostMessageSocial.equalTo("objectId", postMessageSocial.id);
     //queryPostMessageSocial.select(PostMessageArray);
@@ -6661,7 +6661,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
-        Post.id = PostMessageSocialResult.get("post").id;
+        Post = PostMessageSocialResult.get("post");
         //console.log("Post: " + JSON.stringify(Post));
 
         let POSTMESSAGE = Parse.Object.extend("PostMessage");
@@ -6962,11 +6962,11 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
         }
 
-        function updatePostsAlgolia (callback) {
+        function updatePostMessagesAlgolia (callback) {
 
             if (postMessageSocial.get("isNew") === false) {
 
-                let indexCount = parseInt(postMessageSocial.get("algoliaIndexID"));
+                let indexCount = parseInt(PostMessageSocialResult.get("algoliaIndexID"));
 
                 splitObjectAndIndex({'user':user, 'object':PostMessage.toJSON(), 'className':'PostMessageSocial', 'indexCount':indexCount, 'loop':false}, {
                     success: function(count) {
@@ -6986,12 +6986,37 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
         }
 
+        function updatePostsAlgolia (callback) {
+
+            if (postMessageSocial.get("isNew") === false) {
+
+                let indexCount = parseInt(postSocial.get("algoliaIndexID"));
+
+                splitObjectAndIndex({'user':user, 'object':Post.toJSON(), 'className':'PostSocial', 'indexCount':indexCount, 'loop':false}, {
+                    success: function(count) {
+
+                        return callback (null, Post);
+                    },
+                    error: function(error) {
+                        return callback (error);
+                    }
+                });
+
+
+            } else {
+
+                return callback (null, Post);
+            }
+
+        }
+
 
         async.parallel([
             async.apply(countPostMessageLikes),
             async.apply(countPostMessageUnRead),
             async.apply(countPostMessageVote),
-            async.apply(updatePostsAlgolia)
+            //async.apply(updatePostsAlgolia),
+            async.apply(updatePostMessagesAlgolia)
 
         ], function (err, results_Final) {
             if (err) {
@@ -11874,7 +11899,7 @@ function splitObjectAndIndex (request, response) {
 
             count = count + results.length;
             let finalIndexCount;
-            let tags = [];
+            let tags = ['*'];
 
             indexCount = indexCount + 1;
             console.log("indexCount: " + JSON.stringify(indexCount));
@@ -12762,7 +12787,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     // Convert Parse.Object to JSON
     let post = request.object;
-    let postToSave = post.toJSON();
+    //let postToSave = post.toJSON();
 
     //var Post = Parse.Object.extend("Post");
     let POST = Parse.Object.extend("Post");
@@ -12780,6 +12805,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         useMasterKey: true
         //sessionToken: sessionToken
     }).then((Post) => {
+
+
 
 
         let postACL = Post.getACL();
@@ -12858,7 +12885,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 //console.log("ObjectToSave: " + JSON.stringify(post));
 
                 // Convert Parse.Object to JSON
-                Post = Post.toJSON();
+                Post = simplifyPost(Post);
 
                 // Specify Algolia's objectID with the Parse.Object unique ID
                 //Post.objectID = Post.objectId;
@@ -13281,12 +13308,13 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                     console.log("afterSave Post results length: " + JSON.stringify(results.length));
 
-                    postToSave = results[0];
+                    let postToSave = results[0];
                     let postMessageQuestions = results[1];
                     let postMessageComments = results[2];
                     //let postSocial = results[4];
                     let topAnswerForQuestionPost = results[3];
 
+                    postToSave = postToSave.toJSON();
                     postToSave.postQuestions = postMessageQuestions;
                     postToSave.chatMessages = postMessageComments;
                     //postToSave.PostSocial = postSocial;
