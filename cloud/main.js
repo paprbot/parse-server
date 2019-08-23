@@ -12882,6 +12882,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     function updatePostsAlgolia(PostObject, cb) {
 
         let Post = PostObject;
+        let user = PostObject.get("user");
 
         let postACL = Post.getACL();
         console.log("post: " + JSON.stringify(Post));
@@ -13196,7 +13197,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                 //let postSocial = results[4];
                 let topAnswerForQuestionPost = results[3];
 
-                postToSave = postToSave.toJSON();
+                //postToSave = postToSave.toJSON();
                 postToSave.postQuestions = postMessageQuestions;
                 postToSave.chatMessages = postMessageComments;
                 //postToSave.PostSocial = postSocial;
