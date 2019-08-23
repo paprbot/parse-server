@@ -12631,7 +12631,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     let owner = new USER();
     owner.id = postSocial.get("user").id;
 
-    function incrementPostSocialCount(callback) {
+    function incrementPostSocialCount(cb) {
 
         if (postSocial.get("isNew") === true) {
 
@@ -12665,7 +12665,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                     // The object was retrieved successfully.
                     //console.log("Result from get " + JSON.stringify(Workspace));
 
-                    return callback(null, PostObject);
+                    return cb(null, PostObject);
 
 
                 }, (error) => {
@@ -12707,7 +12707,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                     // The object was retrieved successfully.
                     //console.log("Result from get " + JSON.stringify(Workspace));
 
-                    return callback(null, PostObject);
+                    return cb(null, PostObject);
 
                 }, (error) => {
                     // The object was not retrieved successfully.
@@ -12743,7 +12743,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                         // The object was retrieved successfully.
                         //console.log("Result from get " + JSON.stringify(Workspace));
 
-                        return callback(null, PostObject);
+                        return cb(null, PostObject);
 
 
                     }, (error) => {
@@ -12781,7 +12781,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                     // The object was retrieved successfully.
                     //console.log("Result from get " + JSON.stringify(Workspace));
 
-                    return callback(null, PostObject);
+                    return cb(null, PostObject);
 
                 }, (error) => {
                     // The object was not retrieved successfully.
@@ -12818,7 +12818,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                         // The object was retrieved successfully.
                         //console.log("Result from get " + JSON.stringify(Workspace));
 
-                        return callback(null, PostObject);
+                        return cb(null, PostObject);
 
 
                     }, (error) => {
@@ -12853,7 +12853,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                     // The object was retrieved successfully.
                     //console.log("Result from get " + JSON.stringify(Workspace));
 
-                    return callback(null, PostObject);
+                    return cb(null, PostObject);
 
                 }, (error) => {
                     // The object was not retrieved successfully.
@@ -12874,7 +12874,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     }
 
-    function updatePostsAlgolia(PostObject, callback) {
+    function updatePostsAlgolia(PostObject, cb) {
 
         let Post = PostObject;
 
@@ -13212,11 +13212,11 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                 splitObjectAndIndex({'user': owner, 'object': postToSave, 'className': 'PostSocial', 'indexCount': indexCount, 'loop': false}, {
                     success: function (count) {
 
-                        return callback(null, PostObject);
+                        return cb(null, PostObject);
 
                     },
                     error: function (error) {
-                        return callback (error);
+                        return cb (error);
                     }
                 });
 
