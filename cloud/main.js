@@ -12652,9 +12652,44 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                 useMasterKey: true,
                 //sessionToken: sessionToken
 
-            });
+            }).then((Post) => {
+                // The object was retrieved successfully.
+                //console.log("Result from get " + JSON.stringify(Workspace));
 
-            return callback (null, post);
+                Post.fetch(Post.id , {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((PostObject) => {
+                    // The object was retrieved successfully.
+                    //console.log("Result from get " + JSON.stringify(Workspace));
+
+                    return callback(null, PostObject);
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                response.error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
 
 
         } else {
@@ -12663,8 +12698,27 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
                 // do nothing, LikesCount is already incremented.
 
-                return callback (null, post);
+                post.fetch(post.id , {
 
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((PostObject) => {
+                    // The object was retrieved successfully.
+                    //console.log("Result from get " + JSON.stringify(Workspace));
+
+                    return callback(null, PostObject);
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
 
             } else if (originalPostSocial.get("isLiked") === true && postSocial.get("isLiked") === false) {
 
@@ -12676,14 +12730,70 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                     useMasterKey: true,
                     //sessionToken: sessionToken
 
+                }).then((Post) => {
+                    // The object was retrieved successfully.
+                    //console.log("Result from get " + JSON.stringify(Workspace));
+
+                    Post.fetch(Post.id, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((PostObject) => {
+                        // The object was retrieved successfully.
+                        //console.log("Result from get " + JSON.stringify(Workspace));
+
+                        return callback(null, PostObject);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
                 });
 
-                return callback (null, post);
             } else if (originalPostSocial.get("isLiked") === false && postSocial.get("isLiked") === false) {
 
                 // do nothing, user didn't like this post
 
-                return callback (null, post);
+                post.fetch(post.id , {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((PostObject) => {
+                    // The object was retrieved successfully.
+                    //console.log("Result from get " + JSON.stringify(Workspace));
+
+                    return callback(null, PostObject);
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
 
             } else if (originalPostSocial.get("isLiked") === false && postSocial.get("isLiked") === true) {
 
@@ -12695,12 +12805,66 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                     useMasterKey: true,
                     //sessionToken: sessionToken
 
-                });
+                }).then((Post) => {
+                    // The object was retrieved successfully.
+                    //console.log("Result from get " + JSON.stringify(Workspace));
 
-                return callback (null, post);
+                    Post.fetch(Post.id, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((PostObject) => {
+                        // The object was retrieved successfully.
+                        //console.log("Result from get " + JSON.stringify(Workspace));
+
+                        return callback(null, PostObject);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        response.error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
             } else {
 
-                return callback (null, post);
+                post.fetch(post.id , {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((PostObject) => {
+                    // The object was retrieved successfully.
+                    //console.log("Result from get " + JSON.stringify(Workspace));
+
+                    return callback(null, PostObject);
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
 
             }
 
@@ -12710,14 +12874,14 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     }
 
-    function updatePostsAlgolia (callback) {
+    function updatePostsAlgolia (PostObject, callback) {
 
         if (postSocial.get("isNew") === false) {
 
 
             let indexCount = parseInt(postSocial.get("algoliaIndexID"));
 
-            splitObjectAndIndex({'user':owner, 'object':post.toJSON(), 'className':'PostSocial', 'indexCount':indexCount, 'loop':false}, {
+            splitObjectAndIndex({'user':owner, 'object':PostObject.toJSON(), 'className':'PostSocial', 'indexCount':indexCount, 'loop':false}, {
                 success: function(count) {
 
                     return callback (null, post);
@@ -12730,13 +12894,13 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
         } else {
 
-            return callback (null, post);
+            return callback (null, PostObject);
         }
 
     }
 
 
-    async.parallel([
+    async.waterfall([
         async.apply(incrementPostSocialCount),
         async.apply(updatePostsAlgolia)
 
@@ -12810,7 +12974,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
 
         let postACL = Post.getACL();
-        console.log("postACL: " + JSON.stringify(postACL));
+        console.log("post: " + JSON.stringify(Post));
 
         user = Post.get("user");
 
@@ -14140,6 +14304,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
     }).then((user) => {
         // The object was retrieved successfully.
         //console.log("Result from get " + JSON.stringify(Workspace));
+
 
         let USER = Parse.Object.extend("_User");
         let userObject = new USER();
