@@ -6636,6 +6636,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
     //console.log("objectID: " + objectToSave.objectId);
     //console.log("objectID: " + objectToSave.user.objectId);
 
+
     queryPostMessageSocial.first({
         useMasterKey: true
         //sessionToken: sessionToken
@@ -6661,7 +6662,9 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
+        let PostToSave = new POST();
         Post = PostMessageSocialResult.get("post");
+        PostToSave.id = Post.id;
         //console.log("Post: " + JSON.stringify(Post));
 
         let POSTMESSAGE = Parse.Object.extend("PostMessage");
@@ -6670,353 +6673,505 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
             PostMessage = PostMessageSocialResult.get("postMessage");
         }
 
-
-        function countPostMessageLikes(callback) {
-
-
-            if (postMessageSocial.get("isNew") === true) {
-
-                PostMessage.increment("postMessageSocialCount");
-
-                if (postMessageSocial.get("isLiked") === true) {
-
-
-                    PostMessage.increment("likedCount");
-                    PostMessage.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-                    return callback(null, PostMessage);
-
-                }
-
-                else {
-
-
-                    return callback(null, PostMessage);
-
-                }
-
-
-            } else {
-
-                // postChatMessageSocial already exists
-
-                if ((postMessageSocial.get("isLiked") === false || !postMessageSocial.get("isLiked")) && (PostMessageSocialResult.get("isLiked") === false || !PostMessageSocialResult.get("isLiked"))) {
-                    // original isLiked == false and new isLiked also === false don't increment
-
-
-                    return callback(null, PostMessage);
-
-                }
-
-                else if ((postMessageSocial.get("isLiked") === false) && PostMessageSocialResult.get("isLiked") === true) {
-
-                    // decrement since user unLiked
-
-                    PostMessage.increment("likedCount", -1);
-                    PostMessage.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-                    return callback(null, PostMessage);
-
-                }
-
-                else if (postMessageSocial.get("isLiked") === true && (PostMessageSocialResult.get("isLiked") === false || !PostMessageSocialResult.get("isLiked"))) {
-
-                    // increment because the user liked
-
-                    PostMessage.increment("likedCount");
-                    PostMessage.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-                    return callback(null, PostMessage);
-
-                }
-                else if (postMessageSocial.get("isLiked") === true && PostMessageSocialResult.get("isLiked") === true) {
-
-                    // No change don't increment
-
-
-                    return callback(null, PostMessage);
-
-                }
-
-
-            }
-
-
+        let POSTMESSAGE = Parse.Object.extend("PostMessage");
+        let PostMessageToSave = new POSTMESSAGE();
+        if (PostMessageSocialResult.get("postMessage")) {
+            PostMessageToSave.id = PostMessageSocialResult.get("postMessage").id;
         }
 
-        function countPostMessageUnRead(callback) {
+        let POSTMESSAGE = Parse.Object.extend("PostMessage");
+        let queryPostMessage = new Parse.Query(POSTMESSAGE);
+        queryPostMessage.include( ["user"] );
+        //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
+        queryPostMessage.equalTo("objectId", PostMessage.id);
 
 
-            if ((postMessageSocial.get("isNew") === true)) {
+        function countPostMessageSocial (cb) {
 
-                if (postMessageSocial.get("hasRead") === false || !postMessageSocial.get("hasRead")) {
+            function countPostMessageLikes(callback) {
 
 
-                    Post.increment("postMessageUnReadCount");
-                    Post.save(null, {
+                if (postMessageSocial.get("isNew") === true) {
 
-                        useMasterKey: true
-                        //sessionToken: sessionToken
+                    PostMessageToSave.increment("postMessageSocialCount");
 
-                    });
+                    if (postMessageSocial.get("isLiked") === true) {
 
 
-                    return callback(null, Post);
+                        PostMessageToSave.increment("likedCount");
+                        return callback(null, PostMessageToSave);
 
-                }
 
-                else {
 
-
-                    return callback(null, Post);
-
-                }
-
-
-            } else {
-
-                // postChatMessageReadStatus already exists
-
-                if ((postMessageSocial.get("hasRead") === false || !postMessageSocial.get("hasRead")) && (PostMessageSocialResult.get("hasRead") === false || !PostMessageSocialResult.get("hasRead"))) {
-                    // original hasRead == false and new hasRead also === false don't increment
-
-
-                    return callback(null, Post);
-
-                }
-
-                else if ((postMessageSocial.get("hasRead") === false ) && PostMessageSocialResult.get("hasRead") === true) {
-
-                    // increment user marked previous messages that he read as unRead
-
-                    Post.increment("postMessageUnReadCount");
-                    Post.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-                    return callback(null, Post);
-
-                }
-
-                else if (postMessageSocial.get("hasRead") === true && (PostMessageSocialResult.get("hasRead") === false || !PostMessageSocialResult.get("hasRead"))) {
-
-                    // decrement user read the message
-
-                    Post.increment("postMessageUnReadCount", -1);
-                    Post.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-                    return callback(null, Post);
-
-                }
-                else if (postMessageSocial.get("hasRead") === true && PostMessageSocialResult.get("hasRead") === true) {
-
-                    // No change don't increment
-
-
-                    return callback(null, Post);
-
-                }
-
-
-            }
-
-
-        }
-
-        function countPostMessageVote(callback) {
-
-
-            if ((postMessageSocial.get("isNew") === true)) {
-
-                PostMessage.increment("postMessageVoteCount");
-
-
-                if (postMessageSocial.get("voteValue") === 0) {
-
-
-                    PostMessage.increment("numberOfDownVotes");
-                    PostMessage.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-                    return callback(null, PostMessage);
-
-                }
-                else if (postMessageSocial.get("voteValue") === 1) {
-
-
-                    PostMessage.increment("numberOfUpVotes");
-                    PostMessage.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-                    return callback(null, PostMessage);
-
-                }
-
-                else {
-
-
-                    return callback(null, PostMessage);
-
-                }
-
-
-            }
-
-            else {
-
-                // postQuestionMessageVote already exists
-
-                if ((postMessageSocial.get("voteValue") === 0 ) && (PostMessageSocialResult.get("voteValue") === 0)) {
-                    // user previously downVoted but is downVoting again do nothing since it's already downVoted
-
-
-                    return callback(null, PostMessage);
-
-                }
-
-                else if ((postMessageSocial.get("voteValue") === 1) && PostMessageSocialResult.get("voteValue") === 0) {
-
-                    // User previously downVoted this question but now changed their mind and upVoted it.
-
-                    PostMessage.increment("numberOfDownVotes", -1);
-                    PostMessage.increment("numberOfUpVotes");
-                    PostMessage.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-                    return callback(null, PostMessage);
-
-                }
-
-                else if (postMessageSocial.get("voteValue") === 1 && PostMessageSocialResult.get("voteValue") === 1) {
-
-                    // User previously upVoted and is upVoting again, do nothing
-
-
-                    return callback(null, PostMessage);
-
-                }
-                else if (postMessageSocial.get("voteValue") === 0 && PostMessageSocialResult.get("voteValue") === 1) {
-
-                    // User previously upVoted but changed their mind and now downVoted this question
-
-                    // User previously downVoted this question but now changed their mind and upVoted it.
-
-                    PostMessage.increment("numberOfDownVotes");
-                    PostMessage.increment("numberOfUpVotes", -1);
-                    PostMessage.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-                    return callback(null, PostMessage);
-
-                }
-
-
-            }
-
-
-        }
-
-        function updatePostMessagesAlgolia (callback) {
-
-            if (postMessageSocial.get("isNew") === false) {
-
-                let indexCount = parseInt(PostMessageSocialResult.get("algoliaIndexID"));
-
-                splitObjectAndIndex({'user':user, 'object':PostMessage.toJSON(), 'className':'PostMessageSocial', 'indexCount':indexCount, 'loop':false}, {
-                    success: function(count) {
-
-                        return callback (null, PostMessage);
-                    },
-                    error: function(error) {
-                        return callback (error);
                     }
+
+                    else {
+
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+
+
+                } else {
+
+                    // postChatMessageSocial already exists
+
+                    if ((postMessageSocial.get("isLiked") === false || !postMessageSocial.get("isLiked")) && (PostMessageSocialResult.get("isLiked") === false || !PostMessageSocialResult.get("isLiked"))) {
+                        // original isLiked == false and new isLiked also === false don't increment
+
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+
+                    else if ((postMessageSocial.get("isLiked") === false) && PostMessageSocialResult.get("isLiked") === true) {
+
+                        // decrement since user unLiked
+
+                        PostMessageToSave.increment("likedCount", -1);
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+
+                    else if (postMessageSocial.get("isLiked") === true && (PostMessageSocialResult.get("isLiked") === false || !PostMessageSocialResult.get("isLiked"))) {
+
+                        // increment because the user liked
+
+                        PostMessageToSave.increment("likedCount");
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+                    else if (postMessageSocial.get("isLiked") === true && PostMessageSocialResult.get("isLiked") === true) {
+
+                        // No change don't increment
+
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+
+
+                }
+
+
+            }
+
+            function countPostMessageUnRead(callback) {
+
+
+                if ((postMessageSocial.get("isNew") === true)) {
+
+                    if (postMessageSocial.get("hasRead") === false || !postMessageSocial.get("hasRead")) {
+
+
+                        PostToSave.increment("postMessageUnReadCount");
+                        PostToSave.save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((PostObject) => {
+                            // The object was retrieved successfully.
+                            //console.log("PostMessageObj: " + JSON.stringify(PostMessageObj));
+
+                            return callback(null, PostObject);
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+
+
+                    }
+
+                    else {
+
+
+                        return callback(null, PostToSave);
+
+                    }
+
+
+                } else {
+
+                    // postChatMessageReadStatus already exists
+
+                    if ((postMessageSocial.get("hasRead") === false || !postMessageSocial.get("hasRead")) && (PostMessageSocialResult.get("hasRead") === false || !PostMessageSocialResult.get("hasRead"))) {
+                        // original hasRead == false and new hasRead also === false don't increment
+
+
+                        return callback(null, PostToSave);
+
+                    }
+
+                    else if ((postMessageSocial.get("hasRead") === false ) && PostMessageSocialResult.get("hasRead") === true) {
+
+                        // increment user marked previous messages that he read as unRead
+
+                        PostToSave.increment("postMessageUnReadCount");
+                        PostToSave.save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((PostObject) => {
+                            // The object was retrieved successfully.
+                            //console.log("PostMessageObj: " + JSON.stringify(PostMessageObj));
+
+                            return callback(null, PostObject);
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                    }
+
+                    else if (postMessageSocial.get("hasRead") === true && (PostMessageSocialResult.get("hasRead") === false || !PostMessageSocialResult.get("hasRead"))) {
+
+                        // decrement user read the message
+
+                        PostToSave.increment("postMessageUnReadCount", -1);
+                        PostToSave.save(null, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((PostObject) => {
+                            // The object was retrieved successfully.
+                            //console.log("PostMessageObj: " + JSON.stringify(PostMessageObj));
+
+                            return callback(null, PostObject);
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                    }
+                    else if (postMessageSocial.get("hasRead") === true && PostMessageSocialResult.get("hasRead") === true) {
+
+                        // No change don't increment
+
+
+                        return callback(null, PostToSave);
+
+                    }
+
+
+                }
+
+
+            }
+
+            function countPostMessageVote(callback) {
+
+
+                if ((postMessageSocial.get("isNew") === true)) {
+
+                    PostMessageToSave.increment("postMessageVoteCount");
+
+
+                    if (postMessageSocial.get("voteValue") === 0) {
+
+
+                        PostMessageToSave.increment("numberOfDownVotes");
+
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+                    else if (postMessageSocial.get("voteValue") === 1) {
+
+
+                        PostMessageToSave.increment("numberOfUpVotes");
+
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+
+                    else {
+
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+
+
+                }
+
+                else {
+
+                    // postQuestionMessageVote already exists
+
+                    if ((postMessageSocial.get("voteValue") === 0 ) && (PostMessageSocialResult.get("voteValue") === 0)) {
+                        // user previously downVoted but is downVoting again do nothing since it's already downVoted
+
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+
+                    else if ((postMessageSocial.get("voteValue") === 1) && PostMessageSocialResult.get("voteValue") === 0) {
+
+                        // User previously downVoted this question but now changed their mind and upVoted it.
+
+                        PostMessageToSave.increment("numberOfDownVotes", -1);
+                        PostMessageToSave.increment("numberOfUpVotes");
+
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+
+                    else if (postMessageSocial.get("voteValue") === 1 && PostMessageSocialResult.get("voteValue") === 1) {
+
+                        // User previously upVoted and is upVoting again, do nothing
+
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+                    else if (postMessageSocial.get("voteValue") === 0 && PostMessageSocialResult.get("voteValue") === 1) {
+
+                        // User previously upVoted but changed their mind and now downVoted this question
+
+                        // User previously downVoted this question but now changed their mind and upVoted it.
+
+                        PostMessageToSave.increment("numberOfDownVotes");
+                        PostMessageToSave.increment("numberOfUpVotes", -1);
+
+
+                        return callback(null, PostMessageToSave);
+
+                    }
+
+
+                }
+
+
+            }
+
+
+            async.series([
+                async.apply(countPostMessageLikes),
+                async.apply(countPostMessageUnRead),
+                async.apply(countPostMessageVote)
+
+            ], function (err, results_Final) {
+                if (err) {
+                    response.error(err);
+                }
+
+                //console.log("final post: " + JSON.stringify(post));
+                let PostMessageToSaveFinal = new POSTMESSAGE();
+                PostMessageToSaveFinal.id = PostMessageToSave.id;
+
+                if (results_Final.length > 0) {
+
+                    let PostMessageCountLikes = results_Final[0];
+                    let PostMessageCountUnRead = results_Final[1];
+                    let PostMessageCountVote = results_Final[2];
+
+                    if (PostMessageCountLikes) {
+                        if (PostMessageCountLikes.get("likedCount")) {
+                            PostMessageToSaveFinal.set("likedCount", PostMessageCountLikes.get("likedCount"));
+
+                        }
+
+                    }
+
+
+
+                    if (PostMessageCountVote) {
+                        if (PostMessageCountVote.get("numberOfDownVotes")) {
+                            PostMessageToSaveFinal.set("numberOfDownVotes", PostMessageCountVote.get("numberOfDownVotes"));
+
+                        }
+                        if (PostMessageCountVote.get("numberOfUpVotes")) {
+                            PostMessageToSaveFinal.set("numberOfUpVotes", PostMessageCountVote.get("numberOfUpVotes"));
+
+                        }
+
+                    }
+
+                    PostMessageToSaveFinal.save(null, {
+
+                        useMasterKey: true,
+                        //sessionToken: sessionToken
+
+                    }).then((PostMessageObj) => {
+                        // The object was retrieved successfully.
+                        console.log("PostMessageObj: " + JSON.stringify(PostMessageObj));
+
+
+                        queryPostMessage.first( {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((PostMessageObject) => {
+                            // The object was retrieved successfully.
+                            //console.log("Result from get " + JSON.stringify(Workspace));
+
+                            //PostMessage = PostMessageObject;
+
+                            return cb (null, PostMessageObject);
+
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return cb(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return cb(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+                } else {
+                    return cb (null, PostMessageToSaveFinal);
+
+                }
+
+
+
+            });
+
+        }
+
+        function updateAlgolia (cb, PostMessage) {
+
+            function updatePostMessagesAlgolia (cb2) {
+
+                if (postMessageSocial.get("isNew") === false) {
+
+                    let indexCount = parseInt(PostMessageSocialResult.get("algoliaIndexID"));
+
+                    splitObjectAndIndex({'user':user, 'object':PostMessage.toJSON(), 'className':'PostMessageSocial', 'indexCount':indexCount, 'loop':false}, {
+                        success: function(count) {
+
+                            return cb2 (null, PostMessage);
+                        },
+                        error: function(error) {
+                            return cb2 (error);
+                        }
+                    });
+
+
+                } else {
+
+                    return cb2 (null, PostMessage);
+                }
+
+            }
+
+            function updatePostsAlgolia (cb2) {
+
+                let POSTSOCIAL = Parse.Object.extend("PostSocial");
+                let queryPostSocial = new Parse.Query(POSTSOCIAL);
+                queryPostSocial.include(["workspace", "post", "channel", "user"]);
+
+                queryPostSocial.equalTo("post", Post.id);
+                //queryPostMessageSocial.select(PostMessageArray);
+
+
+                queryPostSocial.first({
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+                }).then((PostSocialResult) => {
+
+                    // let PostFinal = new POST();
+                    let PostFinal = PostSocialResult.get("post");
+
+
+                    let indexCount = parseInt(PostSocialResult.get("algoliaIndexID"));
+
+                    splitObjectAndIndex({'user':user, 'object':PostFinal.toJSON(), 'className':'PostSocial', 'indexCount':indexCount, 'loop':false}, {
+                        success: function(count) {
+
+                            return cb2 (null, PostSocialResult);
+                        },
+                        error: function(error) {
+                            return cb2 (error);
+                        }
+                    });
+
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    console.log(error);
+                    return response.error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
                 });
 
-
-            } else {
-
-                return callback (null, PostMessage);
             }
+
+            async.parallel([
+                async.apply(updatePostMessagesAlgolia),
+                async.apply(updatePostsAlgolia)
+
+            ], function (err, results_Final) {
+                if (err) {
+                    response.error(err);
+                }
+                return cb (null, PostMessage);
+
+            });
+
 
         }
 
-        function updatePostsAlgolia (callback) {
-
-            if (postMessageSocial.get("isNew") === false) {
-
-                let indexCount = parseInt(postSocial.get("algoliaIndexID"));
-
-                splitObjectAndIndex({'user':user, 'object':Post.toJSON(), 'className':'PostSocial', 'indexCount':indexCount, 'loop':false}, {
-                    success: function(count) {
-
-                        return callback (null, Post);
-                    },
-                    error: function(error) {
-                        return callback (error);
-                    }
-                });
-
-
-            } else {
-
-                return callback (null, Post);
-            }
-
-        }
-
-
-        async.parallel([
-            async.apply(countPostMessageLikes),
-            async.apply(countPostMessageUnRead),
-            async.apply(countPostMessageVote),
-            //async.apply(updatePostsAlgolia),
-            async.apply(updatePostMessagesAlgolia)
+        async.waterfall([
+            async.apply(countPostMessageSocial),
+            async.apply(updateAlgolia),
 
         ], function (err, results_Final) {
             if (err) {
@@ -7030,6 +7185,12 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
             response.success();
         });
+
+
+
+
+
+
 
          }, (error) => {
             // The object was not retrieved successfully.
@@ -13818,7 +13979,6 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     //let postSocial = results[4];
                     let topAnswerForQuestionPost = results[3];
 
-                    postToSave = postToSave.toJSON();
                     postToSave.postQuestions = postMessageQuestions;
                     postToSave.chatMessages = postMessageComments;
                     //postToSave.PostSocial = postSocial;
@@ -13832,7 +13992,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     //console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
                     let PostSocial_txt = 'PostSocial';
 
-                    console.log("postToSave afterSave Post: " + JSON.stringify(postToSave));
+                    //console.log("postToSave afterSave Post: " + JSON.stringify(postToSave));
 
                     splitObjectAndIndex({'user':user, 'object':postToSave, 'className':'PostSocial', 'loop':true}, {
                         success: function (count) {
