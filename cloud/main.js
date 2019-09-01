@@ -6608,7 +6608,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
-    console.log("Starting afterSave PostMessageSocial: ");
+    console.log("Starting afterSave PostMessageSocial: " + JSON.stringify(req));
 
     let currentUser = req.user;
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
@@ -6904,7 +6904,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
             function countPostMessageVote(callback) {
 
-                console.log("starting countPostMessageVote: ");
+                console.log("starting countPostMessageVote: " + JSON.stringify(postMessageSocial));
 
 
                 if ((postMessageSocial.get("isNew") === true)) {
@@ -6912,7 +6912,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                     PostMessageToSave.increment("postMessageVoteCount");
 
 
-                    if (postMessageSocial.get("voteValue") === 0) {
+                    if (postMessageSocial.get("voteValue") === -1) {
 
 
                         PostMessageToSave.increment("numberOfDownVotes");
@@ -13213,7 +13213,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
         function getTopAnswerForQuestionPost(callback) {
 
-            console.log("starting getTopAnswerForQuestionPost function.");
+            console.log("starting getTopAnswerForQuestionPost function: " + JSON.stringify(PostObject));
 
             if (Post.type === 'question') {
 
