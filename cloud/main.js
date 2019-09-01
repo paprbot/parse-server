@@ -7123,7 +7123,33 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
                     let indexCount = parseInt(PostMessageSocialResult.get("algoliaIndexID"));
 
-                    splitObjectAndIndex({'user':user, 'object':PostMessage.toJSON(), 'className':'PostMessageSocial', 'indexCount':indexCount, 'loop':false}, {
+                    PostMessage.save(null, {
+
+                        useMasterKey: true,
+                        //sessionToken: sessionToken
+
+                    }).then((PostMessageSaved) => {
+                        // The object was retrieved successfully.
+                        //console.log("Result from get " + JSON.stringify(Workspace));
+
+                        console.log("done PostMessageSaved : " + JSON.stringify(PostMessageSaved));
+
+
+                        return cb2 (null, PostMessageSaved);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return cb2(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    /*splitObjectAndIndex({'user':user, 'object':PostMessage.toJSON(), 'className':'PostMessageSocial', 'indexCount':indexCount, 'loop':false}, {
                         success: function(count) {
 
                             console.log("done updatePostMessagesAlgolia: " + JSON.stringify(count));
@@ -7134,7 +7160,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                         error: function(error) {
                             return cb2 (error);
                         }
-                    });
+                    });*/
 
 
                 } else {
@@ -7147,6 +7173,34 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
             function updatePostsAlgolia (cb2) {
 
                 console.log("starting updatePostsAlgolia: ");
+
+                Post.save(null, {
+
+                    useMasterKey: true,
+                    //sessionToken: sessionToken
+
+                }).then((PostSaved) => {
+                    // The object was retrieved successfully.
+                    //console.log("Result from get " + JSON.stringify(Workspace));
+
+                    console.log("done PostSaved : " + JSON.stringify(PostSaved));
+
+
+                    return cb2 (null, PostSaved);
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return cb2(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                /*
 
 
                 let POSTSOCIAL = Parse.Object.extend("PostSocial");
@@ -7193,7 +7247,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
-                });
+                });*/
 
             }
 
