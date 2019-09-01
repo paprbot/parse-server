@@ -6904,7 +6904,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
             function countPostMessageVote(callback) {
 
-                console.log("starting countPostMessageVote: " + JSON.stringify(postMessageSocial));
+                console.log("starting countPostMessageVote: " + JSON.stringify(PostMessageToSave));
 
 
                 if ((postMessageSocial.get("isNew") === true)) {
