@@ -6526,7 +6526,9 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
         response.error("Please add a post pointer it's a required field.")
     } else {
 
-        let post = postMessageSocial.get("post");
+        post = postMessageSocial.get("post");
+        console.log("post: " + JSON.stringify(post));
+
 
     }
     if (!postMessageSocial.get("channel")) {
@@ -6588,8 +6590,13 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
         console.log("starting countPostMessageSocial: ");
 
         let PostMessageToSave = postMessage;
+        console.log("PostMessageToSave: " + JSON.stringify(PostMessageToSave));
+
         let PostMessageSocialResult = originalPostMessageSocial;
+        console.log("PostMessageSocialResult: " + JSON.stringify(PostMessageSocialResult));
+
         let PostToSave = post;
+        console.log("PostToSave: " + JSON.stringify(PostToSave));
 
 
         function countPostMessageLikes(callback) {
