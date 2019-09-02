@@ -7097,6 +7097,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
                     }
 
+                    console.log("PostMessageCountVote: " + JSON.stringify(PostMessageCountVote));
 
 
                     if (PostMessageCountVote) {
