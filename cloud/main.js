@@ -6906,102 +6906,164 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
                 console.log("starting countPostMessageVote: " + JSON.stringify(PostMessageToSave));
 
+                let postMessageSocialVoteValue = postMessageSocial.get("voteValue");
+                console.log("postMessageSocialVoteValue: " + JSON.stringify(postMessageSocialVoteValue));
 
-                if ((postMessageSocial.get("isNew") === true)) {
+                if (postMessageSocialVoteValue) {
 
-                    PostMessageToSave.increment("postMessageVoteCount");
+                    if ((postMessageSocial.get("isNew") === true)) {
 
-
-                    if (postMessageSocial.get("voteValue") === -1) {
-
-
-                        PostMessageToSave.increment("numberOfDownVotes");
-
-                        console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
+                        PostMessageToSave.increment("postMessageVoteCount");
 
 
-
-                        return callback(null, PostMessageToSave);
-
-                    }
-                    else if (postMessageSocial.get("voteValue") === 1) {
+                        if (postMessageSocialVoteValue === -1) {
 
 
-                        PostMessageToSave.increment("numberOfUpVotes");
-                        console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
+                            PostMessageToSave.increment("numberOfDownVotes");
+
+                            console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
 
 
 
-                        return callback(null, PostMessageToSave);
+                            return callback(null, PostMessageToSave);
+
+                        }
+                        else if (postMessageSocialVoteValue === 1) {
+
+
+                            PostMessageToSave.increment("numberOfUpVotes");
+                            console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
+
+
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+
+                        else {
+
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+
 
                     }
 
                     else {
 
+                        // postQuestionMessageVote already exists
+
+                        if (
+                            (postMessageSocialVoteValue === -1 ) && (PostMessageSocialResult.get("voteValue") === -1) ||
+                            (postMessageSocialVoteValue === 0 ) && (PostMessageSocialResult.get("voteValue") === 0) ||
+                            (postMessageSocialVoteValue === 1 ) && (PostMessageSocialResult.get("voteValue") === 1)
+
+
+                        ) {
+                            // same value as before do nothing
+
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+
+                        else if ((postMessageSocialVoteValue === 1) && PostMessageSocialResult.get("voteValue") === -1) {
+
+                            // User previously downVoted this question but now changed their mind and upVoted it.
+
+                            PostMessageToSave.increment("numberOfDownVotes", -1);
+                            PostMessageToSave.increment("numberOfUpVotes");
+
+                            console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
+                            console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
+
+
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+
+                        else if ((postMessageSocialVoteValue === 1) && PostMessageSocialResult.get("voteValue") === 0) {
+
+                            // User previously no state, but now he upVoted
+
+                            PostMessageToSave.increment("numberOfUpVotes");
+
+                            console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+
+                        else if (postMessageSocialVoteValue === 0 && PostMessageSocialResult.get("voteValue") === -1) {
+
+                            // User previously downvoted but now removed downvote
+
+                            PostMessageToSave.increment("numberOfDownVotes", -1);
+
+                            console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+                        else if (postMessageSocialVoteValue === 0 && PostMessageSocialResult.get("voteValue") === 1) {
+
+                            // User previously upVoted, but now user removes the upVote
+
+                            PostMessageToSave.increment("numberOfUpVotes", -1);
+
+                            console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+
+                        else if ((postMessageSocialVoteValue === -1) && PostMessageSocialResult.get("voteValue") === 1) {
+
+                            // User previously upvoted, but now downvoted
+
+                            PostMessageToSave.increment("numberOfDownVotes");
+                            PostMessageToSave.increment("numberOfUpVotes", -1);
+
+                            console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
+                            console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+
+                        else if ((postMessageSocialVoteValue === -1) && PostMessageSocialResult.get("voteValue") === 0) {
+
+                            // User previously no state, but now he downVoted
+
+                            PostMessageToSave.increment("numberOfDownVotes");
+
+                            console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+
+
+                    } else {
 
                         return callback(null, PostMessageToSave);
 
+
                     }
+
+
+                } else {
+
+                    return callback(null, PostMessageToSave);
 
 
                 }
 
-                else {
-
-                    // postQuestionMessageVote already exists
-
-                    if ((postMessageSocial.get("voteValue") === 0 ) && (PostMessageSocialResult.get("voteValue") === 0)) {
-                        // user previously downVoted but is downVoting again do nothing since it's already downVoted
-
-
-                        return callback(null, PostMessageToSave);
-
-                    }
-
-                    else if ((postMessageSocial.get("voteValue") === 1) && PostMessageSocialResult.get("voteValue") === 0) {
-
-                        // User previously downVoted this question but now changed their mind and upVoted it.
-
-                        PostMessageToSave.increment("numberOfDownVotes", -1);
-                        PostMessageToSave.increment("numberOfUpVotes");
-
-                        console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
-                        console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
 
 
 
-                        return callback(null, PostMessageToSave);
-
-                    }
-
-                    else if (postMessageSocial.get("voteValue") === 1 && PostMessageSocialResult.get("voteValue") === 1) {
-
-                        // User previously upVoted and is upVoting again, do nothing
-
-
-                        return callback(null, PostMessageToSave);
-
-                    }
-                    else if (postMessageSocial.get("voteValue") === 0 && PostMessageSocialResult.get("voteValue") === 1) {
-
-                        // User previously upVoted but changed their mind and now downVoted this question
-
-                        // User previously downVoted this question but now changed their mind and upVoted it.
-
-                        PostMessageToSave.increment("numberOfDownVotes");
-                        PostMessageToSave.increment("numberOfUpVotes", -1);
-
-                        console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
-                        console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
-
-
-
-                        return callback(null, PostMessageToSave);
-
-                    }
-
-
-                }
 
 
             }
