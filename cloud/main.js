@@ -6979,7 +6979,6 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                             console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
 
 
-
                             return callback(null, PostMessageToSave);
 
                         }
@@ -7046,11 +7045,12 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                         }
 
 
-                    } else {
+                        else {
 
-                        return callback(null, PostMessageToSave);
+                            return callback(null, PostMessageToSave);
 
 
+                        }
                     }
 
 
