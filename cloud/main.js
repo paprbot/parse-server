@@ -7111,6 +7111,9 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
                     }
 
+                    console.log("PostMessageToSaveFinal: " + JSON.stringify(PostMessageToSaveFinal));
+
+
                     PostMessageToSaveFinal.save(null, {
 
                         useMasterKey: true,
@@ -7119,6 +7122,9 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                     }).then((PostMessageObj) => {
                         // The object was retrieved successfully.
                         console.log("PostMessageObj: " + JSON.stringify(PostMessageObj));
+
+                        console.log("queryPostMessage: " + JSON.stringify(queryPostMessage));
+
 
 
                         queryPostMessage.first( {
@@ -7132,7 +7138,12 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
                             //PostMessage = PostMessageObject;
 
-                            return cb (null, PostMessageObject);
+                            console.log("PostMessageObject: " + JSON.stringify(PostMessageObject));
+
+                            PostMessageToSaveFinal = PostMessageObject;
+
+
+                            return cb (null, PostMessageToSaveFinal);
 
 
 
@@ -7171,9 +7182,9 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
         }
 
-        function updateAlgolia (cb, PostMessage) {
+        function updateAlgolia (cb, PostMessageToSaveFinal) {
 
-            console.log("starting updateAlgolia: ");
+            console.log("starting updateAlgolia: " + JSON.stringify(PostMessageToSaveFinal));
 
 
             function updatePostMessagesAlgolia (cb2) {
@@ -7181,11 +7192,9 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                 console.log("starting updatePostMessagesAlgolia: ");
 
 
-                if (postMessageSocial.get("isNew") === false) {
-
                     let indexCount = parseInt(PostMessageSocialResult.get("algoliaIndexID"));
 
-                    PostMessage.save(null, {
+                    /*PostMessageToSaveFinal.save(null, {
 
                         useMasterKey: true,
                         //sessionToken: sessionToken
@@ -7209,32 +7218,28 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                         useMasterKey: true
                         //sessionToken: sessionToken
 
-                    });
+                    });*/
 
-                    /*splitObjectAndIndex({'user':user, 'object':PostMessage.toJSON(), 'className':'PostMessageSocial', 'indexCount':indexCount, 'loop':false}, {
+                    splitObjectAndIndex({'user':user, 'object':PostMessageToSaveFinal.toJSON(), 'className':'PostMessageSocial', 'indexCount':indexCount, 'loop':false}, {
                         success: function(count) {
 
                             console.log("done updatePostMessagesAlgolia: " + JSON.stringify(count));
 
 
-                            return cb2 (null, PostMessage);
+                            return cb2 (null, PostMessageToSaveFinal);
                         },
                         error: function(error) {
                             return cb2 (error);
                         }
-                    });*/
+                    });
 
 
-                } else {
-
-                    return cb2 (null, PostMessage);
-                }
 
             }
 
             function updatePostsAlgolia (cb2) {
 
-                console.log("starting updatePostsAlgolia: ");
+                console.log("starting updatePostsAlgolia: " + JSON.stringify(Post));
 
                 Post.save(null, {
 
