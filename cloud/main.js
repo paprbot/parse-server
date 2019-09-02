@@ -6909,7 +6909,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                 let postMessageSocialVoteValue = postMessageSocial.get("voteValue");
                 console.log("postMessageSocialVoteValue: " + JSON.stringify(postMessageSocialVoteValue));
 
-                if (postMessageSocialVoteValue) {
+                if (postMessageSocialVoteValue === -1 || 0 || 1) {
 
                     if ((postMessageSocial.get("isNew") === true)) {
 
@@ -6962,6 +6962,8 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
                         ) {
                             // same value as before do nothing
+
+                            console.log("Save value no changes postMessageSocialVoteValue");
 
 
                             return callback(null, PostMessageToSave);
@@ -7047,6 +7049,9 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
                         else {
 
+                            console.log("Else in postMessageVoteValue");
+
+
                             return callback(null, PostMessageToSave);
 
 
@@ -7055,6 +7060,9 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
 
                 } else {
+
+                    console.log("No postMessageVoteValue: " + JSON.stringify(postMessageSocialVoteValue));
+
 
                     return callback(null, PostMessageToSave);
 
