@@ -6509,6 +6509,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
     }
 
     let postMessageSocial = req.object;
+    console.log("req beforeSave PostMessageSocial: " + JSON.stringify(req));
     let originalPostMessageSocial = req.original ? req.original : null;
     let workspace;
     let post;
@@ -12323,6 +12324,17 @@ function splitObjectAndIndex (request, response) {
                     return response.error(err);
                 } else if (resultsFinal.length > 0) {
 
+                    object.objectID = object.objectId + '-' + finalIndexCount;
+                    object._tags = tags;
+
+                    //console.log("final tags: " + JSON.stringify(tags));
+
+                    if (finalIndexCount === 1) {
+
+                        // let's make sure we also save the index =0 algolia object with * _tags
+
+                        object.objectID = object.objectId + '-' + '0';
+                    }
 
                     if (className === 'PostSocial') {
 
@@ -12330,7 +12342,149 @@ function splitObjectAndIndex (request, response) {
                         //console.log("post object: " + JSON.stringify(object));
 
                         object.PostSocial = resultsFinal;
-                        index = indexPosts;
+
+                        let postQuestionMessages = object.get("postQuestions"); // todo need to turn this into parse object
+
+                        async.map(postQuestionMessages, function (postQuestionMessage, cb1) {
+
+                            let POSTMESSAGE = Parse.Object.extend("PostMessage");
+                            let postMessage = new POSTMESSAGE();
+                            postMessage.id = postQuestionMessage.id;
+                            //console.log("workspace: " + JSON.stringify(workspace));
+
+                            //console.log("indexOf async.map: " + JSON.stringify(workspaceFollowers.indexOf(workspaceFollower)));
+
+                            let async_map_index = postQuestionMessages.indexOf(postQuestionMessage);
+
+                            var userObject = postQuestionMessages[async_map_index].get("user");
+                            //console.log("userObject: " + JSON.stringify(userObject));
+
+                            let queryRole = new Parse.Query(Parse.Role);
+
+                            let rolesArray;
+
+                            function getPostMessageSocial (callback) {
+
+                                let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
+                                let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
+
+                                queryPostMessageSocial.equalTo("PostMessage", postQuestionMessage.id);
+                                queryPostMessageSocial.equalTo("user", userObject.id);
+
+                                queryPostMessageSocial.first({
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                }).then((postMessageSocial) => {
+                                    // The object was retrieved successfully.
+
+                                    //let finalChannelFollowers = [];
+
+                                    if (postMessageSocial.length > 0) {
+
+
+                                        return callback (null, postMessageSocial);
+
+
+
+                                    } else {
+
+                                        return callback (null, postMessageSocial);
+
+                                    }
+
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    return callback (error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+                            }
+
+
+                            async.parallel([
+                                async.apply(getPostMessageSocial)
+
+
+                            ], function (err, results) {
+                                if (err) {
+                                    return cb1(err);
+                                }
+
+
+                                if (results.length > 0) {
+
+                                    let PostMessageSocial = results[0];
+
+                                    if (PostMessageSocial) {
+
+                                        postQuestionMessage.set("PostMessageSocial", PostMessageSocial);
+
+                                        return cb1(null, postQuestionMessage);
+
+
+                                    }
+                                    else {
+
+                                        // postMessageSocial doesn't exist, user doesn't have any reactions on postMessage.
+
+                                        return cb1(null, postQuestionMessage);
+
+
+                                    }
+
+
+                                }
+                                else {
+
+                                    return cb1(null, postQuestionMessage);
+
+                                }
+
+                            });
+
+
+                        }, function (err, postQuestionMessagesSocialResult) {
+
+                            console.log("postQuestionMessagesSocialResult length: " + JSON.stringify(postQuestionMessagesSocialResult.length));
+
+                            if (err) {
+                                return response.error(err);
+                            } else {
+
+                                object.postQuestions = postQuestionMessagesSocialResult;
+                                index = indexPosts;
+
+                                index.partialUpdateObject(object, true, function(err, content) {
+                                    if (err) return response.error(err);
+
+                                    console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
+
+                                    if (loop === true ) {
+
+                                        splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true, 'workspaceFollowers': workspaceFollowers}, response);
+
+                                    } else if (loop === false) {
+
+                                        return response.success(count);
+                                    }
+
+
+                                });
+
+
+
+                            }
+
+                        });
+
+
 
                     }
                     else if (className === 'workspace_follower') {
@@ -12367,34 +12521,33 @@ function splitObjectAndIndex (request, response) {
                         return response.error("this className is not supported, please use a supported className");
                     }
 
-                    object.objectID = object.objectId + '-' + finalIndexCount;
-                    object._tags = tags;
+                    if (className !== 'PostSocial') {
 
-                    //console.log("final tags: " + JSON.stringify(tags));
+                        index.partialUpdateObject(object, true, function (err, content) {
+                            if (err) return response.error(err);
 
-                    if (finalIndexCount === 1) {
+                            console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
 
-                        // let's make sure we also save the index =0 algolia object with * _tags
+                            if (loop === true) {
 
-                        object.objectID = object.objectId + '-' + '0';
+                                splitObjectAndIndex({
+                                    'count': count,
+                                    'user': user,
+                                    'indexCount': indexCount,
+                                    'object': object,
+                                    'className': className,
+                                    'loop': true,
+                                    'workspaceFollowers': workspaceFollowers
+                                }, response);
+
+                            } else if (loop === false) {
+
+                                return response.success(count);
+                            }
+
+
+                        });
                     }
-
-                    index.partialUpdateObject(object, true, function(err, content) {
-                        if (err) return response.error(err);
-
-                        console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
-
-                        if (loop === true ) {
-
-                            splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true, 'workspaceFollowers': workspaceFollowers}, response);
-
-                        } else if (loop === false) {
-
-                            return response.success(count);
-                        }
-
-
-                    });
 
 
                 }
@@ -12413,6 +12566,9 @@ function splitObjectAndIndex (request, response) {
                 let resultsNone = [];
                 // no results for postSocial or workspace_follower
 
+                object.objectID = object.objectId + '-' + '0';
+                console.log("final object before saving to algolia: " + JSON.stringify(object));
+
                 if (className === 'PostSocial') {
 
                     //object = results[0].get("post");
@@ -12420,6 +12576,140 @@ function splitObjectAndIndex (request, response) {
 
                     object.PostSocial = resultsNone;
                     index = indexPosts;
+
+                    let postQuestionMessages = object.get("postQuestions"); // todo need to turn this into parse object
+
+                    async.map(postQuestionMessages, function (postQuestionMessage, cb1) {
+
+                        let POSTMESSAGE = Parse.Object.extend("PostMessage");
+                        let postMessage = new POSTMESSAGE();
+                        postMessage.id = postQuestionMessage.id;
+                        //console.log("workspace: " + JSON.stringify(workspace));
+
+                        //console.log("indexOf async.map: " + JSON.stringify(workspaceFollowers.indexOf(workspaceFollower)));
+
+                        let async_map_index = postQuestionMessages.indexOf(postQuestionMessage);
+
+                        var userObject = postQuestionMessages[async_map_index].get("user");
+                        //console.log("userObject: " + JSON.stringify(userObject));
+
+
+                        function getPostMessageSocial (callback) {
+
+                            let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
+                            let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
+
+                            queryPostMessageSocial.equalTo("PostMessage", postQuestionMessage.id);
+                            queryPostMessageSocial.equalTo("user", userObject.id);
+
+                            queryPostMessageSocial.first({
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            }).then((postMessageSocial) => {
+                                // The object was retrieved successfully.
+
+                                //let finalChannelFollowers = [];
+
+                                if (postMessageSocial.length > 0) {
+
+
+                                    return callback (null, postMessageSocial);
+
+
+
+                                } else {
+
+                                    return callback (null, postMessageSocial);
+
+                                }
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+                        }
+
+
+                        async.parallel([
+                            async.apply(getPostMessageSocial)
+
+
+                        ], function (err, results) {
+                            if (err) {
+                                return cb1(err);
+                            }
+
+
+                            if (results.length > 0) {
+
+                                let PostMessageSocial = results[0];
+
+                                if (PostMessageSocial) {
+
+                                    postQuestionMessage.set("PostMessageSocial", PostMessageSocial);
+
+                                    return cb1(null, postQuestionMessage);
+
+
+                                }
+                                else {
+
+                                    // postMessageSocial doesn't exist, user doesn't have any reactions on postMessage.
+
+                                    return cb1(null, postQuestionMessage);
+
+
+                                }
+
+
+                            }
+                            else {
+
+                                return cb1(null, postQuestionMessage);
+
+                            }
+
+                        });
+
+
+                    }, function (err, postQuestionMessagesSocialResult) {
+
+                        console.log("postQuestionMessagesSocialResult length: " + JSON.stringify(postQuestionMessagesSocialResult.length));
+
+                        if (err) {
+                            return response.error(err);
+                        } else {
+
+                            object.postQuestions = postQuestionMessagesSocialResult;
+                            index = indexPosts;
+
+                            index.partialUpdateObject(object, true, function (err, content) {
+                                if (err) return response.error(err);
+
+                                console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
+
+                                let Final_Time = process.hrtime(time);
+                                console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                return response.success(count);
+
+
+                            });
+
+
+
+                        }
+
+                    });
 
                 }
                 else if (className === 'workspace_follower') {
@@ -12453,21 +12743,23 @@ function splitObjectAndIndex (request, response) {
 
                 }
 
-                object.objectID = object.objectId + '-' + '0';
-                console.log("final object before saving to algolia: " + JSON.stringify(object));
 
-                index.partialUpdateObject(object, true, function(err, content) {
-                    if (err) return response.error(err);
-
-                    console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
-
-                    let Final_Time = process.hrtime(time);
-                    console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
-
-                    return response.success(count);
+                if (className !== 'PostSocial') {
 
 
-                });
+                    index.partialUpdateObject(object, true, function (err, content) {
+                        if (err) return response.error(err);
+
+                        console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
+
+                        let Final_Time = process.hrtime(time);
+                        console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                        return response.success(count);
+
+
+                    });
+                }
 
 
 
@@ -13660,8 +13952,6 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     }).then((Post) => {
 
 
-
-
         let postACL = Post.getACL();
         //console.log("post: " + JSON.stringify(Post));
 
@@ -13782,133 +14072,6 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
 
                 return callback(null, Post);
-
-            }
-
-            function getPostMessageQuestions_1 (callback) {
-
-                console.log("starting getPostMessageQuestions function.");
-
-                let postQuestion = new POST();
-                postQuestion.id = post.id;
-
-                let relationPostQuestion = postQuestion.relation("postQuestions");
-
-                let querypostQuestion = relationPostQuestion.query();
-                //querypostQuestion.equalTo("archive", false);
-                querypostQuestion.descending("likesCount");
-
-                querypostQuestion.limit(10);
-                //querypostQuestion.include( ["user"] );
-                querypostQuestion.find({
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-                }).then((postQuestions) => {
-
-                    //console.log("postQuestions: " + JSON.stringify(postQuestions));
-
-
-                    if (postQuestions.length !== 0) {
-
-                        //console.log("postQuestions exist");
-
-                        return callback(null, postQuestions);
-
-
-                    } else {
-
-                        let postQuestions = [];
-                        // no workspaceFollowers to delete return
-                        return callback(null, postQuestions);
-
-                    }
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    console.log(error);
-                    let postQuestions = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, postQuestions);
-                }, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-
-            }
-
-            function getPostSocial(callback) {
-
-                let POSTSOCIAL = Parse.Object.extend("PostSocial");
-                let queryPostSocial = new Parse.Query(POSTSOCIAL);
-                //queryPostSocial.equalTo("workspace", workspace);
-                //queryPostSocial.equalTo("channel", channel);
-                queryPostSocial.equalTo("post", post);
-                //queryPostSocial.equalTo("archive", false);
-                queryPostSocial.limit(1000);
-                queryPostSocial.find({
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-                }).then((PostSocials) => {
-
-
-                    if (PostSocials.length !== 0) {
-
-
-                        async.map(PostSocials, function (postSocial, cb) {
-
-                            let POSTSOCIAL = Parse.Object.extend("PostSocial");
-                            let PostSocial = new POSTSOCIAL();
-
-                            PostSocial = simplifyPostSocial(postSocial);
-                            //console.log("simplifyPostSocial: " + JSON.stringify(PostSocial));
-
-                            postSocial = PostSocial;
-
-                            return cb(null, postSocial);
-
-
-                        }, function (err, PostSocials) {
-
-                            //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
-
-                            if (err) {
-                                return callback(err);
-                            } else {
-
-                                return callback(null, PostSocials);
-
-                            }
-
-                        });
-
-
-                    } else {
-
-                        let PostSocials = [];
-                        // no workspaceFollowers to delete return
-                        return callback(null, PostSocials);
-
-                    }
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    console.log(error);
-                    let PostSocials = [];
-                    // no workspaceFollowers to delete return
-                    return callback(null, PostSocials);
-                }, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
 
             }
 
@@ -14146,8 +14309,6 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 async.apply(getPostMessageQuestions),
                 async.apply(getPostMessageComments),
                 async.apply(getTopAnswerForQuestionPost)
-                //async.apply(getPostSocial)
-
 
             ], function (err, results) {
                 if (err) {
