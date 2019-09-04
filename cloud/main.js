@@ -12344,24 +12344,22 @@ function splitObjectAndIndex (request, response) {
                         object.PostSocial = resultsFinal;
 
                         let postQuestionMessages = object.get("postQuestions"); // todo need to turn this into parse object
+                        console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
 
                         async.map(postQuestionMessages, function (postQuestionMessage, cb1) {
 
                             let POSTMESSAGE = Parse.Object.extend("PostMessage");
                             let postMessage = new POSTMESSAGE();
                             postMessage.id = postQuestionMessage.id;
-                            //console.log("workspace: " + JSON.stringify(workspace));
+                            console.log("postMessage: " + JSON.stringify(postMessage));
 
-                            //console.log("indexOf async.map: " + JSON.stringify(workspaceFollowers.indexOf(workspaceFollower)));
+                            console.log("indexOf async.map: " + JSON.stringify(postQuestionMessages.indexOf(postQuestionMessage)));
 
                             let async_map_index = postQuestionMessages.indexOf(postQuestionMessage);
 
                             var userObject = postQuestionMessages[async_map_index].get("user");
-                            //console.log("userObject: " + JSON.stringify(userObject));
+                            console.log("userObject: " + JSON.stringify(userObject));
 
-                            let queryRole = new Parse.Query(Parse.Role);
-
-                            let rolesArray;
 
                             function getPostMessageSocial (callback) {
 
@@ -12380,6 +12378,8 @@ function splitObjectAndIndex (request, response) {
                                     // The object was retrieved successfully.
 
                                     //let finalChannelFollowers = [];
+                                    console.log("postMessageSocial: " + JSON.stringify(postMessageSocial));
+
 
                                     if (postMessageSocial.length > 0) {
 
@@ -12425,6 +12425,9 @@ function splitObjectAndIndex (request, response) {
                                     if (PostMessageSocial) {
 
                                         postQuestionMessage.set("PostMessageSocial", PostMessageSocial);
+                                        console.log("postMessageSocial: " + JSON.stringify(postMessageSocial));
+
+
 
                                         return cb1(null, postQuestionMessage);
 
