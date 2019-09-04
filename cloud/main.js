@@ -6366,7 +6366,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
 
     }
 
-    // function to archive/unarchive postMessageSocial relatio if a post is archived/unarchived
+    // function to archive/unarchive postMessageSocial relation if a post is archived/unarchived
     function archivePostMessageSocial (callback) {
         const NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
@@ -7037,14 +7037,14 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
                 }).then((PostMessageObj) => {
                     // The object was retrieved successfully.
-                    console.log("PostMessageObj: " + JSON.stringify(PostMessageObj));
+                    console.log("PostMessageObj: " + JSON.stringify(PostMessageObj.id));
 
-                    console.log("queryPostMessage: " + JSON.stringify(queryPostMessage));
+                    //console.log("queryPostMessage: " + JSON.stringify(queryPostMessage));
 
                     let queryPostMessage = new Parse.Query(POSTMESSAGE);
                     queryPostMessage.include( ["user"] );
                     //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
-                    queryPostMessage.equalTo("objectId", postMessage.id);
+                    queryPostMessage.equalTo("objectId", PostMessageObj.id);
 
 
                     queryPostMessage.first( {
@@ -14522,7 +14522,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                 let queryPostQuestionMessage= new Parse.Query(POSTMESSAGE);
                 //queryPostQuestionMessage.equalTo("workspace", workspace);
                 //queryPostQuestionMessage.equalTo("channel", channel);
-                queryPostQuestionMessage.equalTo("parentPostMessage", PostMessage);
+                queryPostQuestionMessage.equalTo("parentPostMessage", PostMessage.id);
                 //queryPostQuestionMessage.equalTo("archive", false);
                 queryPostQuestionMessage.equalTo("type", "answer");
                 queryPostQuestionMessage.descending("voteRank");
@@ -14552,6 +14552,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
                     console.log(error);
+                    console.log("getTopAnswerForQuestionMessage" );
                     let postMessage = [];
                     // no workspaceFollowers to delete return
                     return callback(null, postMessage);
