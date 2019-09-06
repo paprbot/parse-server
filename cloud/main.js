@@ -7244,7 +7244,33 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
                     });*/
 
-                    splitObjectAndIndex({'user':user, 'object':PostMessage.toJSON(), 'className':'PostMessageSocial', 'indexCount':indexCount, 'loop':false}, {
+                    PostMessage.save(null, {
+
+                        useMasterKey: true,
+                        //sessionToken: sessionToken
+
+                    }).then((PostMessageSaved) => {
+                        // The object was retrieved successfully.
+                        //console.log("Result from get " + JSON.stringify(Workspace));
+
+                        console.log("done PostMessageSaved : " + JSON.stringify(PostMessageSaved));
+
+
+                        return cb2 (null, PostMessageSaved);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return cb2(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    /*splitObjectAndIndex({'user':user, 'object':PostMessage.toJSON(), 'className':'PostMessageSocial', 'indexCount':indexCount, 'loop':false}, {
                         success: function(count) {
 
                             console.log("done updatePostMessagesAlgolia: " + JSON.stringify(count));
@@ -7255,7 +7281,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                         error: function(error) {
                             return cb2 (error);
                         }
-                    });
+                    });*/
 
 
 
@@ -12339,7 +12365,7 @@ function splitObjectAndIndex (request, response) {
                     if (className === 'PostSocial') {
 
                         //object = results[0].get("post");
-                        //console.log("post object: " + JSON.stringify(object));
+                        console.log("post object: " + JSON.stringify(object));
 
                         object.PostSocial = resultsFinal;
 
