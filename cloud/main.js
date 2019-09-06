@@ -12372,14 +12372,18 @@ function splitObjectAndIndex (request, response) {
 
                         if (object.type === 'post') {
 
-                            let postQuestionMessages = JSON.parse(object).get("postQuestions");
-                            console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
+                            console.log("Starting post section in PostSocial in SplitObjectAndIndex");
+
 
                             let postQuestionMessages1 = object.postQuestions;
                             console.log("postQuestionMessages1: " + JSON.stringify(postQuestionMessages1));
 
                             let postQuestionMessages2 = object['postQuestions'];
                             console.log("postQuestionMessages2: " + JSON.stringify(postQuestionMessages2));
+
+                            let postQuestionMessages = JSON.parse(object).get("postQuestions");
+                            console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
+
 
                             async.map(postQuestionMessages, function (postQuestionMessage, cb1) {
 
