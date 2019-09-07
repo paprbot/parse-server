@@ -12333,7 +12333,7 @@ function splitObjectAndIndex (request, response) {
                 else if (className === 'workspace_follower' || className === 'PostMessageSocial'  || className === 'Role' ) {
 
                     ResultObject = result;
-                    //console.log("ResultObject: " + JSON.stringify(ResultObject));
+                    console.log("ResultObject " + JSON.stringify(className) + ": " + JSON.stringify(ResultObject));
 
                 }
 
@@ -12368,6 +12368,9 @@ function splitObjectAndIndex (request, response) {
                         console.log("post object: " + JSON.stringify(object));
 
                         object.PostSocial = resultsFinal;
+
+                        console.log("post splitObjectAndIndex object: " + JSON.stringify(object));
+
 
 
                         if (object.type === 'post') {
