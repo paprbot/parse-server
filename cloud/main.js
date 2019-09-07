@@ -12393,8 +12393,8 @@ function splitObjectAndIndex (request, response) {
 
                                 let POSTMESSAGE = Parse.Object.extend("PostMessage");
                                 let postMessage = new POSTMESSAGE();
-                                postMessage.id = postQuestionMessage.id;
-                                console.log("postMessage: " + JSON.stringify(postMessage));
+                                postMessage.id = postQuestionMessage.objectId;
+                                console.log("postMessage n: " + JSON.stringify(postMessage));
 
                                 console.log("indexOf async.map: " + JSON.stringify(postQuestionMessages.indexOf(postQuestionMessage)));
 
