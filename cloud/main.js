@@ -12476,8 +12476,8 @@ function splitObjectAndIndex (request, response) {
 
                                         if (PostMessageSocial) {
 
-                                            postQuestionMessage.set("PostMessageSocial", PostMessageSocial);
-                                            console.log("postMessageSocial: " + JSON.stringify(PostMessageSocial));
+                                            postQuestionMessage.PostMessageSocial = PostMessageSocial;
+                                            console.log("done postMessageSocial: " + JSON.stringify(PostMessageSocial));
 
 
 
