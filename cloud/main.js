@@ -12403,7 +12403,7 @@ function splitObjectAndIndex (request, response) {
 
                                 let async_map_index = postQuestionMessages.indexOf(postQuestionMessage);
 
-                                var userObject = postQuestionMessages[async_map_index].get("user");
+                                let userObject = postQuestionMessage['user'];
                                 console.log("userObject: " + JSON.stringify(userObject));
 
 
