@@ -12412,8 +12412,12 @@ function splitObjectAndIndex (request, response) {
                                     let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
                                     let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
 
-                                    queryPostMessageSocial.equalTo("PostMessage", postQuestionMessage.id);
-                                    queryPostMessageSocial.equalTo("user", userObject.id);
+                                    console.log("PostMessage: " + JSON.stringify(postQuestionMessage.objectId));
+                                    console.log("user: " + JSON.stringify(userObject.objectId));
+
+
+                                    queryPostMessageSocial.equalTo("PostMessage", postQuestionMessage.objectId);
+                                    queryPostMessageSocial.equalTo("user", userObject.objectId);
 
                                     queryPostMessageSocial.first({
 
@@ -12435,6 +12439,8 @@ function splitObjectAndIndex (request, response) {
 
 
                                         } else {
+
+                                            let postMessageSocial = [];
 
                                             return callback (null, postMessageSocial);
 
@@ -12471,7 +12477,7 @@ function splitObjectAndIndex (request, response) {
                                         if (PostMessageSocial) {
 
                                             postQuestionMessage.set("PostMessageSocial", PostMessageSocial);
-                                            console.log("postMessageSocial: " + JSON.stringify(postMessageSocial));
+                                            console.log("postMessageSocial: " + JSON.stringify(PostMessageSocial));
 
 
 
