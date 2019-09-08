@@ -12403,25 +12403,22 @@ function splitObjectAndIndex (request, response) {
 
                                 let async_map_index = postQuestionMessages.indexOf(postQuestionMessage);
 
-                                let userObject = postQuestionMessage['user'];
+                                let USEROBJECT = Parse.Object.extend("_User");
+                                let userObject = new USEROBJECT();
+                                userObject.id = postQuestionMessage['user'].objectId;
                                 console.log("userObject: " + JSON.stringify(userObject));
-
 
                                 function getPostMessageSocial (callback) {
 
                                     let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
                                     let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
 
-                                    console.log("PostMessage: " + JSON.stringify(postQuestionMessage['objectId']));
-                                    console.log("user: " + JSON.stringify(userObject['objectId']));
+                                    console.log("PostMessage: " + JSON.stringify(postMessage.id));
+                                    console.log("user: " + JSON.stringify(userObject.id));
+                                    
 
-                                    let userId = JSON.parse(userObject);
-                                    console.log("userId: " + JSON.stringify(userId));
-
-
-
-                                    queryPostMessageSocial.equalTo("postMessage", postQuestionMessage['objectId']);
-                                    queryPostMessageSocial.equalTo("user", userObject['objectId']);
+                                    queryPostMessageSocial.equalTo("postMessage", postMessage.id);
+                                    queryPostMessageSocial.equalTo("user", userObject.id);
 
                                     queryPostMessageSocial.first({
 
