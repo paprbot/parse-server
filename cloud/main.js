@@ -12263,7 +12263,16 @@ function splitObjectAndIndex (request, response) {
 
     }
 
-    globalQuery.limit(10);
+    if (className === 'PostSocial') {
+        globalQuery.limit(1);
+        
+    } else {
+
+        globalQuery.limit(10);
+
+
+    }
+
     globalQuery.skip(count);
 
     globalQuery.find({
@@ -12406,7 +12415,7 @@ function splitObjectAndIndex (request, response) {
 
                                 let USEROBJECT = Parse.Object.extend("_User");
                                 let userObject = new USEROBJECT();
-                                userObject.id = postQuestionMessage['user'].objectId;
+                                userObject.id = object.PostSocial.user.objectId;
                                 console.log("userObject: " + JSON.stringify(userObject));
 
                                 function getPostMessageSocial (callback) {
