@@ -12407,15 +12407,15 @@ function splitObjectAndIndex (request, response) {
                                 let USEROBJECT = Parse.Object.extend("_User");
                                 let userObject = new USEROBJECT();
                                 userObject.id = postQuestionMessage['user'].objectId;
-                                //console.log("userObject: " + JSON.stringify(userObject));
+                                console.log("userObject: " + JSON.stringify(userObject));
 
                                 function getPostMessageSocial (callback) {
 
                                     let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
                                     let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
 
-                                    //console.log("PostMessage: " + JSON.stringify(postMessage.id));
-                                    //console.log("user: " + JSON.stringify(userObject.id));
+                                    console.log("PostMessage: " + JSON.stringify(postMessage.id));
+                                    console.log("user: " + JSON.stringify(userObject.id));
 
 
                                     queryPostMessageSocial.equalTo("postMessage", postMessage);
@@ -12430,15 +12430,13 @@ function splitObjectAndIndex (request, response) {
                                         // The object was retrieved successfully.
 
                                         //let finalChannelFollowers = [];
-                                        //console.log("postMessageSocial: " + JSON.stringify(postMessageSocial));
+                                        console.log("postMessageSocial: " + JSON.stringify(postMessageSocial));
 
 
                                         if (postMessageSocial) {
 
                                             postMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
                                             console.log("postMessageSocial: " + JSON.stringify(postMessageSocial));
-
-
 
                                             return callback (null, postMessageSocial);
 
@@ -12501,6 +12499,8 @@ function splitObjectAndIndex (request, response) {
                                             console.log("postMessageSocial doesn't exist, user doesn't have any reactions on postMessage");
 
                                             console.log("postMessageSocial doesn't exist, postQuestionMessage: " + JSON.stringify(postQuestionMessage));
+
+                                            postQuestionMessage.PostMessageSocial = null;
 
                                             return cb1(null, postQuestionMessage);
 
