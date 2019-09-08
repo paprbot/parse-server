@@ -12474,11 +12474,15 @@ function splitObjectAndIndex (request, response) {
                                     if (results.length > 0) {
 
                                         let PostMessageSocial = results[0];
+                                        console.log("done postMessageSocial results: " + JSON.stringify(results));
+
 
                                         if (PostMessageSocial) {
 
                                             postQuestionMessage.PostMessageSocial = PostMessageSocial;
                                             console.log("done postMessageSocial: " + JSON.stringify(PostMessageSocial));
+
+                                            console.log("done postQuestionMessage: " + JSON.stringify(postQuestionMessage));
 
 
 
@@ -12489,6 +12493,9 @@ function splitObjectAndIndex (request, response) {
                                         else {
 
                                             // postMessageSocial doesn't exist, user doesn't have any reactions on postMessage.
+                                            console.log("postMessageSocial doesn't exist, user doesn't have any reactions on postMessage");
+
+                                            console.log("postMessageSocial doesn't exist, postQuestionMessage: " + JSON.stringify(postQuestionMessage));
 
                                             return cb1(null, postQuestionMessage);
 
