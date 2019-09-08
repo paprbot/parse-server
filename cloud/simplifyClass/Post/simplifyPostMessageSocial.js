@@ -16,9 +16,11 @@ function simplifyPostMessageSocialQuestion (PostMessageSocial) {
     if (postMessageSocial.channel) {delete postMessageSocial.channel;}
     if (postMessageSocial.archive === false || postMessageSocial.archive === true) {delete postMessageSocial.archive;}
     if (postMessageSocial.postMessage) {delete postMessageSocial.postMessage;}
-    if (postMessageSocial.voteValue) {delete postMessageSocial.voteValue;}
+    if (postMessageSocial.voteValue === 0 || postMessageSocial.voteValue === -1 || postMessageSocial.voteValue === 1) {delete postMessageSocial.voteValue;}
     if (postMessageSocial.isNew === false || postMessageSocial.isNew === true) {delete postMessageSocial.isNew;}
     if (postMessageSocial.algoliaIndexID) {delete postMessageSocial.algoliaIndexID;}
+    if (postMessageSocial.createdAt) {delete postMessageSocial.createdAt;}
+    if (postMessageSocial.updatedAt) {delete postMessageSocial.updatedAt;}
 
     return postMessageSocial;
 }
