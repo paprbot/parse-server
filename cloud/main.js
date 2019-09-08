@@ -12387,7 +12387,7 @@ function splitObjectAndIndex (request, response) {
 
                         object.PostSocial = resultsFinal;
 
-                        //console.log("post splitObjectAndIndex object: " + JSON.stringify(object));
+                        console.log("post splitObjectAndIndex object: " + JSON.stringify(object));
 
 
 
@@ -12400,7 +12400,7 @@ function splitObjectAndIndex (request, response) {
                             //console.log("postQuestionMessages1: " + JSON.stringify(postQuestionMessages1));
 
                             let postQuestionMessages = object['postQuestions'];
-                            //console.log("postQuestionMessages2: " + JSON.stringify(postQuestionMessages));
+                            console.log("postQuestionMessages2: " + JSON.stringify(postQuestionMessages));
 
                             //let postQuestionMessages = JSON.parse(object).get("postQuestions");
                             //console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
@@ -12409,22 +12409,22 @@ function splitObjectAndIndex (request, response) {
 
                                 async.map(postQuestionMessages, function (postQuestionMessage, cb1) {
 
-                                    //console.log("starting async.map postQuestionMessages ");
+                                    console.log("starting async.map postQuestionMessages ");
 
-                                    //console.log("postQuestionMessage: " + JSON.stringify(postQuestionMessage));
+                                    console.log("postQuestionMessage: " + JSON.stringify(postQuestionMessage));
 
                                     let POSTMESSAGE = Parse.Object.extend("PostMessage");
                                     let postMessage = new POSTMESSAGE();
                                     postMessage.id = postQuestionMessage.objectId;
-                                    //console.log("postMessage n: " + JSON.stringify(postMessage));
+                                    console.log("postMessage n: " + JSON.stringify(postMessage));
 
-                                    //console.log("indexOf async.map: " + JSON.stringify(postQuestionMessages.indexOf(postQuestionMessage)));
+                                    console.log("indexOf async.map: " + JSON.stringify(postQuestionMessages.indexOf(postQuestionMessage)));
 
                                     let async_map_index = postQuestionMessages.indexOf(postQuestionMessage);
 
                                     let USEROBJECT = Parse.Object.extend("_User");
                                     let userObject = new USEROBJECT();
-                                    userObject.id = object.PostSocial.user.objectId;
+                                    userObject.id = object.PostSocial[0].user.objectId;
                                     console.log("userObject: " + JSON.stringify(userObject));
 
                                     function getPostMessageSocial (callback) {
