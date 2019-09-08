@@ -12412,12 +12412,16 @@ function splitObjectAndIndex (request, response) {
                                     let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
                                     let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
 
-                                    console.log("PostMessage: " + JSON.stringify(postQuestionMessage.objectId));
-                                    console.log("user: " + JSON.stringify(userObject.objectId));
+                                    console.log("PostMessage: " + JSON.stringify(postQuestionMessage['objectId']));
+                                    console.log("user: " + JSON.stringify(userObject['objectId']));
+
+                                    let userId = JSON.parse(userObject);
+                                    console.log("userId: " + JSON.stringify(userId));
 
 
-                                    queryPostMessageSocial.equalTo("postMessage", postQuestionMessage.objectId);
-                                    queryPostMessageSocial.equalTo("user", userObject.objectId);
+
+                                    queryPostMessageSocial.equalTo("postMessage", postQuestionMessage['objectId']);
+                                    queryPostMessageSocial.equalTo("user", userObject['objectId']);
 
                                     queryPostMessageSocial.first({
 
