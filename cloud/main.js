@@ -14525,14 +14525,14 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                     postSocial.save(null, {
 
-                        useMasterKey: true,
-                        sessionToken: sessionToken
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
                     }).then((PostSocial) => {
                         // The object was retrieved successfully.
                         //console.log("Result from get " + JSON.stringify(Workspace));
 
-                        //console.log("done PostMessageSaved : " + JSON.stringify(PostMessageSaved));
+                        console.log("done PostSocial : " + JSON.stringify(PostSocial));
 
 
                         return callback (null, PostSocial);
@@ -14544,8 +14544,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         return callback(error);
                     }, {
 
-                        useMasterKey: true,
-                        sessionToken: sessionToken
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
                     });
 
