@@ -28,6 +28,7 @@ function simplifyPost (Post) {
     if (post.chatMessageCount) {delete post.chatMessageCount;}
     if (post.chatMessageUnReadCount) {delete post.chatMessageUnReadCount;}
     if (post.postSocial) {delete post.postSocial;}
+    if (post.isNew === true || post.isNew === false) {delete post.isNew;}
 
 
     return post;
