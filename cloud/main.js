@@ -12238,7 +12238,7 @@ function splitObjectAndIndex (request, response) {
     //console.log("count: " + JSON.stringify(count));
 
     let indexCount = (request['indexCount'])? request['indexCount'] : 0;
-    //console.log("indexCount: " + JSON.stringify(indexCount));
+    console.log("indexCount: " + JSON.stringify(indexCount));
 
     let loop = request['loop'];
 
@@ -12295,7 +12295,7 @@ function splitObjectAndIndex (request, response) {
             let tags = ['*'];
 
             indexCount = indexCount + 1;
-            //console.log("indexCount: " + JSON.stringify(indexCount));
+            console.log("indexCount after result: " + JSON.stringify(indexCount));
 
             async.map(results, function (result, cb) {
 
@@ -12325,7 +12325,7 @@ function splitObjectAndIndex (request, response) {
                     finalIndexCount = indexCount.toString();
                     ResultObject.set("algoliaIndexID", finalIndexCount);
 
-                    //console.log("result.get.algoliaIndexID: " + JSON.stringify(ResultObject.get("algoliaIndexID")));
+                    console.log("result.get.algoliaIndexID finalIndexCount: " + JSON.stringify(finalIndexCount));
 
                     ResultObject.save(null, {
 
@@ -12337,7 +12337,18 @@ function splitObjectAndIndex (request, response) {
                 } else {
 
                     // algoliaIndexID already exists let's use it
-                    finalIndexCount = result.get("algoliaIndexID");
+                    if (loop === false) {
+                        finalIndexCount = result.get("algoliaIndexID");
+                        console.log("loop false finalIndexCount: " + JSON.stringify(finalIndexCount));
+
+
+                    } else {
+
+                        finalIndexCount = indexCount.toString();
+                        console.log("loop true finalIndexCount: " + JSON.stringify(finalIndexCount));
+
+
+                    }
 
                 }
 
@@ -12373,7 +12384,7 @@ function splitObjectAndIndex (request, response) {
 
                     //console.log("final tags: " + JSON.stringify(tags));
 
-                    if (finalIndexCount === 1) {
+                    if (finalIndexCount === '1') {
 
                         // let's make sure we also save the index =0 algolia object with * _tags
 
