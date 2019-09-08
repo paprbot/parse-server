@@ -12560,7 +12560,7 @@ function splitObjectAndIndex (request, response) {
 
                                         index = indexPosts;
 
-                                        index.partialUpdateObject(object, true, function(err, content) {
+                                        index.saveObjects(object, true, function(err, content) {
                                             if (err) return response.error(err);
 
                                             console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
@@ -12588,7 +12588,7 @@ function splitObjectAndIndex (request, response) {
 
                                 index = indexPosts;
 
-                                index.partialUpdateObject(object, true, function (err, content) {
+                                index.saveObjects(object, true, function (err, content) {
                                     if (err) return response.error(err);
 
                                     console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
@@ -12625,7 +12625,7 @@ function splitObjectAndIndex (request, response) {
 
                             index = indexPosts;
 
-                            index.partialUpdateObject(object, true, function (err, content) {
+                            index.saveObjects(object, true, function (err, content) {
                                 if (err) return response.error(err);
 
                                 console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
@@ -12695,7 +12695,7 @@ function splitObjectAndIndex (request, response) {
 
                     if (className !== 'PostSocial') {
 
-                        index.partialUpdateObject(object, true, function (err, content) {
+                        index.saveObjects(object, true, function (err, content) {
                             if (err) return response.error(err);
 
                             console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
@@ -12895,7 +12895,7 @@ function splitObjectAndIndex (request, response) {
 
                             index = indexPosts;
 
-                            index.partialUpdateObject(object, true, function(err, content) {
+                            index.saveObjects(object, true, function(err, content) {
                                 if (err) return response.error(err);
 
                                 console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
@@ -12954,7 +12954,7 @@ function splitObjectAndIndex (request, response) {
                 if (className !== 'PostSocial') {
 
 
-                    index.partialUpdateObject(object, true, function (err, content) {
+                    index.saveObjects(object, true, function (err, content) {
                         if (err) return response.error(err);
 
                         console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
