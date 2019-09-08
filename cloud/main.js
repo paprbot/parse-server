@@ -12432,7 +12432,7 @@ function splitObjectAndIndex (request, response) {
                                         console.log("postMessageSocial: " + JSON.stringify(postMessageSocial));
 
 
-                                        if (postMessageSocial.length > 0) {
+                                        if (postMessageSocial) {
 
 
                                             return callback (null, postMessageSocial);
@@ -12441,7 +12441,7 @@ function splitObjectAndIndex (request, response) {
 
                                         } else {
 
-                                            let postMessageSocial = [];
+                                            let postMessageSocial = null;
 
                                             return callback (null, postMessageSocial);
 
