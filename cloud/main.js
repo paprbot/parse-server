@@ -12415,10 +12415,10 @@ function splitObjectAndIndex (request, response) {
 
                                     console.log("PostMessage: " + JSON.stringify(postMessage.id));
                                     console.log("user: " + JSON.stringify(userObject.id));
-                                    
 
-                                    queryPostMessageSocial.equalTo("postMessage", postMessage.id);
-                                    queryPostMessageSocial.equalTo("user", userObject.id);
+
+                                    queryPostMessageSocial.equalTo("postMessage", postMessage);
+                                    queryPostMessageSocial.equalTo("user", userObject);
 
                                     queryPostMessageSocial.first({
 
