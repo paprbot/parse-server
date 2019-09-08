@@ -14298,7 +14298,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         //sessionToken: sessionToken
                     }).then((postQuestionMessage) => {
 
-                        //console.log("starting getTopAnswerForQuestionPost: " + JSON.stringify(postQuestionMessage));
+                        console.log("starting getTopAnswerForQuestionPost: " + JSON.stringify(postQuestionMessage));
 
 
                         if (postQuestionMessage) {
@@ -14378,7 +14378,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         //sessionToken: sessionToken
                     }).then((PostChatMessages) => {
 
-                        console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
+                        console.log("getPostMessageComments: " + JSON.stringify(PostChatMessages));
 
 
                         if (PostChatMessages.length !== 0) {
@@ -14453,7 +14453,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         //sessionToken: sessionToken
                     }).then((PostChatMessages) => {
 
-                        console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
+                        console.log("getPostMessageQuestions: " + JSON.stringify(PostChatMessages));
 
 
                         if (PostChatMessages.length !== 0) {
@@ -14506,7 +14506,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
             function createPostSocial (callback) {
 
-                console.log("starting createPostSocial function.");
+                console.log("starting createPostSocial function: " + JSON.stringify(Post.get("isNew")));
+
 
                 if (Post.get("isNew")) {
 
@@ -14522,6 +14523,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     postSocial.set("workspace", workspace);
                     postSocial.set("channel", channel);
                     postSocial.set("post", Post);
+
+                    console.log("postSocial: " + JSON.stringify(postSocial));
+
 
                     postSocial.save(null, {
 
@@ -14541,7 +14545,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     }, (error) => {
                         // The object was not retrieved successfully.
                         // error is a Parse.Error with an error code and message.
-                        return callback(error);
+                        return callback(error); 
                     }, {
 
                         useMasterKey: true
