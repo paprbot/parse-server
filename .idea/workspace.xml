@@ -21,7 +21,7 @@
       <file leaf-file-name="main.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/cloud/main.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-990">
+            <state relative-caret-position="-693">
               <caret line="7061" column="26" lean-forward="false" selection-start-line="7061" selection-start-column="26" selection-end-line="7061" selection-end-column="26" />
               <folding>
                 <element signature="e#5709#7249#0" expanded="false" />
@@ -188,8 +188,8 @@
       <file leaf-file-name="simplifyPostMessageSocial.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/cloud/simplifyClass/Post/simplifyPostMessageSocial.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="825">
-              <caret line="29" column="0" lean-forward="true" selection-start-line="29" selection-start-column="0" selection-end-line="29" selection-end-column="0" />
+            <state relative-caret-position="297">
+              <caret line="13" column="6" lean-forward="false" selection-start-line="13" selection-start-column="6" selection-end-line="13" selection-end-column="6" />
               <folding>
                 <element signature="n#!!doc;n#simplifyPostMessageSocialQuestion#0" expanded="false" />
               </folding>
@@ -654,12 +654,12 @@
       <workItem from="1563041161506" duration="17535000" />
       <workItem from="1563140646779" duration="10622000" />
       <workItem from="1564030018510" duration="110429000" />
-      <workItem from="1567302225003" duration="41391000" />
+      <workItem from="1567302225003" duration="41841000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="1016277000" />
+    <option name="totallyTimeSpent" value="1016727000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -671,7 +671,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-13" y="-13" width="3026" height="1946" extended-state="7" />
+    <frame x="-13" y="-13" width="3026" height="1946" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24255751" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -1488,16 +1488,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cloud/simplifyClass/Post/simplifyPost.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="726">
-          <caret line="24" column="0" lean-forward="true" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#41#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/cloud/simplifyClass/_User/simplifyUser.js">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="495">
@@ -1524,9 +1514,19 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/cloud/simplifyClass/Post/simplifyPost.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="726">
+          <caret line="24" column="0" lean-forward="true" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#41#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/cloud/main.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-990">
+        <state relative-caret-position="-693">
           <caret line="7061" column="26" lean-forward="false" selection-start-line="7061" selection-start-column="26" selection-end-line="7061" selection-end-column="26" />
           <folding>
             <element signature="e#5709#7249#0" expanded="false" />
@@ -1659,8 +1659,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/cloud/simplifyClass/Post/simplifyPostMessageSocial.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="825">
-          <caret line="29" column="0" lean-forward="true" selection-start-line="29" selection-start-column="0" selection-end-line="29" selection-end-column="0" />
+        <state relative-caret-position="297">
+          <caret line="13" column="6" lean-forward="false" selection-start-line="13" selection-start-column="6" selection-end-line="13" selection-end-column="6" />
           <folding>
             <element signature="n#!!doc;n#simplifyPostMessageSocialQuestion#0" expanded="false" />
           </folding>

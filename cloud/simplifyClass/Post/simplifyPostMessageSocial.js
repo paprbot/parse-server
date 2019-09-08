@@ -11,7 +11,7 @@ function simplifyPostMessageSocialQuestion (PostMessageSocial) {
 
     let postMessageSocial = PostMessageSocial.toJSON();
     if (postMessageSocial.post) {delete postMessageSocial.post;}
-    if (postMessageSocial.user) {delete postMessageSocial.user;}
+    //if (postMessageSocial.user) {delete postMessageSocial.user;}
     if (postMessageSocial.workspace) {delete postMessageSocial.workspace;}
     if (postMessageSocial.channel) {delete postMessageSocial.channel;}
     if (postMessageSocial.archive === false || postMessageSocial.archive === true) {delete postMessageSocial.archive;}
