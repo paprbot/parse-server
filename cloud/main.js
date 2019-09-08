@@ -5416,7 +5416,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
             }
 
             channel.set("isNew", false);
-            console.log("Channel is not New: " + JSON.stringify(channel.get("isNew")));
+            //console.log("Channel is not New: " + JSON.stringify(channel.get("isNew")));
 
 
             //console.log("final results beforeSave channel update: " + JSON.stringify(results));
@@ -14140,7 +14140,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
     queryPost.equalTo("objectId", post.id);
 
-    console.log("currentUser afterSave Post: " + JSON.stringify(currentUser));
+    //console.log("currentUser afterSave Post: " + JSON.stringify(currentUser));
     //console.log("objectID: " + objectToSave.objectId);
     //console.log("objectID: " + objectToSave.user.objectId);
 
@@ -14165,6 +14165,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let workspace = new WORKSPACE();
         workspace.id = Post.get("workspace").id;
+
+        let isNewPost = Post.get("isNew");
 
         // todo need to remove this if statement since there is no child/parent post now we are using post and postMessage
         if (post.get("post")) {
@@ -14506,10 +14508,10 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
             function createPostSocial (callback) {
 
-                console.log("starting createPostSocial function: " + JSON.stringify(Post.get("isNew")));
+                console.log("starting createPostSocial function: " + JSON.stringify(isNewPost) );
 
 
-                if (Post.get("isNew")) {
+                if (isNewPost) {
 
                     let POSTSOCIAL = Parse.Object.extend("PostSocial");
                     let postSocial = new POSTSOCIAL();
@@ -14545,7 +14547,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     }, (error) => {
                         // The object was not retrieved successfully.
                         // error is a Parse.Error with an error code and message.
-                        return callback(error); 
+                        return callback(error);
                     }, {
 
                         useMasterKey: true
@@ -16151,7 +16153,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
 
         function createOwnerChannelFollow (callback) {
 
-            console.log("channel isNew: " + channel.get("isNew"));
+            //console.log("channel isNew: " + channel.get("isNew"));
             //console.log("ACL Channel: " + JSON.stringify(channel.getACL()));
 
             if (channel.get("isNew") === true) {
@@ -16362,7 +16364,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
     queryWorkspace.include( ["user"] );
     queryWorkspace.select(["isDirtySkills", "isDirtyExperts", "expertsArray", "user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image"]);
 
-    console.log("Workspace Object: " + JSON.stringify(workspace));
+    //console.log("Workspace Object: " + JSON.stringify(workspace));
     //console.log("objectID: " + objectToSave.objectId);
     //console.log("objectID: " + objectToSave.user.objectId);
 
@@ -16711,7 +16713,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
             } else {
 
-                console.log("workspace.dirty_experts: " + JSON.stringify(workspace.dirty("experts")));
+                //console.log("workspace.dirty_experts: " + JSON.stringify(workspace.dirty("experts")));
 
                 if (workspace.get("isDirtyExperts")) {
 
@@ -16801,7 +16803,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     expertsArray = workspace.get("expertsArray");
 
-                    console.log("isNew Workspace expertsArray: isDirtyExperts false " + JSON.stringify(expertsArray));
+                    //console.log("isNew Workspace expertsArray: isDirtyExperts false " + JSON.stringify(expertsArray));
 
                     return callback (null, expertsArray);
 
@@ -16858,7 +16860,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 }).then((followers) => {
 
-                    console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
+                    //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
 
                     delete workspaceToSave.skills;
                     delete workspaceToSave.experts;
