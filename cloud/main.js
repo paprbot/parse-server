@@ -14524,8 +14524,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 if (isNewPost) {
 
-                    let POSTSOCIAL = Parse.Object.extend("PostSocial");
-                    let postSocial = new POSTSOCIAL();
+                    let postSocial = new Parse.Object("PostSocial");
 
                     postSocial.set("isLiked", false);
                     postSocial.set("isBookmarked", false);
@@ -14583,8 +14582,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 async.apply(prepIndex),
                 async.apply(getPostMessageQuestions),
                 async.apply(getPostMessageComments),
-                async.apply(getTopAnswerForQuestionPost),
-                async.apply(createPostSocial)
+                async.apply(getTopAnswerForQuestionPost)
+               // async.apply(createPostSocial)
 
             ], function (err, results) {
                 if (err) {
