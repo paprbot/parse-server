@@ -12271,7 +12271,7 @@ function splitObjectAndIndex (request, response) {
 
     }
 
-    if (className === 'PostSocial') {
+    if (className === 'PostSocial' || 'PostMessageSocial') {
         globalQuery.limit(1);
 
     } else {
@@ -12389,6 +12389,8 @@ function splitObjectAndIndex (request, response) {
                         // let's make sure we also save the index =0 algolia object with * _tags
 
                         object.objectID = object.objectId + '-' + '0';
+                        console.log("post splitObjectAndIndex finalIndexCount: " + JSON.stringify(finalIndexCount));
+
                     }
 
                     if (className === 'PostSocial') {
@@ -12540,6 +12542,9 @@ function splitObjectAndIndex (request, response) {
                                         }
                                         else {
 
+                                            postQuestionMessage.PostMessageSocial = null;
+
+
                                             return cb1(null, postQuestionMessage);
 
                                         }
@@ -12615,9 +12620,6 @@ function splitObjectAndIndex (request, response) {
 
 
                             }
-
-
-
 
 
                         }
@@ -12734,10 +12736,18 @@ function splitObjectAndIndex (request, response) {
             if (indexCount === 0) {
 
                 // this means there are no postSocials for this post or no workspace_followers for this workspace return empty arrays
+                var resultsNone;
 
+                if (className === 'PostSocial' || 'PostMessageSocial') {
 
-                let resultsNone = [];
-                // no results for postSocial or workspace_follower
+                    resultsNone = null;
+
+                } else {
+
+                    resultsNone = [];
+                    // no results for postSocial or workspace_follower
+
+                }
 
                 object.objectID = object.objectId + '-' + '0';
                 console.log("final object before saving to algolia: " + JSON.stringify(object));
@@ -12874,6 +12884,9 @@ function splitObjectAndIndex (request, response) {
 
                             }
                             else {
+
+                                postQuestionMessage.PostMessageSocial = null;
+
 
                                 return cb1(null, postQuestionMessage);
 
