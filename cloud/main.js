@@ -12851,7 +12851,7 @@ function splitObjectAndIndex (request, response) {
                             if (results.length > 0) {
 
                                 let PostMessageSocial = results[0];
-                                console.log("done postMessageSocial results: " + JSON.stringify(results));
+                                console.log("done postMessageSocial results: " + JSON.stringify(PostMessageSocial));
 
 
                                 if (PostMessageSocial) {
@@ -12967,7 +12967,7 @@ function splitObjectAndIndex (request, response) {
                 if (className !== 'PostSocial') {
 
 
-                    index.saveObjects(object, true, function (err, content) {
+                    index.saveObject(object, true, function (err, content) {
                         if (err) return response.error(err);
 
                         console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
