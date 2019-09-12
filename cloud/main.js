@@ -12675,7 +12675,7 @@ function splitObjectAndIndex (request, response) {
                         //object = results[0].get("workspace");
                         //console.log("PostQuestionMessageVote object: " + JSON.stringify(object));
 
-                        object.PostMessageSocial = resultsFinal;
+                        object.PostMessageSocial = resultsFinal[0];
                         index = indexPostMessage;
 
                     }
