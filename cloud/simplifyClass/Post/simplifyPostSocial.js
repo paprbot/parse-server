@@ -11,7 +11,8 @@ function simplifyPostSocial (PostSocial) {
     if (postSocial.workspace) {delete postSocial.workspace;}
     if (postSocial.channel) {delete postSocial.channel;}
     if (postSocial.archive) {delete postSocial.archive;}
-
+    if (postSocial.isNew === true || postSocial.isNew === false) {delete postSocial.archive;}
+    if (postSocial.algoliaIndexID) {delete postSocial.algoliaIndexID;}
 
     return postSocial;
 }
