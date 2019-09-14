@@ -12398,7 +12398,11 @@ function splitObjectAndIndex (request, response) {
                         //object = results[0].get("post");
                         //console.log("post object: " + JSON.stringify(object));
 
-                        object.PostSocial = simplifyPostSocial(resultsFinal[0]);
+                        let postSocial = resultsFinal[0];
+                        console.log("splitObjectAndIndex postSocial: " + JSON.stringify(postSocial));
+
+
+                        object.PostSocial = postSocial;
 
                         console.log("post splitObjectAndIndex object: " + JSON.stringify(object));
 
