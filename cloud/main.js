@@ -12410,14 +12410,14 @@ function splitObjectAndIndex (request, response) {
 
                         if (object.type === 'post') {
 
-                            //console.log("Starting post section in PostSocial in SplitObjectAndIndex");
+                            console.log("Starting post section in PostSocial in SplitObjectAndIndex");
 
 
-                            //let postQuestionMessages1 = object.postQuestions;
-                            //console.log("postQuestionMessages1: " + JSON.stringify(postQuestionMessages1));
+                            let postQuestionMessages = object.postQuestions;
+                            console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
 
-                            let postQuestionMessages = object['postQuestions'];
-                            console.log("postQuestionMessages2: " + JSON.stringify(postQuestionMessages));
+                            let postQuestionMessages1 = object['postQuestions'];
+                            console.log("postQuestionMessages1: " + JSON.stringify(postQuestionMessages1));
 
                             //let postQuestionMessages = JSON.parse(object).get("postQuestions");
                             //console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
