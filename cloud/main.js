@@ -12295,7 +12295,7 @@ function splitObjectAndIndex (request, response) {
             let finalIndexCount;
             let tags = ['*'];
 
-            indexCount = indexCount + 1;
+            let newIndexCount = indexCount + 1;
             console.log("indexCount after result: " + JSON.stringify(indexCount));
 
             async.map(results, function (result, cb) {
@@ -12581,6 +12581,7 @@ function splitObjectAndIndex (request, response) {
                                             if (loop === true ) {
 
                                                 console.log("Calling splitObjectAndIndex again loop true 1");
+                                                indexCount = newIndexCount;
 
 
                                                 splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true, 'workspaceFollowers': workspaceFollowers}, response);
@@ -12614,6 +12615,8 @@ function splitObjectAndIndex (request, response) {
                                     if (loop === true) {
 
                                         console.log("Calling splitObjectAndIndex again loop true 2");
+                                        indexCount = newIndexCount;
+
 
 
                                         splitObjectAndIndex({
@@ -12651,6 +12654,8 @@ function splitObjectAndIndex (request, response) {
                                 if (loop === true) {
 
                                     console.log("Calling splitObjectAndIndex again loop true 3");
+                                    indexCount = newIndexCount;
+
 
 
                                     splitObjectAndIndex({
@@ -12724,6 +12729,8 @@ function splitObjectAndIndex (request, response) {
                             if (loop === true) {
 
                                 console.log("Calling splitObjectAndIndex again loop true 4");
+                                indexCount = newIndexCount;
+
 
 
                                 splitObjectAndIndex({
@@ -12938,6 +12945,8 @@ function splitObjectAndIndex (request, response) {
                                 if (loop === true ) {
 
                                     console.log("Calling splitObjectAndIndex again loop true 5");
+                                    indexCount = newIndexCount;
+
 
 
                                     splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true, 'workspaceFollowers': workspaceFollowers}, response);
