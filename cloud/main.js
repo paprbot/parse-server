@@ -12569,7 +12569,7 @@ function splitObjectAndIndex (request, response) {
 
 
                                         object.postQuestions = postQuestionMessagesSocialResult;
-                                        delete object.postSocial;
+                                        if(object.postSocial) {delete object.postSocial};
 
                                         index = indexPosts;
 
@@ -12926,7 +12926,7 @@ function splitObjectAndIndex (request, response) {
                         } else {
 
                             object.postQuestions = postQuestionMessagesSocialResult;
-                            delete object.postSocial;
+                            if(object.postSocial) {delete object.postSocial};
 
                             index = indexPosts;
 
