@@ -12241,7 +12241,9 @@ function splitObjectAndIndex (request, response) {
     let indexCount = (request['indexCount'])? request['indexCount'] : 0;
     console.log("indexCount: " + JSON.stringify(indexCount));
 
-    let loop = request['loop'];
+    var loop = request['loop'];
+    console.log("loop: " + JSON.stringify(loop));
+
 
     let index;
 
