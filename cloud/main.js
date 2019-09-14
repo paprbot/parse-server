@@ -12581,7 +12581,7 @@ function splitObjectAndIndex (request, response) {
                                             if (loop === true ) {
 
                                                 console.log("Calling splitObjectAndIndex again loop true 1");
-                                                indexCount = newIndexCount;
+                                                indexCount = indexCount + 1;
 
 
                                                 splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true, 'workspaceFollowers': workspaceFollowers}, response);
@@ -12615,7 +12615,7 @@ function splitObjectAndIndex (request, response) {
                                     if (loop === true) {
 
                                         console.log("Calling splitObjectAndIndex again loop true 2");
-                                        indexCount = newIndexCount;
+                                        indexCount = indexCount + 1;
 
 
 
@@ -12654,7 +12654,7 @@ function splitObjectAndIndex (request, response) {
                                 if (loop === true) {
 
                                     console.log("Calling splitObjectAndIndex again loop true 3");
-                                    indexCount = newIndexCount;
+                                    indexCount = indexCount + 1;
 
 
 
@@ -12729,7 +12729,7 @@ function splitObjectAndIndex (request, response) {
                             if (loop === true) {
 
                                 console.log("Calling splitObjectAndIndex again loop true 4");
-                                indexCount = newIndexCount;
+                                indexCount = indexCount + 1;
 
 
 
@@ -12945,7 +12945,7 @@ function splitObjectAndIndex (request, response) {
                                 if (loop === true ) {
 
                                     console.log("Calling splitObjectAndIndex again loop true 5");
-                                    indexCount = newIndexCount;
+                                    indexCount = indexCount + 1;
 
 
 
