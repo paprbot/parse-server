@@ -12565,6 +12565,9 @@ function splitObjectAndIndex (request, response) {
                                         return response.error(err);
                                     } else {
 
+                                        console.log("object.postQuestions: " + JSON.stringify(object.postQuestions));
+
+
                                         object.postQuestions = postQuestionMessagesSocialResult;
                                         delete object.postSocial;
 
