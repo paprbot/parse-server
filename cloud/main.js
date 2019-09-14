@@ -12170,7 +12170,8 @@ function splitObjectAndIndex (request, response) {
     let time = process.hrtime();
 
     let user = request['user'];
-    console.log("splitObjectAndIndex user: " + JSON.stringify(user));
+    //console.log("splitObjectAndIndex user: " + JSON.stringify(user));
+    console.log("::Starting splitObjectAndIndex::");
 
     let object = request['object'];
     //console.log("object: " + JSON.stringify(object));
@@ -12576,9 +12577,14 @@ function splitObjectAndIndex (request, response) {
 
                                             if (loop === true ) {
 
+                                                console.log("Calling splitObjectAndIndex again loop true 1");
+
+
                                                 splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true, 'workspaceFollowers': workspaceFollowers}, response);
 
                                             } else if (loop === false) {
+
+                                                console.log(" splitObjectAndIndex done ");
 
                                                 return response.success(count);
                                             }
@@ -12603,6 +12609,9 @@ function splitObjectAndIndex (request, response) {
                                     console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
 
                                     if (loop === true) {
+
+                                        console.log("Calling splitObjectAndIndex again loop true 2");
+
 
                                         splitObjectAndIndex({
                                             'count': count,
@@ -12637,6 +12646,9 @@ function splitObjectAndIndex (request, response) {
                                 console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
 
                                 if (loop === true) {
+
+                                    console.log("Calling splitObjectAndIndex again loop true 3");
+
 
                                     splitObjectAndIndex({
                                         'count': count,
@@ -12707,6 +12719,9 @@ function splitObjectAndIndex (request, response) {
                             console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
 
                             if (loop === true) {
+
+                                console.log("Calling splitObjectAndIndex again loop true 4");
+
 
                                 splitObjectAndIndex({
                                     'count': count,
@@ -12918,6 +12933,9 @@ function splitObjectAndIndex (request, response) {
                                 console.log("Parse<>Algolia object saved from splitObjectAndIndex function ");
 
                                 if (loop === true ) {
+
+                                    console.log("Calling splitObjectAndIndex again loop true 5");
+
 
                                     splitObjectAndIndex({'count':count, 'user':user, 'indexCount':indexCount, 'object':object, 'className':className, 'loop': true, 'workspaceFollowers': workspaceFollowers}, response);
 
