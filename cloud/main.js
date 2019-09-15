@@ -14226,6 +14226,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         user = Post.get("user");
 
         currentUser = currentUser ? currentUser : user;
+        console.log("currentUser afterSave Post: " + JSON.stringify(currentUser));
+
 
         let CHANNEL = Parse.Object.extend("Channel");
         let channel = new CHANNEL();
