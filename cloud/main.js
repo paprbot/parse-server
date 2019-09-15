@@ -12169,9 +12169,9 @@ function splitObjectAndIndex (request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
-    let user = request['user'];
+    let user = request.user;
     console.log("splitObjectAndIndex user: " + JSON.stringify(user));
-    console.log("::Starting splitObjectAndIndex:: " + JSON.stringify(request['indexCount']));
+    console.log("::Starting splitObjectAndIndex:: " + JSON.stringify(request));
 
     let object = request['object'];
     //console.log("object: " + JSON.stringify(object));
