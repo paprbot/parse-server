@@ -12444,7 +12444,16 @@ function splitObjectAndIndex (request, response) {
 
                                     let USEROBJECT = Parse.Object.extend("_User");
                                     let userObject = new USEROBJECT();
-                                    userObject.id = object.PostSocial.user.objectId;
+
+                                    if (object.PostSocial) {
+                                        userObject.id = object.PostSocial.user.objectId;
+
+                                    } else {
+
+                                        userObject.id = user.objectId;
+                                    }
+
+
                                     console.log("userObject: " + JSON.stringify(userObject));
 
                                     function getPostMessageSocial (callback) {
