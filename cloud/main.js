@@ -12170,7 +12170,7 @@ function splitObjectAndIndex (request, response) {
     let time = process.hrtime();
 
     let user = request['user'];
-    //console.log("splitObjectAndIndex user: " + JSON.stringify(user));
+    console.log("splitObjectAndIndex user: " + JSON.stringify(user));
     console.log("::Starting splitObjectAndIndex:: " + JSON.stringify(request['indexCount']));
 
     let object = request['object'];
