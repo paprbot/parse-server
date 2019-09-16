@@ -14220,6 +14220,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     let time = process.hrtime();
 
     let currentUser = request.user;
+    console.log("currentUser afterSave PostSocial: " + JSON.stringify(currentUser));
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
@@ -14253,7 +14254,8 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     let USER = Parse.Object.extend("_User");
     let owner = new USER();
-    owner.id = postSocial.get("user").id;
+    owner.id = postSocial.get("user").id ? postSocial.get("user").id : currentUser.id;
+    console.log("afterSave PostSocial owner: " + JSON.stringify(owner));
 
     let queryPost = new Parse.Query(POST);
     queryPost.include( ["user", "workspace", "channel"] );
