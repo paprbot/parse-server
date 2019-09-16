@@ -14233,7 +14233,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
         return;
     }
 
-    //console.log("request afterSave PostSocial: " + JSON.stringify(request));
+    console.log("request afterSave PostSocial: " + JSON.stringify(request));
 
     // Get post object
     let POSTSOCIAL = Parse.Object.extend("PostSocial");
