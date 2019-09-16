@@ -13709,9 +13709,9 @@ function splitPostAndIndex (request, response) {
                     if (post.isIncognito === true || post.isIncognito === false) { PostStar.set("isIncognito", post.isIncognito); }
                     if (post.chatEnabled === true || post.chatEnabled === false) { PostStar.set("chatEnabled", post.chatEnabled); }
                     if (post.text) { PostStar.set("text", post.text); }
-                    if (post.updatedAt) { PostStar.set("updatedAt", post.updatedAt); }
-                    if (post.createdAt) { PostStar.set("createdAt", post.createdAt); }
-                    console.log("setting createdAt: " + JSON.stringify(post.createdAt));
+                    if (post.updatedAt) { PostStar.updatedAt = post.updatedAt; }
+                    if (post.createdAt) { PostStar.createdAt = post.createdAt; }
+                    console.log("setting createdAt: " + JSON.stringify(PostStar.createdAt));
 
                     if (post.transcript) { PostStar.set("transcript", post.transcript); }
                     if (post.post_title) { PostStar.set("post_title", post.post_title); }
