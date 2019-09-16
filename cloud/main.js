@@ -14242,15 +14242,15 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     let CHANNEL = Parse.Object.extend("Channel");
     let channel = new CHANNEL();
-    channel.id = postSocial.get("channel").id;
+    channel.id = postSocial['channel'].id;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
-    workspace.id = postSocial.get("workspace").id;
+    workspace.id = postSocial['workspace'].id;
 
     let POST = Parse.Object.extend("Post");
     let post = new POST();
-    post = postSocial.get("post");
+    post.id = postSocial['post'].id;
 
     //console.log("request afterDelete Post: " + JSON.stringify(request));
 
