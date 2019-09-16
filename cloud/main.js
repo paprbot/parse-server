@@ -13239,7 +13239,7 @@ function splitPostAndIndex (request, response) {
                 if (post.chatEnabled === true || post.chatEnabled === false) { PostUser.set("chatEnabled", post.chatEnabled); }
                 if (post.text) { PostUser.set("text", post.text); }
                 if (post.updatedAt) { PostUser.set("updatedAt", post.updatedAt); }
-                if (post.createddAt) { PostUser.set("createddAt", post.createddAt); }
+                if (post.createdAt) { PostUser.set("createdAt", post.createdAt); }
                 if (post.transcript) { PostUser.set("transcript", post.transcript); }
                 if (post.post_title) { PostUser.set("post_title", post.post_title); }
                 if (post.video) { PostUser.set("video", post.video); }
@@ -13710,7 +13710,9 @@ function splitPostAndIndex (request, response) {
                     if (post.chatEnabled === true || post.chatEnabled === false) { PostStar.set("chatEnabled", post.chatEnabled); }
                     if (post.text) { PostStar.set("text", post.text); }
                     if (post.updatedAt) { PostStar.set("updatedAt", post.updatedAt); }
-                    if (post.createddAt) { PostStar.set("createddAt", post.createddAt); }
+                    if (post.createdAt) { PostStar.set("createdAt", post.createdAt); }
+                    console.log("setting createdAt: " + JSON.stringify(createdAt));
+
                     if (post.transcript) { PostStar.set("transcript", post.transcript); }
                     if (post.post_title) { PostStar.set("post_title", post.post_title); }
                     if (post.video) { PostStar.set("video", post.video); }
