@@ -13748,7 +13748,7 @@ function splitPostAndIndex (request, response) {
 
                     }*/
 
-                    let postObjectID = PostStar.id + '-0';
+                    let postObjectID = post.objectId + '-0';
 
                     post.objectID = postObjectID;
                     post._tags = tags;
