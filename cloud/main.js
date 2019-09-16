@@ -14102,6 +14102,8 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
+    console.log("beforeSave PostSocial request: " + JSON.stringify(request));
+
     let currentUser = request.user;
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
