@@ -14139,7 +14139,7 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
-        Post.id = postSocial['post'].objectId;
+        Post.id = postSocial['post'];
 
         let USER = Parse.Object.extend("_User");
         let User = new USER();
@@ -14955,6 +14955,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         let workspace = new WORKSPACE();
         workspace.id = Post.get("workspace").id;
 
+        let PostObject = Post;
+
         let isNewPost = Post.get("isNew");
 
         // todo need to remove this if statement since there is no child/parent post now we are using post and postMessage
@@ -15309,10 +15311,10 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     postSocial.set("archive", false);
                     postSocial.set("isDelivered", false);
                     postSocial.set("hasRead", false);
-                    postSocial.set("user", user.id);
-                    postSocial.set("workspace", workspace.id);
-                    postSocial.set("channel", channel.id);
-                    postSocial.set("post", Post.id);
+                    postSocial.set("user", user);
+                    postSocial.set("workspace", workspace);
+                    postSocial.set("channel", channel);
+                    postSocial.set("post", PostObject);
 
                     console.log("postSocial: " + JSON.stringify(postSocial));
 
