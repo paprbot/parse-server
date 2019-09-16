@@ -13711,7 +13711,7 @@ function splitPostAndIndex (request, response) {
                     if (post.text) { PostStar.set("text", post.text); }
                     if (post.updatedAt) { PostStar.set("updatedAt", post.updatedAt); }
                     if (post.createdAt) { PostStar.set("createdAt", post.createdAt); }
-                    console.log("setting createdAt: " + JSON.stringify(createdAt));
+                    console.log("setting createdAt: " + JSON.stringify(post.createdAt));
 
                     if (post.transcript) { PostStar.set("transcript", post.transcript); }
                     if (post.post_title) { PostStar.set("post_title", post.post_title); }
@@ -13755,7 +13755,7 @@ function splitPostAndIndex (request, response) {
                     console.log("post with * tag: " + JSON.stringify(PostStar));
 
 
-                    indexPosts.saveObject(PostStar.toJSON(), true, function(err, content) {
+                    indexPosts.saveObject(PostStar, true, function(err, content) {
                         if (err) return response.error(err);
 
                         console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
