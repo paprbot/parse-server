@@ -13689,7 +13689,7 @@ function splitPostAndIndex (request, response) {
                     // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
 
                     //console.log("className: " + JSON.stringify(className));
-                    let POSTSTAR = Parse.Object.extend("Post");
+                    /*let POSTSTAR = Parse.Object.extend("Post");
                     let PostStar = new POSTSTAR();
                     PostStar.id = post.objectId;
 
@@ -13746,18 +13746,18 @@ function splitPostAndIndex (request, response) {
                         if (post.postMessageAnswerUnReadCount) { PostStar.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount; }
                         if (post.topAnswer) { PostStar.topAnswer = post.topAnswer; }
 
-                    }
+                    }*/
 
                     let postObjectID = PostStar.id + '-0';
 
-                    PostStar.objectID = postObjectID;
-                    PostStar._tags = tags;
-                    PostStar.PostSocial = null;
+                    post.objectID = postObjectID;
+                    post._tags = tags;
+                    post.PostSocial = null;
 
-                    console.log("post with * tag: " + JSON.stringify(PostStar));
+                    console.log("post with * tag: " + JSON.stringify(post));
 
 
-                    indexPosts.saveObject(PostStar, true, function(err, content) {
+                    indexPosts.saveObject(post, true, function(err, content) {
                         if (err) return response.error(err);
 
                         console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
