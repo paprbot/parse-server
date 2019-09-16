@@ -6572,7 +6572,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
         let USER = Parse.Object.extend("_User");
         let User = new USER();
-        User.id = postSocial.get("user").id;
+        User.id = postMessageSocial.get("user").id;
 
         let postMessageSocialQuery = new Parse.Query("PostSocial");
 
