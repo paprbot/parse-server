@@ -13744,7 +13744,7 @@ function splitPostAndIndex (request, response) {
 
                     }
 
-                    let postObjectID = post.objectId + '-0';
+                    let postObjectID = PostStar.id + '-0';
 
                     PostStar.set("objectID", postObjectID);
                     PostStar.set("_tags", tags);
@@ -13752,7 +13752,8 @@ function splitPostAndIndex (request, response) {
 
                     console.log("post with * tag: " + JSON.stringify(PostStar));
 
-                    indexPosts.saveObject(PostStar, true, function(err, content) {
+
+                    indexPosts.saveObject(PostStar.toJSON(), true, function(err, content) {
                         if (err) return response.error(err);
 
                         console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
