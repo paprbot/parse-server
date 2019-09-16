@@ -14124,26 +14124,26 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
         //console.log("isBookmarked: "+postSocial.get("isBookmarked"));
         postSocial.set("isNew", true);
 
-        if (!postSocial['channel']) {
+        if (!postSocial.get("channel")) {
             return response.error("Channel is required.");
         }
-        if (!postSocial['user']) {
+        if (!postSocial.get("user")) {
             return response.error("User is required field.");
         }
-        if (!postSocial['workspace']) {
+        if (!postSocial.get("workspace")) {
             return response.error("Workspace is required.");
         }
-        if (!postSocial['post']) {
+        if (!postSocial.get("post")) {
             return response.error("Post is required.");
         }
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
-        Post.id = postSocial['post'];
+        Post.id = postSocial.get("post");
 
         let USER = Parse.Object.extend("_User");
         let User = new USER();
-        User.id = postSocial['user'].objectId;
+        User.id = postSocial.get("user").objectId;
 
         let postSocialQuery = new Parse.Query("PostSocial");
 
@@ -14242,15 +14242,15 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     let CHANNEL = Parse.Object.extend("Channel");
     let channel = new CHANNEL();
-    channel.id = postSocial['channel'].id;
+    channel.id = postSocial.get("channel").id;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
-    workspace.id = postSocial['workspace'].id;
+    workspace.id = postSocial.get("workspace").id;
 
     let POST = Parse.Object.extend("Post");
     let post = new POST();
-    post.id = postSocial['post'].id;
+    post.id = postSocial.get("post").id;
 
     //console.log("request afterDelete Post: " + JSON.stringify(request));
 
