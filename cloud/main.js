@@ -15309,9 +15309,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     postSocial.set("archive", false);
                     postSocial.set("isDelivered", false);
                     postSocial.set("hasRead", false);
-                    postSocial.set("user", user);
-                    postSocial.set("workspace", workspace);
-                    postSocial.set("channel", channel);
+                    postSocial.set("user", user.id);
+                    postSocial.set("workspace", workspace.id);
+                    postSocial.set("channel", channel.id);
                     postSocial.set("post", Post.id);
 
                     console.log("postSocial: " + JSON.stringify(postSocial));
