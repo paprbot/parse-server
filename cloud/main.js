@@ -13135,6 +13135,8 @@ function splitPostAndIndex (request, response) {
 
             let tags = ['*'];
 
+            console.log("starting postSocialQuery");
+
             // todo create first post tags = * so users who don't have postSocial already can view the post
             if (count === 0 ) {
 
@@ -13147,6 +13149,8 @@ function splitPostAndIndex (request, response) {
 
                 // convert post (json) to object for each user
                 if (post.workspace) { PostStar.set("workspace", post.workspace); }
+                console.log("setting workspace PostStar: " + JSON.stringify(PostStar));
+
                 if (post.channel) { PostStar.set("channel", post.channel); }
                 if (post.user) { PostStar.set("user", post.user); }
                 if (post.archive === true || post.archive === false) { PostStar.set("archive", post.archive); }
