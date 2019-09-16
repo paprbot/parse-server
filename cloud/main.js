@@ -13679,11 +13679,93 @@ function splitPostAndIndex (request, response) {
 
             if (count === 0) {
 
-                return response.error("There is no PostSocial for this user: " + JSON.stringify(user.objectId) + " and it required to have a postSocial before the user can react on a post or edit a post.");
+                let tags = ['*'];
 
+                console.log("::starting postSocialQuery no result on postSocial::");
+
+                // todo create first post tags = * so users who don't have postSocial already can view the post
+                if (count === 0 ) {
+
+                    // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
+
+                    //console.log("className: " + JSON.stringify(className));
+                    let POSTSTAR = Parse.Object.extend("Post");
+                    let PostStar = new POSTSTAR();
+                    PostStar.id = post.objectId;
+
+                    // convert post (json) to object for each user
+                    if (post.workspace) { PostStar.set("workspace", post.workspace); }
+                    console.log("setting workspace PostStar: " + JSON.stringify(PostStar));
+
+                    if (post.channel) { PostStar.set("channel", post.channel); }
+                    if (post.user) { PostStar.set("user", post.user); }
+                    if (post.archive === true || post.archive === false) { PostStar.set("archive", post.archive); }
+                    if (post.hashtags) { PostStar.set("hashtags", post.hashtags); }
+                    if (post.mentions) { PostStar.set("mentions", post.mentions); }
+                    if (post.type) { PostStar.set("type", post.type); }
+                    if (post.mediaType) { PostStar.set("mediaType", post.mediaType); }
+                    if (post.ACL) { PostStar.set("ACL", post.ACL); }
+                    if (post.hasURL === true || post.hasURL === false) { PostStar.set("hasURL", post.hasURL); }
+                    if (post.isIncognito === true || post.isIncognito === false) { PostStar.set("isIncognito", post.isIncognito); }
+                    if (post.chatEnabled === true || post.chatEnabled === false) { PostStar.set("chatEnabled", post.chatEnabled); }
+                    if (post.text) { PostStar.set("text", post.text); }
+                    if (post.updatedAt) { PostStar.set("updatedAt", post.updatedAt); }
+                    if (post.createddAt) { PostStar.set("createddAt", post.createddAt); }
+                    if (post.transcript) { PostStar.set("transcript", post.transcript); }
+                    if (post.post_title) { PostStar.set("post_title", post.post_title); }
+                    if (post.video) { PostStar.set("video", post.video); }
+                    if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) { PostStar.set("questionAnswerEnabled", post.questionAnswerEnabled); }
+                    if (post.thumbnailRatio) { PostStar.set("thumbnailRatio", post.thumbnailRatio); }
+                    if (post.file) { PostStar.set("file", post.file); }
+                    if (post.image) { PostStar.set("image", post.image); }
+                    if (post.audio) { PostStar.set("audio", post.audio); }
+                    if (post.audioWave) { PostStar.set("audioWave", post.audioWave); }
+                    if (post.imageRatio) { PostStar.set("imageRatio", post.imageRatio); }
+                    if (post.mediaDuration) { PostStar.set("mediaDuration", post.mediaDuration); }
+                    if (post.likesCount) { PostStar.set("likesCount", post.likesCount); }
+                    if (post.video_thumbnail) { PostStar.set("video_thumbnail", post.video_thumbnail); }
+                    if (post.chatMessages) { PostStar.set("chatMessages", post.chatMessages); }
+
+                    if (post.type === 'post') {
+
+                        if (post.postMessageCount) { PostStar.set("postMessageCount", post.postMessageCount); }
+                        if (post.postMessageUnReadCount) { PostStar.set("postMessageUnReadCount", post.postMessageUnReadCount); }
+                        if (post.postMessageQuestionCount) { PostStar.set("postMessageQuestionCount", post.postMessageQuestionCount); }
+                        if (post.postMessageQuestionUnReadCount) { PostStar.set("postMessageUnReadCount", post.postMessageQuestionUnReadCount); }
+                        if (post.postQuestions) { PostStar.set("postQuestions", post.postQuestions); }
+
+
+                    } else if (post.type === 'question') {
+                        if (post.postMessageCount) { PostStar.set("postMessageCount", post.postMessageCount); }
+                        if (post.postMessageUnReadCount) { PostStar.set("postMessageUnReadCount", post.postMessageUnReadCount); }
+                        if (post.postMessageAnswerCount) { PostStar.set("postMessageAnswerCount", post.postMessageAnswerCount); }
+                        if (post.postMessageAnswerUnReadCount) { PostStar.set("postMessageAnswerUnReadCount", post.postMessageAnswerUnReadCount); }
+                        if (post.topAnswer) { PostStar.set("topAnswer", post.topAnswer); }
+
+                    }
+
+                    let postObjectID = post.objectId + '-0';
+
+                    PostStar.set("objectID", postObjectID);
+                    PostStar.set("_tags", tags);
+                    PostStar.set("PostSocial", null);
+
+                    console.log("post with * tag: " + JSON.stringify(PostStar));
+
+                    indexPosts.saveObject(PostStar, true, function(err, content) {
+                        if (err) return response.error(err);
+
+                        console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
+                        return response.success();
+
+
+                    });
+
+
+                }
             } else {
 
-                return response.success(count);
+                return response.success();
             }
 
 
@@ -15365,8 +15447,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 async.apply(prepIndex),
                 async.apply(getPostMessageQuestions),
                 async.apply(getPostMessageComments),
-                async.apply(getTopAnswerForQuestionPost),
-                async.apply(createPostSocial)
+                async.apply(getTopAnswerForQuestionPost)
+                //async.apply(createPostSocial)
 
             ], function (err, results) {
                 if (err) {
