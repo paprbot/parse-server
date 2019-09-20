@@ -13147,6 +13147,8 @@ function splitPostAndIndex (request, response) {
                 let PostStar = new POSTSTAR();
                 PostStar.id = post.objectId;
 
+                /*
+
                 // convert post (json) to object for each user
                 if (post.workspace) { PostStar.set("workspace", post.workspace); }
                 console.log("setting workspace PostStar: " + JSON.stringify(PostStar));
@@ -13196,17 +13198,17 @@ function splitPostAndIndex (request, response) {
                     if (post.postMessageAnswerUnReadCount) { PostStar.set("postMessageAnswerUnReadCount", post.postMessageAnswerUnReadCount); }
                     if (post.topAnswer) { PostStar.set("topAnswer", post.topAnswer); }
 
-                }
+                } */
 
-                let postObjectID = post.objectId + '-0';
+                 let postObjectID = post.objectId + '-0';
 
-                PostStar.set("objectID", postObjectID);
-                PostStar.set("_tags", tags);
-                PostStar.set("PostSocial", null);
+                 post.objectID = postObjectID;
+                 post._tags = tags;
+                 post.PostSocial = null;
 
-                console.log("post with * tag: " + JSON.stringify(PostStar));
+                console.log("post with * tag: " + JSON.stringify(post));
 
-                indexPosts.saveObject(PostStar, true, function(err, content) {
+                indexPosts.saveObject(post, true, function(err, content) {
                     if (err) return response.error(err);
 
                     console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
@@ -13223,6 +13225,8 @@ function splitPostAndIndex (request, response) {
                 let POSTUSER = Parse.Object.extend("Post");
                 let PostUser = new POSTUSER();
                 PostUser.id = post.objectId;
+
+                /*
 
                 // convert post (json) to object for each user
                 if (post.workspace) { PostUser.set("workspace", post.workspace); }
@@ -13270,6 +13274,8 @@ function splitPostAndIndex (request, response) {
 
                 }
 
+                */
+
 
                 let RESULTOBJECT = Parse.Object.extend(className);
                 let ResultObject = new RESULTOBJECT();
@@ -13288,9 +13294,11 @@ function splitPostAndIndex (request, response) {
 
                 let postObjectID = post.objectId + '-' + UserResult.id;
 
-                PostUser.set("objectID", postObjectID);
-                PostUser.set("_tags", tagUser);
-                PostUser.set("PostSocial", ResultObject);
+
+                post.objectID = postObjectID;
+                post._tags = tags;
+                post.PostSocial = ResultObject;
+
 
                 console.log("post splitObjectAndIndex object: " + JSON.stringify(post));
 
@@ -13449,9 +13457,9 @@ function splitPostAndIndex (request, response) {
 
                                 //console.log("object.postQuestions: " + JSON.stringify(object.postQuestions));
 
-                                PostUser.set("postQuestions", postQuestionMessagesSocialResult);
+                                post.postQuestions = postQuestionMessagesSocialResult;
 
-                                postSocialResult = PostUser;
+                                postSocialResult = post;
 
                                 return cb(null, postSocialResult);
 
@@ -13465,9 +13473,9 @@ function splitPostAndIndex (request, response) {
 
                         let postQuestionResult = [];
 
-                        PostUser.set("postQuestions", postQuestionResult);
+                        post.postQuestions = postQuestionResult;
 
-                        postSocialResult = PostUser;
+                        postSocialResult = post;
 
                         return cb(null, postSocialResult);
 
@@ -13593,9 +13601,11 @@ function splitPostAndIndex (request, response) {
 
                                     postChatMessage.PostMessageSocial = null;
 
-                                    PostUser.set("topAnswer", postChatMessage);
+                                    post.topAnswer = postChatMessage;
 
-                                    postSocialResult = PostUser;
+                                    postSocialResult = post;
+
+
 
                                     return cb(null, postSocialResult);
 
@@ -13608,9 +13618,9 @@ function splitPostAndIndex (request, response) {
 
                                 postChatMessage.PostMessageSocial = null;
 
-                                PostUser.set("topAnswer", postChatMessage);
+                                post.topAnswer = postChatMessage;
 
-                                postSocialResult = PostUser;
+                                postSocialResult = post;
 
                                 return cb(null, postSocialResult);
 
@@ -13622,9 +13632,9 @@ function splitPostAndIndex (request, response) {
 
                         let postChatMessage = null;
 
-                        PostUser.set("topAnswer", postChatMessage);
+                        post.topAnswer = postChatMessage;
 
-                        postSocialResult = PostUser;
+                        postSocialResult = post;
 
                         return cb(null, postSocialResult);
 
