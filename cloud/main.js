@@ -13213,7 +13213,7 @@ function splitPostAndIndex (request, response) {
                  post_zero._tags = tags;
                  post_zero.PostSocial = null;
 
-                console.log("post with * tag: " + JSON.stringify(post_zero));
+                console.log("post_zero with * tag: " + JSON.stringify(post_zero));
 
                 /*indexPosts.partialUpdateObject(post_zero, true, function(err, content) {
                     if (err) return response.error(err);
@@ -13225,9 +13225,12 @@ function splitPostAndIndex (request, response) {
 
             }
 
+            console.log("starting async.map");
+
+
             async.map(postSocialResults, function (postSocialResult, cb) {
 
-                //console.log("className: " + JSON.stringify(className));
+                console.log("postSocialResults.length: " + JSON.stringify(postSocialResults.length));
                 let POSTUSER = Parse.Object.extend("Post");
                 let PostUser = new POSTUSER();
                 PostUser.id = post.objectId;
@@ -13722,91 +13725,88 @@ function splitPostAndIndex (request, response) {
 
                 console.log("::starting postSocialQuery no result on postSocial::");
 
-                // todo create first post tags = * so users who don't have postSocial already can view the post
-                if (count === 0 ) {
+                // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
 
-                    // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
+                //console.log("className: " + JSON.stringify(className));
+                /*let POSTSTAR = Parse.Object.extend("Post");
+                let PostStar = new POSTSTAR();
+                PostStar.id = post.objectId;
 
-                    //console.log("className: " + JSON.stringify(className));
-                    /*let POSTSTAR = Parse.Object.extend("Post");
-                    let PostStar = new POSTSTAR();
-                    PostStar.id = post.objectId;
+                PostStar.toJSON();
 
-                    PostStar.toJSON();
+                // convert post (json) to object for each user
+                if (post.workspace) { PostStar.set("workspace", post.workspace); }
+                console.log("setting workspace PostStar: " + JSON.stringify(PostStar));
 
-                    // convert post (json) to object for each user
-                    if (post.workspace) { PostStar.set("workspace", post.workspace); }
-                    console.log("setting workspace PostStar: " + JSON.stringify(PostStar));
+                if (post.channel) { PostStar.channel = post.channel; }
+                if (post.user) { PostStar.user = post.user; }
+                if (post.archive === true || post.archive === false) { PostStar.archive = post.archive; }
+                if (post.hashtags) { PostStar.hashtags = post.hashtags; }
+                if (post.mentions) { PostStar.mentions = post.mentions; }
+                if (post.type) { PostStar.type = post.type; }
+                if (post.mediaType) { PostStar.mediaType = post.mediaType; }
+                if (post.ACL) { PostStar.ACL = post.ACL; }
+                if (post.hasURL === true || post.hasURL === false) { PostStar.hasURL = post.hasURL; }
+                if (post.isIncognito === true || post.isIncognito === false) { PostStar.isIncognito = post.isIncognito; }
+                if (post.chatEnabled === true || post.chatEnabled === false) { PostStar.chatEnabled = post.chatEnabled; }
+                if (post.text) { PostStar.text = post.text; }
+                if (post.updatedAt) { PostStar.updatedAt = post.updatedAt; }
+                if (post.createdAt) { PostStar.createdAt = post.createdAt; }
+                console.log("setting createdAt: " + JSON.stringify(PostStar.createdAt));
 
-                    if (post.channel) { PostStar.channel = post.channel; }
-                    if (post.user) { PostStar.user = post.user; }
-                    if (post.archive === true || post.archive === false) { PostStar.archive = post.archive; }
-                    if (post.hashtags) { PostStar.hashtags = post.hashtags; }
-                    if (post.mentions) { PostStar.mentions = post.mentions; }
-                    if (post.type) { PostStar.type = post.type; }
-                    if (post.mediaType) { PostStar.mediaType = post.mediaType; }
-                    if (post.ACL) { PostStar.ACL = post.ACL; }
-                    if (post.hasURL === true || post.hasURL === false) { PostStar.hasURL = post.hasURL; }
-                    if (post.isIncognito === true || post.isIncognito === false) { PostStar.isIncognito = post.isIncognito; }
-                    if (post.chatEnabled === true || post.chatEnabled === false) { PostStar.chatEnabled = post.chatEnabled; }
-                    if (post.text) { PostStar.text = post.text; }
-                    if (post.updatedAt) { PostStar.updatedAt = post.updatedAt; }
-                    if (post.createdAt) { PostStar.createdAt = post.createdAt; }
-                    console.log("setting createdAt: " + JSON.stringify(PostStar.createdAt));
+                if (post.transcript) { PostStar.transcript = post.transcrip; }
+                if (post.post_title) { PostStar.post_title = post.post_title; }
+                if (post.video) { PostStar.video = post.video; }
+                if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) { PostStar.questionAnswerEnabled = post.questionAnswerEnabled; }
+                if (post.thumbnailRatio) { PostStar.thumbnailRatio = post.thumbnailRatio; }
+                if (post.file) { PostStar.file = post.file; }
+                if (post.image) { PostStar.image = post.image; }
+                if (post.audio) { PostStar.audio = post.audio; }
+                if (post.audioWave) { PostStar.audioWave = post.audioWave; }
+                if (post.imageRatio) { PostStar.mageRatio = post.imageRatio; }
+                if (post.mediaDuration) { PostStar.mediaDuration =post.mediaDuration; }
+                if (post.likesCount) { PostStar.likesCount = post.likesCount; }
+                if (post.video_thumbnail) { PostStar.video_thumbnail = post.video_thumbnail; }
+                if (post.chatMessages) { PostStar.chatMessages = post.chatMessages; }
 
-                    if (post.transcript) { PostStar.transcript = post.transcrip; }
-                    if (post.post_title) { PostStar.post_title = post.post_title; }
-                    if (post.video) { PostStar.video = post.video; }
-                    if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) { PostStar.questionAnswerEnabled = post.questionAnswerEnabled; }
-                    if (post.thumbnailRatio) { PostStar.thumbnailRatio = post.thumbnailRatio; }
-                    if (post.file) { PostStar.file = post.file; }
-                    if (post.image) { PostStar.image = post.image; }
-                    if (post.audio) { PostStar.audio = post.audio; }
-                    if (post.audioWave) { PostStar.audioWave = post.audioWave; }
-                    if (post.imageRatio) { PostStar.mageRatio = post.imageRatio; }
-                    if (post.mediaDuration) { PostStar.mediaDuration =post.mediaDuration; }
-                    if (post.likesCount) { PostStar.likesCount = post.likesCount; }
-                    if (post.video_thumbnail) { PostStar.video_thumbnail = post.video_thumbnail; }
-                    if (post.chatMessages) { PostStar.chatMessages = post.chatMessages; }
+                if (post.type === 'post') {
 
-                    if (post.type === 'post') {
-
-                        if (post.postMessageCount) { PostStar.postMessageCount = post.postMessageCount; }
-                        if (post.postMessageUnReadCount) { PostStar.postMessageUnReadCount = post.postMessageUnReadCount; }
-                        if (post.postMessageQuestionCount) { PostStar.postMessageQuestionCount = post.postMessageQuestionCount; }
-                        if (post.postMessageQuestionUnReadCount) { PostStar.postMessageUnReadCount = post.postMessageQuestionUnReadCount; }
-                        if (post.postQuestions) { PostStar.postQuestions = post.postQuestions; }
+                    if (post.postMessageCount) { PostStar.postMessageCount = post.postMessageCount; }
+                    if (post.postMessageUnReadCount) { PostStar.postMessageUnReadCount = post.postMessageUnReadCount; }
+                    if (post.postMessageQuestionCount) { PostStar.postMessageQuestionCount = post.postMessageQuestionCount; }
+                    if (post.postMessageQuestionUnReadCount) { PostStar.postMessageUnReadCount = post.postMessageQuestionUnReadCount; }
+                    if (post.postQuestions) { PostStar.postQuestions = post.postQuestions; }
 
 
-                    } else if (post.type === 'question') {
-                        if (post.postMessageCount) { PostStar.postMessageCount = post.postMessageCount; }
-                        if (post.postMessageUnReadCount) { PostStar.postMessageUnReadCount = post.postMessageUnReadCount; }
-                        if (post.postMessageAnswerCount) { PostStar.postMessageAnswerCount = post.postMessageAnswerCount; }
-                        if (post.postMessageAnswerUnReadCount) { PostStar.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount; }
-                        if (post.topAnswer) { PostStar.topAnswer = post.topAnswer; }
+                } else if (post.type === 'question') {
+                    if (post.postMessageCount) { PostStar.postMessageCount = post.postMessageCount; }
+                    if (post.postMessageUnReadCount) { PostStar.postMessageUnReadCount = post.postMessageUnReadCount; }
+                    if (post.postMessageAnswerCount) { PostStar.postMessageAnswerCount = post.postMessageAnswerCount; }
+                    if (post.postMessageAnswerUnReadCount) { PostStar.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount; }
+                    if (post.topAnswer) { PostStar.topAnswer = post.topAnswer; }
 
-                    }*/
+                }*/
 
-                    let postObjectID = post.objectId + '-0';
+                let postObjectID = post.objectId + '-0';
 
-                    post.objectID = postObjectID;
-                    post._tags = tags;
-                    post.PostSocial = null;
+                post.objectID = postObjectID;
+                post._tags = tags;
+                post.PostSocial = null;
 
-                    console.log("post with * tag: " + JSON.stringify(post));
-
-
-                    indexPosts.saveObject(post, true, function(err, content) {
-                        if (err) return response.error(err);
-
-                        console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
-                        return response.success();
+                console.log("post with * tag: " + JSON.stringify(post));
 
 
-                    });
+                indexPosts.saveObject(post, true, function(err, content) {
+                    if (err) return response.error(err);
+
+                    console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
+                    return response.success();
 
 
-                }
+                });
+
+
+
             } else {
 
                 return response.success();
