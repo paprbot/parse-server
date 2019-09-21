@@ -14232,16 +14232,16 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
-        Post.id = postSocial.get("post");
+        Post.id = postSocial.get("post").id;
 
         let USER = Parse.Object.extend("_User");
         let User = new USER();
-        User.id = postSocial.get("user").objectId;
+        User.id = postSocial.get("user").id;
 
         let postSocialQuery = new Parse.Query("PostSocial");
 
-        postSocialQuery.equalTo("user", User.id);
-        postSocialQuery.equalTo("post", Post.id);
+        postSocialQuery.equalTo("user", User);
+        postSocialQuery.equalTo("post", Post);
         //postSocialQuery.include(["user", "workspace", "channel"]);
 
         // check to make sure that the postSocial is unique
