@@ -13298,8 +13298,14 @@ function splitPostAndIndex (request, response) {
 
                 tagUser.push(UserResult.id);
 
-                ResultObject = simplifyPostSocial(postSocialResult);
-                console.log("simplifyPostSocial: " + JSON.stringify(ResultObject));
+                console.log("tagUser: " + JSON.stringify(tagUser));
+
+
+
+                console.log("simplifyPostSocial 1: " + JSON.stringify(postSocialResult));
+
+                postSocialResult = simplifyPostSocial(postSocialResult);
+                console.log("simplifyPostSocial 2: " + JSON.stringify(postSocialResult));
 
                 let postObjectID = post.objectId + '-' + UserResult.id;
 
