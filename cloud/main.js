@@ -13456,7 +13456,7 @@ function splitPostAndIndex (request, response) {
 
                     console.log("Starting post section in PostSocial - question - in SplitObjectAndIndex");
 
-                    let postChatMessage = post.chatMessages;
+                    let postChatMessage = post.topAnswer;
                     console.log("postChatMessage: " + JSON.stringify(postChatMessage));
 
                     //let postQuestionMessages = JSON.parse(object).get("postQuestions");
@@ -13552,7 +13552,7 @@ function splitPostAndIndex (request, response) {
 
                                     console.log("done postChatMessage: " + JSON.stringify(postChatMessage));
 
-                                    PostUser.set("topAnswer", postChatMessage[0]);
+                                    PostUser.set("topAnswer", postChatMessage);
 
                                     postSocialResult = PostUser;
 
@@ -13569,7 +13569,7 @@ function splitPostAndIndex (request, response) {
 
                                     postChatMessage.PostMessageSocial = null;
 
-                                    post.topAnswer = postChatMessage[0];
+                                    post.topAnswer = postChatMessage;
 
                                     postSocialResult = post;
 
