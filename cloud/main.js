@@ -13290,6 +13290,9 @@ function splitPostAndIndex (request, response) {
                 let ResultObject = new RESULTOBJECT();
                 ResultObject.id = postSocialResult.id;
 
+                console.log("postSocialResult user: " + JSON.stringify(postSocialResult));
+
+
                 let USER = Parse.Object.extend("_User");
                 let UserResult = new USER();
                 UserResult.id = postSocialResult.get("user").id;
