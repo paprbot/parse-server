@@ -13230,35 +13230,35 @@ function splitPostAndIndex (request, response) {
 
             async.map(postSocialResults, function (postSocialResult, cb) {
 
-                console.log("postSocialResults.length: " + JSON.stringify(postSocialResults.length));
+                //console.log("postSocialResults.length: " + JSON.stringify(postSocialResults.length));
                 let POSTUSER = Parse.Object.extend("Post");
                 let PostUser = new POSTUSER();
                 PostUser.id = post.objectId;
 
-                console.log("PostUser: " + JSON.stringify(PostUser));
+                //console.log("PostUser: " + JSON.stringify(PostUser));
 
-                console.log("postSocialResult user: " + JSON.stringify(postSocialResult));
+                //console.log("postSocialResult user: " + JSON.stringify(postSocialResult));
 
 
                 let USER = Parse.Object.extend("_User");
                 let UserResult = new USER();
                 UserResult.id = postSocialResult.get("user").id;
 
-                console.log("UserResult: " + JSON.stringify(UserResult));
+                //console.log("UserResult: " + JSON.stringify(UserResult));
 
 
                 let tagUser = [];
 
                 tagUser.push(UserResult.id);
 
-                console.log("tagUser: " + JSON.stringify(tagUser));
+                //console.log("tagUser: " + JSON.stringify(tagUser));
 
 
 
-                console.log("simplifyPostSocial 1: " + JSON.stringify(postSocialResult));
+                //console.log("simplifyPostSocial 1: " + JSON.stringify(postSocialResult));
 
                 postSocialResult = simplifyPostSocial(postSocialResult);
-                console.log("simplifyPostSocial 2: " + JSON.stringify(postSocialResult));
+                //console.log("simplifyPostSocial 2: " + JSON.stringify(postSocialResult));
 
                 let postObjectID = post.objectId + '-' + UserResult.id;
 
@@ -13462,7 +13462,7 @@ function splitPostAndIndex (request, response) {
                     //let postQuestionMessages = JSON.parse(object).get("postQuestions");
                     //console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
 
-                    if (postChatMessage) {
+                    if (postChatMessage.length > 0) {
 
                         console.log("starting async.map postChatMessage ");
 
