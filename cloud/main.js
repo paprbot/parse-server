@@ -13627,10 +13627,19 @@ function splitPostAndIndex (request, response) {
 
                 if (count === 0 ) {
 
+                    console.log("postQuestionMessagesSocialResult: " + JSON.stringify(postQuestionMessagesSocialResult));
+
+
                     postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(post_zero);
+
+                    console.log("postQuestionMessagesSocialResult add: " + JSON.stringify(postQuestionMessagesSocialResult));
+
                 }
 
               if (postQuestionMessagesSocialResult.length > 0) {
+
+                  console.log("postQuestionMessagesSocialResult.length: " + JSON.stringify(postQuestionMessagesSocialResult.length));
+
 
 
                   indexPosts.partialUpdateObjects(postQuestionMessagesSocialResult, true, function(err, content) {
