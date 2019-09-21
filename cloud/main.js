@@ -12618,7 +12618,7 @@ function splitObjectAndIndex (request, response) {
 
 
                                         object.postQuestions = postQuestionMessagesSocialResult;
-                                        if(object.postSocial) {delete object.postSocial};
+                                        if(object.postSocial) {delete object.postSocial; }
 
                                         index = indexPosts;
 
@@ -13552,7 +13552,7 @@ function splitPostAndIndex (request, response) {
 
                                     console.log("done postChatMessage: " + JSON.stringify(postChatMessage));
 
-                                    PostUser.set("topAnswer", postChatMessage);
+                                    PostUser.set("topAnswer", postChatMessage[0]);
 
                                     postSocialResult = PostUser;
 
@@ -13569,7 +13569,7 @@ function splitPostAndIndex (request, response) {
 
                                     postChatMessage.PostMessageSocial = null;
 
-                                    post.topAnswer = postChatMessage;
+                                    post.topAnswer = postChatMessage[0];
 
                                     postSocialResult = post;
 
@@ -13632,7 +13632,12 @@ function splitPostAndIndex (request, response) {
 
                     //postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(JSON.parse(post_zero));
 
-                    console.log("post_zero add: asd " + JSON.stringify(post_zero));
+                    post_zero.PostSocial = null;
+
+                    postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(post_zero);
+
+
+                    console.log("postQuestionMessagesSocialResult add: asd " + JSON.stringify(postQuestionMessagesSocialResult));
 
                 }
 
