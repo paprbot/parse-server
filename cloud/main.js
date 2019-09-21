@@ -13235,60 +13235,7 @@ function splitPostAndIndex (request, response) {
                 let PostUser = new POSTUSER();
                 PostUser.id = post.objectId;
 
-                /*
-
-                // convert post (json) to object for each user
-                if (post.workspace) { PostUser.set("workspace", post.workspace); }
-                if (post.channel) { PostUser.set("channel", post.channel); }
-                if (post.user) { PostUser.set("user", post.user); }
-                if (post.archive === true || post.archive === false) { PostUser.set("archive", post.archive); }
-                if (post.hashtags) { PostUser.set("hashtags", post.hashtags); }
-                if (post.mentions) { PostUser.set("mentions", post.mentions); }
-                if (post.type) { PostUser.set("type", post.type); }
-                if (post.mediaType) { PostUser.set("mediaType", post.mediaType); }
-                if (post.ACL) { PostUser.set("ACL", post.ACL); }
-                if (post.hasURL === true || post.hasURL === false) { PostUser.set("hasURL", post.hasURL); }
-                if (post.isIncognito === true || post.isIncognito === false) { PostUser.set("isIncognito", post.isIncognito); }
-                if (post.chatEnabled === true || post.chatEnabled === false) { PostUser.set("chatEnabled", post.chatEnabled); }
-                if (post.text) { PostUser.set("text", post.text); }
-                if (post.updatedAt) { PostUser.set("updatedAt", post.updatedAt); }
-                if (post.createdAt) { PostUser.set("createdAt", post.createdAt); }
-                if (post.transcript) { PostUser.set("transcript", post.transcript); }
-                if (post.post_title) { PostUser.set("post_title", post.post_title); }
-                if (post.video) { PostUser.set("video", post.video); }
-                if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) { PostUser.set("questionAnswerEnabled", post.questionAnswerEnabled); }
-                if (post.thumbnailRatio) { PostUser.set("thumbnailRatio", post.thumbnailRatio); }
-                if (post.file) { PostUser.set("file", post.file); }
-                if (post.image) { PostUser.set("image", post.image); }
-                if (post.audio) { PostUser.set("audio", post.audio); }
-                if (post.audioWave) { PostUser.set("audioWave", post.audioWave); }
-                if (post.imageRatio) { PostUser.set("imageRatio", post.imageRatio); }
-                if (post.mediaDuration) { PostUser.set("mediaDuration", post.mediaDuration); }
-                if (post.likesCount) { PostUser.set("likesCount", post.likesCount); }
-                if (post.video_thumbnail) { PostUser.set("video_thumbnail", post.video_thumbnail); }
-                if (post.chatMessages) { PostUser.set("chatMessages", post.chatMessages); }
-
-                if (post.type === 'post') {
-
-                    if (post.postMessageCount) { PostUser.set("postMessageCount", post.postMessageCount); }
-                    if (post.postMessageUnReadCount) { PostUser.set("postMessageUnReadCount", post.postMessageUnReadCount); }
-                    if (post.postMessageQuestionCount) { PostUser.set("postMessageQuestionCount", post.postMessageQuestionCount); }
-                    if (post.postMessageQuestionUnReadCount) { PostUser.set("postMessageUnReadCount", post.postMessageQuestionUnReadCount); }
-
-                } else if (post.type === 'question') {
-                    if (post.postMessageCount) { PostUser.set("postMessageCount", post.postMessageCount); }
-                    if (post.postMessageUnReadCount) { PostUser.set("postMessageUnReadCount", post.postMessageUnReadCount); }
-                    if (post.postMessageAnswerCount) { PostUser.set("postMessageAnswerCount", post.postMessageAnswerCount); }
-                    if (post.postMessageAnswerUnReadCount) { PostUser.set("postMessageAnswerUnReadCount", post.postMessageAnswerUnReadCount); }
-
-                }
-
-                */
-
-
-                let RESULTOBJECT = Parse.Object.extend(className);
-                let ResultObject = new RESULTOBJECT();
-                ResultObject.id = postSocialResult.id;
+                console.log("PostUser: " + JSON.stringify(PostUser));
 
                 console.log("postSocialResult user: " + JSON.stringify(postSocialResult));
 
@@ -13296,6 +13243,9 @@ function splitPostAndIndex (request, response) {
                 let USER = Parse.Object.extend("_User");
                 let UserResult = new USER();
                 UserResult.id = postSocialResult.get("user").id;
+
+                console.log("UserResult: " + JSON.stringify(UserResult));
+
 
                 let tagUser = [];
 
@@ -13315,7 +13265,7 @@ function splitPostAndIndex (request, response) {
 
                 post.objectID = postObjectID;
                 post._tags = tags;
-                post.PostSocial = ResultObject;
+                post.PostSocial = postSocialResult;
 
 
                 console.log("post splitObjectAndIndex object: " + JSON.stringify(post));
