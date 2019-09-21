@@ -13120,7 +13120,7 @@ function splitPostAndIndex (request, response) {
 
     let postSocialQuery = new Parse.Query("PostSocial");
 
-    postSocialQuery.equalTo('post', Post.id);
+    postSocialQuery.equalTo('post', Post);
 
     postSocialQuery.limit(10000);
 
@@ -13130,6 +13130,8 @@ function splitPostAndIndex (request, response) {
         useMasterKey: true
         //sessionToken: sessionToken
     }).then((postSocialResults) => {
+
+        console.log("postSocialResults.length: " + JSON.stringify(postSocialResults));
 
         if (postSocialResults.length > 0) {
 
