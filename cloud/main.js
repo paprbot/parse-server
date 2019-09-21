@@ -13630,16 +13630,15 @@ function splitPostAndIndex (request, response) {
                     console.log("postQuestionMessagesSocialResult: " + JSON.stringify(postQuestionMessagesSocialResult));
 
 
-                    postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(JSON.parse(post_zero));
+                    //postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(JSON.parse(post_zero));
 
-                    console.log("postQuestionMessagesSocialResult add: asd " + JSON.stringify(postQuestionMessagesSocialResult));
+                    console.log("post_zero add: asd " + JSON.stringify(post_zero));
 
                 }
 
               if (postQuestionMessagesSocialResult.length > 0) {
 
                   console.log("postQuestionMessagesSocialResult.length adsf: " + JSON.stringify(postQuestionMessagesSocialResult.length));
-
 
 
                   indexPosts.partialUpdateObjects(postQuestionMessagesSocialResult, true, function(err, content) {
