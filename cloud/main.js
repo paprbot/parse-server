@@ -13102,6 +13102,9 @@ function splitPostAndIndex (request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
+    var loop = request['loop'];
+    console.log("loop: " + JSON.stringify(loop));
+
     let user = request['user'];
     //console.log("splitPostAndIndex user: " + JSON.stringify(user));
     console.log("::Starting splitPostAndIndex:: " + JSON.stringify(request));
@@ -13139,7 +13142,9 @@ function splitPostAndIndex (request, response) {
 
             console.log("starting postSocialQuery");
 
-            // todo create first post tags = * so users who don't have postSocial already can view the post
+            let post_zero = post;
+
+
             if (count === 0 ) {
 
                 // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
@@ -13204,19 +13209,18 @@ function splitPostAndIndex (request, response) {
 
                  let postObjectID = post.objectId + '-0';
 
-                 post.objectID = postObjectID;
-                 post._tags = tags;
-                 post.PostSocial = null;
+                 post_zero.objectID = postObjectID;
+                 post_zero._tags = tags;
+                 post_zero.PostSocial = null;
 
-                console.log("post with * tag: " + JSON.stringify(post));
+                console.log("post with * tag: " + JSON.stringify(post_zero));
 
-                indexPosts.saveObject(post, true, function(err, content) {
+                /*indexPosts.partialUpdateObject(post_zero, true, function(err, content) {
                     if (err) return response.error(err);
 
                     console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
 
-
-                });
+                });*/
 
 
             }
@@ -13659,16 +13663,39 @@ function splitPostAndIndex (request, response) {
                 return response.error(err);
             } else {
 
+                if (count === 0 ) {
+
+                    postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(post_zero);
+                }
+
               if (postQuestionMessagesSocialResult.length > 0) {
 
-                  indexPosts.saveObjects(postQuestionMessagesSocialResult, true, function(err, content) {
+
+                  indexPosts.partialUpdateObjects(postQuestionMessagesSocialResult, true, function(err, content) {
                       if (err) return response.error(err);
 
                       console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
                       count = count + postSocialResults.length;
 
-                      splitPostAndIndex({'count':count, 'user':user, 'object':post, 'loop': true}, response);
+                      if (count === post.postSocialCount) {
+
+                          console.log(" splitObjectAndIndex done ");
+
+                          loop = false;
+
+                          return response.success(count);
+
+
+                      } else {
+
+                          loop = true;
+
+                          console.log("Calling splitObjectAndIndex again loop true 1");
+
+                          splitPostAndIndex({'count':count, 'user':user, 'object':post, 'loop': loop}, response);
+                      }
+
 
 
                   });
