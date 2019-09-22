@@ -14241,8 +14241,8 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 
         let postSocialQuery = new Parse.Query("PostSocial");
 
-        postSocialQuery.equalTo("user", User);
-        postSocialQuery.equalTo("post", Post);
+        postSocialQuery.equalTo("user", User.id);
+        postSocialQuery.equalTo("post", Post.id);
         //postSocialQuery.include(["user", "workspace", "channel"]);
 
         // check to make sure that the postSocial is unique
@@ -14263,6 +14263,8 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
                 response.error(postSocialResult);
 
             } else {
+
+                console.log("setting defaults for beforeSave postSocial");
 
                 if (!postSocial.get("isLiked")) {
                     postSocial.set("isLiked", false);
