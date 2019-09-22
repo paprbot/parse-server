@@ -14027,7 +14027,7 @@ function splitPostAndIndex (request, response) {
 
                   console.log("postQuestionMessagesSocialResult.length adsf: " + JSON.stringify(postQuestionMessagesSocialResult.length));
 
-                  indexPosts.addObjects(postQuestionMessagesSocialResult,
+                  indexPosts.saveObjects(postQuestionMessagesSocialResult, true,
                       (error, { taskID, objectID } = {}) => {
                           if (err) return response.error(err);
 
@@ -14037,7 +14037,10 @@ function splitPostAndIndex (request, response) {
 
                               console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
-                              count = count + postSocialResults.length;
+                              return response.success();
+
+
+                              /*count = count + postSocialResults.length;
                               console.log("count: " + JSON.stringify(count));
 
 
@@ -14057,7 +14060,7 @@ function splitPostAndIndex (request, response) {
                                   console.log("Calling splitObjectAndIndex again loop true 1");
 
                                   splitPostAndIndex({'count':count, 'user':user, 'object':post, 'loop': loop}, response);
-                              }
+                              }*/
 
 
 
