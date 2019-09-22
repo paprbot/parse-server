@@ -13630,7 +13630,7 @@ function splitPostAndIndex (request, response) {
 
                     post_zero.PostSocial = null;
 
-                    postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(post_zero);
+                    postQuestionMessagesSocialResult.push(post_zero);
 
 
                     console.log("postQuestionMessagesSocialResult add: asd " + JSON.stringify(postQuestionMessagesSocialResult));
@@ -14254,7 +14254,7 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
         }).then((postSocialResult) => {
             // The object was retrieved successfully.
 
-            console.log("beforeSave PostSocial postSocialResult: " + JSON.stringify(postSocialResult));
+            //console.log("beforeSave PostSocial postSocialResult: " + JSON.stringify(postSocialResult));
 
             if (postSocialResult) {
 
@@ -14310,9 +14310,26 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 
         postSocial.set("isNew", false);
 
+        if (postSocial.get("isLiked") === true || postSocial.get("isLiked") === true ) {
+
+            if (!postSocial.get("isDelivered")) {
+
+                postSocial.set("isDelivered", true);
+
+            }
+
+            if (!postSocial.get("hasRead")) {
+
+                postSocial.set("hasRead", true);
+
+            }
+
+
+        }
+
         let diff = process.hrtime(time);
         console.log(`beforeSave PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-        response.success();
+        return response.success();
     }
 
 
