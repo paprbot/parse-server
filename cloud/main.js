@@ -13302,11 +13302,10 @@ function splitPostAndIndex (request, response) {
                     PostStar.mediaDuration = post.mediaDuration;
                     console.log("setting mediaDuration PostStar: " + JSON.stringify(PostStar.mediaDuration));
                 }
-                if (post.likesCount) {
 
-                    PostStar.likesCount = post.likesCount;
-                    console.log("setting likesCount PostStar: " + JSON.stringify(PostStar.likesCount));
-                }
+                PostStar.likesCount = post.likesCount;
+                console.log("setting likesCount PostStar: i" + JSON.stringify(PostStar.likesCount));
+
                 if (post.video_thumbnail) {
                     PostStar.video_thumbnail = post.video_thumbnail;
                     console.log("setting video_thumbnail PostStar: " + JSON.stringify(PostStar.video_thumbnail));
@@ -13320,23 +13319,19 @@ function splitPostAndIndex (request, response) {
 
                 if (post.type === 'post') {
 
-                    if (post.postMessageCount) {
                         PostStar.postMessageCount = post.postMessageCount;
                         console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-                    }
-                    if (post.postMessageUnReadCount) {
+
                         PostStar.postMessageUnReadCount = post.postMessageUnReadCount;
                         console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-                    }
-                    if (post.postMessageQuestionCount) {
+
                         PostStar.postMessageQuestionCount = post.postMessageQuestionCount;
                         console.log("setting postMessageQuestionCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionCount));
-                    }
-                    if (post.postMessageQuestionUnReadCount) {
+
 
                         PostStar.postMessageQuestionUnReadCount = post.postMessageQuestionUnReadCount;
                         console.log("setting postMessageQuestionUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionUnReadCount));
-                    }
+
                     if (post.postQuestions) {
                         PostStar.postQuestions = post.postQuestions;
                         console.log("setting postQuestions PostStar: " + JSON.stringify(PostStar.postQuestions));
@@ -13345,25 +13340,24 @@ function splitPostAndIndex (request, response) {
 
 
                 } else if (post.type === 'question') {
-                    if (post.postMessageCount) {
+
+                    console.log("it's a question!: " + JSON.stringify(post.type));
+
 
                         PostStar.postMessageCount = post.postMessageCount;
                         console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-                    }
-                    if (post.postMessageUnReadCount) {
+
 
                         PostStar.postMessageUnReadCount = post.postMessageUnReadCount;
                         console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-                    }
-                    if (post.postMessageAnswerCount) {
+
                         PostStar.postMessageAnswerCount = post.postMessageAnswerCount;
                         console.log("setting postMessageAnswerCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerCount));
-                    }
-                    if (post.postMessageAnswerUnReadCount) {
+
 
                         PostStar.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount;
                         console.log("setting postMessageAnswerUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerUnReadCount));
-                    }
+                    
                     if (post.topAnswer) {
                         PostStar.topAnswer = post.topAnswer;
                         console.log("setting topAnswer PostStar: " + JSON.stringify(PostStar.topAnswer));
