@@ -13456,19 +13456,19 @@ function splitPostAndIndex (request, response) {
 
                     console.log("Starting post section in PostSocial - question - in SplitObjectAndIndex");
 
-                    let postChatMessage = post.topAnswer;
-                    console.log("topAnswer: " + JSON.stringify(postChatMessage));
+                    let topAnswer = post.topAnswer;
+                    console.log("topAnswer: " + JSON.stringify(topAnswer));
 
                     //let postQuestionMessages = JSON.parse(object).get("postQuestions");
                     //console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
 
-                    if (postChatMessage.length > 0) {
+                    if (topAnswer) {
 
                         console.log("starting async.map postChatMessage ");
 
                         let POSTMESSAGE = Parse.Object.extend("PostMessage");
                         let postMessage = new POSTMESSAGE();
-                        postMessage.id = postChatMessage.objectId;
+                        postMessage.id = topAnswer.objectId;
                         console.log("postMessage n: " + JSON.stringify(postMessage));
 
 
@@ -13498,11 +13498,8 @@ function splitPostAndIndex (request, response) {
 
                                     let postMessageSocialAnswer = simplifyPostMessageSocialAnswer(postMessageSocial);
 
-                                    PostUser.set("topAnswer", postMessageSocialAnswer);
 
-                                    postSocialResult = PostUser;
-
-                                    return cb(null, postSocialResult);
+                                    return callback (null, postMessageSocialAnswer);
 
 
 
@@ -13547,12 +13544,12 @@ function splitPostAndIndex (request, response) {
 
                                 if (PostMessageSocial) {
 
-                                    postChatMessage.PostMessageSocial = PostMessageSocial;
+                                    topAnswer.PostMessageSocial = PostMessageSocial;
                                     console.log("done topAnswer postMessageSocial: " + JSON.stringify(PostMessageSocial));
 
-                                    console.log("done topAnswer: " + JSON.stringify(postChatMessage));
+                                    console.log("done topAnswer: " + JSON.stringify(topAnswer));
 
-                                    post.topAnswer = postChatMessage;
+                                    post.topAnswer = topAnswer;
 
                                     postSocialResult = post;
 
@@ -13567,9 +13564,9 @@ function splitPostAndIndex (request, response) {
 
                                     console.log("postMessageSocial doesn't exist, topAnswer: " + JSON.stringify(postChatMessage));
 
-                                    postChatMessage.PostMessageSocial = null;
+                                    topAnswer.PostMessageSocial = null;
 
-                                    post.topAnswer = postChatMessage;
+                                    post.topAnswer = topAnswer;
 
                                     postSocialResult = post;
 
@@ -13584,9 +13581,9 @@ function splitPostAndIndex (request, response) {
                             }
                             else {
 
-                                postChatMessage.PostMessageSocial = null;
+                                topAnswer.PostMessageSocial = null;
 
-                                post.topAnswer = postChatMessage;
+                                post.topAnswer = topAnswer;
 
                                 postSocialResult = post;
 
@@ -13598,9 +13595,8 @@ function splitPostAndIndex (request, response) {
                     }
                     else {
 
-                        let postChatMessage = null;
 
-                        post.topAnswer = postChatMessage;
+                        post.topAnswer = null;
 
                         postSocialResult = post;
 
