@@ -14260,11 +14260,13 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 
                 //postSocial already exists in db, return an error because it needs to be unique
                 console.log("postSocial already exists in db, return an error because it needs to be unique");
-                response.error(postSocialResult);
+                return response.error(postSocialResult);
 
             } else {
 
                 console.log("setting defaults for beforeSave postSocial");
+
+                console.log("archive: " + JSON.stringify(postSocial.get("archive")));
 
                 if (!postSocial.get("isLiked")) {
                     postSocial.set("isLiked", false);
@@ -14282,6 +14284,11 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
                     postSocial.set("hasRead", false);
                 }
 
+                let diff = process.hrtime(time);
+                console.log(`beforeSave PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+
+                return response.success();
+
 
             }
 
@@ -14290,7 +14297,7 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
             //console.log("channelFollowQuery not found");
-            response.error(error);
+            return response.error(error);
         }, {
 
             useMasterKey: true
@@ -14302,12 +14309,12 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
     } else {
 
         postSocial.set("isNew", false);
+
+        let diff = process.hrtime(time);
+        console.log(`beforeSave PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+        response.success();
     }
 
-
-    let diff = process.hrtime(time);
-    console.log(`beforeSave PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-    response.success();
 
 
 });
