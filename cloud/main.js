@@ -13642,7 +13642,7 @@ function splitPostAndIndex (request, response) {
                   console.log("postQuestionMessagesSocialResult.length adsf: " + JSON.stringify(postQuestionMessagesSocialResult.length));
 
 
-                  indexPosts.partialUpdateObjects(postQuestionMessagesSocialResult, true, function(err, content) {
+                  indexPosts.saveObjects(postQuestionMessagesSocialResult, true, function(err, content) {
                       if (err) return response.error(err);
 
                       console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
