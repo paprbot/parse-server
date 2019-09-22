@@ -14027,8 +14027,45 @@ function splitPostAndIndex (request, response) {
 
                   console.log("postQuestionMessagesSocialResult.length adsf: " + JSON.stringify(postQuestionMessagesSocialResult.length));
 
+                  indexPosts.addObjects(postQuestionMessagesSocialResult,
+                      (error, { taskID, objectID } = {}) => {
+                          if (err) return response.error(err);
 
-                  indexPosts.addObjects(postQuestionMessagesSocialResult, true, function(err, content) {
+                          console.log(`write operation received: ${taskID}`);
+                          index.waitTask(taskID, function contentIndexed() {
+                              console.log(`object ${objectID} indexed`);
+
+                              console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+
+                              count = count + postSocialResults.length;
+                              console.log("count: " + JSON.stringify(count));
+
+
+                              if (count === post.postSocialCount) {
+
+                                  console.log(" splitObjectAndIndex done ");
+
+                                  loop = false;
+
+                                  return response.success(count);
+
+
+                              } else {
+
+                                  loop = true;
+
+                                  console.log("Calling splitObjectAndIndex again loop true 1");
+
+                                  splitPostAndIndex({'count':count, 'user':user, 'object':post, 'loop': loop}, response);
+                              }
+
+
+
+                          });
+                  });
+
+
+                 /* indexPosts.addObjects(postQuestionMessagesSocialResult, true, function(err, content) {
                       if (err) return response.error(err);
 
                       console.log("content: " + JSON.stringify(content));
@@ -14059,7 +14096,7 @@ function splitPostAndIndex (request, response) {
 
 
 
-                  });
+                  });*/
 
 
               }
