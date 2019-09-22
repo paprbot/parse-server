@@ -13457,7 +13457,7 @@ function splitPostAndIndex (request, response) {
                     console.log("Starting post section in PostSocial - question - in SplitObjectAndIndex");
 
                     let postChatMessage = post.topAnswer;
-                    console.log("postChatMessage: " + JSON.stringify(postChatMessage));
+                    console.log("topAnswer: " + JSON.stringify(postChatMessage));
 
                     //let postQuestionMessages = JSON.parse(object).get("postQuestions");
                     //console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
@@ -13548,13 +13548,13 @@ function splitPostAndIndex (request, response) {
                                 if (PostMessageSocial) {
 
                                     postChatMessage.PostMessageSocial = PostMessageSocial;
-                                    console.log("done postMessageSocial: " + JSON.stringify(PostMessageSocial));
+                                    console.log("done topAnswer postMessageSocial: " + JSON.stringify(PostMessageSocial));
 
-                                    console.log("done postChatMessage: " + JSON.stringify(postChatMessage));
+                                    console.log("done topAnswer: " + JSON.stringify(postChatMessage));
 
-                                    PostUser.set("topAnswer", postChatMessage);
+                                    post.topAnswer = postChatMessage;
 
-                                    postSocialResult = PostUser;
+                                    postSocialResult = post;
 
                                     return cb(null, postSocialResult);
 
@@ -13565,7 +13565,7 @@ function splitPostAndIndex (request, response) {
                                     // postMessageSocial doesn't exist, user doesn't have any reactions on postMessage.
                                     console.log("postMessageSocial doesn't exist, user doesn't have any reactions on postMessage");
 
-                                    console.log("postMessageSocial doesn't exist, postQuestionMessage: " + JSON.stringify(postChatMessage));
+                                    console.log("postMessageSocial doesn't exist, topAnswer: " + JSON.stringify(postChatMessage));
 
                                     postChatMessage.PostMessageSocial = null;
 
