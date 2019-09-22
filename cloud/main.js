@@ -13151,7 +13151,7 @@ function splitPostAndIndex (request, response) {
 
                 //console.log("className: " + JSON.stringify(className));
                 let POSTSTAR = Parse.Object.extend("Post");
-                let PostStar = new POSTSTAR();
+                var PostStar = new POSTSTAR();
                 PostStar.id = post.objectId;
 
                 PostStar = PostStar.toJSON();
@@ -13302,10 +13302,11 @@ function splitPostAndIndex (request, response) {
                     PostStar.mediaDuration = post.mediaDuration;
                     console.log("setting mediaDuration PostStar: " + JSON.stringify(PostStar.mediaDuration));
                 }
+                if (post.likesCount) {
 
-                PostStar.likesCount = post.likesCount;
-                console.log("setting likesCount PostStar: i" + JSON.stringify(PostStar.likesCount));
-
+                    PostStar.likesCount = post.likesCount;
+                    console.log("setting lkesCount PostStar: i" + JSON.stringify(PostStar.likesCount));
+                }
                 if (post.video_thumbnail) {
                     PostStar.video_thumbnail = post.video_thumbnail;
                     console.log("setting video_thumbnail PostStar: " + JSON.stringify(PostStar.video_thumbnail));
@@ -13319,19 +13320,23 @@ function splitPostAndIndex (request, response) {
 
                 if (post.type === 'post') {
 
+                    if (post.postMessageCount) {
                         PostStar.postMessageCount = post.postMessageCount;
                         console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-
+                    }
+                    if (post.postMessageUnReadCount) {
                         PostStar.postMessageUnReadCount = post.postMessageUnReadCount;
                         console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-
+                    }
+                    if (post.postMessageQuestionCount) {
                         PostStar.postMessageQuestionCount = post.postMessageQuestionCount;
                         console.log("setting postMessageQuestionCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionCount));
-
+                    }
+                    if (post.postMessageQuestionUnReadCount) {
 
                         PostStar.postMessageQuestionUnReadCount = post.postMessageQuestionUnReadCount;
                         console.log("setting postMessageQuestionUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionUnReadCount));
-
+                    }
                     if (post.postQuestions) {
                         PostStar.postQuestions = post.postQuestions;
                         console.log("setting postQuestions PostStar: " + JSON.stringify(PostStar.postQuestions));
@@ -13343,21 +13348,25 @@ function splitPostAndIndex (request, response) {
 
                     console.log("it's a question!: " + JSON.stringify(post.type));
 
+                    if (post.postMessageCount) {
 
                         PostStar.postMessageCount = post.postMessageCount;
                         console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-
+                    }
+                    if (post.postMessageUnReadCount) {
 
                         PostStar.postMessageUnReadCount = post.postMessageUnReadCount;
                         console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-
+                    }
+                    if (post.postMessageAnswerCount) {
                         PostStar.postMessageAnswerCount = post.postMessageAnswerCount;
                         console.log("setting postMessageAnswerCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerCount));
-
+                    }
+                    if (post.postMessageAnswerUnReadCount) {
 
                         PostStar.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount;
                         console.log("setting postMessageAnswerUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerUnReadCount));
-                    
+                    }
                     if (post.topAnswer) {
                         PostStar.topAnswer = post.topAnswer;
                         console.log("setting topAnswer PostStar: " + JSON.stringify(PostStar.topAnswer));
@@ -13372,12 +13381,15 @@ function splitPostAndIndex (request, response) {
                  PostStar._tags = tags;
                  PostStar.PostSocial = null;
 
-                console.log("post_zero with * tag: " + JSON.stringify(post_zero));
+                console.log("post_zero with * tag: " + JSON.stringify(PostStar));
 
-                /*indexPosts.partialUpdateObject(post_zero, true, function(err, content) {
+                /*indexPosts.saveObject(PostStar, true, function(err, content) {
                     if (err) return response.error(err);
 
                     console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
+
+                    return content;
+
 
                 });*/
 
@@ -13394,9 +13406,226 @@ function splitPostAndIndex (request, response) {
                 let PostUser = new POSTUSER();
                 PostUser.id = post.objectId;
 
-                //console.log("PostUser: " + JSON.stringify(PostUser));
+                PostUser = PostUser.toJSON();
 
-                //console.log("postSocialResult user: " + JSON.stringify(postSocialResult));
+                if (post.workspace) {
+                    PostUser.workspace = post.workspace;
+                    console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
+
+                }
+
+                if (post.channel) {
+                    PostUser.channel = post.channel;
+                    console.log("setting channel PostUser: " + JSON.stringify(PostUser.channel));
+
+                }
+
+                if (post.user) {
+                    PostUser.user = post.user;
+                    console.log("setting user PostUser: " + JSON.stringify(PostUser.user));
+
+                }
+
+                if (post.archive === true || post.archive === false) {
+                    PostUser.archive = post.archive;
+                    console.log("setting archive PostUser: " + JSON.stringify(PostUser.archive));
+
+                }
+
+                if (post.hashtags) {
+                    PostUser.hashtags = post.hashtags;
+                    console.log("setting hashtags PostUser: " + JSON.stringify(PostUser.hashtags));
+
+                }
+
+                if (post.mentions) {
+                    PostUser.mentions = post.mentions;
+                    console.log("setting mentions PostUser: " + JSON.stringify(PostUser.mentions));
+
+                }
+
+
+                if (post.type) {
+                    PostUser.type = post.type;
+                    console.log("setting type PostUser: " + JSON.stringify(PostUser.type));
+
+                }
+
+                if (post.mediaType) {
+                    PostUser.mediaType = post.mediaType;
+                    console.log("setting mediaType PostUser: " + JSON.stringify(PostUser.mediaType));
+
+                }
+
+                if (post.ACL) {
+                    PostUser.ACL = post.ACL;
+                    console.log("setting ACL PostUser: " + JSON.stringify(PostUser.ACL));
+
+                }
+
+                if (post.hasURL === true || post.hasURL === false) {
+
+                    PostUser.hasURL = post.hasURL;
+                    console.log("setting hasURL PostUser: " + JSON.stringify(PostUser.hasURL));
+
+                }
+
+                if (post.isIncognito === true || post.isIncognito === false) {
+                    PostUser.isIncognito = post.isIncognito;
+                    console.log("setting isIncognito PostUser: " + JSON.stringify(PostUser.isIncognito));
+
+                }
+                if (post.chatEnabled === true || post.chatEnabled === false) {
+
+                    PostUser.chatEnabled = post.chatEnabled;
+                    console.log("setting chatEnabled PostUser: " + JSON.stringify(PostUser.chatEnabled));
+
+                }
+
+                if (post.text) {
+                    PostUser.text = post.text;
+                    console.log("setting text PostUser: " + JSON.stringify(PostUser.text));
+
+                }
+                if (post.updatedAt) {
+                    PostUser.updatedAt = post.updatedAt;
+                    console.log("setting updatedAt PostUser: " + JSON.stringify(PostUser.updatedAt));
+                }
+                if (post.createdAt) {
+
+                    PostUser.createdAt = post.createdAt;
+                    console.log("setting createdAt PostUser: " + JSON.stringify(PostUser.createdAt));
+                }
+
+
+                if (post.transcript) {
+                    PostUser.transcript = post.transcript;
+                    console.log("setting transcript PostUser: " + JSON.stringify(PostUser.transcript));
+
+                }
+                if (post.post_title) {
+
+                    PostUser.post_title = post.post_title;
+                    console.log("setting post_title PostUser: " + JSON.stringify(PostUser.post_title));
+
+                }
+                if (post.video) {
+
+                    PostUser.video = post.video;
+                    console.log("setting video PostUser: " + JSON.stringify(PostUser.video));
+
+                }
+                if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) {
+
+                    PostUser.questionAnswerEnabled = post.questionAnswerEnabled;
+                    console.log("setting questionAnswerEnabled PostUser: " + JSON.stringify(PostUser.questionAnswerEnabled));
+                }
+                if (post.thumbnailRatio) {
+
+                    PostUser.thumbnailRatio = post.thumbnailRatio;
+                    console.log("setting thumbnailRatio PostUser: " + JSON.stringify(PostUser.thumbnailRatio));
+                }
+
+                if (post.file) {
+
+                    PostUser.file = post.file;
+                    console.log("setting file PostUser: " + JSON.stringify(PostUser.file));
+                }
+                if (post.image) {
+                    PostUser.image = post.image;
+                    console.log("setting image PostUser: " + JSON.stringify(PostUser.image));
+                }
+                if (post.audio) {
+                    PostUser.audio = post.audio;
+                    console.log("setting audio PostUser: " + JSON.stringify(PostUser.audio));
+                }
+
+                if (post.audioWave) {
+                    PostUser.audioWave = post.audioWave;
+                    console.log("setting audioWave PostUser: " + JSON.stringify(PostUser.audioWave));
+                }
+
+                if (post.imageRatio) {
+                    PostUser.imageRatio = post.imageRatio;
+                    console.log("setting imageRatio PostUser: " + JSON.stringify(PostUser.imageRatio));
+                }
+
+                if (post.mediaDuration) {
+                    PostUser.mediaDuration = post.mediaDuration;
+                    console.log("setting mediaDuration PostUser: " + JSON.stringify(PostUser.mediaDuration));
+                }
+                if (post.likesCount) {
+
+                    PostUser.likesCount = post.likesCount;
+                    console.log("setting lkesCount PostUser: i" + JSON.stringify(PostUser.likesCount));
+                }
+                if (post.video_thumbnail) {
+                    PostUser.video_thumbnail = post.video_thumbnail;
+                    console.log("setting video_thumbnail PostUser: " + JSON.stringify(PostUser.video_thumbnail));
+                }
+
+                if (post.chatMessages) {
+
+                    PostUser.chatMessages = post.chatMessages;
+                    console.log("setting chatMessages PostUser: " + JSON.stringify(PostUser.chatMessages));
+                }
+
+                if (post.type === 'post') {
+
+                    if (post.postMessageCount) {
+                        PostUser.postMessageCount = post.postMessageCount;
+                        console.log("setting postMessageCount PostUser: " + JSON.stringify(PostUser.postMessageCount));
+                    }
+                    if (post.postMessageUnReadCount) {
+                        PostUser.postMessageUnReadCount = post.postMessageUnReadCount;
+                        console.log("setting postMessageUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageUnReadCount));
+                    }
+                    if (post.postMessageQuestionCount) {
+                        PostUser.postMessageQuestionCount = post.postMessageQuestionCount;
+                        console.log("setting postMessageQuestionCount PostUser: " + JSON.stringify(PostUser.postMessageQuestionCount));
+                    }
+                    if (post.postMessageQuestionUnReadCount) {
+
+                        PostUser.postMessageQuestionUnReadCount = post.postMessageQuestionUnReadCount;
+                        console.log("setting postMessageQuestionUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageQuestionUnReadCount));
+                    }
+                    if (post.postQuestions) {
+                        PostUser.postQuestions = post.postQuestions;
+                        console.log("setting postQuestions PostUser: " + JSON.stringify(PostUser.postQuestions));
+
+                    }
+
+
+                } else if (post.type === 'question') {
+
+                    console.log("it's a question!: " + JSON.stringify(post.type));
+
+                    if (post.postMessageCount) {
+
+                        PostUser.postMessageCount = post.postMessageCount;
+                        console.log("setting postMessageCount PostUser: " + JSON.stringify(PostUser.postMessageCount));
+                    }
+                    if (post.postMessageUnReadCount) {
+
+                        PostUser.postMessageUnReadCount = post.postMessageUnReadCount;
+                        console.log("setting postMessageUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageUnReadCount));
+                    }
+                    if (post.postMessageAnswerCount) {
+                        PostUser.postMessageAnswerCount = post.postMessageAnswerCount;
+                        console.log("setting postMessageAnswerCount PostUser: " + JSON.stringify(PostUser.postMessageAnswerCount));
+                    }
+                    if (post.postMessageAnswerUnReadCount) {
+
+                        PostUser.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount;
+                        console.log("setting postMessageAnswerUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageAnswerUnReadCount));
+                    }
+                    if (post.topAnswer) {
+                        PostUser.topAnswer = post.topAnswer;
+                        console.log("setting topAnswer PostUser: " + JSON.stringify(PostUser.topAnswer));
+
+                    }
+
+                }
 
 
                 let USER = Parse.Object.extend("_User");
@@ -13422,12 +13651,12 @@ function splitPostAndIndex (request, response) {
                 let postObjectID = post.objectId + '-' + UserResult.id;
 
 
-                post.objectID = postObjectID;
-                post._tags = tags;
-                post.PostSocial = postSocialResult;
+                PostUser.objectID = postObjectID;
+                PostUser._tags = tags;
+                PostUser.PostSocial = postSocialResult;
 
 
-                console.log("post splitObjectAndIndex object: " + JSON.stringify(post));
+                console.log("post splitObjectAndIndex object: " + JSON.stringify(PostUser));
 
 
                 if (post.type === 'post') {
@@ -13584,9 +13813,9 @@ function splitPostAndIndex (request, response) {
 
                                 //console.log("object.postQuestions: " + JSON.stringify(object.postQuestions));
 
-                                post.postQuestions = postQuestionMessagesSocialResult;
+                                PostUser.postQuestions = postQuestionMessagesSocialResult;
 
-                                postSocialResult = post;
+                                postSocialResult = PostUser;
 
                                 return cb(null, postSocialResult);
 
@@ -13600,9 +13829,9 @@ function splitPostAndIndex (request, response) {
 
                         let postQuestionResult = [];
 
-                        post.postQuestions = postQuestionResult;
+                        PostUser.postQuestions = postQuestionResult;
 
-                        postSocialResult = post;
+                        postSocialResult = PostUser;
 
                         return cb(null, postSocialResult);
 
@@ -13708,9 +13937,9 @@ function splitPostAndIndex (request, response) {
 
                                     console.log("done topAnswer: " + JSON.stringify(topAnswer));
 
-                                    post.topAnswer = topAnswer;
+                                    PostUser.topAnswer = topAnswer;
 
-                                    postSocialResult = post;
+                                    postSocialResult = PostUser;
 
                                     return cb(null, postSocialResult);
 
@@ -13725,9 +13954,9 @@ function splitPostAndIndex (request, response) {
 
                                     topAnswer.PostMessageSocial = null;
 
-                                    post.topAnswer = topAnswer;
+                                    PostUser.topAnswer = topAnswer;
 
-                                    postSocialResult = post;
+                                    postSocialResult = PostUser;
 
 
 
@@ -13742,9 +13971,9 @@ function splitPostAndIndex (request, response) {
 
                                 topAnswer.PostMessageSocial = null;
 
-                                post.topAnswer = topAnswer;
+                                PostUser.topAnswer = topAnswer;
 
-                                postSocialResult = post;
+                                postSocialResult = PostUser;
 
                                 return cb(null, postSocialResult);
 
@@ -13755,9 +13984,9 @@ function splitPostAndIndex (request, response) {
                     else {
 
 
-                        post.topAnswer = null;
+                        PostUser.topAnswer = null;
 
-                        postSocialResult = post;
+                        postSocialResult = PostUser;
 
                         return cb(null, postSocialResult);
 
@@ -13787,9 +14016,7 @@ function splitPostAndIndex (request, response) {
 
                     //postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(JSON.parse(post_zero));
 
-                    post_zero.PostSocial = null;
-
-                    postQuestionMessagesSocialResult.push(post_zero);
+                    postQuestionMessagesSocialResult.push(PostStar);
 
 
                     console.log("postQuestionMessagesSocialResult add: asd " + JSON.stringify(postQuestionMessagesSocialResult));
