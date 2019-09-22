@@ -14254,6 +14254,8 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
         }).then((postSocialResult) => {
             // The object was retrieved successfully.
 
+            console.log("beforeSave PostSocial postSocialResult: " + JSON.stringify(postSocialResult));
+
             if (postSocialResult) {
 
                 //postSocial already exists in db, return an error because it needs to be unique
