@@ -13632,7 +13632,7 @@ function splitPostAndIndex (request, response) {
                 let UserResult = new USER();
                 UserResult.id = postSocialResult.get("user").id;
 
-                //console.log("UserResult: " + JSON.stringify(UserResult));
+                console.log("UserResult: " + JSON.stringify(UserResult));
 
 
                 let tagUser = [];
@@ -13652,7 +13652,7 @@ function splitPostAndIndex (request, response) {
 
 
                 PostUser.objectID = postObjectID;
-                PostUser._tags = tags;
+                PostUser._tags = tagUser;
                 PostUser.PostSocial = postSocialResult;
 
 
@@ -14028,12 +14028,16 @@ function splitPostAndIndex (request, response) {
                   console.log("postQuestionMessagesSocialResult.length adsf: " + JSON.stringify(postQuestionMessagesSocialResult.length));
 
 
-                  indexPosts.saveObjects(postQuestionMessagesSocialResult, true, function(err, content) {
+                  indexPosts.addObjects(postQuestionMessagesSocialResult, true, function(err, content) {
                       if (err) return response.error(err);
+
+                      console.log("content: " + JSON.stringify(content));
 
                       console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
                       count = count + postSocialResults.length;
+                      console.log("count: " + JSON.stringify(count));
+
 
                       if (count === post.postSocialCount) {
 
