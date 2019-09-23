@@ -14031,10 +14031,9 @@ function splitPostAndIndex (request, response) {
                   console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
                   let beforeSaveElse_Time = process.hrtime(time);
-                  console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                  console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
                   response.success();
-
 
 
               }
@@ -14042,7 +14041,7 @@ function splitPostAndIndex (request, response) {
               else {
 
                   let beforeSaveElse_Time = process.hrtime(time);
-                  console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                  console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
 
                   return response.error(err);
@@ -14089,7 +14088,7 @@ function splitPostAndIndex (request, response) {
                 console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
                 let beforeSaveElse_Time = process.hrtime(time);
-                console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
                 response.success();
 
@@ -14098,7 +14097,7 @@ function splitPostAndIndex (request, response) {
             } else {
 
                 let beforeSaveElse_Time = process.hrtime(time);
-                console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
                 return response.success();
             }
@@ -14140,7 +14139,7 @@ function splitPostMessageAndIndex (request, response) {
 
     let POSTMESSAGE = Parse.Object.extend("PostMessage");
     let PostMessage = new POSTMESSAGE();
-    PostMessage.id = POSTMESSAGE.objectId;
+    PostMessage.id = postMessage.objectId;
     // note object needs to be toJSON()
     console.log("PostMessage: " + JSON.stringify(PostMessage));
 
@@ -14149,7 +14148,7 @@ function splitPostMessageAndIndex (request, response) {
 
     let postMessageSocialQuery = new Parse.Query("PostMessageSocial");
 
-    postMessageSocialQuery.equalTo('postMessage', PostMessage);
+    postMessageSocialQuery.equalTo('postMessage', PostMessage.id);
 
     postMessageSocialQuery.limit(10000);
 
@@ -14709,7 +14708,7 @@ function splitPostMessageAndIndex (request, response) {
                         console.log("Parse<>Algolia dev_postMessages saved from splitPosMessageAndIndex function ");
 
                         let beforeSaveElse_Time = process.hrtime(time);
-                        console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                        console.log(`beforeSaveElse_Time splitPosMessageAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
                          response.success();
 
@@ -14761,7 +14760,7 @@ function splitPostMessageAndIndex (request, response) {
                 console.log("Parse<>Algolia dev_postMessages saved from splitPosMessageAndIndex function ");
 
                 let beforeSaveElse_Time = process.hrtime(time);
-                console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                console.log(`beforeSaveElse_Time splitPosMessageAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
                  response.success();
 
@@ -16520,7 +16519,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         success: function (count) {
 
                             let Final_Time = process.hrtime(time);
-                            console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                            console.log(`splitPostAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
                             response.success();
                         },
