@@ -14022,21 +14022,28 @@ function splitPostAndIndex (request, response) {
                       if (err) {
                           return response.error(err);
                       }
-                      console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
-                      let beforeSaveElse_Time = process.hrtime(time);
-                      console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                      console.log("content: " + JSON.stringify(content));
 
-                      return response.success();
 
                   });
 
+                  console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+
+                  let beforeSaveElse_Time = process.hrtime(time);
+                  console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                  response.success();
 
 
 
               }
 
               else {
+
+                  let beforeSaveElse_Time = process.hrtime(time);
+                  console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
 
                   return response.error(err);
 
@@ -14073,18 +14080,25 @@ function splitPostAndIndex (request, response) {
                     if (err) {
                         return response.error(err);
                     }
-                    console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
-                    let beforeSaveElse_Time = process.hrtime(time);
-                    console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                    console.log("content: " + JSON.stringify(content));
 
-                    return response.success();
 
                 });
+
+                console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+
+                let beforeSaveElse_Time = process.hrtime(time);
+                console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                response.success();
 
 
 
             } else {
+
+                let beforeSaveElse_Time = process.hrtime(time);
+                console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
                 return response.success();
             }
@@ -14685,14 +14699,19 @@ function splitPostMessageAndIndex (request, response) {
                             if (err) {
                                 return response.error(err);
                             }
-                            console.log("Parse<>Algolia dev_postMessages saved from splitPosMessageAndIndex function ");
 
-                            let beforeSaveElse_Time = process.hrtime(time);
-                            console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                            console.log("content: " + JSON.stringify(content));
 
-                            return response.success();
+
 
                         });
+
+                        console.log("Parse<>Algolia dev_postMessages saved from splitPosMessageAndIndex function ");
+
+                        let beforeSaveElse_Time = process.hrtime(time);
+                        console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                         response.success();
 
 
 
@@ -14732,14 +14751,19 @@ function splitPostMessageAndIndex (request, response) {
                     if (err) {
                         return response.error(err);
                     }
-                    console.log("Parse<>Algolia dev_postMessages saved from splitPosMessageAndIndex function ");
 
-                    let beforeSaveElse_Time = process.hrtime(time);
-                    console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                    console.log("content: " + JSON.stringify(content));
 
-                    return response.success();
+
 
                 });
+
+                console.log("Parse<>Algolia dev_postMessages saved from splitPosMessageAndIndex function ");
+
+                let beforeSaveElse_Time = process.hrtime(time);
+                console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                 response.success();
 
 
 
