@@ -13860,7 +13860,7 @@ function splitPostAndIndex (request, response) {
                         console.log("postMessage n: " + JSON.stringify(postMessage));
 
 
-                        function getPostMessageSocial (callback) {
+                        function getPostMessageSocial (callback1) {
 
                             let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
                             let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
@@ -13887,7 +13887,7 @@ function splitPostAndIndex (request, response) {
                                     let postMessageSocialAnswer = simplifyPostMessageSocialAnswer(postMessageSocial);
 
 
-                                    return callback (null, postMessageSocialAnswer);
+                                    return callback1 (null, postMessageSocialAnswer);
 
 
 
@@ -13896,7 +13896,7 @@ function splitPostAndIndex (request, response) {
 
                                     let postMessageSocial = null;
 
-                                    return callback (null, postMessageSocial);
+                                    return callback1 (null, postMessageSocial);
 
                                 }
 
@@ -13904,7 +13904,7 @@ function splitPostAndIndex (request, response) {
                             }, (error) => {
                                 // The object was not retrieved successfully.
                                 // error is a Parse.Error with an error code and message.
-                                return callback (error);
+                                return callback1 (error);
                             }, {
 
                                 useMasterKey: true
@@ -13950,7 +13950,7 @@ function splitPostAndIndex (request, response) {
                                     // postMessageSocial doesn't exist, user doesn't have any reactions on postMessage.
                                     console.log("postMessageSocial doesn't exist, user doesn't have any reactions on postMessage");
 
-                                    console.log("postMessageSocial doesn't exist, topAnswer: " + JSON.stringify(postChatMessage));
+                                    console.log("postMessageSocial doesn't exist, topAnswer: " + JSON.stringify(PostMessageSocial));
 
                                     topAnswer.PostMessageSocial = null;
 
@@ -16912,8 +16912,8 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
             Post.save(null, {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                //useMasterKey: true
+                sessionToken: sessionToken
 
             });
 
