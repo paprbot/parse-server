@@ -14148,7 +14148,7 @@ function splitPostMessageAndIndex (request, response) {
 
     let postMessageSocialQuery = new Parse.Query("PostMessageSocial");
 
-    postMessageSocialQuery.equalTo('postMessage', PostMessage.id);
+    postMessageSocialQuery.equalTo('postMessage', PostMessage);
 
     postMessageSocialQuery.limit(10000);
 
