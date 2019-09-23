@@ -14193,6 +14193,13 @@ function splitPostMessageAndIndex (request, response) {
 
                 }
 
+                if (postMessage.post) {
+                    PostMessageStar.post = postMessage.post;
+                    console.log("setting post PostMessageStar: " + JSON.stringify(PostMessageStar.post));
+
+                }
+
+
                 if (postMessage.user) {
                     PostMessageStar.user = postMessage.user;
                     console.log("setting user PostMessageStar: " + JSON.stringify(PostMessageStar.user));
@@ -14432,6 +14439,12 @@ function splitPostMessageAndIndex (request, response) {
                 if (postMessage.channel) {
                     PostMessageUser.channel = postMessage.channel;
                     console.log("setting channel PostMessageUser: " + JSON.stringify(PostMessageUser.channel));
+
+                }
+
+                if (postMessage.post) {
+                    PostMessageUser.post = postMessage.post;
+                    console.log("setting post PostMessageUser: " + JSON.stringify(PostMessageUser.post));
 
                 }
 
