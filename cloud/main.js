@@ -14027,21 +14027,16 @@ function splitPostAndIndex (request, response) {
 
                   console.log("postQuestionMessagesSocialResult.length adsf: " + JSON.stringify(postQuestionMessagesSocialResult.length));
 
-                  indexPosts.saveObjects(postQuestionMessagesSocialResult, true,
-                      (error, { taskID } = {}) => {
+                  indexPosts.saveObjects(postQuestionMessagesSocialResult, true, function(err, content) {
+                      if (err) {
+                          return response(err);
+                      }
+                      console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
-                          console.log(`write operation received: ${taskID}`);
-                          indexPosts.waitTask(taskID, function contentIndexed() {
-                              console.log(`objects indexed`);
+                      let beforeSaveElse_Time = process.hrtime(time);
+                      console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                              console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
-
-                              let beforeSaveElse_Time = process.hrtime(time);
-                              console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                              return response.success();
-
-                          });
+                      return response.success();
 
                   });
 
@@ -14083,23 +14078,18 @@ function splitPostAndIndex (request, response) {
                 console.log("post with * tag: " + JSON.stringify(post));
 
 
-                indexPosts.saveObject(post, true,
-                    (error, { taskID, objectID } = {}) => {
+                indexPosts.saveObject(post, true, function(err, content) {
+                    if (err) {
+                        return response(err);
+                    }
+                    console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
-                        console.log(`write operation received: ${taskID}`);
-                        indexPosts.waitTask(taskID, function contentIndexed() {
-                            console.log(`object ${objectID} indexed`);
+                    let beforeSaveElse_Time = process.hrtime(time);
+                    console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                            console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+                    return response.success();
 
-                            let beforeSaveElse_Time = process.hrtime(time);
-                            console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                            return response.success();
-
-                        });
-                    });
-
+                });
 
 
 
@@ -14700,25 +14690,18 @@ function splitPostMessageAndIndex (request, response) {
 
                         console.log("postMessageSocialResults.length adsf: " + JSON.stringify(postMessageSocialResults.length));
 
-                        indexPostMessage.saveObjects(postMessageSocialResults, true,
-                            (error, { taskID, objectID } = {}) => {
+                        indexPostMessage.saveObjects(postMessageSocialResults, true, function(err, content) {
+                            if (err) {
+                                return response(err);
+                            }
+                            console.log("Parse<>Algolia dev_postMessages saved from splitPosMessageAndIndex function ");
 
-                                console.log(`write operation received: ${taskID}`);
-                                indexPostMessage.waitTask(taskID, function contentIndexed() {
-                                    console.log(`object ${objectID} indexed`);
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                                    console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+                            return response.success();
 
-                                    let beforeSaveElse_Time = process.hrtime(time);
-                                    console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-
-                                    return response.success();
-
-
-
-                                });
-                            });
+                        });
 
 
 
@@ -14754,25 +14737,19 @@ function splitPostMessageAndIndex (request, response) {
                 console.log("postMessage with * tag: " + JSON.stringify(postMessage));
 
 
-                indexPostMessage.saveObject(postMessage, true,
-                    (error, { taskID, objectID } = {}) => {
+                indexPostMessage.saveObject(postMessage, true, function(err, content) {
+                    if (err) {
+                        return response(err);
+                    }
+                    console.log("Parse<>Algolia dev_postMessages saved from splitPosMessageAndIndex function ");
 
-                        console.log(`write operation received: ${taskID}`);
-                        indexPostMessage.waitTask(taskID, function contentIndexed() {
-                            console.log(`object ${objectID} indexed`);
+                    let beforeSaveElse_Time = process.hrtime(time);
+                    console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                            console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+                    return response.success();
 
-                            let beforeSaveElse_Time = process.hrtime(time);
-                            console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+                });
 
-
-                            return response.success();
-
-
-
-                        });
-                    });
 
 
 
