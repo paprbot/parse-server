@@ -14639,7 +14639,7 @@ function splitPostMessageAndIndex (request, response) {
                     console.log("postMessageSocialResult post: " + JSON.stringify(postMessageSocialResult));
 
 
-                    
+
 
                 } else if (postMessage.type === 'comment') {
 
@@ -14682,7 +14682,9 @@ function splitPostMessageAndIndex (request, response) {
 
                 console.log("postMessage splitObjectAndIndex object: " + JSON.stringify(PostMessageUser));
 
+                postMessageSocialResult = PostMessageUser;
 
+                return cb (null, postMessageSocialResult);
 
 
             }, function (err, postMessageSocialResults) {
