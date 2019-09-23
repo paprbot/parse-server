@@ -13802,7 +13802,7 @@ function splitPostAndIndex (request, response) {
                                 return response.error(err);
                             } else {
 
-                                console.log("postQuestionMessagesSocialResult.postQuestions: " + JSON.stringify(postQuestionMessagesSocialResult);
+                                console.log("postQuestionMessagesSocialResult.postQuestions: " + JSON.stringify(postQuestionMessagesSocialResult));
 
                                 PostUser.postQuestions = postQuestionMessagesSocialResult;
 
