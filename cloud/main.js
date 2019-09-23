@@ -14034,15 +14034,15 @@ function splitPostAndIndex (request, response) {
                           indexPosts.waitTask(taskID, function contentIndexed() {
                               console.log(`object ${objectID} indexed`);
 
-                              console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
-
-                              let beforeSaveElse_Time = process.hrtime(time);
-                              console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                              return response.success();
-
 
                           });
+
+                          console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+
+                          let beforeSaveElse_Time = process.hrtime(time);
+                          console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                          return response.success();
                   });
 
 
@@ -14138,7 +14138,7 @@ function splitPostMessageAndIndex (request, response) {
 
     let user = request['user'];
     //console.log("splitPostAndIndex user: " + JSON.stringify(user));
-    console.log("::Starting splitPostAndIndex:: " + JSON.stringify(request));
+    console.log("::Starting splitPostMessageAndIndex:: " + JSON.stringify(request));
 
     let postMessage = request['object'];
     console.log("postMessage: " + JSON.stringify(postMessage));
@@ -14769,7 +14769,7 @@ function splitPostMessageAndIndex (request, response) {
 
                             return response.success();
 
-                            
+
 
                         });
                     });
