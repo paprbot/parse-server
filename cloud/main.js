@@ -13383,15 +13383,6 @@ function splitPostAndIndex (request, response) {
 
                 console.log("post_zero with * tag: " + JSON.stringify(PostStar));
 
-                /*indexPosts.saveObject(PostStar, true, function(err, content) {
-                    if (err) return response.error(err);
-
-                    console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
-
-                    return content;
-
-
-                });*/
 
 
             }
@@ -14036,7 +14027,7 @@ function splitPostAndIndex (request, response) {
                       let beforeSaveElse_Time = process.hrtime(time);
                       console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                      return response.success();
+                      response.success();
 
                   });
 
@@ -14087,7 +14078,7 @@ function splitPostAndIndex (request, response) {
                     let beforeSaveElse_Time = process.hrtime(time);
                     console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                    return response.success();
+                    response.success();
 
                 });
 
@@ -14699,7 +14690,7 @@ function splitPostMessageAndIndex (request, response) {
                             let beforeSaveElse_Time = process.hrtime(time);
                             console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                            return response.success();
+                            response.success();
 
                         });
 
@@ -16762,7 +16753,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
             if (results.length > 0) {
 
-               // console.log("afterSave postMessage results length: " + JSON.stringify(results.length));
+               console.log("afterSave postMessage results length: " + JSON.stringify(results.length));
 
                 postMessageToSave = results[0];
                 //let chatMessages = results[2];
@@ -16784,7 +16775,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                     success: function (count) {
 
                         let Final_Time = process.hrtime(time);
-                        console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                        console.log(`splitPostMessageAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
                         return response.success();
                     },
