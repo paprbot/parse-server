@@ -14020,14 +14020,14 @@ function splitPostAndIndex (request, response) {
 
                   indexPosts.saveObjects(postQuestionMessagesSocialResult, true, function(err, content) {
                       if (err) {
-                          return response(err);
+                          return response.error(err);
                       }
                       console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
                       let beforeSaveElse_Time = process.hrtime(time);
                       console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                      response.success();
+                      return response.success();
 
                   });
 
@@ -14071,14 +14071,14 @@ function splitPostAndIndex (request, response) {
 
                 indexPosts.saveObject(post, true, function(err, content) {
                     if (err) {
-                        return response(err);
+                        return response.error(err);
                     }
                     console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
                     let beforeSaveElse_Time = process.hrtime(time);
                     console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                    response.success();
+                    return response.success();
 
                 });
 
@@ -14683,14 +14683,14 @@ function splitPostMessageAndIndex (request, response) {
 
                         indexPostMessage.saveObjects(postMessageSocialResults, true, function(err, content) {
                             if (err) {
-                                return response(err);
+                                return response.error(err);
                             }
                             console.log("Parse<>Algolia dev_postMessages saved from splitPosMessageAndIndex function ");
 
                             let beforeSaveElse_Time = process.hrtime(time);
                             console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-                            response.success();
+                            return response.success();
 
                         });
 
@@ -14730,7 +14730,7 @@ function splitPostMessageAndIndex (request, response) {
 
                 indexPostMessage.saveObject(postMessage, true, function(err, content) {
                     if (err) {
-                        return response(err);
+                        return response.error(err);
                     }
                     console.log("Parse<>Algolia dev_postMessages saved from splitPosMessageAndIndex function ");
 
