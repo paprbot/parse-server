@@ -16957,10 +16957,10 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                         let Final_Time = process.hrtime(time);
                         console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
-                        response.success();
+                        return response.success();
                     },
                     error: function (error) {
-                        response.error(error);
+                        return response.error(error);
                     }
                 });
 
