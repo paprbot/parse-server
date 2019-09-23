@@ -14029,10 +14029,9 @@ function splitPostAndIndex (request, response) {
 
                   indexPosts.saveObjects(postQuestionMessagesSocialResult, true,
                       (error, { taskID, objectID } = {}) => {
-                          if (error) return response.error(error);
 
                           console.log(`write operation received: ${taskID}`);
-                          index.waitTask(taskID, function contentIndexed() {
+                          indexPosts.waitTask(taskID, function contentIndexed() {
                               console.log(`object ${objectID} indexed`);
 
                               console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
@@ -14040,70 +14039,13 @@ function splitPostAndIndex (request, response) {
                               let beforeSaveElse_Time = process.hrtime(time);
                               console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
-
                               return response.success();
-
-
-                              /*count = count + postSocialResults.length;
-                              console.log("count: " + JSON.stringify(count));
-
-
-                              if (count === post.postSocialCount) {
-
-                                  console.log(" splitObjectAndIndex done ");
-
-                                  loop = false;
-
-                                  return response.success(count);
-
-
-                              } else {
-
-                                  loop = true;
-
-                                  console.log("Calling splitObjectAndIndex again loop true 1");
-
-                                  splitPostAndIndex({'count':count, 'user':user, 'object':post, 'loop': loop}, response);
-                              }*/
-
 
 
                           });
                   });
 
 
-                 /* indexPosts.addObjects(postQuestionMessagesSocialResult, true, function(err, content) {
-                      if (err) return response.error(err);
-
-                      console.log("content: " + JSON.stringify(content));
-
-                      console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
-
-                      count = count + postSocialResults.length;
-                      console.log("count: " + JSON.stringify(count));
-
-
-                      if (count === post.postSocialCount) {
-
-                          console.log(" splitObjectAndIndex done ");
-
-                          loop = false;
-
-                          return response.success(count);
-
-
-                      } else {
-
-                          loop = true;
-
-                          console.log("Calling splitObjectAndIndex again loop true 1");
-
-                          splitPostAndIndex({'count':count, 'user':user, 'object':post, 'loop': loop}, response);
-                      }
-
-
-
-                  });*/
 
 
               }
@@ -14130,64 +14072,7 @@ function splitPostAndIndex (request, response) {
                 // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
 
                 //console.log("className: " + JSON.stringify(className));
-                /*let POSTSTAR = Parse.Object.extend("Post");
-                let PostStar = new POSTSTAR();
-                PostStar.id = post.objectId;
 
-                PostStar.toJSON();
-
-                // convert post (json) to object for each user
-                if (post.workspace) { PostStar.set("workspace", post.workspace); }
-                console.log("setting workspace PostStar: " + JSON.stringify(PostStar));
-
-                if (post.channel) { PostStar.channel = post.channel; }
-                if (post.user) { PostStar.user = post.user; }
-                if (post.archive === true || post.archive === false) { PostStar.archive = post.archive; }
-                if (post.hashtags) { PostStar.hashtags = post.hashtags; }
-                if (post.mentions) { PostStar.mentions = post.mentions; }
-                if (post.type) { PostStar.type = post.type; }
-                if (post.mediaType) { PostStar.mediaType = post.mediaType; }
-                if (post.ACL) { PostStar.ACL = post.ACL; }
-                if (post.hasURL === true || post.hasURL === false) { PostStar.hasURL = post.hasURL; }
-                if (post.isIncognito === true || post.isIncognito === false) { PostStar.isIncognito = post.isIncognito; }
-                if (post.chatEnabled === true || post.chatEnabled === false) { PostStar.chatEnabled = post.chatEnabled; }
-                if (post.text) { PostStar.text = post.text; }
-                if (post.updatedAt) { PostStar.updatedAt = post.updatedAt; }
-                if (post.createdAt) { PostStar.createdAt = post.createdAt; }
-                console.log("setting createdAt: " + JSON.stringify(PostStar.createdAt));
-
-                if (post.transcript) { PostStar.transcript = post.transcrip; }
-                if (post.post_title) { PostStar.post_title = post.post_title; }
-                if (post.video) { PostStar.video = post.video; }
-                if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) { PostStar.questionAnswerEnabled = post.questionAnswerEnabled; }
-                if (post.thumbnailRatio) { PostStar.thumbnailRatio = post.thumbnailRatio; }
-                if (post.file) { PostStar.file = post.file; }
-                if (post.image) { PostStar.image = post.image; }
-                if (post.audio) { PostStar.audio = post.audio; }
-                if (post.audioWave) { PostStar.audioWave = post.audioWave; }
-                if (post.imageRatio) { PostStar.mageRatio = post.imageRatio; }
-                if (post.mediaDuration) { PostStar.mediaDuration =post.mediaDuration; }
-                if (post.likesCount) { PostStar.likesCount = post.likesCount; }
-                if (post.video_thumbnail) { PostStar.video_thumbnail = post.video_thumbnail; }
-                if (post.chatMessages) { PostStar.chatMessages = post.chatMessages; }
-
-                if (post.type === 'post') {
-
-                    if (post.postMessageCount) { PostStar.postMessageCount = post.postMessageCount; }
-                    if (post.postMessageUnReadCount) { PostStar.postMessageUnReadCount = post.postMessageUnReadCount; }
-                    if (post.postMessageQuestionCount) { PostStar.postMessageQuestionCount = post.postMessageQuestionCount; }
-                    if (post.postMessageQuestionUnReadCount) { PostStar.postMessageUnReadCount = post.postMessageQuestionUnReadCount; }
-                    if (post.postQuestions) { PostStar.postQuestions = post.postQuestions; }
-
-
-                } else if (post.type === 'question') {
-                    if (post.postMessageCount) { PostStar.postMessageCount = post.postMessageCount; }
-                    if (post.postMessageUnReadCount) { PostStar.postMessageUnReadCount = post.postMessageUnReadCount; }
-                    if (post.postMessageAnswerCount) { PostStar.postMessageAnswerCount = post.postMessageAnswerCount; }
-                    if (post.postMessageAnswerUnReadCount) { PostStar.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount; }
-                    if (post.topAnswer) { PostStar.topAnswer = post.topAnswer; }
-
-                }*/
 
                 let postObjectID = post.objectId + '-0';
 
@@ -14198,14 +14083,23 @@ function splitPostAndIndex (request, response) {
                 console.log("post with * tag: " + JSON.stringify(post));
 
 
-                indexPosts.saveObject(post, true, function(err, content) {
-                    if (err) return response.error(err);
+                indexPosts.saveObject(post, true,
+                    (error, { taskID, objectID } = {}) => {
 
-                    console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
-                    return response.success();
+                        console.log(`write operation received: ${taskID}`);
+                        indexPosts.waitTask(taskID, function contentIndexed() {
+                            console.log(`object ${objectID} indexed`);
 
+                            console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
-                });
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                            return response.success();
+
+                        });
+                    });
+
 
 
 
@@ -14806,79 +14700,26 @@ function splitPostMessageAndIndex (request, response) {
 
                         console.log("postMessageSocialResults.length adsf: " + JSON.stringify(postMessageSocialResults.length));
 
-                        indexPosts.saveObjects(postMessageSocialResults, true,
+                        indexPostMessage.saveObjects(postMessageSocialResults, true,
                             (error, { taskID, objectID } = {}) => {
-                                if (error) return response.error(error);
 
                                 console.log(`write operation received: ${taskID}`);
-                                index.waitTask(taskID, function contentIndexed() {
+                                indexPostMessage.waitTask(taskID, function contentIndexed() {
                                     console.log(`object ${objectID} indexed`);
 
                                     console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
+                                    let beforeSaveElse_Time = process.hrtime(time);
+                                    console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+
                                     return response.success();
-
-
-                                    /*count = count + postSocialResults.length;
-                                     console.log("count: " + JSON.stringify(count));
-
-
-                                     if (count === post.postSocialCount) {
-
-                                     console.log(" splitObjectAndIndex done ");
-
-                                     loop = false;
-
-                                     return response.success(count);
-
-
-                                     } else {
-
-                                     loop = true;
-
-                                     console.log("Calling splitObjectAndIndex again loop true 1");
-
-                                     splitPostAndIndex({'count':count, 'user':user, 'object':post, 'loop': loop}, response);
-                                     }*/
 
 
 
                                 });
                             });
 
-
-                        /* indexPosts.addObjects(postQuestionMessagesSocialResult, true, function(err, content) {
-                         if (err) return response.error(err);
-
-                         console.log("content: " + JSON.stringify(content));
-
-                         console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
-
-                         count = count + postSocialResults.length;
-                         console.log("count: " + JSON.stringify(count));
-
-
-                         if (count === post.postSocialCount) {
-
-                         console.log(" splitObjectAndIndex done ");
-
-                         loop = false;
-
-                         return response.success(count);
-
-
-                         } else {
-
-                         loop = true;
-
-                         console.log("Calling splitObjectAndIndex again loop true 1");
-
-                         splitPostAndIndex({'count':count, 'user':user, 'object':post, 'loop': loop}, response);
-                         }
-
-
-
-                         });*/
 
 
                     }
@@ -14913,14 +14754,25 @@ function splitPostMessageAndIndex (request, response) {
                 console.log("postMessage with * tag: " + JSON.stringify(postMessage));
 
 
-                indexPosts.saveObject(postMessage, true, function(err, content) {
-                    if (err) return response.error(err);
+                indexPostMessage.saveObject(postMessage, true,
+                    (error, { taskID, objectID } = {}) => {
 
-                    console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
-                    return response.success();
+                        console.log(`write operation received: ${taskID}`);
+                        indexPostMessage.waitTask(taskID, function contentIndexed() {
+                            console.log(`object ${objectID} indexed`);
+
+                            console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+
+                            let beforeSaveElse_Time = process.hrtime(time);
+                            console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
 
-                });
+                            return response.success();
+
+                            
+
+                        });
+                    });
 
 
 
