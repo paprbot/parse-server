@@ -14407,7 +14407,7 @@ function splitPostMessageAndIndex (request, response) {
 
             }
 
-            console.log("starting async.map");
+            console.log("starting PostMessageStar async.map");
 
 
             async.map(postMessageSocialResults, function (postMessageSocialResult, cb) {
@@ -14580,7 +14580,11 @@ function splitPostMessageAndIndex (request, response) {
                         console.log("setting likesCount PostMessageUser: i" + JSON.stringify(PostMessageUser.likedCount));
                     }
 
+                    console.log("postMessageSocialResult pre: " + JSON.stringify(postMessageSocialResult));
+
                     postMessageSocialResult = simplifyPostMessageSocialQuestion(postMessageSocialResult);
+
+                    console.log("postMessageSocialResult post: " + JSON.stringify(postMessageSocialResult));
 
 
 
@@ -14623,7 +14627,13 @@ function splitPostMessageAndIndex (request, response) {
 
                     }
 
+                    console.log("postMessageSocialResult pre: " + JSON.stringify(postMessageSocialResult));
+
+
                     postMessageSocialResult = simplifyPostMessageSocialAnswer(postMessageSocialResult);
+
+                    console.log("postMessageSocialResult post: " + JSON.stringify(postMessageSocialResult));
+
 
 
 
@@ -14638,7 +14648,13 @@ function splitPostMessageAndIndex (request, response) {
                         console.log("setting likesCount PostMessageUser: i" + JSON.stringify(PostMessageUser.likedCount));
                     }
 
+                    console.log("postMessageSocialResult pre: " + JSON.stringify(postMessageSocialResult));
+
+
                     postMessageSocialResult = simplifyPostMessageSocialQuestion(postMessageSocialResult);
+
+                    console.log("postMessageSocialResult post: " + JSON.stringify(postMessageSocialResult));
+
 
 
                 }
@@ -14647,7 +14663,7 @@ function splitPostMessageAndIndex (request, response) {
                 let UserResult = new USER();
                 UserResult.id = postMessageSocialResult.get("user").id;
 
-                console.log("UserResult: " + JSON.stringify(UserResult));
+                console.log("postMessageSocialResult UserResult: " + JSON.stringify(UserResult));
 
 
                 let tagUser = [];
