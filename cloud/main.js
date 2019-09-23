@@ -14417,6 +14417,10 @@ function splitPostMessageAndIndex (request, response) {
                 let PostMessageUser = new POSTMESSAGEUSER();
                 PostMessageUser.id = postMessage.objectId;
 
+                let USER = Parse.Object.extend("_User");
+                let UserResult = new USER();
+                UserResult.id = postMessageSocialResult.get("user").id;
+
                 PostMessageUser = PostMessageUser.toJSON();
 
                 if (postMessage.workspace) {
@@ -14635,8 +14639,7 @@ function splitPostMessageAndIndex (request, response) {
                     console.log("postMessageSocialResult post: " + JSON.stringify(postMessageSocialResult));
 
 
-
-
+                    
 
                 } else if (postMessage.type === 'comment') {
 
@@ -14659,9 +14662,7 @@ function splitPostMessageAndIndex (request, response) {
 
                 }
 
-                let USER = Parse.Object.extend("_User");
-                let UserResult = new USER();
-                UserResult.id = postMessageSocialResult.get("user").id;
+
 
                 console.log("postMessageSocialResult UserResult: " + JSON.stringify(UserResult));
 
