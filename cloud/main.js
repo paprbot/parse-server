@@ -16774,8 +16774,8 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
             Post.save(null, {
 
-                //useMasterKey: true
-                sessionToken: sessionToken
+                useMasterKey: true
+                //sessionToken: sessionToken
 
             });
 
