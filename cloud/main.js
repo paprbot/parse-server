@@ -13691,7 +13691,7 @@ function splitPostAndIndex (request, response) {
 
 
                                 queryPostMessageSocial.equalTo("postMessage", postMessage);
-                                queryPostMessageSocial.equalTo("user", UserResult.id);
+                                queryPostMessageSocial.equalTo("user", UserResult);
 
                                 queryPostMessageSocial.first({
 
@@ -13802,7 +13802,7 @@ function splitPostAndIndex (request, response) {
                                 return response.error(err);
                             } else {
 
-                                //console.log("object.postQuestions: " + JSON.stringify(object.postQuestions));
+                                console.log("postQuestionMessagesSocialResult.postQuestions: " + JSON.stringify(postQuestionMessagesSocialResult);
 
                                 PostUser.postQuestions = postQuestionMessagesSocialResult;
 
