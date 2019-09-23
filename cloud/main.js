@@ -14029,13 +14029,17 @@ function splitPostAndIndex (request, response) {
 
                   indexPosts.saveObjects(postQuestionMessagesSocialResult, true,
                       (error, { taskID, objectID } = {}) => {
-                          if (err) return response.error(err);
+                          if (error) return response.error(error);
 
                           console.log(`write operation received: ${taskID}`);
                           index.waitTask(taskID, function contentIndexed() {
                               console.log(`object ${objectID} indexed`);
 
                               console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+
+                              let beforeSaveElse_Time = process.hrtime(time);
+                              console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
 
                               return response.success();
 
@@ -14195,6 +14199,721 @@ function splitPostAndIndex (request, response) {
 
 
                 indexPosts.saveObject(post, true, function(err, content) {
+                    if (err) return response.error(err);
+
+                    console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
+                    return response.success();
+
+
+                });
+
+
+
+            } else {
+
+                return response.success();
+            }
+
+
+        }
+
+
+
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        //console.log(error);
+        return response.error(error);
+    }, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+}
+
+function splitPostMessageAndIndex (request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    var loop = request['loop'];
+    console.log("loop: " + JSON.stringify(loop));
+
+    let user = request['user'];
+    //console.log("splitPostAndIndex user: " + JSON.stringify(user));
+    console.log("::Starting splitPostAndIndex:: " + JSON.stringify(request));
+
+    let postMessage = request['object'];
+    console.log("postMessage: " + JSON.stringify(postMessage));
+
+    let POSTMESSAGE = Parse.Object.extend("PostMessage");
+    let PostMessage = new POSTMESSAGE();
+    PostMessage.id = POSTMESSAGE.objectId;
+    // note object needs to be toJSON()
+    console.log("PostMessage: " + JSON.stringify(PostMessage));
+
+    let count = (request['count'])? request['count'] : 0;
+    console.log("count: " + JSON.stringify(count));
+
+    let postMessageSocialQuery = new Parse.Query("PostMessageSocial");
+
+    postMessageSocialQuery.equalTo('postMessage', PostMessage);
+
+    postMessageSocialQuery.limit(10000);
+
+    postMessageSocialQuery.skip(count);
+
+    postMessageSocialQuery.find({
+        useMasterKey: true
+        //sessionToken: sessionToken
+    }).then((postMessageSocialResults) => {
+
+        console.log("postMessageSocialResults.length: " + JSON.stringify(postMessageSocialResults));
+
+        if (postMessageSocialResults.length > 0) {
+
+            let tags = ['*'];
+
+            console.log("starting postMessageSocialQuery");
+
+            let postMessage_zero = postMessage;
+
+
+            if (count === 0 ) {
+
+                // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
+
+                //console.log("className: " + JSON.stringify(className));
+                let POSTMESSAGESTAR = Parse.Object.extend("PostMessage");
+                var PostMessageStar = new POSTMESSAGESTAR();
+                PostMessageStar.id = postMessage.objectId;
+
+                PostMessageStar = PostMessageStar.toJSON();
+
+                if (postMessage.workspace) {
+                    PostMessageStar.workspace = postMessage.workspace;
+                    console.log("setting workspace PostMessageStar: " + JSON.stringify(PostMessageStar.workspace));
+
+                }
+
+                if (postMessage.channel) {
+                    PostMessageStar.channel = postMessage.channel;
+                    console.log("setting channel PostMessageStar: " + JSON.stringify(PostMessageStar.channel));
+
+                }
+
+                if (postMessage.user) {
+                    PostMessageStar.user = postMessage.user;
+                    console.log("setting user PostMessageStar: " + JSON.stringify(PostMessageStar.user));
+
+                }
+
+                if (postMessage.archive === true || postMessage.archive === false) {
+                    PostMessageStar.archive = postMessage.archive;
+                    console.log("setting archive PostMessageStar: " + JSON.stringify(PostMessageStar.archive));
+
+                }
+
+                if (postMessage.hashtags) {
+                    PostMessageStar.hashtags = postMessage.hashtags;
+                    console.log("setting hashtags PostMessageStar: " + JSON.stringify(PostMessageStar.hashtags));
+
+                }
+
+                if (postMessage.mentions) {
+                    PostMessageStar.mentions = postMessage.mentions;
+                    console.log("setting mentions PostMessageStar: " + JSON.stringify(PostMessageStar.mentions));
+
+                }
+
+
+                if (postMessage.type) {
+                    PostMessageStar.type = postMessage.type;
+                    console.log("setting type PostMessageStar: " + JSON.stringify(PostMessageStar.type));
+
+                }
+
+                if (postMessage.mediaType) {
+                    PostMessageStar.mediaType = postMessage.mediaType;
+                    console.log("setting mediaType PostMessageStar: " + JSON.stringify(PostMessageStar.mediaType));
+
+                }
+
+                if (postMessage.ACL) {
+                    PostMessageStar.ACL = postMessage.ACL;
+                    console.log("setting ACL PostMessageStar: " + JSON.stringify(PostMessageStar.ACL));
+
+                }
+
+                if (postMessage.hasURL === true || postMessage.hasURL === false) {
+
+                    PostMessageStar.hasURL = postMessage.hasURL;
+                    console.log("setting hasURL PostMessageStar: " + JSON.stringify(PostMessageStar.hasURL));
+
+                }
+
+                if (postMessage.isIncognito === true || postMessage.isIncognito === false) {
+                    PostMessageStar.isIncognito = postMessage.isIncognito;
+                    console.log("setting isIncognito PostMessageStar: " + JSON.stringify(PostMessageStar.isIncognito));
+
+                }
+
+
+                if (postMessage.message) {
+                    PostMessageStar.message = postMessage.message;
+                    console.log("setting message PostMessageStar: " + JSON.stringify(PostMessageStar.message));
+
+                }
+                if (postMessage.updatedAt) {
+                    PostMessageStar.updatedAt = postMessage.updatedAt;
+                    console.log("setting updatedAt PostMessageStar: " + JSON.stringify(PostMessageStar.updatedAt));
+                }
+                if (postMessage.createdAt) {
+
+                    PostMessageStar.createdAt = postMessage.createdAt;
+                    console.log("setting createdAt PostMessageStar: " + JSON.stringify(PostMessageStar.createdAt));
+                }
+
+                if (postMessage.video) {
+
+                    PostMessageStar.video = postMessage.video;
+                    console.log("setting video PostMessageStar: " + JSON.stringify(PostMessageStar.video));
+
+                }
+
+                if (postMessage.thumbnailRatio) {
+
+                    PostMessageStar.thumbnailRatio = postMessage.thumbnailRatio;
+                    console.log("setting thumbnailRatio PostMessageStar: " + JSON.stringify(PostMessageStar.thumbnailRatio));
+                }
+
+                if (postMessage.file) {
+
+                    PostMessageStar.file = postMessage.file;
+                    console.log("setting file PostMessageStar: " + JSON.stringify(PostMessageStar.file));
+                }
+                if (postMessage.image) {
+                    PostMessageStar.image = postMessage.image;
+                    console.log("setting image PostMessageStar: " + JSON.stringify(PostMessageStar.image));
+                }
+                if (postMessage.audio) {
+                    PostMessageStar.audio = postMessage.audio;
+                    console.log("setting audio PostMessageStar: " + JSON.stringify(PostMessageStar.audio));
+                }
+
+                if (postMessage.audioWave) {
+                    PostMessageStar.audioWave = postMessage.audioWave;
+                    console.log("setting audioWave PostMessageStar: " + JSON.stringify(PostMessageStar.audioWave));
+                }
+
+                if (postMessage.imageRatio) {
+                    PostMessageStar.imageRatio = postMessage.imageRatio;
+                    console.log("setting imageRatio PostMessageStar: " + JSON.stringify(PostMessageStar.imageRatio));
+                }
+
+                if (postMessage.mediaDuration) {
+                    PostMessageStar.mediaDuration = postMessage.mediaDuration;
+                    console.log("setting mediaDuration PostMessageStar: " + JSON.stringify(PostMessageStar.mediaDuration));
+                }
+
+                if (postMessage.video_thumbnail) {
+                    PostMessageStar.video_thumbnail = postMessage.video_thumbnail;
+                    console.log("setting video_thumbnail PostMessageStar: " + JSON.stringify(PostMessageStar.video_thumbnail));
+                }
+
+                if (postMessage.parentPostMessage) {
+                    PostMessageStar.parentPostMessage = postMessage.parentPostMessage;
+                    console.log("setting parentPostMessage PostMessageStar: " + JSON.stringify(PostMessageStar.parentPostMessage));
+                }
+
+                if (postMessage.postMessageSocialCount) {
+                    PostMessageStar.postMessageSocialCount = postMessage.postMessageSocialCount;
+                    console.log("setting postMessageSocialCount PostMessageStar: " + JSON.stringify(PostMessageStar.postMessageSocialCount));
+                }
+
+                if (postMessage.childPostMessageCount) {
+                    PostMessageStar.childPostMessageCount = postMessage.childPostMessageCount;
+                    console.log("setting childPostMessageCount PostMessageStar: " + JSON.stringify(PostMessageStar.childPostMessageCount));
+                }
+
+                if (postMessage.postMessageReadStatusCount) {
+                    PostMessageStar.postMessageReadStatusCount = postMessage.postMessageReadStatusCount;
+                    console.log("setting postMessageReadStatusCount PostMessageStar: " + JSON.stringify(PostMessageStar.postMessageReadStatusCount));
+                }
+
+
+
+                if (postMessage.type === 'question') {
+
+                    if (postMessage.likedCount) {
+
+                        PostMessageStar.likedCount = postMessage.likedCount;
+                        console.log("setting likesCount PostMessageStar: i" + JSON.stringify(PostMessageStar.likedCount));
+                    }
+
+
+                } else  if (postMessage.type === 'answer') {
+
+                    if (postMessage.upVotedByExpert === true || postMessage.upVotedByExpert === false) {
+                        PostMessageStar.upVotedByExpert = postMessage.upVotedByExpert;
+                        console.log("setting upVotedByExpert PostMessageStar: " + JSON.stringify(PostMessageStar.upVotedByExpert));
+
+                    }
+
+                    if (postMessage.seenByExpert === true || postMessage.seenByExpert === false) {
+                        PostMessageStar.seenByExpert = postMessage.seenByExpert;
+                        console.log("setting seenByExpert PostMessageStar: " + JSON.stringify(PostMessageStar.seenByExpert));
+
+                    }
+
+                    if (postMessage.voteRank) {
+                        PostMessageStar.voteRank = postMessage.voteRank;
+                        console.log("setting voteRank PostMessageStar: " + JSON.stringify(PostMessageStar.voteRank));
+
+                    }
+
+                    if (postMessage.numberOfUpVotes) {
+                        PostMessageStar.numberOfUpVotes = postMessage.numberOfUpVotes;
+                        console.log("setting numberOfUpVotes PostMessageStar: " + JSON.stringify(PostMessageStar.numberOfUpVotes));
+
+                    }
+
+
+                    if (postMessage.numberOfDownVotes) {
+                        PostMessageStar.numberOfDownVotes = postMessage.numberOfDownVotes;
+                        console.log("setting numberOfDownVotes PostMessageStar: " + JSON.stringify(PostMessageStar.numberOfDownVotes));
+
+                    }
+
+                    if (postMessage.postMessageVoteCount) {
+                        PostMessageStar.postMessageVoteCount = postMessage.postMessageVoteCount;
+                        console.log("setting postMessageVoteCount PostMessageStar: " + JSON.stringify(PostMessageStar.postMessageVoteCount));
+
+                    }
+
+
+
+                } else if (postMessage.type === 'comment') {
+
+                    console.log("it's a comment!: " + JSON.stringify(postMessage.type));
+
+                    if (postMessage.likedCount) {
+
+                        PostMessageStar.likedCount = postMessage.likedCount;
+                        console.log("setting likesCount PostMessageStar: i" + JSON.stringify(PostMessageStar.likedCount));
+                    }
+
+                }
+
+                let postMessageObjectID = postMessage.objectId + '-0';
+
+                PostMessageStar.objectID = postMessageObjectID;
+                PostMessageStar._tags = tags;
+                PostMessageStar.PostMessageSocial = null;
+
+                console.log("PostMessageStar with * tag: " + JSON.stringify(PostMessageStar));
+
+
+            }
+
+            console.log("starting async.map");
+
+
+            async.map(postMessageSocialResults, function (postMessageSocialResult, cb) {
+
+                //console.log("postSocialResults.length: " + JSON.stringify(postSocialResults.length));
+                let POSTMESSAGEUSER = Parse.Object.extend("PostMessage");
+                let PostMessageUser = new POSTMESSAGEUSER();
+                PostMessageUser.id = postMessage.objectId;
+
+                PostMessageUser = PostMessageUser.toJSON();
+
+                if (postMessage.workspace) {
+                    PostMessageUser.workspace = postMessage.workspace;
+                    console.log("setting workspace PostMessageUser: " + JSON.stringify(PostMessageUser.workspace));
+
+                }
+
+                if (postMessage.channel) {
+                    PostMessageUser.channel = postMessage.channel;
+                    console.log("setting channel PostMessageUser: " + JSON.stringify(PostMessageUser.channel));
+
+                }
+
+                if (postMessage.user) {
+                    PostMessageUser.user = postMessage.user;
+                    console.log("setting user PostMessageUser: " + JSON.stringify(PostMessageUser.user));
+
+                }
+
+                if (postMessage.archive === true || postMessage.archive === false) {
+                    PostMessageUser.archive = postMessage.archive;
+                    console.log("setting archive PostMessageUser: " + JSON.stringify(PostMessageUser.archive));
+
+                }
+
+                if (postMessage.hashtags) {
+                    PostMessageUser.hashtags = postMessage.hashtags;
+                    console.log("setting hashtags PostMessageUser: " + JSON.stringify(PostMessageUser.hashtags));
+
+                }
+
+                if (postMessage.mentions) {
+                    PostMessageUser.mentions = postMessage.mentions;
+                    console.log("setting mentions PostMessageUser: " + JSON.stringify(PostMessageUser.mentions));
+
+                }
+
+
+                if (postMessage.type) {
+                    PostMessageUser.type = postMessage.type;
+                    console.log("setting type PostMessageUser: " + JSON.stringify(PostMessageUser.type));
+
+                }
+
+                if (postMessage.mediaType) {
+                    PostMessageUser.mediaType = postMessage.mediaType;
+                    console.log("setting mediaType PostMessageUser: " + JSON.stringify(PostMessageUser.mediaType));
+
+                }
+
+                if (postMessage.ACL) {
+                    PostMessageUser.ACL = postMessage.ACL;
+                    console.log("setting ACL PostMessageUser: " + JSON.stringify(PostMessageUser.ACL));
+
+                }
+
+                if (postMessage.hasURL === true || postMessage.hasURL === false) {
+
+                    PostMessageUser.hasURL = postMessage.hasURL;
+                    console.log("setting hasURL PostMessageUser: " + JSON.stringify(PostMessageUser.hasURL));
+
+                }
+
+                if (postMessage.isIncognito === true || postMessage.isIncognito === false) {
+                    PostMessageUser.isIncognito = postMessage.isIncognito;
+                    console.log("setting isIncognito PostMessageUser: " + JSON.stringify(PostMessageUser.isIncognito));
+
+                }
+
+
+                if (postMessage.message) {
+                    PostMessageUser.message = postMessage.message;
+                    console.log("setting message PostMessageUser: " + JSON.stringify(PostMessageUser.message));
+
+                }
+                if (postMessage.updatedAt) {
+                    PostMessageUser.updatedAt = postMessage.updatedAt;
+                    console.log("setting updatedAt PostMessageUser: " + JSON.stringify(PostMessageUser.updatedAt));
+                }
+                if (postMessage.createdAt) {
+
+                    PostMessageUser.createdAt = postMessage.createdAt;
+                    console.log("setting createdAt PostMessageUser: " + JSON.stringify(PostMessageUser.createdAt));
+                }
+
+                if (postMessage.video) {
+
+                    PostMessageUser.video = postMessage.video;
+                    console.log("setting video PostMessageUser: " + JSON.stringify(PostMessageUser.video));
+
+                }
+
+                if (postMessage.thumbnailRatio) {
+
+                    PostMessageUser.thumbnailRatio = postMessage.thumbnailRatio;
+                    console.log("setting thumbnailRatio PostMessageUser: " + JSON.stringify(PostMessageUser.thumbnailRatio));
+                }
+
+                if (postMessage.file) {
+
+                    PostMessageUser.file = postMessage.file;
+                    console.log("setting file PostMessageUser: " + JSON.stringify(PostMessageUser.file));
+                }
+                if (postMessage.image) {
+                    PostMessageUser.image = postMessage.image;
+                    console.log("setting image PostMessageUser: " + JSON.stringify(PostMessageUser.image));
+                }
+                if (postMessage.audio) {
+                    PostMessageUser.audio = postMessage.audio;
+                    console.log("setting audio PostMessageUser: " + JSON.stringify(PostMessageUser.audio));
+                }
+
+                if (postMessage.audioWave) {
+                    PostMessageUser.audioWave = postMessage.audioWave;
+                    console.log("setting audioWave PostMessageUser: " + JSON.stringify(PostMessageUser.audioWave));
+                }
+
+                if (postMessage.imageRatio) {
+                    PostMessageUser.imageRatio = postMessage.imageRatio;
+                    console.log("setting imageRatio PostMessageUser: " + JSON.stringify(PostMessageUser.imageRatio));
+                }
+
+                if (postMessage.mediaDuration) {
+                    PostMessageUser.mediaDuration = postMessage.mediaDuration;
+                    console.log("setting mediaDuration PostMessageUser: " + JSON.stringify(PostMessageUser.mediaDuration));
+                }
+
+                if (postMessage.video_thumbnail) {
+                    PostMessageUser.video_thumbnail = postMessage.video_thumbnail;
+                    console.log("setting video_thumbnail PostMessageUser: " + JSON.stringify(PostMessageUser.video_thumbnail));
+                }
+
+                if (postMessage.parentPostMessage) {
+                    PostMessageUser.parentPostMessage = postMessage.parentPostMessage;
+                    console.log("setting parentPostMessage PostMessageUser: " + JSON.stringify(PostMessageUser.parentPostMessage));
+                }
+
+                if (postMessage.postMessageSocialCount) {
+                    PostMessageUser.postMessageSocialCount = postMessage.postMessageSocialCount;
+                    console.log("setting postMessageSocialCount PostMessageUser: " + JSON.stringify(PostMessageUser.postMessageSocialCount));
+                }
+
+                if (postMessage.childPostMessageCount) {
+                    PostMessageUser.childPostMessageCount = postMessage.childPostMessageCount;
+                    console.log("setting childPostMessageCount PostMessageUser: " + JSON.stringify(PostMessageUser.childPostMessageCount));
+                }
+
+                if (postMessage.postMessageReadStatusCount) {
+                    PostMessageUser.postMessageReadStatusCount = postMessage.postMessageReadStatusCount;
+                    console.log("setting postMessageReadStatusCount PostMessageUser: " + JSON.stringify(PostMessageUser.postMessageReadStatusCount));
+                }
+
+
+
+                if (postMessage.type === 'question') {
+
+                    if (postMessage.likedCount) {
+
+                        PostMessageUser.likedCount = postMessage.likedCount;
+                        console.log("setting likesCount PostMessageUser: i" + JSON.stringify(PostMessageUser.likedCount));
+                    }
+
+                    postMessageSocialResult = simplifyPostMessageSocialQuestion(postMessageSocialResult);
+
+
+
+                } else  if (postMessage.type === 'answer') {
+
+                    if (postMessage.upVotedByExpert === true || postMessage.upVotedByExpert === false) {
+                        PostMessageUser.upVotedByExpert = postMessage.upVotedByExpert;
+                        console.log("setting upVotedByExpert PostMessageUser: " + JSON.stringify(PostMessageUser.upVotedByExpert));
+
+                    }
+
+                    if (postMessage.seenByExpert === true || postMessage.seenByExpert === false) {
+                        PostMessageUser.seenByExpert = postMessage.seenByExpert;
+                        console.log("setting seenByExpert PostMessageUser: " + JSON.stringify(PostMessageUser.seenByExpert));
+
+                    }
+
+                    if (postMessage.voteRank) {
+                        PostMessageUser.voteRank = postMessage.voteRank;
+                        console.log("setting voteRank PostMessageUser: " + JSON.stringify(PostMessageUser.voteRank));
+
+                    }
+
+                    if (postMessage.numberOfUpVotes) {
+                        PostMessageUser.numberOfUpVotes = postMessage.numberOfUpVotes;
+                        console.log("setting numberOfUpVotes PostMessageUser: " + JSON.stringify(PostMessageUser.numberOfUpVotes));
+
+                    }
+
+
+                    if (postMessage.numberOfDownVotes) {
+                        PostMessageUser.numberOfDownVotes = postMessage.numberOfDownVotes;
+                        console.log("setting numberOfDownVotes PostMessageUser: " + JSON.stringify(PostMessageUser.numberOfDownVotes));
+
+                    }
+
+                    if (postMessage.postMessageVoteCount) {
+                        PostMessageUser.postMessageVoteCount = postMessage.postMessageVoteCount;
+                        console.log("setting postMessageVoteCount PostMessageUser: " + JSON.stringify(PostMessageUser.postMessageVoteCount));
+
+                    }
+
+                    postMessageSocialResult = simplifyPostMessageSocialAnswer(postMessageSocialResult);
+
+
+
+
+                } else if (postMessage.type === 'comment') {
+
+                    console.log("it's a comment!: " + JSON.stringify(postMessage.type));
+
+                    if (postMessage.likedCount) {
+
+                        PostMessageUser.likedCount = postMessage.likedCount;
+                        console.log("setting likesCount PostMessageUser: i" + JSON.stringify(PostMessageUser.likedCount));
+                    }
+
+                    postMessageSocialResult = simplifyPostMessageSocialQuestion(postMessageSocialResult);
+
+
+                }
+
+                let USER = Parse.Object.extend("_User");
+                let UserResult = new USER();
+                UserResult.id = postMessageSocialResult.get("user").id;
+
+                console.log("UserResult: " + JSON.stringify(UserResult));
+
+
+                let tagUser = [];
+
+                tagUser.push(UserResult.id);
+
+
+                let postObjectID = postMessage.objectId + '-' + UserResult.id;
+
+
+                PostMessageUser.objectID = postObjectID;
+                PostMessageUser._tags = tagUser;
+                PostMessageUser.PostMessageSocial = postMessageSocialResult;
+
+
+                console.log("postMessage splitObjectAndIndex object: " + JSON.stringify(PostMessageUser));
+
+
+
+
+            }, function (err, postMessageSocialResults) {
+
+                console.log("postMessageSocialResults length: " + JSON.stringify(postMessageSocialResults.length));
+
+                if (err) {
+                    return response.error(err);
+                } else {
+
+                    if (count === 0 ) {
+
+                        console.log("postMessageSocialResults: " + JSON.stringify(postMessageSocialResults));
+
+
+                        //postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(JSON.parse(post_zero));
+
+                        postMessageSocialResults.push(PostMessageStar);
+
+
+                        console.log("postMessageSocialResults add: asd " + JSON.stringify(postMessageSocialResults));
+
+                    }
+
+                    if (postMessageSocialResults.length > 0) {
+
+                        console.log("postMessageSocialResults.length adsf: " + JSON.stringify(postMessageSocialResults.length));
+
+                        indexPosts.saveObjects(postMessageSocialResults, true,
+                            (error, { taskID, objectID } = {}) => {
+                                if (error) return response.error(error);
+
+                                console.log(`write operation received: ${taskID}`);
+                                index.waitTask(taskID, function contentIndexed() {
+                                    console.log(`object ${objectID} indexed`);
+
+                                    console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+
+                                    return response.success();
+
+
+                                    /*count = count + postSocialResults.length;
+                                     console.log("count: " + JSON.stringify(count));
+
+
+                                     if (count === post.postSocialCount) {
+
+                                     console.log(" splitObjectAndIndex done ");
+
+                                     loop = false;
+
+                                     return response.success(count);
+
+
+                                     } else {
+
+                                     loop = true;
+
+                                     console.log("Calling splitObjectAndIndex again loop true 1");
+
+                                     splitPostAndIndex({'count':count, 'user':user, 'object':post, 'loop': loop}, response);
+                                     }*/
+
+
+
+                                });
+                            });
+
+
+                        /* indexPosts.addObjects(postQuestionMessagesSocialResult, true, function(err, content) {
+                         if (err) return response.error(err);
+
+                         console.log("content: " + JSON.stringify(content));
+
+                         console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+
+                         count = count + postSocialResults.length;
+                         console.log("count: " + JSON.stringify(count));
+
+
+                         if (count === post.postSocialCount) {
+
+                         console.log(" splitObjectAndIndex done ");
+
+                         loop = false;
+
+                         return response.success(count);
+
+
+                         } else {
+
+                         loop = true;
+
+                         console.log("Calling splitObjectAndIndex again loop true 1");
+
+                         splitPostAndIndex({'count':count, 'user':user, 'object':post, 'loop': loop}, response);
+                         }
+
+
+
+                         });*/
+
+
+                    }
+
+                    else {
+
+                        return response.error(err);
+
+                    }
+
+                }
+
+            });
+
+        }
+        else {
+
+            if (count === 0) {
+
+                let tags = ['*'];
+
+                console.log("::starting postMessageSocialQuery no result on postMessageSocial::");
+
+                // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
+
+                let postMessageObjectID = postMessage.objectId + '-0';
+
+                postMessage.objectID = postMessageObjectID;
+                postMessage._tags = tags;
+                postMessage.PostMessageSocial = null;
+
+                console.log("postMessage with * tag: " + JSON.stringify(postMessage));
+
+
+                indexPosts.saveObject(postMessage, true, function(err, content) {
                     if (err) return response.error(err);
 
                     console.log("Parse<>Algolia dev_posts PostStar saved from splitPostAndIndex function ");
@@ -16232,15 +16951,15 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                 //console.log("PostSocial: " + JSON.stringify(postSocial));
                 //console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
 
-                splitObjectAndIndex({'user':currentUser, 'object':postMessageToSave, 'className':'PostMessageSocial', 'loop':true}, {
-                    success: function(count) {
+                splitPostMessageAndIndex({'user':currentUser, 'object':postMessageToSave}, {
+                    success: function (count) {
 
                         let Final_Time = process.hrtime(time);
-                        console.log(`splitObjectToIndex postMessage took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                        console.log(`splitObjectToIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
                         response.success();
                     },
-                    error: function(error) {
+                    error: function (error) {
                         response.error(error);
                     }
                 });
