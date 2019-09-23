@@ -14028,21 +14028,21 @@ function splitPostAndIndex (request, response) {
                   console.log("postQuestionMessagesSocialResult.length adsf: " + JSON.stringify(postQuestionMessagesSocialResult.length));
 
                   indexPosts.saveObjects(postQuestionMessagesSocialResult, true,
-                      (error, { taskID, objectID } = {}) => {
+                      (error, { taskID } = {}) => {
 
                           console.log(`write operation received: ${taskID}`);
                           indexPosts.waitTask(taskID, function contentIndexed() {
-                              console.log(`object ${objectID} indexed`);
+                              console.log(`objects indexed`);
 
+                              console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+
+                              let beforeSaveElse_Time = process.hrtime(time);
+                              console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                              return response.success();
 
                           });
 
-                          console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
-
-                          let beforeSaveElse_Time = process.hrtime(time);
-                          console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                          return response.success();
                   });
 
 
