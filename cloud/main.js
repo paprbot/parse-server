@@ -6568,7 +6568,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
         let POSTMESSAGE = Parse.Object.extend("PostMessage");
         let PostMessage = new POSTMESSAGE();
-        PostMessage.id = postMessage.id;
+        PostMessage.id = postMessageSocial.get("postMessage").id;
 
         let USER = Parse.Object.extend("_User");
         let User = new USER();
@@ -6596,6 +6596,9 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                 response.error(postMessageSocialResult);
 
             } else {
+
+                console.log("it's new postMessageSocial, no existing postMessageSocial");
+
 
                 function setDefaultValues (cb) {
 
