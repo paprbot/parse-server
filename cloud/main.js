@@ -13752,11 +13752,19 @@ function splitPostAndIndex (request, response) {
                                     let PostMessageSocial = results[0];
                                     console.log("done postMessageSocial results: " + JSON.stringify(results));
 
+                                    console.log("done PostMessageSocial: " + JSON.stringify(PostMessageSocial));
+
+
 
                                     if (PostMessageSocial) {
 
+                                        console.log("enter into PostMessageSocial...");
+
+
                                         let postMessageSocialQuestion = simplifyPostMessageSocialQuestion(PostMessageSocial);
 
+                                        console.log("finish simplify into PostMessageSocial: " + JSON.stringify(postMessageSocialQuestion));
+                                        
 
                                         postQuestionMessage.PostMessageSocial = postMessageSocialQuestion;
                                         console.log("done postMessageSocial: " + JSON.stringify(PostMessageSocial));
