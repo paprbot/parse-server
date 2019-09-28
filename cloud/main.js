@@ -6574,7 +6574,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
         let User = new USER();
         User.id = postMessageSocial.get("user").id;
 
-        let postMessageSocialQuery = new Parse.Query("PostSocial");
+        let postMessageSocialQuery = new Parse.Query("PostMessageSocial");
 
         postMessageSocialQuery.equalTo("user", User.id);
         postMessageSocialQuery.equalTo("postMessage", PostMessage.id);
@@ -13393,7 +13393,7 @@ function splitPostAndIndex (request, response) {
             console.log("starting async.map");
 
 
-            async.map(postSocialResults, function (postSocialResult, cb) {
+            async.mapSeries(postSocialResults, function (postSocialResult, cb) {
 
                 //console.log("postSocialResults.length: " + JSON.stringify(postSocialResults.length));
                 let POSTUSER = Parse.Object.extend("Post");
@@ -15413,7 +15413,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     let USER = Parse.Object.extend("_User");
     let owner = new USER();
-    owner.id = postSocial.get("user").id ? postSocial.get("user").id : currentUser.id;
+    owner.id = postSocial.get("user") ? postSocial.get("user").id : currentUser.id;
     console.log("afterSave PostSocial owner: " + JSON.stringify(owner));
 
     let queryPost = new Parse.Query(POST);
