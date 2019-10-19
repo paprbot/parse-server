@@ -22,6 +22,10 @@ function simplifyPostMessageSocialAnswer (PostMessageSocial) {
     if (postMessageSocial.algoliaIndexID) {delete postMessageSocial.algoliaIndexID;}
     if (postMessageSocial.createdAt) {delete postMessageSocial.createdAt;}
     if (postMessageSocial.updatedAt) {delete postMessageSocial.updatedAt;}
+    if (postMessageSocial.deliveredDate) {delete postMessageSocial.deliveredDate;}
+    if (postMessageSocial.readDate) {delete postMessageSocial.readDate;}
+    if (postMessageSocial.postSocial) {delete postMessageSocial.postSocial;}
+
 
     return postMessageSocial;
 }

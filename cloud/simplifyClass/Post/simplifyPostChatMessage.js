@@ -29,7 +29,6 @@ function simplifyPostChatMessage (PostChatMessage) {
     if (postChatMessage.replyMessage) {delete postChatMessage.replyMessage;}
     if (postChatMessage.archive) {delete postChatMessage.archive;}
 
-
     return postChatMessage;
 }
 

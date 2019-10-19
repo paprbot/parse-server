@@ -13,6 +13,9 @@ function simplifyPostSocial (PostSocial) {
     if (postSocial.archive) {delete postSocial.archive;}
     if (postSocial.isNew === true || postSocial.isNew === false) {delete postSocial.isNew;}
     if (postSocial.algoliaIndexID) {delete postSocial.algoliaIndexID;}
+    if (postSocial.deliveredDate) {delete postSocial.deliveredDate;}
+    if (postSocial.readDate) {delete postSocial.readDate;}
+
 
     return postSocial;
 }

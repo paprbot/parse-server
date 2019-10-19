@@ -7172,9 +7172,9 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                                 postSocial.set("isBookmarked", false);
                                 postSocial.set("archive", false);
                                 postSocial.set("isDelivered", true);
-                                postSocial.set("deliveredDate", timeDelivered);
+                                //postSocial.set("deliveredDate", timeDelivered);
                                 postSocial.set("hasRead", true);
-                                postSocial.set("readDate", timeRead);
+                                //postSocial.set("readDate", timeRead);
                                 postSocial.set("user", user);
                                 postSocial.set("workspace", workspace);
                                 postSocial.set("channel", channel);
@@ -14889,7 +14889,7 @@ function splitPostAndIndexFaster (request, response) {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
             //console.log(error);
-            return response.error(error);
+            return callback2(error);
         }, {
 
             useMasterKey: true
@@ -15067,13 +15067,14 @@ function splitPostAndIndexFaster (request, response) {
 
                                     console.log("enter into PostMessageSocial...");
 
-                                    // todo only get postMessageSocials for this postQuestionMessage
+                                    let filteredPostMessageSocials = lodash.filter(postMessageSocials, { 'postMessage': postQuestionMessage } );
+                                    console.log("filteredPostMessageSocials: " + JSON.stringify(filteredPostMessageSocials));
 
-                                    postQuestionMessage.PostMessageSocial = postMessageSocials;
+
+                                    postQuestionMessage.PostMessageSocial = filteredPostMessageSocials;
                                     console.log("done postMessageSocial: " + JSON.stringify(postQuestionMessage.PostMessageSocial));
 
                                     return cb1(null, postQuestionMessage);
-
 
                                 }
                                 else {
@@ -15151,9 +15152,9 @@ function splitPostAndIndexFaster (request, response) {
 
     function indexPostMessageAnswerSocial (callback2) {
 
-        function getTopAnswerForQuestionPost(callback3) {
+        function getTopAnswerForQuestionPost(callback4) {
 
-            console.log("starting getTopAnswerForQuestionPost function: " + JSON.stringify(PostObject));
+            console.log("starting getTopAnswerForQuestionPost function: ");
 
             if (Post.type === 'question') {
 
@@ -15179,14 +15180,14 @@ function splitPostAndIndexFaster (request, response) {
                     if (postQuestionMessage) {
 
                         postQuestionMessage = simplifyPostQuestionMessage(postQuestionMessage);
-                        return callback(null, postQuestionMessage);
+                        return callback4(null, postQuestionMessage);
 
 
                     } else {
 
                         let postQuestionMessage = null;
                         // no workspaceFollowers to delete return
-                        return callback(null, postQuestionMessage);
+                        return callback4(null, postQuestionMessage);
 
                     }
 
@@ -15197,7 +15198,7 @@ function splitPostAndIndexFaster (request, response) {
                     console.log(error);
                     let postQuestionMessage = null;
                     // no workspaceFollowers to delete return
-                    return callback(null, postQuestionMessage);
+                    return callback4(null, postQuestionMessage);
                 }, {
 
                     useMasterKey: true
@@ -15212,7 +15213,7 @@ function splitPostAndIndexFaster (request, response) {
 
                 let postQuestionMessage = null;
                 // no workspaceFollowers to delete return
-                return callback(null, postQuestionMessage);
+                return callback4(null, postQuestionMessage);
             }
 
 
@@ -15426,14 +15427,14 @@ function splitPostAndIndexFaster (request, response) {
                 //console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages));
 
 
-                return callback(null, simplifiedPostChatMessages);
+                return callback2(null, simplifiedPostChatMessages);
 
 
             } else {
 
                 let PostChatMessages = [];
                 // no workspaceFollowers to delete return
-                return callback(null, PostChatMessages);
+                return callback2(null, PostChatMessages);
 
             }
 
@@ -15444,7 +15445,7 @@ function splitPostAndIndexFaster (request, response) {
             console.log(error);
             let PostChatMessages = [];
             // no workspaceFollowers to delete return
-            return callback(null, PostChatMessages);
+            return callback2(null, PostChatMessages);
         }, {
 
             useMasterKey: true
@@ -15484,12 +15485,31 @@ function splitPostAndIndexFaster (request, response) {
 
                     console.log("postQuestionMessage: " + JSON.stringify(finalPostIndexResult));
 
-                    // todo find postQuestion for this postSocial for postQuestions
+                    // todo find postQuestion for this postSocial (i.e. user) for postQuestions
+
+
+                    let finalPostMessageQuestionResults1 = lodash.map(finalPostMessageQuestionResults, function(finalPostMessageQuestionResult) {
+
+                        var postMessageSocialObject = lodash.filter(finalPostMessageQuestionResult.postMessageSocial, { 'postSocial': finalPostIndexResult.postSocial } );
+
+                        console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
+
+
+                        return lodash.assign(finalPostMessageQuestionResult, {
+                            postMessageSocial: postMessageSocialObject
+                        });
+                    });
+
+                    console.log("postIndexResult: " + JSON.stringify(finalPostMessageQuestionResults1));
+
+
                     // todo find postAnswer for this postSocial
 
-                    finalPostIndexResults.postQuestions = finalPostMessageCommentResults;
-                    finalPostIndexResults.postAnswer = finalPostMessageAnswerResults;
-                    finalPostIndexResults.chatMessages = finalPostMessageCommentResults;
+                    finalPostIndexResult.postQuestions = finalPostMessageQuestionResults1;
+                    finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
+                    finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+
+                    return cb2 (null, finalPostIndexResult);
 
                 },
                 function (err, postQuestionMessagesSocialResult) {
@@ -17959,23 +17979,23 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                     //console.log("postToSave afterSave Post: " + JSON.stringify(postToSave));
 
-                    splitPostAndIndex({'user':currentUser, 'object':postToSave}, {
+                    splitPostAndIndexFaster({'user':currentUser, 'object':postToSave}, {
                         success: function (count) {
 
                             let Final_Time = process.hrtime(time);
-                            console.log(`splitPostAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                            console.log(`splitPostAndIndexFaster took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
-                            response.success();
+                            return response.success();
                         },
                         error: function (error) {
-                            response.error(error);
+                            return response.error(error);
                         }
                     });
 
 
                 } else {
 
-                    response.error("error in afterSave Post");
+                    return response.error("error in afterSave Post");
                 }
 
 
