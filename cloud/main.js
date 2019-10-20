@@ -15067,7 +15067,17 @@ function splitPostAndIndexFaster (request, response) {
 
                                     console.log("enter into PostMessageSocial...");
 
-                                    let filteredPostMessageSocials = lodash.filter(postMessageSocials, { 'postMessage': postQuestionMessage } );
+                                    let filteredPostMessageSocials = lodash.filter(postMessageSocials, function (postMessageSocial) {
+
+                                            console.log(".....postMessageSocial.....: " + JSON.stringify(postMessageSocial));
+
+                                            return postMessageSocial.get("postMessage").id === postMessage.id;
+
+
+                                        }
+
+
+                                    );
                                     console.log("filteredPostMessageSocials: " + JSON.stringify(filteredPostMessageSocials));
 
 
@@ -15460,8 +15470,8 @@ function splitPostAndIndexFaster (request, response) {
     async.parallel([
         async.apply(indexPostSocial),
         async.apply(indexPostMessageQuestionSocial),
-        async.apply(indexPostMessageAnswerSocial),
-        async.apply(getPostMessageComments)
+        //async.apply(indexPostMessageAnswerSocial),
+        //async.apply(getPostMessageComments)
 
     ], function (err, results) {
         if (err) {
@@ -15476,8 +15486,8 @@ function splitPostAndIndexFaster (request, response) {
 
             let finalPostIndexResults = results[0];
             let finalPostMessageQuestionResults = results[1];
-            let finalPostMessageAnswerResults = results[2];
-            let finalPostMessageCommentResults = results[3];
+            //let finalPostMessageAnswerResults = results[2];
+            //let finalPostMessageCommentResults = results[3];
 
             async.map(finalPostIndexResults, function (finalPostIndexResult, cb2) {
 
@@ -15490,7 +15500,7 @@ function splitPostAndIndexFaster (request, response) {
 
                     let finalPostMessageQuestionResults1 = lodash.map(finalPostMessageQuestionResults, function(finalPostMessageQuestionResult) {
 
-                        var postMessageSocialObject = lodash.filter(finalPostMessageQuestionResult.postMessageSocial, { 'postSocial': finalPostIndexResult.postSocial } );
+                        var postMessageSocialObject = lodash.filter(finalPostMessageQuestionResult.postMessageSocial, { 'postSocial.objectId': finalPostIndexResult.postSocial.objectId } );
 
                         console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
 
@@ -15506,8 +15516,8 @@ function splitPostAndIndexFaster (request, response) {
                     // todo find postAnswer for this postSocial
 
                     finalPostIndexResult.postQuestions = finalPostMessageQuestionResults1;
-                    finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                    finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+                    //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
+                    //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
                     return cb2 (null, finalPostIndexResult);
 
