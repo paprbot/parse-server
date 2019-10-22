@@ -15073,10 +15073,16 @@ function splitPostAndIndexFaster (request, response) {
 
                                             if (postMessageSocial.get("postMessage").id === postQuestionMessage.objectId) {
 
-                                                console.log("yay got a match!");
+                                                console.log("yay got a match! there is a postMessageSocial for this user for this postMessage of question type");
 
                                                 return postMessageSocial;
-                                            } else { return ;}
+                                            } else {
+
+                                                // no postMessageSocial for this user, should we create one?
+
+                                                return ;
+
+                                            }
 
                                         }
 
@@ -15098,7 +15104,7 @@ function splitPostAndIndexFaster (request, response) {
 
                                     //console.log("postMessageSocial doesn't exist, postQuestionMessage: " + JSON.stringify(postQuestionMessage));
 
-                                    postQuestionMessage.PostMessageSocial = [];
+                                    postQuestionMessage.PostMessageSocial = null;
 
                                     return cb1(null, postQuestionMessage);
 
@@ -15493,39 +15499,91 @@ function splitPostAndIndexFaster (request, response) {
             //let finalPostMessageAnswerResults = results[2];
             //let finalPostMessageCommentResults = results[3];
 
+
+
             async.map(finalPostIndexResults, function (finalPostIndexResult, cb2) {
 
-                    console.log("starting async.map finalPostIndexResults ");
+                    //console.log("starting async.map finalPostIndexResults: ");
 
-                    console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+                    //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
-                    // todo find postQuestion for this postSocial (i.e. user) for postQuestions
+                    if (finalPostIndexResult.PostSocial) {
+
+                        let finalPostMessageQuestionResults1 = lodash.map(finalPostMessageQuestionResults, function(finalPostMessageQuestionResult) {
+
+                            //console.log("finalPostMessageQuestionResult: " + JSON.stringify(finalPostMessageQuestionResult));
+
+                            let postSocialId = finalPostIndexResult.PostSocial.objectId;
+
+                            //console.log("postSocialId: " + JSON.stringify(postSocialId));
+
+                            if (finalPostMessageQuestionResult.PostMessageSocial.length === 0) {
+                                finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                return finalPostMessageQuestionResult;
 
 
-                    let finalPostMessageQuestionResults1 = lodash.map(finalPostMessageQuestionResults, function(finalPostMessageQuestionResult) {
+                            } else {
 
-                        console.log("finalPostMessageQuestionResult: " + JSON.stringify(finalPostMessageQuestionResult));
+                                let arrayPostMessageSocial = finalPostMessageQuestionResult.PostMessageSocial;
+
+                                //console.log("arrayPostMessageSocial: " + JSON.stringify(arrayPostMessageSocial));
+
+                                // var postMessageSocialObject = lodash.filter(arrayPostMessageSocial, { 'PostMessageSocial.postSocial.objectId': postSocialId } );
+
+                                let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial) {
+
+                                        //console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.get("postSocial")));
+
+                                        if (postMessageSocial.get("postSocial").id === postSocialId) {
+
+                                            //console.log("yay got a match woo!");
+
+                                            finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
+
+                                            return postMessageSocial;
+                                        } else {
+
+                                            //finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                            return ;}
+
+                                    }
 
 
-                        var postMessageSocialObject = lodash.filter(finalPostMessageQuestionResult, { 'PostMessageSocial.postSocial.objectId': finalPostIndexResult.get("PostSocial").id } );
+                                );
 
-                        console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
+                                //console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
 
-                        return lodash.assign(finalPostMessageQuestionResult, {
-                            postMessageSocial: postMessageSocialObject
+                                return finalPostMessageQuestionResult;
+
+
+                            }
+
+
                         });
-                    });
 
-                    console.log("postIndexResult: " + JSON.stringify(finalPostMessageQuestionResults1));
+                        console.log("postIndexResult: " + JSON.stringify(finalPostMessageQuestionResults1));
 
 
-                    // todo find postAnswer for this postSocial
+                        // todo find postAnswer for this postSocial
 
-                    finalPostIndexResult.postQuestions = finalPostMessageQuestionResults1;
-                    //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                    //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+                        finalPostIndexResult.postQuestions = finalPostMessageQuestionResults1;
+                        console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
-                    return cb2 (null, finalPostIndexResult);
+                        //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
+                        //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+
+                        return cb2 (null, finalPostIndexResult);
+
+
+                    } else {
+
+                        // PostSocial is null in this case, return Post with PostSocial Null
+
+                        return cb2 (null, finalPostIndexResult);
+                    }
+
 
                 },
                 function (err, postQuestionMessagesSocialResult) {
@@ -16713,8 +16771,8 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 
         let postSocialQuery = new Parse.Query("PostSocial");
 
-        postSocialQuery.equalTo("user", User.id);
-        postSocialQuery.equalTo("post", Post.id);
+        postSocialQuery.equalTo("user", User);
+        postSocialQuery.equalTo("post", Post);
         //postSocialQuery.include(["user", "workspace", "channel"]);
 
         // check to make sure that the postSocial is unique
