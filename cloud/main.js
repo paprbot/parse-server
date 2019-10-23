@@ -12696,7 +12696,7 @@ function splitObjectAndIndex (request, response) {
                                                 // postMessageSocial doesn't exist, user doesn't have any reactions on postMessage.
                                                 console.log("postMessageSocial doesn't exist, user doesn't have any reactions on postMessage");
 
-                                                console.log("postMessageSocial doesn't exist, postQuestionMessage: " + JSON.stringify(postQuestionMessage));
+                                                //console.log("postMessageSocial doesn't exist, postQuestionMessage: " + JSON.stringify(postQuestionMessage));
 
                                                 postQuestionMessage.PostMessageSocial = null;
 
@@ -15777,11 +15777,11 @@ function splitPostAndIndexFaster (request, response) {
 
                                     let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial) {
 
-                                            //console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.get("postSocial")));
+                                            console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.postSocial));
 
                                             if (postMessageSocial.postSocial.objectId === postSocialId) {
 
-                                                //console.log("yay got a match woo!");
+                                                console.log("yay got a match woo!");
 
                                                 finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
 
@@ -15847,7 +15847,7 @@ function splitPostAndIndexFaster (request, response) {
                     else {
 
                         // PostSocial is null in this case, return Post with PostSocial Null
-                        console.log("ostSocial is null in this case, return Post with PostSocial Null: ");
+                        console.log("PostSocial is null in this case, return Post with PostSocial Null: ");
 
                         if (finalPostMessageQuestionResults.length > 0) {
 
@@ -15857,7 +15857,7 @@ function splitPostAndIndexFaster (request, response) {
 
                                 let currentUserId = user.objectId;
 
-                                //console.log("postSocialId: " + JSON.stringify(postSocialId));
+                                console.log("currentUserId: " + JSON.stringify(currentUserId));
 
                                 if (finalPostMessageQuestionResult.PostMessageSocial.length === 0) {
                                     finalPostMessageQuestionResult.PostMessageSocial = null;
@@ -15869,13 +15869,13 @@ function splitPostAndIndexFaster (request, response) {
 
                                     let arrayPostMessageSocial = finalPostMessageQuestionResult.PostMessageSocial;
 
-                                    //console.log("arrayPostMessageSocial: " + JSON.stringify(arrayPostMessageSocial));
+                                    console.log("arrayPostMessageSocial: " + JSON.stringify(arrayPostMessageSocial));
 
                                     // var postMessageSocialObject = lodash.filter(arrayPostMessageSocial, { 'PostMessageSocial.postSocial.objectId': postSocialId } );
 
                                     let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial) {
 
-                                            //console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.get("postSocial")));
+                                            console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.postSocial));
 
                                             if (postMessageSocial.postSocial.user.objectId === currentUserId) {
 
@@ -18381,7 +18381,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     postSocial.set("workspace", workspace);
                     postSocial.set("channel", channel);
                     postSocial.set("post", PostObject);
-                    postSocial.set("postIsNew", isNewPost);
+                    postSocial.set("postIsNew", true);
+                    postSocial.set("isExpanded", false);
 
                     console.log("postSocial: " + JSON.stringify(postSocial));
 
