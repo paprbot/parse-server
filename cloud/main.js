@@ -15779,7 +15779,7 @@ function splitPostAndIndexFaster (request, response) {
 
                                             //console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.get("postSocial")));
 
-                                            if (postMessageSocial.get("postSocial").id === postSocialId) {
+                                            if (postMessageSocial.postSocial.objectId === postSocialId) {
 
                                                 //console.log("yay got a match woo!");
 
@@ -15877,7 +15877,7 @@ function splitPostAndIndexFaster (request, response) {
 
                                             //console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.get("postSocial")));
 
-                                            if ((postMessageSocial.get("postSocial")).get("user").id === currentUserId) {
+                                            if (postMessageSocial.postSocial.user.objectId === currentUserId) {
 
                                                 console.log("yay got a match woo USER!");
 
