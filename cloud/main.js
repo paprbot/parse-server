@@ -15779,48 +15779,62 @@ function splitPostAndIndexFaster (request, response) {
 
                                 //console.log("postSocialId: " + JSON.stringify(postSocialId));
 
-                                if (finalPostMessageQuestionResult.PostMessageSocial.length === 0) {
+                                if (finalPostMessageQuestionResult.PostMessageSocial) {
+
+                                    if (finalPostMessageQuestionResult.PostMessageSocial.length === 0) {
+                                        finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                        return finalPostMessageQuestionResult;
+
+
+                                    }
+                                    else {
+
+                                        let arrayPostMessageSocial = finalPostMessageQuestionResult.PostMessageSocial;
+
+                                        //console.log("arrayPostMessageSocial: " + JSON.stringify(arrayPostMessageSocial));
+
+                                        // var postMessageSocialObject = lodash.filter(arrayPostMessageSocial, { 'PostMessageSocial.postSocial.objectId': postSocialId } );
+
+                                        let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial) {
+
+                                                console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.get("postSocial").id));
+
+                                                if (postMessageSocial.get("postSocial").id === postSocialId) {
+
+                                                    console.log("yay got a match woo!");
+
+                                                    finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
+
+                                                    return postMessageSocial;
+                                                } else {
+
+                                                    //finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                                    return ;}
+
+                                            }
+
+
+                                        );
+
+                                        //console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
+
+                                        return finalPostMessageQuestionResult;
+
+
+                                    }
+
+
+                                } else {
+
                                     finalPostMessageQuestionResult.PostMessageSocial = null;
 
                                     return finalPostMessageQuestionResult;
 
 
-                                } else {
-
-                                    let arrayPostMessageSocial = finalPostMessageQuestionResult.PostMessageSocial;
-
-                                    //console.log("arrayPostMessageSocial: " + JSON.stringify(arrayPostMessageSocial));
-
-                                    // var postMessageSocialObject = lodash.filter(arrayPostMessageSocial, { 'PostMessageSocial.postSocial.objectId': postSocialId } );
-
-                                    let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial) {
-
-                                            console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.postSocial));
-
-                                            if (postMessageSocial.postSocial.objectId === postSocialId) {
-
-                                                console.log("yay got a match woo!");
-
-                                                finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
-
-                                                return postMessageSocial;
-                                            } else {
-
-                                                //finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                                return ;}
-
-                                        }
-
-
-                                    );
-
-                                    //console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
-
-                                    return finalPostMessageQuestionResult;
-
-
                                 }
+
 
 
                             });
