@@ -15,6 +15,7 @@ function simplifyPostSocial (PostSocial) {
     if (postSocial.algoliaIndexID) {delete postSocial.algoliaIndexID;}
     if (postSocial.deliveredDate) {delete postSocial.deliveredDate;}
     if (postSocial.readDate) {delete postSocial.readDate;}
+    if (postSocial.postIsNew) {delete postSocial.postIsNew;}
 
 
     return postSocial;

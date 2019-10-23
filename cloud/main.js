@@ -5638,6 +5638,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
                 post.set("isNew", false);
 
+
             }
 
             return callback (null, post);
@@ -17495,7 +17496,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                 let indexCount = parseInt(postSocial.get("algoliaIndexID"));
 
 
-                splitPostAndIndex({'user': owner, 'object': postToSave}, {
+                splitPostAndIndexFaster({'user': owner, 'object': postToSave}, {
                     success: function (count) {
 
                         return cb(null, PostObject);
@@ -17518,11 +17519,58 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     }
 
+    function updatePostsAlgolia1 (PostObject, cb) {
+
+        //console.log("starting updatePostsAlgolia: " + JSON.stringify(Post));
+
+        if (postSocial.get("isNew") && postSocial.get("isPostNew")) {
+
+            // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
+
+
+            return cb (null, PostObject);
+
+
+        } else {
+
+            PostObject.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((PostSaved) => {
+                // The object was retrieved successfully.
+                //console.log("Result from get " + JSON.stringify(Workspace));
+
+                //console.log("done PostSaved : " + JSON.stringify(PostSaved));
+
+
+                return cb (null, PostSaved);
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return cb(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+
+        }
+
+
+    }
+
 
 
     async.waterfall([
         async.apply(incrementPostSocialCount),
-        async.apply(updatePostsAlgolia)
+        async.apply(updatePostsAlgolia1)
 
 
     ], function (err, results) {
@@ -17967,6 +18015,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     postSocial.set("workspace", workspace);
                     postSocial.set("channel", channel);
                     postSocial.set("post", PostObject);
+                    postSocial.set("postIsNew", isNewPost);
 
                     console.log("postSocial: " + JSON.stringify(postSocial));
 
@@ -17981,6 +18030,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         //console.log("Result from get " + JSON.stringify(Workspace));
 
                         console.log("done PostSocial : " + JSON.stringify(PostSocial));
+
+
 
 
                         return callback (null, PostSocial);
@@ -18004,6 +18055,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                     // todo create postSocial for other users who are editing post if they don't already have one.
 
+
+
                     return callback (null, Post);
 
 
@@ -18018,7 +18071,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 async.apply(getPostMessageQuestions),
                 async.apply(getPostMessageComments),
                 async.apply(getTopAnswerForQuestionPost)
-                //async.apply(createPostSocial)
+                async.apply(createPostSocial)
 
             ], function (err, results) {
                 if (err) {
