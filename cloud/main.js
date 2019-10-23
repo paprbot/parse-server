@@ -15493,7 +15493,7 @@ function splitPostAndIndexFaster (request, response) {
 
         if (results.length > 0) {
 
-            //console.log("afterSave PostSocial Post algolia index results length: " + JSON.stringify(results.length));
+            console.log("afterSave PostSocial Post algolia index results length: " + JSON.stringify(finalPostIndexResults));
 
             let finalPostIndexResults = results[0];
             let finalPostMessageQuestionResults = results[1];
@@ -15581,6 +15581,7 @@ function splitPostAndIndexFaster (request, response) {
                     } else {
 
                         // PostSocial is null in this case, return Post with PostSocial Null
+                        console.log("ostSocial is null in this case, return Post with PostSocial Null: " + JSON.stringify(finalPostIndexResult));
 
                         return cb2 (null, finalPostIndexResult);
                     }
@@ -17533,6 +17534,8 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
         } else {
 
+            console.log("PostObject: " + JSON.stringify(PostObject));
+
             PostObject.save(null, {
 
                 useMasterKey: true
@@ -18004,7 +18007,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 if (isNewPost) {
 
-                    let postSocial = new Parse.Object("PostSocial");
+                    let POSTSOCIAL = Parse.Object.extend("PostSocial");
+                    let postSocial = new POSTSOCIAL();
 
                     postSocial.set("isLiked", false);
                     postSocial.set("isBookmarked", false);
@@ -18016,7 +18020,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     postSocial.set("channel", channel);
                     postSocial.set("post", PostObject);
                     postSocial.set("postIsNew", isNewPost);
-
+                    
                     console.log("postSocial: " + JSON.stringify(postSocial));
 
 
@@ -18070,7 +18074,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 async.apply(prepIndex),
                 async.apply(getPostMessageQuestions),
                 async.apply(getPostMessageComments),
-                async.apply(getTopAnswerForQuestionPost)
+                async.apply(getTopAnswerForQuestionPost),
                 async.apply(createPostSocial)
 
             ], function (err, results) {
