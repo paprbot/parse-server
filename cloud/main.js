@@ -14252,11 +14252,11 @@ function splitPostAndIndexFaster (request, response) {
     //console.log("loop: " + JSON.stringify(loop));
 
     let user = request['user'];
-    //console.log("splitPostAndIndex user: " + JSON.stringify(user));
+    console.log("splitPostAndIndexFaster user: " + JSON.stringify(user));
     //console.log("::Starting splitPostAndIndex:: " + JSON.stringify(request));
 
     let post = request['object'];
-    //console.log("post: " + JSON.stringify(post));
+    console.log("splitPostAndIndexFaster post: " + JSON.stringify(post));
 
     let POST = Parse.Object.extend("Post");
     let Post = new POST();
@@ -14282,7 +14282,7 @@ function splitPostAndIndexFaster (request, response) {
             //sessionToken: sessionToken
         }).then((postSocialResults) => {
 
-            //console.log("postSocialResults.length: " + JSON.stringify(postSocialResults));
+            console.log("splitPostAndIndexFaster postSocialResults.length: " + JSON.stringify(postSocialResults.length));
 
             if (postSocialResults.length > 0) {
 
@@ -14307,6 +14307,12 @@ function splitPostAndIndexFaster (request, response) {
                     if (post.workspace) {
                         PostStar.workspace = post.workspace;
                         //console.log("setting workspace PostStar: " + JSON.stringify(PostStar.workspace));
+
+                    }
+
+                    if (post.isExpanded) {
+                        PostStar.isExpanded = post.isExpanded;
+                        //console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
 
                     }
 
@@ -14540,7 +14546,7 @@ function splitPostAndIndexFaster (request, response) {
 
                 async.mapSeries(postSocialResults, function (postSocialResult, cb) {
 
-                    //console.log("postSocialResults.length: " + JSON.stringify(postSocialResults.length));
+                    console.log("postSocialResults.length: " + JSON.stringify(postSocialResults.length));
                     let POSTUSER = Parse.Object.extend("Post");
                     let PostUser = new POSTUSER();
                     PostUser.id = post.objectId;
@@ -14549,6 +14555,12 @@ function splitPostAndIndexFaster (request, response) {
 
                     if (post.workspace) {
                         PostUser.workspace = post.workspace;
+                        //console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
+
+                    }
+
+                    if (post.isExpanded) {
+                        PostUser.isExpanded = post.isExpanded;
                         //console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
 
                     }
@@ -14696,7 +14708,7 @@ function splitPostAndIndexFaster (request, response) {
                     if (post.likesCount) {
 
                         PostUser.likesCount = post.likesCount;
-                        //console.log("setting lkesCount PostUser: i" + JSON.stringify(PostUser.likesCount));
+                        //console.log("setting likesCount PostUser: i" + JSON.stringify(PostUser.likesCount));
                     }
                     if (post.video_thumbnail) {
                         PostUser.video_thumbnail = post.video_thumbnail;
@@ -14785,7 +14797,7 @@ function splitPostAndIndexFaster (request, response) {
                     //console.log("simplifyPostSocial 1: " + JSON.stringify(postSocialResult));
 
                     postSocialResult = simplifyPostSocial(postSocialResult);
-                    //console.log("simplifyPostSocial 2: " + JSON.stringify(postSocialResult));
+                    console.log("simplifyPostSocial 2: " + JSON.stringify(postSocialResult));
 
                     let postObjectID = post.objectId + '-' + UserResult.id;
 
@@ -14795,7 +14807,7 @@ function splitPostAndIndexFaster (request, response) {
                     PostUser.PostSocial = postSocialResult;
 
 
-                    //console.log("post splitObjectAndIndex object: " + JSON.stringify(PostUser));
+                    console.log("post splitObjectAndIndex PostUser.PostSocial: " + JSON.stringify(PostUser.PostSocial));
 
 
                     postSocialResult = PostUser;
@@ -14867,6 +14879,12 @@ function splitPostAndIndexFaster (request, response) {
                     if (post.workspace) {
                         PostStar1.workspace = post.workspace;
                         //console.log("setting workspace PostStar: " + JSON.stringify(PostStar.workspace));
+
+                    }
+
+                    if (post.isExpanded) {
+                        PostStar1.isExpanded = post.isExpanded;
+                        //console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
 
                     }
 
@@ -15855,7 +15873,7 @@ function splitPostAndIndexFaster (request, response) {
 
                                 //console.log("finalPostMessageQuestionResult: " + JSON.stringify(finalPostMessageQuestionResult));
 
-                                let currentUserId = user.objectId;
+                                let currentUserId = user.id;
 
                                 console.log("currentUserId: " + JSON.stringify(currentUserId));
 
