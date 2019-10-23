@@ -15757,6 +15757,7 @@ function splitPostAndIndexFaster (request, response) {
 
             let finalPostIndexResults = results[0];
             let finalPostMessageQuestionResults = results[1];
+
             //let finalPostMessageAnswerResults = results[2];
             //let finalPostMessageCommentResults = results[3];
 
@@ -15798,20 +15799,50 @@ function splitPostAndIndexFaster (request, response) {
 
                                         let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial) {
 
-                                                console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.get("postSocial").id));
 
-                                                if (postMessageSocial.get("postSocial").id === postSocialId) {
+                                                try {
+                                                    JSON.parse(postMessageSocial);
 
-                                                    console.log("yay got a match woo!");
+                                                    console.log(".....postMessageSocial.postSocial.JSON...: " + JSON.stringify(postMessageSocial.postSocial.objectId));
 
-                                                    finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
+                                                    if (postMessageSocial.postSocial.objectId === postSocialId) {
 
-                                                    return postMessageSocial;
-                                                } else {
 
-                                                    //finalPostMessageQuestionResult.PostMessageSocial = null;
+                                                        finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
 
-                                                    return ;}
+                                                        console.log("yay got a match woo!");
+
+                                                        return postMessageSocial;
+                                                    } else {
+
+                                                        //finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                                        return ;}
+
+
+
+                                                } catch (e) {
+                                                    console.log("not JSON");
+
+                                                    console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.get("postSocial").id));
+
+                                                    if (postMessageSocial.get("postSocial").id === postSocialId) {
+
+
+                                                        finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
+
+                                                        console.log("yay got a match woo not JSON!");
+
+                                                        return postMessageSocial;
+                                                    } else {
+
+                                                        //finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                                        return ;}
+
+
+                                                }
+
 
                                             }
 
@@ -15891,48 +15922,92 @@ function splitPostAndIndexFaster (request, response) {
 
                                 console.log("currentUserId: " + JSON.stringify(currentUserId));
 
-                                if (finalPostMessageQuestionResult.PostMessageSocial.length === 0) {
+                                if (finalPostMessageQuestionResult.PostMessageSocial) {
+
+                                    if (finalPostMessageQuestionResult.PostMessageSocial.length === 0) {
+                                        finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                        return finalPostMessageQuestionResult;
+
+
+                                    }
+                                    else {
+
+                                        let arrayPostMessageSocial = finalPostMessageQuestionResult.PostMessageSocial;
+
+                                        console.log("arrayPostMessageSocial: " + JSON.stringify(arrayPostMessageSocial));
+
+                                        // var postMessageSocialObject = lodash.filter(arrayPostMessageSocial, { 'PostMessageSocial.postSocial.objectId': postSocialId } );
+
+                                        let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial) {
+
+
+                                                try {
+                                                    JSON.parse(postMessageSocial);
+
+                                                    console.log(".....postMessageSocial.postSocial.user.objectId JSON...: " + JSON.stringify(postMessageSocial.postSocial.user.objectId));
+
+                                                    if (postMessageSocial.postSocial.user.objectId === currentUserId) {
+
+                                                        finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
+
+                                                        console.log("yay got a match woo USER!");
+
+
+                                                        return postMessageSocial;
+                                                    } else {
+
+                                                        //finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                                        return;
+                                                    }
+
+
+                                                } catch (e) {
+                                                    console.log("not JSON");
+
+                                                    console.log(".....postMessageSocial.postSocial.user.objectId ...: " + JSON.stringify(postMessageSocial.get("postSocial").get("user").objectId));
+
+                                                    if (postMessageSocial.get("postSocial").get("user").objectId === currentUserId) {
+
+                                                        finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
+
+                                                        console.log("yay got a match woo USER no JSON!");
+
+                                                        return postMessageSocial;
+                                                    } else {
+
+                                                        //finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                                        return;
+                                                    }
+
+
+                                                }
+                                            }
+
+
+
+                                        );
+
+                                        //console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
+
+                                        return finalPostMessageQuestionResult;
+
+
+                                    }
+
+
+                                } else {
+
                                     finalPostMessageQuestionResult.PostMessageSocial = null;
 
                                     return finalPostMessageQuestionResult;
 
 
-                                } else {
-
-                                    let arrayPostMessageSocial = finalPostMessageQuestionResult.PostMessageSocial;
-
-                                    console.log("arrayPostMessageSocial: " + JSON.stringify(arrayPostMessageSocial));
-
-                                    // var postMessageSocialObject = lodash.filter(arrayPostMessageSocial, { 'PostMessageSocial.postSocial.objectId': postSocialId } );
-
-                                    let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial) {
-
-                                            console.log(".....postMessageSocial.postSocial....: " + JSON.stringify(postMessageSocial.postSocial));
-
-                                            if (postMessageSocial.postSocial.user.objectId === currentUserId) {
-
-                                                console.log("yay got a match woo USER!");
-
-                                                finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
-
-                                                return postMessageSocial;
-                                            } else {
-
-                                                //finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                                return ;}
-
-                                        }
-
-
-                                    );
-
-                                    //console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
-
-                                    return finalPostMessageQuestionResult;
-
-
                                 }
+
+
 
 
                             });
