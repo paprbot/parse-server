@@ -15338,7 +15338,7 @@ function splitPostAndIndexFaster (request, response) {
 
                                     //console.log("postMessageSocial doesn't exist, postQuestionMessage: " + JSON.stringify(postQuestionMessage));
 
-                                    postQuestionMessage.PostMessageSocial = null;
+                                    postQuestionMessage.PostMessageSocial = [];
 
                                     return cb1(null, postQuestionMessage);
 
@@ -15745,9 +15745,9 @@ function splitPostAndIndexFaster (request, response) {
 
             async.map(finalPostIndexResults, function (finalPostIndexResult, cb2) {
 
-                    //console.log("starting async.map finalPostIndexResults: ");
+                    console.log("starting async.map finalPostIndexResults: ");
 
-                    //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+                    console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
                     if (finalPostIndexResult.PostSocial) {
 
