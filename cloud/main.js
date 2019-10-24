@@ -7441,8 +7441,8 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
         }
 
         async.parallel([
-            async.apply(updatePostMessagesAlgolia)
-            //async.apply(updatePostsAlgolia)
+            async.apply(updatePostMessagesAlgolia),
+            async.apply(updatePostsAlgolia)
 
         ], function (err, results_Final) {
             if (err) {
@@ -18720,7 +18720,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                 // The object was retrieved successfully.
                 //console.log("Result from get " + JSON.stringify(Workspace));
 
-                //console.log("done PostSaved : " + JSON.stringify(PostSaved));
+                console.log("done saveParentPost : " + JSON.stringify(PostSaved));
 
 
                 return callback (null, PostSaved);
