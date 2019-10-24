@@ -6594,7 +6594,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
                 //postMessageSocialResult already exists in db, return an error because it needs to be unique
                 console.log("postMessageSocialResult already exists in db, return an error because it needs to be unique");
-                response.error(postMessageSocialResult);
+                return response.error(postMessageSocialResult);
 
             } else {
 
@@ -7441,7 +7441,7 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
         }
 
         async.parallel([
-            async.apply(updatePostMessagesAlgolia)
+            async.apply(updatePostMessagesAlgolia),
             async.apply(updatePostsAlgolia)
 
         ], function (err, results_Final) {
@@ -14756,7 +14756,7 @@ function splitPostAndIndexFaster (request, response) {
             }
             else {
 
-                if (count === 0) {
+
 
                     let tags = ['*'];
 
@@ -15014,13 +15014,7 @@ function splitPostAndIndexFaster (request, response) {
 
 
 
-                } else {
 
-                    //let beforeSaveElse_Time = process.hrtime(time);
-                    //console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                    return callback2 (null, post);
-                }
 
 
             }
@@ -15667,7 +15661,9 @@ function splitPostAndIndexFaster (request, response) {
 
                         if (finalPostMessageQuestionResults.length > 0) {
 
-                            let finalPostMessageQuestionResults1 = lodash.map(finalPostMessageQuestionResults, function(finalPostMessageQuestionResult) {
+                            async.map(finalPostMessageQuestionResults, function (finalPostMessageQuestionResult, cb3) {
+
+                           // let finalPostMessageQuestionResults1 = lodash.map(finalPostMessageQuestionResults, function(finalPostMessageQuestionResult) {
 
                                 //console.log("finalPostMessageQuestionResult: " + JSON.stringify(finalPostMessageQuestionResult));
 
@@ -15680,7 +15676,7 @@ function splitPostAndIndexFaster (request, response) {
                                     if (finalPostMessageQuestionResult.PostMessageSocial.length === 0) {
                                         finalPostMessageQuestionResult.PostMessageSocial = null;
 
-                                        return finalPostMessageQuestionResult;
+                                        return cb3 (null, finalPostMessageQuestionResult);
 
 
                                     }
@@ -15750,14 +15746,14 @@ function splitPostAndIndexFaster (request, response) {
 
                                             //console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
 
-                                            return finalPostMessageQuestionResult;
+                                            return cb3 (null, finalPostMessageQuestionResult);
 
 
                                         } else {
 
                                             finalPostMessageQuestionResult.PostMessageSocial = null;
 
-                                            return finalPostMessageQuestionResult;
+                                            return cb3 (null, finalPostMessageQuestionResult);
 
 
                                         }
@@ -15772,27 +15768,42 @@ function splitPostAndIndexFaster (request, response) {
 
                                     finalPostMessageQuestionResult.PostMessageSocial = null;
 
-                                    return finalPostMessageQuestionResult;
+                                    return cb3 (null, finalPostMessageQuestionResult);
 
 
                                 }
 
 
 
-                            });
+                                },
+                                function (err, postMessageQuestionsToIndex) {
 
-                            console.log("::finalPostMessageQuestionResults1:: " + JSON.stringify(finalPostMessageQuestionResults1));
+                                    console.log("postMessageQuestionsToIndex: " + JSON.stringify(postMessageQuestionsToIndex));
+
+                                    if (err) {
+                                        return response.error(err);
+                                    } else {
 
 
-                            // todo find postAnswer for this postSocial
+                                        // todo find postAnswer for this postSocial
 
-                            finalPostIndexResult.postQuestions = finalPostMessageQuestionResults1;
-                            console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+                                        finalPostIndexResult.postQuestions = postMessageQuestionsToIndex;
+                                        console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
 
-                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+                                        //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
+                                        //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
-                            return cb2 (null, finalPostIndexResult);
+
+                                        return cb2 (null, finalPostIndexResult);
+
+
+
+                                    }
+
+                                });
+
+
+
 
 
                         }
@@ -15853,48 +15864,25 @@ function splitPostAndIndexFaster (request, response) {
                                         let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial) {
 
 
-                                                try {
-                                                    JSON.parse(postMessageSocial);
 
-                                                    console.log(".....postMessageSocial.postSocial.user.objectId JSON...: " + JSON.stringify(postMessageSocial.postSocial.user.objectId));
+                                                console.log(".....postMessageSocial.postSocial.user.objectId ...: " + JSON.stringify(postMessageSocial.get("postSocial").get("user").objectId));
 
-                                                    if (postMessageSocial.postSocial.user.objectId === currentUserId) {
+                                                if (postMessageSocial.get("postSocial").get("user").objectId === currentUserId) {
 
-                                                        finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
+                                                    finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
 
-                                                        console.log("yay got a match woo USER!");
+                                                    console.log("yay got a match woo USER no JSON!");
 
+                                                    return postMessageSocial;
+                                                } else {
 
-                                                        return postMessageSocial;
-                                                    } else {
+                                                    //finalPostMessageQuestionResult.PostMessageSocial = null;
 
-                                                        //finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                                        return;
-                                                    }
-
-
-                                                } catch (e) {
-                                                    console.log("not JSON");
-
-                                                    console.log(".....postMessageSocial.postSocial.user.objectId ...: " + JSON.stringify(postMessageSocial.get("postSocial").get("user").objectId));
-
-                                                    if (postMessageSocial.get("postSocial").get("user").objectId === currentUserId) {
-
-                                                        finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
-
-                                                        console.log("yay got a match woo USER no JSON!");
-
-                                                        return postMessageSocial;
-                                                    } else {
-
-                                                        //finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                                        return;
-                                                    }
-
-
+                                                    return;
                                                 }
+
+
+
                                             }
 
 
@@ -15961,20 +15949,20 @@ function splitPostAndIndexFaster (request, response) {
 
 
                 },
-                function (err, postQuestionMessagesSocialResult) {
+                function (err, postResultsToIndex) {
 
-                    console.log("postQuestionMessagesSocialResult length: " + JSON.stringify(postQuestionMessagesSocialResult.length));
+                    console.log("postResultsToIndex: " + JSON.stringify(postResultsToIndex));
 
                     if (err) {
                         return response.error(err);
                     } else {
 
-                        indexPosts.saveObjects(postQuestionMessagesSocialResult, true, function(err, content) {
+                        indexPosts.saveObjects(postResultsToIndex, true, function(err, content) {
                             if (err) {
                                 return response.error(err);
                             }
 
-                            console.log("content: " + JSON.stringify(content));
+                            //console.log("content: " + JSON.stringify(content));
 
 
                         });
