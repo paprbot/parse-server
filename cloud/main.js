@@ -15692,63 +15692,77 @@ function splitPostAndIndexFaster (request, response) {
 
                                         // var postMessageSocialObject = lodash.filter(arrayPostMessageSocial, { 'PostMessageSocial.postSocial.objectId': postSocialId } );
 
-                                        let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial1) {
+                                        if (arrayPostMessageSocial.length > 0) {
 
-                                                console.log("postMessageSocial1: " + JSON.stringify(postMessageSocial1));
+                                            let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial1) {
 
-
-                                                try {
-                                                    JSON.parse(postMessageSocial1);
-
-                                                    console.log(".....postMessageSocial1.postSocial.JSON...: " + JSON.stringify(postMessageSocial1.postSocial.objectId));
-
-                                                    if (postMessageSocial1.postSocial.objectId === postSocialId) {
+                                                    console.log("postMessageSocial1: " + JSON.stringify(postMessageSocial1));
 
 
-                                                        finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial1);
+                                                    try {
+                                                        JSON.parse(postMessageSocial1);
 
-                                                        console.log("yay got a match woo!");
+                                                        console.log(".....postMessageSocial1.postSocial.JSON...: " + JSON.stringify(postMessageSocial1.postSocial.objectId));
 
-                                                        return postMessageSocial1;
-                                                    } else {
-
-                                                        //finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                                        return ;}
+                                                        if (postMessageSocial1.postSocial.objectId === postSocialId) {
 
 
+                                                            finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial1);
 
-                                                } catch (e) {
-                                                    console.log("not JSON");
+                                                            console.log("yay got a match woo!");
 
-                                                    console.log(".....postMessageSocial1.postSocial....: " + JSON.stringify(postMessageSocial1));
+                                                            return postMessageSocial1;
+                                                        } else {
 
-                                                    if (postMessageSocial1.get("postSocial").id === postSocialId) {
+                                                            //finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                                            return ;}
 
 
-                                                        finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial1);
 
-                                                        console.log("yay got a match woo not JSON!");
+                                                    } catch (e) {
+                                                        console.log("not JSON");
 
-                                                        return postMessageSocial1;
-                                                    } else {
+                                                        console.log(".....postMessageSocial1.postSocial....: " + JSON.stringify(postMessageSocial1));
 
-                                                        //finalPostMessageQuestionResult.PostMessageSocial = null;
+                                                        if (postMessageSocial1.get("postSocial").id === postSocialId) {
 
-                                                        return ;}
+
+                                                            finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial1);
+
+                                                            console.log("yay got a match woo not JSON!");
+
+                                                            return postMessageSocial1;
+                                                        } else {
+
+                                                            //finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                                            return ;}
+
+
+                                                    }
 
 
                                                 }
 
 
-                                            }
+                                            );
+
+                                            //console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
+
+                                            return finalPostMessageQuestionResult;
 
 
-                                        );
+                                        } else {
 
-                                        //console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
+                                            finalPostMessageQuestionResult.PostMessageSocial = null;
 
-                                        return finalPostMessageQuestionResult;
+                                            return finalPostMessageQuestionResult;
+
+
+                                        }
+
+
 
 
                                     }
@@ -15767,7 +15781,7 @@ function splitPostAndIndexFaster (request, response) {
 
                             });
 
-                            console.log("postIndexResult: " + JSON.stringify(finalPostMessageQuestionResults1));
+                            console.log("::finalPostMessageQuestionResults1:: " + JSON.stringify(finalPostMessageQuestionResults1));
 
 
                             // todo find postAnswer for this postSocial
