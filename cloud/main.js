@@ -6486,7 +6486,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
 
     ], function (err, results_Final) {
         if (err) {
-            response.error(err);
+            return response.error(err);
         }
 
         //console.log("final post: " + JSON.stringify(post));
@@ -6494,7 +6494,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
         let beforeSave_Time = process.hrtime(time);
         console.log(`beforeSave_Time PostMessage took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
-        response.success();
+        return response.success();
     });
 
 
@@ -7367,105 +7367,27 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
         //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
         queryPostMessage.equalTo("objectId", PostMessage.id);
 
+        function updatePostMessagesAlgolia (cb2) {
 
-        function updateAlgolia (cb) {
-
-            //console.log("starting updateAlgolia: " + JSON.stringify(PostMessage));
-
-
-            function updatePostMessagesAlgolia (cb2) {
-
-                //console.log("starting updatePostMessagesAlgolia: ");
+            //console.log("starting updatePostMessagesAlgolia: ");
 
 
-                    let indexCount = parseInt(PostMessageSocialResult.get("algoliaIndexID"));
-
-                    /*PostMessageToSaveFinal.save(null, {
-
-                        useMasterKey: true,
-                        //sessionToken: sessionToken
-
-                    }).then((PostMessageSaved) => {
-                        // The object was retrieved successfully.
-                        //console.log("Result from get " + JSON.stringify(Workspace));
-
-                        console.log("done PostMessageSaved : " + JSON.stringify(PostMessageSaved));
+                // let indexCount = parseInt(PostMessageSocialResult.get("algoliaIndexID"));
 
 
-                        return cb2 (null, PostMessageSaved);
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        return cb2(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });*/
-
-                    PostMessage.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    }).then((PostMessageSaved) => {
-                        // The object was retrieved successfully.
-                        //console.log("Result from get " + JSON.stringify(Workspace));
-
-                        //console.log("done PostMessageSaved : " + JSON.stringify(PostMessageSaved));
-
-
-                        return cb2 (null, PostMessageSaved);
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        return cb2(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-                    /*splitObjectAndIndex({'user':user, 'object':PostMessage.toJSON(), 'className':'PostMessageSocial', 'indexCount':indexCount, 'loop':false}, {
-                        success: function(count) {
-
-                            console.log("done updatePostMessagesAlgolia: " + JSON.stringify(count));
-
-
-                            return cb2 (null, PostMessage);
-                        },
-                        error: function(error) {
-                            return cb2 (error);
-                        }
-                    });*/
-
-
-
-            }
-
-            function updatePostsAlgolia (cb2) {
-
-                //console.log("starting updatePostsAlgolia: " + JSON.stringify(Post));
-
-                Post.save(null, {
+                PostMessage.save(null, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
 
-                }).then((PostSaved) => {
+                }).then((PostMessageSaved) => {
                     // The object was retrieved successfully.
                     //console.log("Result from get " + JSON.stringify(Workspace));
 
-                    //console.log("done PostSaved : " + JSON.stringify(PostSaved));
+                    //console.log("done PostMessageSaved : " + JSON.stringify(PostMessageSaved));
 
 
-                    return cb2 (null, PostSaved);
+                    return cb2 (null, PostMessageSaved);
 
 
                 }, (error) => {
@@ -7479,90 +7401,63 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
                 });
 
-                /*
-
-
-                let POSTSOCIAL = Parse.Object.extend("PostSocial");
-                let queryPostSocial = new Parse.Query(POSTSOCIAL);
-                queryPostSocial.include(["workspace", "post", "channel", "user"]);
-
-                queryPostSocial.equalTo("post", Post.id);
-                //queryPostMessageSocial.select(PostMessageArray);
-
-
-                queryPostSocial.first({
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-                }).then((PostSocialResult) => {
-
-                    // let PostFinal = new POST();
-                    let PostFinal = PostSocialResult.get("post");
-
-
-                    let indexCount = parseInt(PostSocialResult.get("algoliaIndexID"));
-
-                    splitObjectAndIndex({'user':user, 'object':PostFinal.toJSON(), 'className':'PostSocial', 'indexCount':indexCount, 'loop':false}, {
-                        success: function(count) {
-
-                            console.log("done updatePostsAlgolia: " + JSON.stringify(count));
-
-
-                            return cb2 (null, PostSocialResult);
-                        },
-                        error: function(error) {
-                            return cb2 (error);
-                        }
-                    });
 
 
 
+        }
 
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    console.log(error);
-                    return response.error(error);
-                }, {
+        function updatePostsAlgolia (cb2) {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-                });*/
+            //console.log("starting updatePostsAlgolia: " + JSON.stringify(Post));
 
-            }
+            Post.save(null, {
 
-            async.parallel([
-                async.apply(updatePostMessagesAlgolia),
-                async.apply(updatePostsAlgolia)
+                useMasterKey: true
+                //sessionToken: sessionToken
 
-            ], function (err, results_Final) {
-                if (err) {
-                    response.error(err);
-                }
+            }).then((PostSaved) => {
+                // The object was retrieved successfully.
+                //console.log("Result from get " + JSON.stringify(Workspace));
 
-                //console.log("done updateAlgolia: " + JSON.stringify(results_Final.length));
+                //console.log("done PostSaved : " + JSON.stringify(PostSaved));
 
-                return cb (null, PostMessage);
+
+                return cb2 (null, PostSaved);
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return cb2(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
 
             });
+
 
 
         }
 
         async.parallel([
-            async.apply(updateAlgolia),
+            async.apply(updatePostMessagesAlgolia)
+            //async.apply(updatePostsAlgolia)
 
         ], function (err, results_Final) {
             if (err) {
                 response.error(err);
             }
 
-            //console.log("final waterfall: " + JSON.stringify(results_Final.length));
+            //console.log("done updateAlgolia: " + JSON.stringify(results_Final.length));
 
             let beforeSave_Time = process.hrtime(time);
             console.log(`afterSave PostMessageSocial took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
 
-            response.success();
+            return response.success();
+
         });
+
 
 
 
@@ -18653,8 +18548,6 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
     queryPostMessage.equalTo("objectId", postMessage.id);
     queryPostMessage.select(PostMessageArray);
 
-
-
     //console.log("Request: " + JSON.stringify(request));
     //console.log("objectID: " + objectToSave.objectId);
     //console.log("objectID: " + objectToSave.user.objectId);
@@ -18823,9 +18716,27 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                 useMasterKey: true
                 //sessionToken: sessionToken
 
+            }).then((PostSaved) => {
+                // The object was retrieved successfully.
+                //console.log("Result from get " + JSON.stringify(Workspace));
+
+                //console.log("done PostSaved : " + JSON.stringify(PostSaved));
+
+
+                return callback (null, PostSaved);
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
             });
 
-            return callback(null, Post);
         }
 
         async.parallel([
