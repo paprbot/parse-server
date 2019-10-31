@@ -2734,11 +2734,7 @@ Parse.Cloud.define("indexAlgolia", function(request, response) {
         case "Skill":
 
             break;
-        case "PostQuestionMessage":
-
-            break;
-
-        case "PostChatMessage":
+        case "PostMessage":
 
             break;
 
@@ -6527,6 +6523,9 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
     let channel;
     let user;
     let postMessage;
+    let POST;
+    let PostO;
+
 
     if (postMessageSocial.isNew()) {
 
@@ -6546,6 +6545,9 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
             post = postMessageSocial.get("post");
             //console.log("post: " + JSON.stringify(post));
+            POST = Parse.Object.extend("Post");
+            PostO = new POST();
+            PostO.id = post.id;
 
         }
         if (!postMessageSocial.get("channel")) {
@@ -7143,7 +7145,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                         let queryPostSocial = new Parse.Query(POSTSOCIAL);
                         //queryPostSocial.include(["workspace", "post", "channel", "user"]);
 
-                        queryPostSocial.equalTo("post", post.id);
+                        queryPostSocial.equalTo("post", PostO);
                         //queryPostMessageSocial.select(PostMessageArray);
 
 
@@ -7179,7 +7181,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                                 postSocial.set("user", user);
                                 postSocial.set("workspace", workspace);
                                 postSocial.set("channel", channel);
-                                postSocial.set("post", post);
+                                postSocial.set("post", PostO);
 
                                 console.log("postSocial: " + JSON.stringify(postSocial));
 
@@ -15832,7 +15834,9 @@ function splitPostAndIndexFaster (request, response) {
                     else {
 
                         // PostSocial is null in this case, return Post with PostSocial Null
-                        console.log("PostSocial is null in this case, return Post with PostSocial Null: ");
+                        console.log("PostSocial is null in this case, return Post with PostSocial Null: " + JSON.stringify(finalPostMessageQuestionResults));
+
+
 
                         if (finalPostMessageQuestionResults.length > 0) {
 
@@ -15840,71 +15844,12 @@ function splitPostAndIndexFaster (request, response) {
 
                                 //console.log("finalPostMessageQuestionResult: " + JSON.stringify(finalPostMessageQuestionResult));
 
-                                let currentUserId = user.id;
 
-                                console.log("currentUserId: " + JSON.stringify(currentUserId));
+                                finalPostMessageQuestionResult.PostMessageSocial = null;
 
-                                if (finalPostMessageQuestionResult.PostMessageSocial) {
+                                console.log("yay got a match woo USER no JSON!");
 
-                                    if (finalPostMessageQuestionResult.PostMessageSocial.length === 0) {
-                                        finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                        return finalPostMessageQuestionResult;
-
-
-                                    }
-                                    else {
-
-                                        let arrayPostMessageSocial = finalPostMessageQuestionResult.PostMessageSocial;
-
-                                        console.log("arrayPostMessageSocial: " + JSON.stringify(arrayPostMessageSocial));
-
-                                        // var postMessageSocialObject = lodash.filter(arrayPostMessageSocial, { 'PostMessageSocial.postSocial.objectId': postSocialId } );
-
-                                        let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial) {
-
-
-
-                                                console.log(".....postMessageSocial.postSocial.user.objectId ...: " + JSON.stringify(postMessageSocial.get("postSocial").get("user").objectId));
-
-                                                if (postMessageSocial.get("postSocial").get("user").objectId === currentUserId) {
-
-                                                    finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
-
-                                                    console.log("yay got a match woo USER no JSON!");
-
-                                                    return postMessageSocial;
-                                                } else {
-
-                                                    //finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                                    return;
-                                                }
-
-
-
-                                            }
-
-
-
-                                        );
-
-                                        //console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
-
-                                        return finalPostMessageQuestionResult;
-
-
-                                    }
-
-
-                                } else {
-
-                                    finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                    return finalPostMessageQuestionResult;
-
-
-                                }
+                                return finalPostMessageQuestionResult;
 
 
 
