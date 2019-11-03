@@ -14390,6 +14390,7 @@ function splitPostAndIndexFaster (request, response) {
                         }
                         if (post.postQuestions) {
                             PostStar.postQuestions = post.postQuestions;
+                            delete PostStar.postQuestions;
                             //console.log("setting postQuestions PostStar: " + JSON.stringify(PostStar.postQuestions));
 
                         }
@@ -14639,6 +14640,7 @@ function splitPostAndIndexFaster (request, response) {
                         }
                         if (post.postQuestions) {
                             PostUser.postQuestions = post.postQuestions;
+                            delete PostStar.postQuestions;
                             //console.log("setting postQuestions PostUser: " + JSON.stringify(PostUser.postQuestions));
 
                         }
@@ -14760,259 +14762,260 @@ function splitPostAndIndexFaster (request, response) {
 
 
 
-                    let tags = ['*'];
+                let tags = ['*'];
 
-                    console.log("::starting postSocialQuery no result on postSocial::");
+                console.log("::starting postSocialQuery no result on postSocial::");
 
-                    // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
+                // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
 
-                    //console.log("className: " + JSON.stringify(className));
-                    let POSTSTAR = Parse.Object.extend("Post");
-                    let PostStar1 = new POSTSTAR();
-                    PostStar1.id = post.objectId;
+                //console.log("className: " + JSON.stringify(className));
+                let POSTSTAR = Parse.Object.extend("Post");
+                let PostStar1 = new POSTSTAR();
+                PostStar1.id = post.objectId;
 
-                    PostStar1 = PostStar1.toJSON();
+                PostStar1 = PostStar1.toJSON();
 
-                    if (post.workspace) {
-                        PostStar1.workspace = post.workspace;
-                        //console.log("setting workspace PostStar: " + JSON.stringify(PostStar.workspace));
+                if (post.workspace) {
+                    PostStar1.workspace = post.workspace;
+                    //console.log("setting workspace PostStar: " + JSON.stringify(PostStar.workspace));
+
+                }
+
+                if (post.isExpanded) {
+                    PostStar1.isExpanded = post.isExpanded;
+                    //console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
+
+                }
+
+                if (post.channel) {
+                    PostStar1.channel = post.channel;
+                    //console.log("setting channel PostStar: " + JSON.stringify(PostStar.channel));
+
+                }
+
+                if (post.user) {
+                    PostStar1.user = post.user;
+                    //console.log("setting user PostStar: " + JSON.stringify(PostStar.user));
+
+                }
+
+                if (post.archive === true || post.archive === false) {
+                    PostStar1.archive = post.archive;
+                    //console.log("setting archive PostStar: " + JSON.stringify(PostStar.archive));
+
+                }
+
+                if (post.hashtags) {
+                    PostStar1.hashtags = post.hashtags;
+                    //console.log("setting hashtags PostStar: " + JSON.stringify(PostStar.hashtags));
+
+                }
+
+                if (post.mentions) {
+                    PostStar1.mentions = post.mentions;
+                    //console.log("setting mentions PostStar: " + JSON.stringify(PostStar.mentions));
+
+                }
+
+
+                if (post.type) {
+                    PostStar1.type = post.type;
+                    //console.log("setting type PostStar: " + JSON.stringify(PostStar.type));
+
+                }
+
+                if (post.mediaType) {
+                    PostStar1.mediaType = post.mediaType;
+                    //console.log("setting mediaType PostStar: " + JSON.stringify(PostStar.mediaType));
+
+                }
+
+                if (post.ACL) {
+                    PostStar1.ACL = post.ACL;
+                    //console.log("setting ACL PostStar: " + JSON.stringify(PostStar.ACL));
+
+                }
+
+                if (post.hasURL === true || post.hasURL === false) {
+
+                    PostStar1.hasURL = post.hasURL;
+                    //console.log("setting hasURL PostStar: " + JSON.stringify(PostStar.hasURL));
+
+                }
+
+                if (post.isIncognito === true || post.isIncognito === false) {
+                    PostStar1.isIncognito = post.isIncognito;
+                    //console.log("setting isIncognito PostStar: " + JSON.stringify(PostStar.isIncognito));
+
+                }
+                if (post.chatEnabled === true || post.chatEnabled === false) {
+
+                    PostStar1.chatEnabled = post.chatEnabled;
+                    //console.log("setting chatEnabled PostStar: " + JSON.stringify(PostStar.chatEnabled));
+
+                }
+
+                if (post.text) {
+                    PostStar1.text = post.text;
+                    //console.log("setting text PostStar: " + JSON.stringify(PostStar.text));
+
+                }
+                if (post.updatedAt) {
+                    PostStar1.updatedAt = post.updatedAt;
+                    //console.log("setting updatedAt PostStar: " + JSON.stringify(PostStar.updatedAt));
+                }
+                if (post.createdAt) {
+
+                    PostStar1.createdAt = post.createdAt;
+                    //console.log("setting createdAt PostStar: " + JSON.stringify(PostStar.createdAt));
+                }
+
+
+                if (post.transcript) {
+                    PostStar1.transcript = post.transcript;
+                    //console.log("setting transcript PostStar: " + JSON.stringify(PostStar.transcript));
+
+                }
+                if (post.post_title) {
+
+                    PostStar1.post_title = post.post_title;
+                    //console.log("setting post_title PostStar: " + JSON.stringify(PostStar.post_title));
+
+                }
+                if (post.video) {
+
+                    PostStar1.video = post.video;
+                    //console.log("setting video PostStar: " + JSON.stringify(PostStar.video));
+
+                }
+                if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) {
+
+                    PostStar1.questionAnswerEnabled = post.questionAnswerEnabled;
+                    //console.log("setting questionAnswerEnabled PostStar: " + JSON.stringify(PostStar.questionAnswerEnabled));
+                }
+                if (post.thumbnailRatio) {
+
+                    PostStar1.thumbnailRatio = post.thumbnailRatio;
+                    //console.log("setting thumbnailRatio PostStar: " + JSON.stringify(PostStar.thumbnailRatio));
+                }
+
+                if (post.file) {
+
+                    PostStar1.file = post.file;
+                    //console.log("setting file PostStar: " + JSON.stringify(PostStar.file));
+                }
+                if (post.image) {
+                    PostStar1.image = post.image;
+                    //console.log("setting image PostStar: " + JSON.stringify(PostStar.image));
+                }
+                if (post.audio) {
+                    PostStar1.audio = post.audio;
+                    //console.log("setting audio PostStar: " + JSON.stringify(PostStar.audio));
+                }
+
+                if (post.audioWave) {
+                    PostStar1.audioWave = post.audioWave;
+                    //console.log("setting audioWave PostStar: " + JSON.stringify(PostStar.audioWave));
+                }
+
+                if (post.imageRatio) {
+                    PostStar1.imageRatio = post.imageRatio;
+                    //console.log("setting imageRatio PostStar: " + JSON.stringify(PostStar.imageRatio));
+                }
+
+                if (post.mediaDuration) {
+                    PostStar1.mediaDuration = post.mediaDuration;
+                    //console.log("setting mediaDuration PostStar: " + JSON.stringify(PostStar.mediaDuration));
+                }
+                if (post.likesCount) {
+
+                    PostStar1.likesCount = post.likesCount;
+                    //console.log("setting lkesCount PostStar: i" + JSON.stringify(PostStar.likesCount));
+                }
+                if (post.video_thumbnail) {
+                    PostStar1.video_thumbnail = post.video_thumbnail;
+                    //console.log("setting video_thumbnail PostStar: " + JSON.stringify(PostStar.video_thumbnail));
+                }
+
+                if (post.chatMessages) {
+
+                    PostStar1.chatMessages = post.chatMessages;
+                    //console.log("setting chatMessages PostStar: " + JSON.stringify(PostStar.chatMessages));
+                }
+
+                if (post.type === 'post') {
+
+                    if (post.postMessageCount) {
+                        PostStar1.postMessageCount = post.postMessageCount;
+                        //console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
+                    }
+                    if (post.postMessageUnReadCount) {
+                        PostStar1.postMessageUnReadCount = post.postMessageUnReadCount;
+                        //console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
+                    }
+                    if (post.postMessageQuestionCount) {
+                        PostStar1.postMessageQuestionCount = post.postMessageQuestionCount;
+                        //console.log("setting postMessageQuestionCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionCount));
+                    }
+                    if (post.postMessageQuestionUnReadCount) {
+
+                        PostStar1.postMessageQuestionUnReadCount = post.postMessageQuestionUnReadCount;
+                        //console.log("setting postMessageQuestionUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionUnReadCount));
+                    }
+                    if (post.postQuestions) {
+                        PostStar1.postQuestions = post.postQuestions;
+                        delete PostStar.postQuestions;
+                        //console.log("setting postQuestions PostStar: " + JSON.stringify(PostStar.postQuestions));
 
                     }
 
-                    if (post.isExpanded) {
-                        PostStar1.isExpanded = post.isExpanded;
-                        //console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
+
+                } else if (post.type === 'question') {
+
+                    console.log("it's a question!: " + JSON.stringify(post.type));
+
+                    if (post.postMessageCount) {
+
+                        PostStar1.postMessageCount = post.postMessageCount;
+                        //console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
+                    }
+                    if (post.postMessageUnReadCount) {
+
+                        PostStar1.postMessageUnReadCount = post.postMessageUnReadCount;
+                        //console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
+                    }
+                    if (post.postMessageAnswerCount) {
+                        PostStar1.postMessageAnswerCount = post.postMessageAnswerCount;
+                        //console.log("setting postMessageAnswerCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerCount));
+                    }
+                    if (post.postMessageAnswerUnReadCount) {
+
+                        PostStar1.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount;
+                        //console.log("setting postMessageAnswerUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerUnReadCount));
+                    }
+                    if (post.topAnswer) {
+                        PostStar1.topAnswer = post.topAnswer;
+                        //console.log("setting topAnswer PostStar: " + JSON.stringify(PostStar.topAnswer));
 
                     }
 
-                    if (post.channel) {
-                        PostStar1.channel = post.channel;
-                        //console.log("setting channel PostStar: " + JSON.stringify(PostStar.channel));
+                }
 
-                    }
+                let postObjectID = post.objectId + '-0';
 
-                    if (post.user) {
-                        PostStar1.user = post.user;
-                        //console.log("setting user PostStar: " + JSON.stringify(PostStar.user));
+                PostStar1.objectID = postObjectID;
+                PostStar1._tags = tags;
+                PostStar1.PostSocial = null;
 
-                    }
+                //console.log("post_zero with * tag: " + JSON.stringify(PostStar));
 
-                    if (post.archive === true || post.archive === false) {
-                        PostStar1.archive = post.archive;
-                        //console.log("setting archive PostStar: " + JSON.stringify(PostStar.archive));
+                console.log("::starting postSocialQuery no result on PostStar1::post " + JSON.stringify(PostStar1));
 
-                    }
-
-                    if (post.hashtags) {
-                        PostStar1.hashtags = post.hashtags;
-                        //console.log("setting hashtags PostStar: " + JSON.stringify(PostStar.hashtags));
-
-                    }
-
-                    if (post.mentions) {
-                        PostStar1.mentions = post.mentions;
-                        //console.log("setting mentions PostStar: " + JSON.stringify(PostStar.mentions));
-
-                    }
+                let PostSocialArrayNone = [];
+                PostSocialArrayNone.push(PostStar1);
 
 
-                    if (post.type) {
-                        PostStar1.type = post.type;
-                        //console.log("setting type PostStar: " + JSON.stringify(PostStar.type));
-
-                    }
-
-                    if (post.mediaType) {
-                        PostStar1.mediaType = post.mediaType;
-                        //console.log("setting mediaType PostStar: " + JSON.stringify(PostStar.mediaType));
-
-                    }
-
-                    if (post.ACL) {
-                        PostStar1.ACL = post.ACL;
-                        //console.log("setting ACL PostStar: " + JSON.stringify(PostStar.ACL));
-
-                    }
-
-                    if (post.hasURL === true || post.hasURL === false) {
-
-                        PostStar1.hasURL = post.hasURL;
-                        //console.log("setting hasURL PostStar: " + JSON.stringify(PostStar.hasURL));
-
-                    }
-
-                    if (post.isIncognito === true || post.isIncognito === false) {
-                        PostStar1.isIncognito = post.isIncognito;
-                        //console.log("setting isIncognito PostStar: " + JSON.stringify(PostStar.isIncognito));
-
-                    }
-                    if (post.chatEnabled === true || post.chatEnabled === false) {
-
-                        PostStar1.chatEnabled = post.chatEnabled;
-                        //console.log("setting chatEnabled PostStar: " + JSON.stringify(PostStar.chatEnabled));
-
-                    }
-
-                    if (post.text) {
-                        PostStar1.text = post.text;
-                        //console.log("setting text PostStar: " + JSON.stringify(PostStar.text));
-
-                    }
-                    if (post.updatedAt) {
-                        PostStar1.updatedAt = post.updatedAt;
-                        //console.log("setting updatedAt PostStar: " + JSON.stringify(PostStar.updatedAt));
-                    }
-                    if (post.createdAt) {
-
-                        PostStar1.createdAt = post.createdAt;
-                        //console.log("setting createdAt PostStar: " + JSON.stringify(PostStar.createdAt));
-                    }
-
-
-                    if (post.transcript) {
-                        PostStar1.transcript = post.transcript;
-                        //console.log("setting transcript PostStar: " + JSON.stringify(PostStar.transcript));
-
-                    }
-                    if (post.post_title) {
-
-                        PostStar1.post_title = post.post_title;
-                        //console.log("setting post_title PostStar: " + JSON.stringify(PostStar.post_title));
-
-                    }
-                    if (post.video) {
-
-                        PostStar1.video = post.video;
-                        //console.log("setting video PostStar: " + JSON.stringify(PostStar.video));
-
-                    }
-                    if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) {
-
-                        PostStar1.questionAnswerEnabled = post.questionAnswerEnabled;
-                        //console.log("setting questionAnswerEnabled PostStar: " + JSON.stringify(PostStar.questionAnswerEnabled));
-                    }
-                    if (post.thumbnailRatio) {
-
-                        PostStar1.thumbnailRatio = post.thumbnailRatio;
-                        //console.log("setting thumbnailRatio PostStar: " + JSON.stringify(PostStar.thumbnailRatio));
-                    }
-
-                    if (post.file) {
-
-                        PostStar1.file = post.file;
-                        //console.log("setting file PostStar: " + JSON.stringify(PostStar.file));
-                    }
-                    if (post.image) {
-                        PostStar1.image = post.image;
-                        //console.log("setting image PostStar: " + JSON.stringify(PostStar.image));
-                    }
-                    if (post.audio) {
-                        PostStar1.audio = post.audio;
-                        //console.log("setting audio PostStar: " + JSON.stringify(PostStar.audio));
-                    }
-
-                    if (post.audioWave) {
-                        PostStar1.audioWave = post.audioWave;
-                        //console.log("setting audioWave PostStar: " + JSON.stringify(PostStar.audioWave));
-                    }
-
-                    if (post.imageRatio) {
-                        PostStar1.imageRatio = post.imageRatio;
-                        //console.log("setting imageRatio PostStar: " + JSON.stringify(PostStar.imageRatio));
-                    }
-
-                    if (post.mediaDuration) {
-                        PostStar1.mediaDuration = post.mediaDuration;
-                        //console.log("setting mediaDuration PostStar: " + JSON.stringify(PostStar.mediaDuration));
-                    }
-                    if (post.likesCount) {
-
-                        PostStar1.likesCount = post.likesCount;
-                        //console.log("setting lkesCount PostStar: i" + JSON.stringify(PostStar.likesCount));
-                    }
-                    if (post.video_thumbnail) {
-                        PostStar1.video_thumbnail = post.video_thumbnail;
-                        //console.log("setting video_thumbnail PostStar: " + JSON.stringify(PostStar.video_thumbnail));
-                    }
-
-                    if (post.chatMessages) {
-
-                        PostStar1.chatMessages = post.chatMessages;
-                        //console.log("setting chatMessages PostStar: " + JSON.stringify(PostStar.chatMessages));
-                    }
-
-                    if (post.type === 'post') {
-
-                        if (post.postMessageCount) {
-                            PostStar1.postMessageCount = post.postMessageCount;
-                            //console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-                        }
-                        if (post.postMessageUnReadCount) {
-                            PostStar1.postMessageUnReadCount = post.postMessageUnReadCount;
-                            //console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-                        }
-                        if (post.postMessageQuestionCount) {
-                            PostStar1.postMessageQuestionCount = post.postMessageQuestionCount;
-                            //console.log("setting postMessageQuestionCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionCount));
-                        }
-                        if (post.postMessageQuestionUnReadCount) {
-
-                            PostStar1.postMessageQuestionUnReadCount = post.postMessageQuestionUnReadCount;
-                            //console.log("setting postMessageQuestionUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionUnReadCount));
-                        }
-                        if (post.postQuestions) {
-                            PostStar1.postQuestions = post.postQuestions;
-                            //console.log("setting postQuestions PostStar: " + JSON.stringify(PostStar.postQuestions));
-
-                        }
-
-
-                    } else if (post.type === 'question') {
-
-                        console.log("it's a question!: " + JSON.stringify(post.type));
-
-                        if (post.postMessageCount) {
-
-                            PostStar1.postMessageCount = post.postMessageCount;
-                            //console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-                        }
-                        if (post.postMessageUnReadCount) {
-
-                            PostStar1.postMessageUnReadCount = post.postMessageUnReadCount;
-                            //console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-                        }
-                        if (post.postMessageAnswerCount) {
-                            PostStar1.postMessageAnswerCount = post.postMessageAnswerCount;
-                            //console.log("setting postMessageAnswerCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerCount));
-                        }
-                        if (post.postMessageAnswerUnReadCount) {
-
-                            PostStar1.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount;
-                            //console.log("setting postMessageAnswerUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerUnReadCount));
-                        }
-                        if (post.topAnswer) {
-                            PostStar1.topAnswer = post.topAnswer;
-                            //console.log("setting topAnswer PostStar: " + JSON.stringify(PostStar.topAnswer));
-
-                        }
-
-                    }
-
-                    let postObjectID = post.objectId + '-0';
-
-                    PostStar1.objectID = postObjectID;
-                    PostStar1._tags = tags;
-                    PostStar1.PostSocial = null;
-
-                    //console.log("post_zero with * tag: " + JSON.stringify(PostStar));
-
-                    console.log("::starting postSocialQuery no result on PostStar1::post " + JSON.stringify(PostStar1));
-
-                    let PostSocialArrayNone = [];
-                    PostSocialArrayNone.push(PostStar1);
-
-
-                    return callback2 (null, PostSocialArrayNone);
+                return callback2 (null, PostSocialArrayNone);
 
 
 
@@ -15212,7 +15215,7 @@ function splitPostAndIndexFaster (request, response) {
 
                                     let filteredPostMessageSocials = lodash.filter(postMessageSocials, function (postMessageSocial) {
 
-                                        //console.log(".....postMessageSocial.....: " + JSON.stringify(postMessageSocial));
+                                            //console.log(".....postMessageSocial.....: " + JSON.stringify(postMessageSocial));
 
                                             if (postMessageSocial.get("postMessage").id === postQuestionMessage.objectId) {
 
@@ -15644,10 +15647,15 @@ function splitPostAndIndexFaster (request, response) {
 
         if (results.length > 0) {
 
-            console.log("afterSave PostSocial Post algolia index results length: " + JSON.stringify(results.length));
+            //console.log("afterSave PostSocial Post algolia index results length: " + JSON.stringify(results.length));
 
             let finalPostIndexResults = results[0];
             let finalPostMessageQuestionResults = results[1];
+
+            console.log("finalPostMessageQuestionResults: " + JSON.stringify(finalPostMessageQuestionResults));
+
+            let nullFInalPostMessageQuestionResults = finalPostMessageQuestionResults;
+
 
             //let finalPostMessageAnswerResults = results[2];
             //let finalPostMessageCommentResults = results[3];
@@ -15659,108 +15667,61 @@ function splitPostAndIndexFaster (request, response) {
 
                     console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
+                    let Questions = finalPostMessageQuestionResults;
+
                     if (finalPostIndexResult.PostSocial) {
 
                         if (finalPostMessageQuestionResults.length > 0) {
 
-                            async.map(finalPostMessageQuestionResults, function (finalPostMessageQuestionResult, cb3) {
+                            console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
 
-                           // let finalPostMessageQuestionResults1 = lodash.map(finalPostMessageQuestionResults, function(finalPostMessageQuestionResult) {
+                            let arrQuestions = lodash.map(Questions, function(question){
 
-                                //console.log("finalPostMessageQuestionResult: " + JSON.stringify(finalPostMessageQuestionResult));
+                                let postSocialId = question.PostSocial.objectId;
 
-                                let postSocialId = finalPostIndexResult.PostSocial.objectId;
+                                if (question.PostMessageSocial) {
 
-                                //console.log("postSocialId: " + JSON.stringify(postSocialId));
+                                    if (question.PostMessageSocial.length > 0) {
 
-                                if (finalPostMessageQuestionResult.PostMessageSocial) {
+                                        let arrayPostMessageSocial = question.PostMessageSocial;
 
-                                    if (finalPostMessageQuestionResult.PostMessageSocial.length === 0) {
-                                        finalPostMessageQuestionResult.PostMessageSocial = null;
+                                        let postMessageSocialObj1 = lodash.find(arrayPostMessageSocial, ['postSocial.objectId', postSocialId]);
 
-                                        return cb3 (null, finalPostMessageQuestionResult);
+                                        console.log("postMessageSocialObj1: " + JSON.stringify(postMessageSocialObj1));
 
+                                        let postMessageSocialObj = arrayPostMessageSocial.find(obj => {
+                                            return obj.postSocial.objectId === postSocialId;
+                                        });
 
-                                    }
-                                    else {
+                                        console.log("postMessageSocialObj: " + JSON.stringify(postMessageSocialObj));
 
-                                        let arrayPostMessageSocial = finalPostMessageQuestionResult.PostMessageSocial;
+                                        question.PostMessageSocial = postMessageSocialObj1;
 
-                                        //console.log("arrayPostMessageSocial: " + JSON.stringify(arrayPostMessageSocial));
-
-                                        // var postMessageSocialObject = lodash.filter(arrayPostMessageSocial, { 'PostMessageSocial.postSocial.objectId': postSocialId } );
-
-                                        if (arrayPostMessageSocial.length > 0) {
-
-                                            let postMessageSocialObject = lodash.filter(arrayPostMessageSocial, function (postMessageSocial1) {
-
-                                                    console.log("postMessageSocial1: " + JSON.stringify(postMessageSocial1));
-
-
-                                                    try {
-                                                        JSON.parse(postMessageSocial1);
-
-                                                        console.log(".....postMessageSocial1.postSocial.JSON...: " + JSON.stringify(postMessageSocial1.postSocial.objectId));
-
-                                                        if (postMessageSocial1.postSocial.objectId === postSocialId) {
-
-
-                                                            finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial1);
-
-                                                            console.log("yay got a match woo!");
-
-                                                            return postMessageSocial1;
-                                                        } else {
-
-                                                            //finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                                            return ;}
+                                        return question;
 
 
 
-                                                    } catch (e) {
-                                                        console.log("not JSON");
+                                    } else {
 
-                                                        console.log(".....postMessageSocial1.postSocial....: " + JSON.stringify(postMessageSocial1));
+                                        console.log("null issue 1");
 
-                                                        if (postMessageSocial1.get("postSocial").id === postSocialId) {
+                                        let arrayPostMessageSocial = [];
 
+                                        arrayPostMessageSocial.push(question.PostMessageSocial);
 
-                                                            finalPostMessageQuestionResult.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial1);
+                                        let postMessageSocialObj1 = lodash.find(arrayPostMessageSocial, ['postSocial.objectId', postSocialId]);
 
-                                                            console.log("yay got a match woo not JSON!");
+                                        console.log("postMessageSocialObj1: " + JSON.stringify(postMessageSocialObj1));
 
-                                                            return postMessageSocial1;
-                                                        } else {
+                                        let postMessageSocialObj = arrayPostMessageSocial.find(obj => {
+                                            return obj.postSocial.objectId === postSocialId;
+                                        });
 
-                                                            //finalPostMessageQuestionResult.PostMessageSocial = null;
+                                        console.log("postMessageSocialObj: " + JSON.stringify(postMessageSocialObj));
 
-                                                            return ;}
+                                        question.PostMessageSocial = postMessageSocialObj1;
 
-
-                                                    }
-
-
-                                                }
-
-
-                                            );
-
-                                            //console.log("postMessageSocialObject: " + JSON.stringify(postMessageSocialObject));
-
-                                            return cb3 (null, finalPostMessageQuestionResult);
-
-
-                                        } else {
-
-                                            finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                            return cb3 (null, finalPostMessageQuestionResult);
-
-
-                                        }
-
-
+                                        return question;
 
 
                                     }
@@ -15768,45 +15729,25 @@ function splitPostAndIndexFaster (request, response) {
 
                                 } else {
 
-                                    finalPostMessageQuestionResult.PostMessageSocial = null;
+                                    console.log("null issue 2");
 
-                                    return cb3 (null, finalPostMessageQuestionResult);
+                                    question.PostMessageSocial = null;
+
+                                    //finalPostMessageQuestionResult.PostMessageSocial = null;
+
+                                    return question;
 
 
                                 }
 
+                            });
 
+                            console.log("arrQuestions: " + JSON.stringify(arrQuestions));
 
-                                },
-                                function (err, postMessageQuestionsToIndex) {
+                            finalPostIndexResult.postQuestions = arrQuestions;
+                            console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
 
-                                    console.log("postMessageQuestionsToIndex: " + JSON.stringify(postMessageQuestionsToIndex));
-
-                                    if (err) {
-                                        return response.error(err);
-                                    } else {
-
-
-                                        // todo find postAnswer for this postSocial
-
-                                        finalPostIndexResult.postQuestions = postMessageQuestionsToIndex;
-                                        console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
-
-                                        //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                                        //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-
-                                        return cb2 (null, finalPostIndexResult);
-
-
-
-                                    }
-
-                                });
-
-
-
-
+                            return cb2 (null, finalPostIndexResult);
 
                         }
 
@@ -15817,7 +15758,7 @@ function splitPostAndIndexFaster (request, response) {
 
                             // todo find postAnswer for this postSocial
 
-                            finalPostIndexResult.postQuestions = finalPostMessageQuestionResults;
+                            finalPostIndexResult.postQuestions = [];
                             //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
                             //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
@@ -15827,59 +15768,38 @@ function splitPostAndIndexFaster (request, response) {
 
 
                         }
-
 
                     }
 
                     else {
 
-                        // PostSocial is null in this case, return Post with PostSocial Null
-                        console.log("PostSocial is null in this case, return Post with PostSocial Null: " + JSON.stringify(finalPostMessageQuestionResults));
-
-
+                        finalPostIndexResult.PostSocial = null;
 
                         if (finalPostMessageQuestionResults.length > 0) {
 
-                            let finalPostMessageQuestionResults1 = lodash.map(finalPostMessageQuestionResults, function(finalPostMessageQuestionResult) {
+                            let arrQuestions = lodash.map(Questions, function(question){
 
-                                //console.log("finalPostMessageQuestionResult: " + JSON.stringify(finalPostMessageQuestionResult));
+                                question.PostMessageSocial = null;
 
-
-                                finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                console.log("yay got a match woo USER no JSON!");
-
-                                return finalPostMessageQuestionResult;
-
-
-
+                                return question;
 
                             });
 
-                            console.log("postIndexResult: " + JSON.stringify(finalPostMessageQuestionResults1));
-
-
-                            // todo find postAnswer for this postSocial
-
-                            finalPostIndexResult.postQuestions = finalPostMessageQuestionResults1;
-                            console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+                            finalPostIndexResult.postQuestions = arrQuestions;
+                            console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
 
                             return cb2 (null, finalPostIndexResult);
-
 
                         }
 
                         else {
 
-                            console.log("::no postSocial & no questions on post::");
+                            console.log("::no questions on post::");
 
+                            
+                            finalPostIndexResult.PostSocial = null;
 
-                            // todo find postAnswer for this postSocial
-
-                            finalPostIndexResult.postQuestions = finalPostMessageQuestionResults;
+                            finalPostIndexResult.postQuestions = [];
                             //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
                             //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
@@ -15891,6 +15811,8 @@ function splitPostAndIndexFaster (request, response) {
                         }
 
                     }
+
+
 
 
                 },
