@@ -15677,7 +15677,8 @@ function splitPostAndIndexFaster (request, response) {
 
                             let arrQuestions = lodash.map(Questions, function(question){
 
-                                let postSocialId = question.PostSocial.objectId;
+                                let postSocialId = finalPostIndexResult.PostSocial.objectId;
+                                let userId = finalPostIndexResult.user.objectId;
 
                                 if (question.PostMessageSocial) {
 
@@ -15685,17 +15686,26 @@ function splitPostAndIndexFaster (request, response) {
 
                                         let arrayPostMessageSocial = question.PostMessageSocial;
 
-                                        let postMessageSocialObj1 = lodash.find(arrayPostMessageSocial, ['postSocial.objectId', postSocialId]);
+                                        for (var i = 0; i < arrayPostMessageSocial.length; i++) {
 
-                                        console.log("postMessageSocialObj1: " + JSON.stringify(postMessageSocialObj1));
+                                            let postMessageSocialObj = arrayPostMessageSocial[i];
 
-                                        let postMessageSocialObj = arrayPostMessageSocial.find(obj => {
-                                            return obj.postSocial.objectId === postSocialId;
-                                        });
+                                            console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
 
-                                        console.log("postMessageSocialObj: " + JSON.stringify(postMessageSocialObj));
+                                            console.log("postSocialId::socialpostSocialId " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
 
-                                        question.PostMessageSocial = postMessageSocialObj1;
+                                            console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.get("user").id));
+
+                                            if (postMessageSocialObj.get("user").id === userId) {
+
+
+                                                question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
+
+                                            }
+
+                                        }
+
+                                        console.log("question: " + JSON.stringify(question));
 
                                         return question;
 
@@ -15709,17 +15719,26 @@ function splitPostAndIndexFaster (request, response) {
 
                                         arrayPostMessageSocial.push(question.PostMessageSocial);
 
-                                        let postMessageSocialObj1 = lodash.find(arrayPostMessageSocial, ['postSocial.objectId', postSocialId]);
+                                        for (var i = 0; i < arrayPostMessageSocial.length; i++) {
 
-                                        console.log("postMessageSocialObj1: " + JSON.stringify(postMessageSocialObj1));
+                                            let postMessageSocialObj = arrayPostMessageSocial[i];
 
-                                        let postMessageSocialObj = arrayPostMessageSocial.find(obj => {
-                                            return obj.postSocial.objectId === postSocialId;
-                                        });
+                                            console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
 
-                                        console.log("postMessageSocialObj: " + JSON.stringify(postMessageSocialObj));
+                                            console.log("postSocialId::socialpostSocialId " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
 
-                                        question.PostMessageSocial = postMessageSocialObj1;
+                                            console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.get("user").id));
+
+                                            if (postMessageSocialObj.get("user").id === userId) {
+
+
+                                                question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
+
+                                            }
+
+                                        }
+
+                                        console.log("question: " + JSON.stringify(question));
 
                                         return question;
 
@@ -15796,7 +15815,7 @@ function splitPostAndIndexFaster (request, response) {
 
                             console.log("::no questions on post::");
 
-                            
+
                             finalPostIndexResult.PostSocial = null;
 
                             finalPostIndexResult.postQuestions = [];
