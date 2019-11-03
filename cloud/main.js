@@ -7146,6 +7146,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                         //queryPostSocial.include(["workspace", "post", "channel", "user"]);
 
                         queryPostSocial.equalTo("post", PostO);
+                        queryPostSocial.equalTo("user", User);
                         //queryPostMessageSocial.select(PostMessageArray);
 
 
@@ -15678,7 +15679,7 @@ function splitPostAndIndexFaster (request, response) {
                             let arrQuestions = lodash.map(Questions, function(question){
 
                                 let postSocialId = finalPostIndexResult.PostSocial.objectId;
-                                let userId = finalPostIndexResult.user.objectId;
+                                let userId = finalPostIndexResult.PostSocial.user.objectId;
 
                                 if (question.PostMessageSocial) {
 
