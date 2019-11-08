@@ -1676,8 +1676,7 @@ Parse.Cloud.define("leaveChannel", function(request, response) {
 
 }, {useMasterKey: true});
 
-// cloud API and function to leave a channel
-// cloud API and function to leave a channel
+// cloud API and function to addPeopleToChannel
 Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
     const NS_PER_SEC = 1e9;
@@ -1718,6 +1717,10 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
     let userArray = [];
 
+    console.log("userArray Set: " + JSON.stringify(userArray));
+
+    console.log("userArray Set: " + JSON.stringify(userArray.length));
+
     for (var j = 0; j < userArrayID.length; j++) {
 
         let User = new USER();
@@ -1753,7 +1756,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
             if (ChannelFollowers.length > 0) {
 
-                let userArrayChannelFollowers = new Set();
+                let userArrayChannelFollowersSet = new Set();
 
 
 
@@ -1767,14 +1770,18 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                     //console.log("ChannelFollow: " + JSON.stringify(ChannelFollow));
 
-                    userArrayChannelFollowers.add(ChannelFollow.get("user"));
+                    userArrayChannelFollowersSet.add(ChannelFollow.get("user"));
 
                 }
 
 
-                console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowers));
+                console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowersSet.size));
 
-                Parse.Object.saveAll(ChannelFollowers, {
+                let userArrayChannelFollowers = Array.from(userArrayChannelFollowersSet);
+
+                console.log("uniqueArray1: " + JSON.stringify(userArrayChannelFollowers.length));
+
+                Parse.Object.saveAll(userArrayChannelFollowers, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -1794,7 +1801,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                         console.log("ChannelFollowers less than 500");
 
-                        let ChannelFollowArray = new Set();
+                        let ChannelFollowSet = new Set();
 
                         for (var i = 0; i < userArray.length; i++) {
 
@@ -1822,11 +1829,16 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                                     newChannelFollow.set("isFollower", true);
                                     newChannelFollow.set("isMember", true);
 
-                                    ChannelFollowArray.add(newChannelFollow);
+                                    ChannelFollowSet.add(newChannelFollow);
 
                                     if (l === (userArrayChannelFollowers.length - 1) && i === (userArray.length - 1)) {
 
-                                        console.log("ChannelFollowArray 1: " + JSON.stringify(ChannelFollowArray));
+                                        console.log("ChannelFollowArray 1: " + JSON.stringify(ChannelFollowSet));
+
+                                        //let dupeArray = [3,2,3,3,5,2];
+                                        let ChannelFollowArray = Array.from(new Set(ChannelFollowSet));
+
+                                        console.log("uniqueArray 1: " + JSON.stringify(ChannelFollowArray.length));
 
                                         if (ChannelFollowArray.length > 0) {
 
@@ -1879,7 +1891,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                 // todo create new ChannelFollower for these Users
 
-                let ChannelFollowArray = new Set();
+                let ChannelFollowSet = new Set();
 
                 for (var i = 0; i < userArray.length; i++) {
 
@@ -1890,18 +1902,22 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                     newChannelFollow.set("isFollower", true);
                     newChannelFollow.set("isMember", true);
 
-                    ChannelFollowArray.add(newChannelFollow);
+                    ChannelFollowSet.add(newChannelFollow);
 
-                    console.log("ChannelFollowArray: " + JSON.stringify(ChannelFollowArray));
+                    console.log("ChannelFollowArray: " + JSON.stringify(ChannelFollowSet));
 
 
                 }
 
+                let channelFollowArray= Array.from(new Set(ChannelFollowSet));
+
+                console.log("uniqueArray: " + JSON.stringify(channelFollowArray.length));
 
 
-                if (ChannelFollowArray.length > 0) {
 
-                    Parse.Object.saveAll(ChannelFollowArray, {
+                if (channelFollowArray.length > 0) {
+
+                    Parse.Object.saveAll(channelFollowArray, {
 
                         useMasterKey: true
                         //sessionToken: sessionToken
@@ -1944,7 +1960,6 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
 
 }, {useMasterKey: true});
-
 // cloud API and function to add one or multiple skills to skills table.
 Parse.Cloud.define("addSkills", function(request, response) {
 
