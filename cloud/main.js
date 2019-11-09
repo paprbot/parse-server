@@ -1770,7 +1770,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                     //console.log("ChannelFollow: " + JSON.stringify(ChannelFollow));
 
-                    userArrayChannelFollowersSet.add(ChannelFollow.get("user"));
+                    userArrayChannelFollowersSet.add(ChannelFollow.get("user").id);
 
                 }
 
@@ -1779,7 +1779,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                 let userArrayChannelFollowers = Array.from(userArrayChannelFollowersSet);
 
-                console.log("uniqueArray1: " + JSON.stringify(userArrayChannelFollowers.length));
+                console.log("::userArrayChannelFollowers:: " + JSON.stringify(userArrayChannelFollowers.length));
 
                 Parse.Object.saveAll(userArrayChannelFollowers, {
 
@@ -1805,62 +1805,56 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                         for (var i = 0; i < userArray.length; i++) {
 
-                            console.log("i: " + JSON.stringify(i));
                             let user = userArray[i];
-                            console.log("user: " + JSON.stringify(user));
-
-                            for (var l = 0; l < userArrayChannelFollowers.length; l++) {
-
-                                let user2 = userArrayChannelFollowers[l];
-
-                                console.log("user: " + JSON.stringify(user.id) + "user2: " + JSON.stringify(user2.id));
-
-                                if (user2.id === user.id) {
-
-                                    // this user already has a channelFollow so no need to add
-                                    console.log(" this user already has a channelFollow so no need to add");
-
-                                } else {
-
-                                    let newChannelFollow = new CHANNELFOLLOW();
-                                    newChannelFollow.set("user", userArray[i]);
-                                    newChannelFollow.set("workspace", Workspace);
-                                    newChannelFollow.set("channel", Channel);
-                                    newChannelFollow.set("isFollower", true);
-                                    newChannelFollow.set("isMember", true);
-
-                                    ChannelFollowSet.add(newChannelFollow);
-
-                                    if (l === (userArrayChannelFollowers.length - 1) && i === (userArray.length - 1)) {
-
-                                        console.log("ChannelFollowArray 1: " + JSON.stringify(ChannelFollowSet));
-
-                                        //let dupeArray = [3,2,3,3,5,2];
-                                        let ChannelFollowArray = Array.from(new Set(ChannelFollowSet));
-
-                                        console.log("uniqueArray 1: " + JSON.stringify(ChannelFollowArray.length));
-
-                                        if (ChannelFollowArray.length > 0) {
-
-                                            Parse.Object.saveAll(ChannelFollowArray, {
-
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
-
-                                            }).then(function() {
-                                                // if we got 500 or more results then we know
-                                                // that we have more results
-                                                // otherwise we finish
+                            console.log("user: " + JSON.stringify(user.id));
+                            console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowers));
 
 
-                                            }, function(err) {
-                                                // error
-                                                return response.error(err);
+                            let includesMatch = userArrayChannelFollowers.includes(user.id);
 
-                                            });
+                            console.log("includesMatch: " + JSON.stringify(includesMatch));
+
+                            if(includesMatch === false) {
+                                // this user doesn't have a channelFollow, create one!
+
+                                let newChannelFollow = new CHANNELFOLLOW();
+                                newChannelFollow.set("user", userArray[i]);
+                                newChannelFollow.set("workspace", Workspace);
+                                newChannelFollow.set("channel", Channel);
+                                newChannelFollow.set("isFollower", true);
+                                newChannelFollow.set("isMember", true);
+
+                                ChannelFollowSet.add(newChannelFollow);
+
+                                if ( i === (userArray.length - 1)) {
+
+                                    console.log("ChannelFollowArray 1: " + JSON.stringify(ChannelFollowSet));
+                                    console.log("ChannelFollowSet Size: " + JSON.stringify(ChannelFollowSet.size));
 
 
-                                        }
+                                    //let dupeArray = [3,2,3,3,5,2];
+                                    let ChannelFollowArray = Array.from(new Set(ChannelFollowSet));
+
+                                    console.log("ChannelFollowArray length: " + JSON.stringify(ChannelFollowArray.length));
+
+                                    if (ChannelFollowArray.length > 0) {
+
+                                        Parse.Object.saveAll(ChannelFollowArray, {
+
+                                            useMasterKey: true
+                                            //sessionToken: sessionToken
+
+                                        }).then(function() {
+                                            // if we got 500 or more results then we know
+                                            // that we have more results
+                                            // otherwise we finish
+
+
+                                        }, function(err) {
+                                            // error
+                                            return response.error(err);
+
+                                        });
 
 
                                     }
@@ -1870,7 +1864,14 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                             }
 
+
+
+
+
                         }
+
+
+
 
 
 
@@ -1960,6 +1961,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
 
 }, {useMasterKey: true});
+
 // cloud API and function to add one or multiple skills to skills table.
 Parse.Cloud.define("addSkills", function(request, response) {
 
@@ -6189,11 +6191,20 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         // if there is a post that got added and no mentions from client then add mentions
         if (post.isNew() && !post.mentions) {
 
-            mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
-            mentions = _.map(mentions, toLowerCase);
+            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
+            //console.log("mentions: " + JSON.stringify(mentions));
+            //mentions = _.map(mentions, toLowerCase);
             mentions = mentions.map(function (mention) {
-                return mention.trim();
+
+                //console.log("mention: " + JSON.stringify(mention));
+
+                mention = mention.match(/([a-z\d]+\])/gi);
+                mention = mention.match(/([a-z\d]+[^\]])/gi, '');
+
+                //console.log("mention 1: " + JSON.stringify(mention));
+                return mention[0];
             });
+            //console.log("mentions final: " + JSON.stringify(mentions));
             req.object.set("mentions", mentions);
             //console.log("getMentions: " + JSON.stringify(mentions));
 
@@ -6207,11 +6218,20 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
         else if (!post.isNew() && post.dirty("text") && !post.dirty("mentions")) {
 
-            mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
-            mentions = _.map(mentions, toLowerCase);
+            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
+            //console.log("mentions: " + JSON.stringify(mentions));
+            //mentions = _.map(mentions, toLowerCase);
             mentions = mentions.map(function (mention) {
-                return mention.trim();
+
+                //console.log("mention: " + JSON.stringify(mention));
+
+                mention = mention.match(/([a-z\d]+\])/gi);
+                mention = mention.match(/([a-z\d]+[^\]])/gi, '');
+
+                //console.log("mention 1: " + JSON.stringify(mention));
+                return mention[0];
             });
+            //console.log("mentions final: " + JSON.stringify(mentions));
             req.object.set("mentions", mentions);
             //console.log("getMentions: " + JSON.stringify(mentions));
 
@@ -6726,12 +6746,21 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
         // if there is a post that got added and no mentions from client then add mentions
         if (postMessage.isNew() && !postMessage.mentions) {
 
-            mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
-            mentions = _.map(mentions, toLowerCase);
+            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
+            //console.log("mentions: " + JSON.stringify(mentions));
+            //mentions = _.map(mentions, toLowerCase);
             mentions = mentions.map(function (mention) {
-                return mention.trim();
+
+                //console.log("mention: " + JSON.stringify(mention));
+
+                mention = mention.match(/([a-z\d]+\])/gi);
+                mention = mention.match(/([a-z\d]+[^\]])/gi, '');
+
+                //console.log("mention 1: " + JSON.stringify(mention));
+                return mention[0];
             });
-            postMessage.set("mentions", mentions);
+            //console.log("mentions final: " + JSON.stringify(mentions));
+            req.object.set("mentions", mentions);
             //console.log("getMentions: " + JSON.stringify(mentions));
 
             getMentions_Time = process.hrtime(timeCountPosts);
@@ -6744,12 +6773,21 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
         // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
         else if (!postMessage.isNew() && postMessage.dirty("message") && !postMessage.dirty("mentions")) {
 
-            mentions = text.match(/(^|\s)(@[a-z\d-]+)/gi);
-            mentions = _.map(mentions, toLowerCase);
+            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
+            //console.log("mentions: " + JSON.stringify(mentions));
+            //mentions = _.map(mentions, toLowerCase);
             mentions = mentions.map(function (mention) {
-                return mention.trim();
+
+                //console.log("mention: " + JSON.stringify(mention));
+
+                mention = mention.match(/([a-z\d]+\])/gi);
+                mention = mention.match(/([a-z\d]+[^\]])/gi, '');
+
+                //console.log("mention 1: " + JSON.stringify(mention));
+                return mention[0];
             });
-            postMessage.set("mentions", mentions);
+            //console.log("mentions final: " + JSON.stringify(mentions));
+            req.object.set("mentions", mentions);
             //console.log("getMentions: " + JSON.stringify(mentions));
 
             getMentions_Time = process.hrtime(timeCountPosts);
@@ -6883,6 +6921,8 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
         }
 
         //console.log("final post: " + JSON.stringify(post));
+
+        //
 
         let beforeSave_Time = process.hrtime(time);
         console.log(`beforeSave_Time PostMessage took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
@@ -17721,6 +17761,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     // Convert Parse.Object to JSON
     let post = request.object;
+    let mentions = post.get("mentions");
     //let postToSave = post.toJSON();
 
     //var Post = Parse.Object.extend("Post");
@@ -18452,6 +18493,98 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
             }
 
+            function SendNotifications () {
+
+                console.log("starting SendNotifications function: " + JSON.stringify(mentions.length) );
+
+
+                if (mentions.length > 0) {
+
+                    let notifications = new Set();
+
+                    for (let i = 0; i < mentions.length; i++) {
+
+                        let userId = mentions[i];
+
+                        let userTo = new USER();
+                        userTo.id = userId;
+
+                        let NOTIFICATION = Parse.Object.extend("Notification");
+                        let notification = new NOTIFICATION();
+
+                        notification.set("isDelivered", false);
+                        notification.set("hasRead", false);
+                        notification.set("userFrom", currentUser);
+                        notification.set("userTo", userTo);
+                        notification.set("workspace", workspace);
+                        notification.set("channel", channel);
+                        notification.set("post", PostObject);
+                        notification.set("type", '5'); // mentions in post or postMessage
+                        notification.set("message", '[@'+userTo.get("name")+ ':' + userTo.id + ']' + 'mentioned you in this post: ' + PostObject.get("title"));
+
+                        notifications.add(notification);
+
+                        console.log("notification: " + JSON.stringify(notification));
+
+                        if (i === mentions.length - 1) {
+
+
+                            //let dupeArray = [3,2,3,3,5,2];
+                            let notificationArray = Array.from(new Set(notifications));
+
+                            console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                            if (notificationArray.length > 0) {
+
+                                Parse.Object.saveAll(notificationArray, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                }).then(function(result) {
+                                    // if we got 500 or more results then we know
+                                    // that we have more results
+                                    // otherwise we finish
+
+                                    return result;
+
+
+                                }, function(err) {
+                                    // error
+                                    response.error(err);
+
+                                });
+
+
+                            }
+
+
+
+
+
+
+                        }
+
+                    }
+
+
+
+
+                }
+                else {
+
+                    // no need to send notifications
+
+
+
+                    return mentions;
+
+
+                }
+
+
+            }
+
 
             async.parallel([
                 async.apply(prepIndex),
@@ -18499,7 +18632,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                             let Final_Time = process.hrtime(time);
                             console.log(`splitPostAndIndexFaster took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
-                            return response.success();
+                            SendNotifications ();
+
+                            response.success();
                         },
                         error: function (error) {
                             return response.error(error);
