@@ -82,7 +82,7 @@ const path = require('path');
 var cron = require('node-cron');
 
 // Set production mode and add certification and key file accordingly
-const isProduction = true;
+const isProduction = false;
 var fileForPushNotification;
 var keyFileForPushNotification;
 if( isProduction ){
@@ -95,7 +95,7 @@ if( isProduction ){
 var options = {
     cert: path.resolve(fileForPushNotification),
     key: path.resolve(keyFileForPushNotification),
-    passphrase: 'papr@123',
+    teamId: "W73RAM957L",
     production: isProduction
 };
 var apnProvider = new apn.Provider(options);
@@ -24347,6 +24347,7 @@ cron.schedule('*/1 * * * *', () => {
         success: function(results) {
             async.each(results, function (result, callback) {
                 var note = new apn.Notification();
+                note.expiry = Math.floor(Date.now() / 1000) + 3600;
                 note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
                 note.title = "Papr.ai",
                     note.body = result.get("message"),
@@ -24380,14 +24381,14 @@ cron.schedule('*/1 * * * *', () => {
             }, function(err) {
                 if (err){
                     console.log('ERROR', err);
-                    response.error(err);
+                    return response.error(err);
                 }
-                response.success("Notification sent to all users");
+                return response.success("Notification sent to all users");
             });
         },
         error: function(e) {
             console.error(e);
-            response.error(e);
+            return response.error(e);
         }
     });
 });
@@ -24408,7 +24409,7 @@ Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
     var options = {
         cert: path.resolve(fileForPushNotification),
         key: path.resolve(keyFileForPushNotification),
-        passphrase: 'papr@123',
+        teamId: 'W73RAM957L',
         production: production
     };
     var apnProvider = new apn.Provider(options);
