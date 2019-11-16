@@ -18013,7 +18013,38 @@ Parse.Cloud.afterSave('Notification', function(request, response) {
 
         } else {
 
-            return cb(null, userTo);
+            if (notification.get("isRead") === true) {
+
+                userTo.increment("notificationCount", -1);
+
+                userTo.save(null, {
+
+                    useMasterKey: true,
+                    //sessionToken: sessionToken
+
+                }).then((UserTo) => {
+                    // The object was retrieved successfully.
+                    //console.log("Result from get " + JSON.stringify(Workspace));
+                    return cb(null, UserTo);
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return cb(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            } else {
+
+                return cb(null, userTo);
+
+            }
 
 
         }
@@ -18092,7 +18123,74 @@ Parse.Cloud.afterSave('Notification', function(request, response) {
 
         else {
 
-            return cb(null, userTo);
+            if (notification.get("isRead") === true) {
+
+                let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+
+                let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+                queryWorkspaceFollower.equalTo("workspace", workspace);
+                queryWorkspaceFollower.equalTo("user", userTo);
+                queryWorkspaceFollower.first({
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+                }).then((WorkspaceFollower) => {
+
+                    if (WorkspaceFollower) {
+
+                        WorkspaceFollower.increment("notificationCount", -1);
+
+                        WorkspaceFollower.save(null, {
+
+                            useMasterKey: true,
+                            //sessionToken: sessionToken
+
+                        }).then((WorkspaceFollowerResult) => {
+                            // The object was retrieved successfully.
+                            //console.log("Result from get " + JSON.stringify(Workspace));
+                            return cb(null, WorkspaceFollowerResult);
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return cb(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+
+
+                    }
+                    else {
+
+
+                        // no workspaceFollowers to delete return
+                        return cb(null, userTo);
+
+                    }
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return cb(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            } else {
+
+                return cb(null, userTo);
+
+            }
 
 
         }
@@ -18171,7 +18269,63 @@ Parse.Cloud.afterSave('Notification', function(request, response) {
 
         else {
 
-            return cb(null, userTo);
+            let queryChannelFollower = new Parse.Query(CHANNELFOLLOWER);
+            queryChannelFollower.equalTo("channel", channel);
+            queryChannelFollower.equalTo("user", userTo);
+            queryChannelFollower.first({
+                useMasterKey: true
+                //sessionToken: sessionToken
+            }).then((Channel_Follower) => {
+
+                if (Channel_Follower) {
+
+                    Channel_Follower.increment("notificationCount", -1);
+
+                    Channel_Follower.save(null, {
+
+                        useMasterKey: true,
+                        //sessionToken: sessionToken
+
+                    }).then((channelFollowResult) => {
+                        // The object was retrieved successfully.
+                        //console.log("Result from get " + JSON.stringify(Workspace));
+                        return cb(null, channelFollowResult);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return cb(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+
+                }
+                else {
+
+
+                    // no workspaceFollowers to delete return
+                    return cb(null, userTo);
+
+                }
+
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return cb(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
 
 
         }
