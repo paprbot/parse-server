@@ -17884,7 +17884,7 @@ Parse.Cloud.beforeSave('Notification', function(request, response) {
                 notification.set("isDelivered", false);
                 notification.set("hasSent", false);
                 notification.set("isRead", false);
-                notification.set("status", 0);
+                notification.set("status", '0');
 
 
                 if (!notification.get("isDelivered")) {
@@ -17964,21 +17964,39 @@ Parse.Cloud.afterSave('Notification', function(request, response) {
 
     let CHANNEL = Parse.Object.extend("Channel");
     let channel = new CHANNEL();
-    channel.id = originalNotification.get("channel").id;
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
-    workspace.id = originalNotification.get("workspace").id;
+
 
     let POST = Parse.Object.extend("Post");
     let post = new POST();
-    post.id = originalNotification.get("post").id;
+
 
     //console.log("request afterDelete Post: " + JSON.stringify(request));
 
     let USER = Parse.Object.extend("_User");
     let userTo = new USER();
-    userTo.id = originalNotification.get("userTo").id;
+
+
+    if (notification.get("isNew") === true) {
+
+        channel.id = notification.get("channel").id;
+        workspace.id = notification.get("workspace").id;
+        post.id = notification.get("post").id;
+        userTo.id = notification.get("userTo").id;
+
+    } else {
+
+        channel.id = originalNotification.get("channel").id;
+        workspace.id = originalNotification.get("workspace").id;
+        post.id = originalNotification.get("post").id;
+        userTo.id = originalNotification.get("userTo").id;
+
+
+    }
+
+
     console.log("afterSave originalNotification userTo: " + JSON.stringify(userTo));
 
 
@@ -19138,9 +19156,6 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         let NOTIFICATION = Parse.Object.extend("Notification");
                         let notification = new NOTIFICATION();
 
-                        let Channel = new CHANNEL();
-                        Channel = Post.get("channel");
-
                         notification.set("isDelivered", false);
                         notification.set("hasSent", false);
                         notification.set("isRead", false);
@@ -19148,7 +19163,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         notification.set("userFrom", currentUser);
                         notification.set("userTo", userTo);
                         notification.set("workspace", workspace);
-                        notification.set("channel", Channel);
+                        notification.set("channel", channel);
                         notification.set("post", PostObject);
                         notification.set("type", '5'); // mentions in post or postMessage
                         notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a post: ' + PostObject.get("post_title"));
@@ -19324,6 +19339,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
     // Convert Parse.Object to JSON
     let postMessage = request.object;
     let postMessageToSave = postMessage.toJSON();
+    let mentions = postMessage.get("mentions");
 
     //var Post = Parse.Object.extend("Post");
     let POSTMESSAGE = Parse.Object.extend("PostMessage");
@@ -19523,6 +19539,101 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
         }
 
+        function SendNotifications () {
+
+            console.log("starting SendNotifications function: " + JSON.stringify(mentions.length) );
+
+
+            if (mentions.length > 0) {
+
+                let notifications = new Set();
+
+                for (let i = 0; i < mentions.length; i++) {
+
+                    let userId = mentions[i];
+
+                    let userTo = new USER();
+                    userTo.id = userId;
+
+                    let NOTIFICATION = Parse.Object.extend("Notification");
+                    let notification = new NOTIFICATION();
+
+                    notification.set("isDelivered", false);
+                    notification.set("hasSent", false);
+                    notification.set("isRead", false);
+                    notification.set("status", 0);
+                    notification.set("userFrom", currentUser);
+                    notification.set("userTo", userTo);
+                    notification.set("workspace", workspace);
+                    notification.set("channel", channel);
+                    notification.set("post", Post);
+                    notification.set("postMessage", postMessage);
+                    notification.set("type", '5'); // mentions in post or postMessage
+                    notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a message: ' + postMessage.get("message"));
+
+                    notifications.add(notification);
+
+                    console.log("notification: " + JSON.stringify(notification));
+
+                    if (i === mentions.length - 1) {
+
+
+                        //let dupeArray = [3,2,3,3,5,2];
+                        let notificationArray = Array.from(new Set(notifications));
+
+                        console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                        if (notificationArray.length > 0) {
+
+                            Parse.Object.saveAll(notificationArray, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            }).then(function(result) {
+                                // if we got 500 or more results then we know
+                                // that we have more results
+                                // otherwise we finish
+
+                                return result;
+
+
+                            }, function(err) {
+                                // error
+                                response.error(err);
+
+                            });
+
+
+                        }
+
+
+
+
+
+
+                    }
+
+                }
+
+
+
+
+            }
+            else {
+
+                // no need to send notifications
+
+
+
+                return mentions;
+
+
+            }
+
+
+        }
+
         async.parallel([
             async.apply(prepIndex),
             async.apply(getTopAnswerForQuestionMessage),
@@ -19559,6 +19670,8 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
                         let Final_Time = process.hrtime(time);
                         console.log(`splitPostMessageAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                        SendNotifications ();
 
                         return response.success();
                     },
@@ -24248,7 +24361,12 @@ cron.schedule('*/1 * * * *', () => {
                 note.topic = "ai.papr.dev";
                 apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
                     result.set("hasSent", true);
-                    result.save();
+                    result.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
                     if((res.sent).length == 1) {
                         console.log("Sent To ", res.sent[0].device);
                     } else{
