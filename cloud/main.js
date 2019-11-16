@@ -23603,7 +23603,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
                         'post' : result.get("post"),
                         'postMessage' : result.get("postMessage"),
                     };
-                note.topic = "com.bluelabellabs.bl248";
+                note.topic = "ai.papr.dev";
                 apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
                     result.set("hasSent", true);
                     result.save();
@@ -23641,7 +23641,7 @@ cron.schedule('*/1 * * * *', () => {
     var query = new Parse.Query(Notification);
     query.include('userTo.deviceToken');
     query.matchesQuery("userTo", user);
-    query.EqualTo('hasSent', false);
+    query.equalTo('hasSent', false);
     query.find({
         success: function(results) {
             async.each(results, function (result, callback) {
@@ -23712,7 +23712,7 @@ Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
     note.title = "Papr.ai";
     note.body = "test message";
     note.payload = {'messageFrom': 'John Doe'};
-    note.topic = "com.bluelabellabs.bl248";
+    note.topic = "ai.papr.dev";
     apnProvider.send(note, deviceToken).then( (result) => {
         if((result.sent).length == 1) {
             console.log("Sent To ", deviceToken);
