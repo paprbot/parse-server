@@ -17773,6 +17773,440 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 });
 
 
+Parse.Cloud.beforeSave('Notification', function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    console.log("beforeSave Notification request: " + JSON.stringify(request));
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.beforeSave.Notification.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    let notification = request.object;
+
+    if (notification.isNew()) {
+
+        //console.log("isLiked: "+postSocial.get("isLiked"));
+        //console.log("isBookmarked: "+postSocial.get("isBookmarked"));
+        notification.set("isNew", true);
+
+        if (!notification.get("channel")) {
+            return response.error("Channel is required.");
+        }
+        if (!notification.get("userFrom")) {
+            return response.error("userFrom is required field.");
+        }
+        if (!notification.get("userTo")) {
+            return response.error("userTo is required field.");
+        }
+        if (!notification.get("workspace")) {
+            return response.error("Workspace is required.");
+        }
+        if (!notification.get("post")) {
+            return response.error("Post is required.");
+        }
+
+        let POSTMESSAGE = Parse.Object.extend("PostMessage");
+        let PostMessage = new POSTMESSAGE();
+
+        if (notification.get("postMessage")) {
+
+            PostMessage.id = notification.get("postMessage").id;
+
+        }
+
+        let POST = Parse.Object.extend("Post");
+        let Post = new POST();
+        Post.id = notification.get("post").id;
+
+        let CHANNEL = Parse.Object.extend("Channel");
+        let Channel = new CHANNEL();
+        Channel.id = notification.get("channel").id;
+
+        let WORKSPACE = Parse.Object.extend("WorkSpace");
+        let Workspace = new WORKSPACE();
+        Workspace.id = notification.get("workspace").id;
+
+        let USER = Parse.Object.extend("_User");
+        let UserFrom = new USER();
+        UserFrom.id = notification.get("userFrom").id;
+
+        let UserTo = new USER();
+        UserTo.id = notification.get("userTo").id;
+
+        let notificationQuery = new Parse.Query("Notification");
+
+        notificationQuery.equalTo("userTo", UserTo);
+        if (!notification.get("postMessage")) {
+
+            // this is a post level notification
+
+            notificationQuery.equalTo("post", Post);
+
+        } else {
+            // this is a postMessage level notification
+            notificationQuery.equalTo("postMessage", PostMessage);
+        }
+
+        //postSocialQuery.include(["user", "workspace", "channel"]);
+
+        // check to make sure that the postSocial is unique
+        notificationQuery.first({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }).then((notificationResult) => {
+            // The object was retrieved successfully.
+
+            //console.log("beforeSave PostSocial postSocialResult: " + JSON.stringify(postSocialResult));
+
+            if (notificationResult) {
+
+                //postSocial already exists in db, return an error because it needs to be unique
+                console.log("notification already exists in db, return an error because it needs to be unique");
+                return response.error(notificationResult);
+
+            } else {
+
+                console.log("setting defaults for beforeSave notificationResult");
+
+                notification.set("isDelivered", false);
+                notification.set("hasSent", false);
+                notification.set("isRead", false);
+                notification.set("status", 0);
+
+
+                if (!notification.get("isDelivered")) {
+                    notification.set("isDelivered", false);
+                }
+                if (!notification.get("hasSent")) {
+                    notification.set("hasSent", false);
+                }
+                if (!notification.get("isRead")) {
+                    notification.set("isRead", false);
+                }
+                if (!notification.get("status")) {
+                    notification.set("status", 0);
+                }
+
+                let diff = process.hrtime(time);
+                console.log(`beforeSave notification took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+
+                return response.success();
+
+
+            }
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            //console.log("channelFollowQuery not found");
+            return response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+
+    } else {
+
+        notification.set("isNew", false);
+
+        let diff = process.hrtime(time);
+        console.log(`beforeSave notification took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+        return response.success();
+    }
+
+
+
+});
+
+
+Parse.Cloud.afterSave('Notification', function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    console.log("currentUser afterSave Notification: " + JSON.stringify(currentUser));
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.afterSave.Notification.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    console.log("request afterSave Notification: " + JSON.stringify(request));
+
+    // Get notification object
+    let notification = request.object;
+    let originalNotification = request.original;
+
+    console.log("originalNotification: " + JSON.stringify(originalNotification));
+
+    let CHANNEL = Parse.Object.extend("Channel");
+    let channel = new CHANNEL();
+    channel.id = originalNotification.get("channel").id;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = originalNotification.get("workspace").id;
+
+    let POST = Parse.Object.extend("Post");
+    let post = new POST();
+    post.id = originalNotification.get("post").id;
+
+    //console.log("request afterDelete Post: " + JSON.stringify(request));
+
+    let USER = Parse.Object.extend("_User");
+    let userTo = new USER();
+    userTo.id = originalNotification.get("userTo").id;
+    console.log("afterSave originalNotification userTo: " + JSON.stringify(userTo));
+
+
+    function incrementUserNotificationCount(cb) {
+
+        if (notification.get("isNew") === true) {
+
+            userTo.increment("notificationCount");
+
+            userTo.save(null, {
+
+                useMasterKey: true,
+                //sessionToken: sessionToken
+
+            }).then((UserTo) => {
+                // The object was retrieved successfully.
+                //console.log("Result from get " + JSON.stringify(Workspace));
+                return cb(null, UserTo);
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return cb(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+        } else {
+
+            return cb(null, userTo);
+
+
+        }
+
+
+    }
+
+    function incrementWorkspaceNotificationCount(cb) {
+
+        if (notification.get("isNew") === true) {
+
+            let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+
+            let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+            queryWorkspaceFollower.equalTo("workspace", workspace);
+            queryWorkspaceFollower.equalTo("user", userTo);
+            queryWorkspaceFollower.first({
+                useMasterKey: true
+                //sessionToken: sessionToken
+            }).then((WorkspaceFollower) => {
+
+                if (WorkspaceFollower) {
+
+                    WorkspaceFollower.increment("notificationCount");
+
+                    WorkspaceFollower.save(null, {
+
+                        useMasterKey: true,
+                        //sessionToken: sessionToken
+
+                    }).then((WorkspaceFollowerResult) => {
+                        // The object was retrieved successfully.
+                        //console.log("Result from get " + JSON.stringify(Workspace));
+                        return cb(null, WorkspaceFollowerResult);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return cb(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+
+                }
+                else {
+
+
+                    // no workspaceFollowers to delete return
+                    return cb(null, userTo);
+
+                }
+
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return cb(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+
+
+        }
+
+        else {
+
+            return cb(null, userTo);
+
+
+        }
+
+
+    }
+
+    function incrementChannelNotificationCount(cb) {
+
+        if (notification.get("isNew") === true) {
+
+            let CHANNELFOLLOWER = Parse.Object.extend("ChannelFollow");
+
+            let queryChannelFollower = new Parse.Query(CHANNELFOLLOWER);
+            queryChannelFollower.equalTo("channel", channel);
+            queryChannelFollower.equalTo("user", userTo);
+            queryChannelFollower.first({
+                useMasterKey: true
+                //sessionToken: sessionToken
+            }).then((Channel_Follower) => {
+
+                if (Channel_Follower) {
+
+                    Channel_Follower.increment("notificationCount");
+
+                    Channel_Follower.save(null, {
+
+                        useMasterKey: true,
+                        //sessionToken: sessionToken
+
+                    }).then((channelFollowResult) => {
+                        // The object was retrieved successfully.
+                        //console.log("Result from get " + JSON.stringify(Workspace));
+                        return cb(null, channelFollowResult);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return cb(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+
+                }
+                else {
+
+
+                    // no workspaceFollowers to delete return
+                    return cb(null, userTo);
+
+                }
+
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return cb(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+
+
+        }
+
+        else {
+
+            return cb(null, userTo);
+
+
+        }
+
+    }
+
+    async.parallel([
+        async.apply(incrementUserNotificationCount),
+        async.apply(incrementWorkspaceNotificationCount),
+        async.apply(incrementChannelNotificationCount)
+
+
+    ], function (err, results) {
+        if (err) {
+            return response.error(err);
+        }
+
+        if (results) {
+
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took afterSave Notification ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            return response.success();
+
+
+        }
+
+    });
+
+
+
+});
+
+
 // Add and Update AlgoliaSearch post object if it's deleted from Parse
 Parse.Cloud.afterSave('Post', function(request, response) {
 
@@ -18554,7 +18988,6 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         Channel = Post.get("channel");
 
                         notification.set("isDelivered", false);
-                        notification.set("hasRead", false);
                         notification.set("hasSent", false);
                         notification.set("isRead", false);
                         notification.set("status", 0);
@@ -22157,7 +22590,8 @@ Parse.Cloud.afterDelete('Channel', function(request, response) {
 
 
 
-            } else {
+            }
+            else {
 
                 Channel_Followers = [];
                 // no workspaceFollowers to delete return
@@ -23588,7 +24022,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
     var query = new Parse.Query(Notification);
     query.include('userTo.deviceToken');
     query.matchesQuery("userTo", user);
-    query.notEqualTo('hasSent', true);
+    query.equalTo('hasSent', true);
     query.find({
         success: function(results) {
             async.each(results, function (result, callback) {
@@ -23605,7 +24039,7 @@ Parse.Cloud.define("sendNotification", function(request, response) {
                     };
                 note.topic = "ai.papr.dev";
                 apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
-                    result.set("hasSent", true);
+                    result.set("hasSent", false);
                     result.save();
                     if((res.sent).length == 1) {
                         console.log("Sent To ", res.sent[0].device);
