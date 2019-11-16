@@ -6194,19 +6194,28 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
             //console.log("mentions: " + JSON.stringify(mentions));
             //mentions = _.map(mentions, toLowerCase);
-            mentions = mentions.map(function (mention) {
+            if (mentions) {
 
-                //console.log("mention: " + JSON.stringify(mention));
+                mentions = mentions.map(function (mention) {
 
-                mention = mention.match(/([a-z\d]+\])/gi);
-                mention = mention.match(/([a-z\d]+[^\]])/gi, '');
+                    //console.log("mention: " + JSON.stringify(mention));
 
-                //console.log("mention 1: " + JSON.stringify(mention));
-                return mention[0];
-            });
-            //console.log("mentions final: " + JSON.stringify(mentions));
-            req.object.set("mentions", mentions);
-            //console.log("getMentions: " + JSON.stringify(mentions));
+                    mention = mention.toString().match(/([a-z\d]+\])/gi);
+                    mention = mention.toString().match(/([a-z\d]+[^\]])/gi, '');
+
+                    //console.log("mention 1: " + JSON.stringify(mention));
+                    return mention[0];
+                });
+                //console.log("mentions final: " + JSON.stringify(mentions));
+                req.object.set("mentions", mentions);
+                //console.log("getMentions: " + JSON.stringify(mentions));
+
+
+            } else {
+
+                mentions = [];
+                req.object.set("mentions", mentions);
+            }
 
             getMentions_Time = process.hrtime(timeCountPosts);
             console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
@@ -6221,19 +6230,28 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
             //console.log("mentions: " + JSON.stringify(mentions));
             //mentions = _.map(mentions, toLowerCase);
-            mentions = mentions.map(function (mention) {
+            if (mentions) {
 
-                //console.log("mention: " + JSON.stringify(mention));
+                mentions = mentions.map(function (mention) {
 
-                mention = mention.match(/([a-z\d]+\])/gi);
-                mention = mention.match(/([a-z\d]+[^\]])/gi, '');
+                    //console.log("mention: " + JSON.stringify(mention));
 
-                //console.log("mention 1: " + JSON.stringify(mention));
-                return mention[0];
-            });
-            //console.log("mentions final: " + JSON.stringify(mentions));
-            req.object.set("mentions", mentions);
-            //console.log("getMentions: " + JSON.stringify(mentions));
+                    mention = mention.toString().match(/([a-z\d]+\])/gi);
+                    mention = mention.toString().match(/([a-z\d]+[^\]])/gi, '');
+
+                    //console.log("mention 1: " + JSON.stringify(mention));
+                    return mention[0];
+                });
+                //console.log("mentions final: " + JSON.stringify(mentions));
+                req.object.set("mentions", mentions);
+                //console.log("getMentions: " + JSON.stringify(mentions));
+
+
+            } else {
+
+                mentions = [];
+                req.object.set("mentions", mentions);
+            }
 
             getMentions_Time = process.hrtime(timeCountPosts);
             console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
@@ -6749,19 +6767,28 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
             //console.log("mentions: " + JSON.stringify(mentions));
             //mentions = _.map(mentions, toLowerCase);
-            mentions = mentions.map(function (mention) {
+            if (mentions) {
 
-                //console.log("mention: " + JSON.stringify(mention));
+                mentions = mentions.map(function (mention) {
 
-                mention = mention.match(/([a-z\d]+\])/gi);
-                mention = mention.match(/([a-z\d]+[^\]])/gi, '');
+                    //console.log("mention: " + JSON.stringify(mention));
 
-                //console.log("mention 1: " + JSON.stringify(mention));
-                return mention[0];
-            });
-            //console.log("mentions final: " + JSON.stringify(mentions));
-            req.object.set("mentions", mentions);
-            //console.log("getMentions: " + JSON.stringify(mentions));
+                    mention = mention.toString().match(/([a-z\d]+\])/gi);
+                    mention = mention.toString().match(/([a-z\d]+[^\]])/gi, '');
+
+                    //console.log("mention 1: " + JSON.stringify(mention));
+                    return mention[0];
+                });
+                //console.log("mentions final: " + JSON.stringify(mentions));
+                req.object.set("mentions", mentions);
+                //console.log("getMentions: " + JSON.stringify(mentions));
+
+
+            } else {
+
+                mentions = [];
+                req.object.set("mentions", mentions);
+            }
 
             getMentions_Time = process.hrtime(timeCountPosts);
             console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
@@ -6776,19 +6803,28 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
             //console.log("mentions: " + JSON.stringify(mentions));
             //mentions = _.map(mentions, toLowerCase);
-            mentions = mentions.map(function (mention) {
+            if (mentions) {
 
-                //console.log("mention: " + JSON.stringify(mention));
+                mentions = mentions.map(function (mention) {
 
-                mention = mention.match(/([a-z\d]+\])/gi);
-                mention = mention.match(/([a-z\d]+[^\]])/gi, '');
+                    //console.log("mention: " + JSON.stringify(mention));
 
-                //console.log("mention 1: " + JSON.stringify(mention));
-                return mention[0];
-            });
-            //console.log("mentions final: " + JSON.stringify(mentions));
-            req.object.set("mentions", mentions);
-            //console.log("getMentions: " + JSON.stringify(mentions));
+                    mention = mention.toString().match(/([a-z\d]+\])/gi);
+                    mention = mention.toString().match(/([a-z\d]+[^\]])/gi, '');
+
+                    //console.log("mention 1: " + JSON.stringify(mention));
+                    return mention[0];
+                });
+                //console.log("mentions final: " + JSON.stringify(mentions));
+                req.object.set("mentions", mentions);
+                //console.log("getMentions: " + JSON.stringify(mentions));
+
+
+            } else {
+
+                mentions = [];
+                req.object.set("mentions", mentions);
+            }
 
             getMentions_Time = process.hrtime(timeCountPosts);
             console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
@@ -17793,6 +17829,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         let channel = new CHANNEL();
         channel.id = Post.get("channel").id;
 
+        console.log("channel: " + JSON.stringify(channel));
+
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let workspace = new WORKSPACE();
         workspace.id = Post.get("workspace").id;
@@ -18512,15 +18550,21 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                         let NOTIFICATION = Parse.Object.extend("Notification");
                         let notification = new NOTIFICATION();
 
+                        let Channel = new CHANNEL();
+                        Channel = Post.get("channel");
+
                         notification.set("isDelivered", false);
                         notification.set("hasRead", false);
+                        notification.set("hasSent", false);
+                        notification.set("isRead", false);
+                        notification.set("status", 0);
                         notification.set("userFrom", currentUser);
                         notification.set("userTo", userTo);
                         notification.set("workspace", workspace);
-                        notification.set("channel", channel);
+                        notification.set("channel", Channel);
                         notification.set("post", PostObject);
                         notification.set("type", '5'); // mentions in post or postMessage
-                        notification.set("message", '[@'+userTo.get("name")+ ':' + userTo.id + ']' + 'mentioned you in this post: ' + PostObject.get("title"));
+                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a post: ' + PostObject.get("post_title"));
 
                         notifications.add(notification);
 
@@ -18588,7 +18632,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
             async.parallel([
                 async.apply(prepIndex),
-                //async.apply(getPostMessageQuestions),
+                async.apply(getPostMessageQuestions),
                 async.apply(getPostMessageComments),
                 async.apply(getTopAnswerForQuestionPost),
                 async.apply(createPostSocial)
@@ -23554,10 +23598,10 @@ Parse.Cloud.define("sendNotification", function(request, response) {
                     note.body = result.get("message"),
                     note.payload = {
                         'workspace' : result.get("workspace"),
+                        'channel' : result.get("channel"),
                         'type' : result.get("type"),
                         'post' : result.get("post"),
-                        'postQuestionMessage' : result.get("postQuestionMessage"),
-                        'postQuestion' : result.get("postQuestion"),
+                        'postMessage' : result.get("postMessage"),
                     };
                 note.topic = "com.bluelabellabs.bl248";
                 apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
@@ -23592,11 +23636,12 @@ cron.schedule('*/1 * * * *', () => {
     var User = Parse.Object.extend('User');
     var user = new Parse.Query(User);
     user.exists("deviceToken");
+    console.log("user: " + JSON.stringify(user));
     var Notification = Parse.Object.extend('Notification');
     var query = new Parse.Query(Notification);
     query.include('userTo.deviceToken');
     query.matchesQuery("userTo", user);
-    query.notEqualTo('hasSent', true);
+    query.EqualTo('hasSent', false);
     query.find({
         success: function(results) {
             async.each(results, function (result, callback) {
@@ -23606,12 +23651,13 @@ cron.schedule('*/1 * * * *', () => {
                     note.body = result.get("message"),
                     note.payload = {
                         'workspace' : result.get("workspace"),
+                        'channel' : result.get("channel"),
                         'type' : result.get("type"),
                         'post' : result.get("post"),
-                        'postQuestionMessage' : result.get("postQuestionMessage"),
-                        'postQuestion' : result.get("postQuestion"),
+                        'postMessage' : result.get("postMessage"),
+
                     };
-                note.topic = "com.bluelabellabs.bl248";
+                note.topic = "ai.papr.dev";
                 apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
                     result.set("hasSent", true);
                     result.save();
@@ -23622,6 +23668,7 @@ cron.schedule('*/1 * * * *', () => {
                     }
                 }).catch(err => {
                     console.log(err);
+                    callback(err);
                 });
                 callback(null, result);
             }, function(err) {
