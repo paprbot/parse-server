@@ -1735,7 +1735,6 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
     console.log("userArray: " + JSON.stringify(userArray));
 
 
-
     function updateAllChannelFollows(skip) {
 
         let queryChannelFollower = new Parse.Query(CHANNELFOLLOW);
@@ -1758,6 +1757,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                 let userArrayChannelFollowersSet = new Set();
 
+                let ChannelObject = ChannelFollowers.get("channel");
 
 
                 console.log("ChannelFollowers.length: " + JSON.stringify(ChannelFollowers.length));
@@ -1844,10 +1844,105 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                                             useMasterKey: true
                                             //sessionToken: sessionToken
 
-                                        }).then(function() {
+                                        }).then(function(results) {
                                             // if we got 500 or more results then we know
                                             // that we have more results
                                             // otherwise we finish
+
+                                            function SendNotifications () {
+
+                                                console.log("starting SendNotifications function: " + JSON.stringify(ChannelFollowArray.length) );
+
+
+                                                if (ChannelFollowArray.length > 0) {
+
+                                                    let notifications = new Set();
+
+                                                    for (let i = 0; i < ChannelFollowArray.length; i++) {
+
+                                                        let userId = ChannelFollowArray[i].get("user").id;
+
+                                                        let userTo = new USER();
+                                                        userTo.id = userId;
+
+                                                        let NOTIFICATION = Parse.Object.extend("Notification");
+                                                        let notification = new NOTIFICATION();
+
+                                                        notification.set("isDelivered", false);
+                                                        notification.set("hasSent", false);
+                                                        notification.set("isRead", false);
+                                                        notification.set("status", 0);
+                                                        notification.set("userFrom", currentUser);
+                                                        notification.set("userTo", userTo);
+                                                        notification.set("workspace", Workspace);
+                                                        notification.set("channel", Channel);
+                                                        notification.set("type", 'addToChannel'); // mentions in post or postMessage
+                                                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this channel: ' + ChannelObject.get("name"));
+
+                                                        notifications.add(notification);
+
+                                                        console.log("notification: " + JSON.stringify(notification));
+
+                                                        if (i === ChannelFollowArray.length - 1) {
+
+
+                                                            //let dupeArray = [3,2,3,3,5,2];
+                                                            let notificationArray = Array.from(new Set(notifications));
+
+                                                            console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                                                            if (notificationArray.length > 0) {
+
+                                                                Parse.Object.saveAll(notificationArray, {
+
+                                                                    useMasterKey: true
+                                                                    //sessionToken: sessionToken
+
+                                                                }).then(function(result) {
+                                                                    // if we got 500 or more results then we know
+                                                                    // that we have more results
+                                                                    // otherwise we finish
+
+                                                                    return result;
+
+
+                                                                }, function(err) {
+                                                                    // error
+                                                                    response.error(err);
+
+                                                                });
+
+
+                                                            }
+
+
+
+
+
+
+                                                        }
+
+                                                    }
+
+
+
+
+                                                }
+                                                else {
+
+                                                    // no need to send notifications
+
+
+
+                                                    return ChannelFollowArray;
+
+
+                                                }
+
+
+                                            }
+
+
 
 
                                         }, function(err) {
@@ -18074,6 +18169,7 @@ Parse.Cloud.afterSave('Notification', function(request, response) {
 
         if (notification.get("isNew") === true) {
 
+
             let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
 
             let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
@@ -18286,6 +18382,8 @@ Parse.Cloud.afterSave('Notification', function(request, response) {
         }
 
         else {
+
+            let CHANNELFOLLOWER = Parse.Object.extend("ChannelFollow");
 
             let queryChannelFollower = new Parse.Query(CHANNELFOLLOWER);
             queryChannelFollower.equalTo("channel", channel);
