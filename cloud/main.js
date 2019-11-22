@@ -1871,7 +1871,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                                                         notification.set("isDelivered", false);
                                                         notification.set("hasSent", false);
                                                         notification.set("isRead", false);
-                                                        notification.set("status", 0);
+                                                        notification.set("status", '0');
                                                         notification.set("userFrom", currentUser);
                                                         notification.set("userTo", userTo);
                                                         notification.set("workspace", Workspace);
@@ -1941,6 +1941,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
 
                                             }
+
+                                            SendNotifications ();
 
 
 
@@ -2019,6 +2021,101 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                         //sessionToken: sessionToken
 
                     }).then(function() {
+
+                        function SendNotifications () {
+
+                            console.log("starting SendNotifications function: " + JSON.stringify(ChannelFollowArray.length) );
+
+
+                            if (ChannelFollowArray.length > 0) {
+
+                                let notifications = new Set();
+
+                                for (let i = 0; i < ChannelFollowArray.length; i++) {
+
+                                    let userId = ChannelFollowArray[i].get("user").id;
+
+                                    let userTo = new USER();
+                                    userTo.id = userId;
+
+                                    let NOTIFICATION = Parse.Object.extend("Notification");
+                                    let notification = new NOTIFICATION();
+
+                                    notification.set("isDelivered", false);
+                                    notification.set("hasSent", false);
+                                    notification.set("isRead", false);
+                                    notification.set("status", '0');
+                                    notification.set("userFrom", currentUser);
+                                    notification.set("userTo", userTo);
+                                    notification.set("workspace", Workspace);
+                                    notification.set("channel", Channel);
+                                    notification.set("type", 'addToChannel'); // mentions in post or postMessage
+                                    notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this channel: ' + ChannelObject.get("name"));
+
+                                    notifications.add(notification);
+
+                                    console.log("notification: " + JSON.stringify(notification));
+
+                                    if (i === ChannelFollowArray.length - 1) {
+
+
+                                        //let dupeArray = [3,2,3,3,5,2];
+                                        let notificationArray = Array.from(new Set(notifications));
+
+                                        console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                                        if (notificationArray.length > 0) {
+
+                                            Parse.Object.saveAll(notificationArray, {
+
+                                                useMasterKey: true
+                                                //sessionToken: sessionToken
+
+                                            }).then(function(result) {
+                                                // if we got 500 or more results then we know
+                                                // that we have more results
+                                                // otherwise we finish
+
+                                                return result;
+
+
+                                            }, function(err) {
+                                                // error
+                                                response.error(err);
+
+                                            });
+
+
+                                        }
+
+
+
+
+
+
+                                    }
+
+                                }
+
+
+
+
+                            }
+                            else {
+
+                                // no need to send notifications
+
+
+
+                                return ChannelFollowArray;
+
+
+                            }
+
+
+                        }
+
+                        SendNotifications ();
 
 
 
