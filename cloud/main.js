@@ -1705,6 +1705,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
     let CHANNEL = Parse.Object.extend("Channel");
     let Channel = new CHANNEL();
     Channel.id = channelId;
+    console.log("addPeopleToChannel Channel: " + JSON.stringify(Channel));
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let Workspace = new WORKSPACE();
@@ -2022,6 +2023,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                     }).then(function(results) {
 
+                        console.log("afterSave Channel: " + JSON.stringify(Channel));
+
 
 
                         Channel.fetch(Channel.id, {
@@ -2035,6 +2038,9 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                                 console.log("starting SendNotifications function: " + JSON.stringify(channelFollowArray.length) );
 
+                                console.log("afterSave channelObject: " + JSON.stringify(channelObject));
+
+
 
                                 if (channelFollowArray.length > 0) {
 
@@ -2043,6 +2049,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                                     for (let i = 0; i < channelFollowArray.length; i++) {
 
                                         let userId = channelFollowArray[i].get("user").id;
+                                        console.log("userId: " + JSON.stringify(userId));
 
                                         let userTo = new USER();
                                         userTo.id = userId;
@@ -18028,7 +18035,7 @@ Parse.Cloud.beforeSave('Notification', function(request, response) {
         if (!notification.get("workspace")) {
             return response.error("Workspace is required.");
         }
-        if (!notification.get("post")) {
+        if (!notification.get("post") && notification.get("type") === '5') {
             return response.error("Post is required.");
         }
 
