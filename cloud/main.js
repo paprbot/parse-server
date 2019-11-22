@@ -1757,7 +1757,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                 let userArrayChannelFollowersSet = new Set();
 
-                let ChannelObject = ChannelFollowers.get("channel");
+                let ChannelObject = ChannelFollowers[0].get("channel");
 
 
                 console.log("ChannelFollowers.length: " + JSON.stringify(ChannelFollowers.length));
@@ -2020,102 +2020,126 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                         useMasterKey: true
                         //sessionToken: sessionToken
 
-                    }).then(function() {
-
-                        function SendNotifications () {
-
-                            console.log("starting SendNotifications function: " + JSON.stringify(ChannelFollowArray.length) );
+                    }).then(function(results) {
 
 
-                            if (ChannelFollowArray.length > 0) {
 
-                                let notifications = new Set();
+                        Channel.fetch(Channel.id, {
 
-                                for (let i = 0; i < ChannelFollowArray.length; i++) {
+                            useMasterKey: true
+                            //sessionToken: sessionToken
 
-                                    let userId = ChannelFollowArray[i].get("user").id;
+                        }).then((channelObject) => {
 
-                                    let userTo = new USER();
-                                    userTo.id = userId;
+                            function SendNotifications () {
 
-                                    let NOTIFICATION = Parse.Object.extend("Notification");
-                                    let notification = new NOTIFICATION();
-
-                                    notification.set("isDelivered", false);
-                                    notification.set("hasSent", false);
-                                    notification.set("isRead", false);
-                                    notification.set("status", '0');
-                                    notification.set("userFrom", currentUser);
-                                    notification.set("userTo", userTo);
-                                    notification.set("workspace", Workspace);
-                                    notification.set("channel", Channel);
-                                    notification.set("type", 'addToChannel'); // mentions in post or postMessage
-                                    notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this channel: ' + ChannelObject.get("name"));
-
-                                    notifications.add(notification);
-
-                                    console.log("notification: " + JSON.stringify(notification));
-
-                                    if (i === ChannelFollowArray.length - 1) {
+                                console.log("starting SendNotifications function: " + JSON.stringify(channelFollowArray.length) );
 
 
-                                        //let dupeArray = [3,2,3,3,5,2];
-                                        let notificationArray = Array.from(new Set(notifications));
+                                if (channelFollowArray.length > 0) {
 
-                                        console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+                                    let notifications = new Set();
 
-                                        if (notificationArray.length > 0) {
+                                    for (let i = 0; i < channelFollowArray.length; i++) {
 
-                                            Parse.Object.saveAll(notificationArray, {
+                                        let userId = channelFollowArray[i].get("user").id;
 
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
+                                        let userTo = new USER();
+                                        userTo.id = userId;
 
-                                            }).then(function(result) {
-                                                // if we got 500 or more results then we know
-                                                // that we have more results
-                                                // otherwise we finish
+                                        let NOTIFICATION = Parse.Object.extend("Notification");
+                                        let notification = new NOTIFICATION();
 
-                                                return result;
+                                        notification.set("isDelivered", false);
+                                        notification.set("hasSent", false);
+                                        notification.set("isRead", false);
+                                        notification.set("status", '0');
+                                        notification.set("userFrom", currentUser);
+                                        notification.set("userTo", userTo);
+                                        notification.set("workspace", Workspace);
+                                        notification.set("channel", Channel);
+                                        notification.set("type", 'addToChannel'); // mentions in post or postMessage
+                                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this channel: ' + channelObject.get("name"));
+
+                                        notifications.add(notification);
+
+                                        console.log("notification: " + JSON.stringify(notification));
+
+                                        if (i === channelFollowArray.length - 1) {
 
 
-                                            }, function(err) {
-                                                // error
-                                                response.error(err);
+                                            //let dupeArray = [3,2,3,3,5,2];
+                                            let notificationArray = Array.from(new Set(notifications));
 
-                                            });
+                                            console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                                            if (notificationArray.length > 0) {
+
+                                                Parse.Object.saveAll(notificationArray, {
+
+                                                    useMasterKey: true
+                                                    //sessionToken: sessionToken
+
+                                                }).then(function(result) {
+                                                    // if we got 500 or more results then we know
+                                                    // that we have more results
+                                                    // otherwise we finish
+
+                                                    return result;
+
+
+                                                }, function(err) {
+                                                    // error
+                                                    response.error(err);
+
+                                                });
+
+
+                                            }
+
+
+
+
 
 
                                         }
 
-
-
-
-
-
                                     }
+
+
+
+
+                                }
+                                else {
+
+                                    // no need to send notifications
+
+
+
+                                    return channelFollowArray;
+
 
                                 }
 
 
-
-
-                            }
-                            else {
-
-                                // no need to send notifications
-
-
-
-                                return ChannelFollowArray;
-
-
                             }
 
+                            SendNotifications ();
 
-                        }
 
-                        SendNotifications ();
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            response.error(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+
 
 
 
