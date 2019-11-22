@@ -2092,6 +2092,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                                                     // that we have more results
                                                     // otherwise we finish
 
+                                                    console.log("NotificationArray save result:"  + JSON.stringify(result));
+
                                                     return result;
 
 
@@ -18048,9 +18050,14 @@ Parse.Cloud.beforeSave('Notification', function(request, response) {
 
         }
 
-        let POST = Parse.Object.extend("Post");
-        let Post = new POST();
-        Post.id = notification.get("post").id;
+        if (notification.get("post")) {
+
+            var POST = Parse.Object.extend("Post");
+            var Post = new POST();
+            Post.id = notification.get("post").id;
+
+        }
+
 
         let CHANNEL = Parse.Object.extend("Channel");
         let Channel = new CHANNEL();
@@ -18206,14 +18213,25 @@ Parse.Cloud.afterSave('Notification', function(request, response) {
 
         channel.id = notification.get("channel").id;
         workspace.id = notification.get("workspace").id;
-        post.id = notification.get("post").id;
+        if (notification.get("post")) {
+
+            post.id = notification.get("post").id;
+
+        }
+
         userTo.id = notification.get("userTo").id;
 
     } else {
 
         channel.id = originalNotification.get("channel").id;
         workspace.id = originalNotification.get("workspace").id;
-        post.id = originalNotification.get("post").id;
+
+        if (originalNotification.get("post")) {
+
+            post.id = originalNotification.get("post").id;
+
+        }
+
         userTo.id = originalNotification.get("userTo").id;
 
 
