@@ -1948,6 +1948,10 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                                             SendNotifications ();
 
+                                            let finalTime = process.hrtime(time);
+                                            console.log(`finalTime took addPeopleToChannel CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                                            response.success();
 
 
 
@@ -2138,12 +2142,17 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                             SendNotifications ();
 
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime took addPeopleToChannel CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
 
 
                         }, (error) => {
                             // The object was not retrieved successfully.
                             // error is a Parse.Error with an error code and message.
-                            response.error(error);
+                            return response.error(error);
                         }, {
 
                             useMasterKey: true
@@ -2182,13 +2191,9 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
     updateAllChannelFollows(0);
 
-    let finalTime = process.hrtime(time);
-    console.log(`finalTime took addPeopleToChannel CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-    return response.success();
-
 
 }, {useMasterKey: true});
+
 
 // cloud API and function to addPeopleToWorkspace
 Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
@@ -2454,6 +2459,10 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
                                             SendNotifications ();
 
+                                            let finalTime = process.hrtime(time);
+                                            console.log(`finalTime took addPeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                                            response.success();
 
 
 
@@ -2642,6 +2651,11 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
                             SendNotifications ();
 
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime took addPeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
 
 
                         }, (error) => {
@@ -2686,10 +2700,307 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
     updateAllWorkspaceFollowers(0);
 
-    let finalTime = process.hrtime(time);
-    console.log(`finalTime took addPeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-    return response.success();
+}, {useMasterKey: true});
+
+// cloud API and function to invitePeopleToWorkspace
+Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.013.invitePeopleToWorkspace.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    //get request params
+    let workspaceId = request.params.workspace;
+    let userEmails = request.params.emailsToAdd;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let Workspace = new WORKSPACE();
+    Workspace.id = workspaceId;
+
+    let USERINVITES = Parse.Object.extend("UserInvites");
+
+
+    let USER = Parse.Object.extend("_User");
+
+
+    console.log("before userEmails: " + JSON.stringify(userEmails));
+
+    let userEmailArray = [];
+
+    console.log("userEmailArray Set: " + JSON.stringify(userEmailArray));
+
+    console.log("userEmailArray Set: " + JSON.stringify(userEmailArray.length));
+
+    for (var j = 0; j < userEmails.length; j++) {
+
+        let User = new USER();
+        User.email = userEmails[j].email;
+        console.log("User: " + JSON.stringify(User));
+
+        userEmailArray.push(User);
+        console.log("userEmailArray: " + JSON.stringify(userEmailArray));
+
+    }
+
+    console.log("userEmailArray: " + JSON.stringify(userEmailArray));
+
+
+
+    function getUserIdsFromEmails (skip) {
+
+        let queryUser = new Parse.Query(USER);
+        queryUser.containedIn("email", userEmailArray);
+        queryUser.limit(500);
+        queryUser.skip(skip);
+
+        queryUser.find({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }).then((Users) => {
+            // The object was retrieved successfully.
+            //console.log("ChannelFollowers " + JSON.stringify(ChannelFollowers));
+
+            if (Users.length > 0) {
+
+                let userEmailsSet = new Set();
+
+                for (var i = 0; i < Users.length; i++) {
+                    let userObject = Users[i];
+
+                    userEmailsSet.add(userObject.get("email"));
+
+                }
+
+
+                console.log("userEmailsSet: " + JSON.stringify(userEmailsSet.size));
+
+                let userArrayEmails = Array.from(userEmailsSet);
+
+                console.log("::userArrayEmails:: " + JSON.stringify(userArrayEmails.length));
+
+                Parse.Cloud.run("addPeopleToWorkspace", {
+                    workspace: workspaceId,
+                    usersToAdd: Users
+
+                }).then(function(result) {
+                    console.log("addPeopleToWorkspace result: "+ JSON.stringify(result));
+
+                    if (Users.length >= 500) {
+
+                        getUserIdsFromEmails(skip + 500); // make a recursion call with different skip value
+
+                    } else {
+
+                        console.log("getUserIdsFromEmails less than 500");
+
+                        let UserInvitesSet = new Set();
+
+                        for (var i = 0; i < userEmailArray.length; i++) {
+
+                            let userEmail = userEmailArray[i];
+                            console.log("userEmail: " + JSON.stringify(userEmail.email));
+                            console.log("userArrayEmails: " + JSON.stringify(userArrayEmails));
+
+
+                            let includesMatch = userArrayEmails.includes(userEmail.email);
+
+                            console.log("includesMatch: " + JSON.stringify(includesMatch));
+
+                            if(includesMatch === false) {
+                                // this user doesn't have a channelFollow, create one!
+
+                                let userInvites = new USERINVITES();
+                                userInvites.set("email", userEmail.email);
+                                userInvites.set("workspace", Workspace);
+
+                                UserInvitesSet.add(userInvites);
+
+                                if ( i === (userEmailArray.length - 1)) {
+
+                                    console.log("UserInvitesSet 1: " + JSON.stringify(UserInvitesSet));
+                                    console.log("UserInvitesSet Size: " + JSON.stringify(UserInvitesSet.size));
+
+
+                                    //let dupeArray = [3,2,3,3,5,2];
+                                    let UserInvitesArray = Array.from(new Set(UserInvitesSet));
+
+                                    console.log("UserInvitesArray length: " + JSON.stringify(UserInvitesArray.length));
+
+                                    if (UserInvitesArray.length > 0) {
+
+                                        Parse.Object.saveAll(UserInvitesArray, {
+
+                                            useMasterKey: true
+                                            //sessionToken: sessionToken
+
+                                        }).then(function(results) {
+                                            // if we got 500 or more results then we know
+                                            // that we have more results
+                                            // otherwise we finish
+
+                                            // todo send Emails to users who got added to a workspace but are not on Papr yet
+
+                                            let finalTime = process.hrtime(time);
+                                            console.log(`finalTime took invitePeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                                            return response.success();
+
+
+
+                                        }, function(err) {
+                                            // error
+                                            return response.error(err);
+
+                                        });
+
+
+                                    } else {
+
+                                        return response.success();
+
+
+                                    }
+
+
+
+
+                                }
+
+                            }
+
+
+
+
+
+                        }
+
+
+                    }
+
+
+
+                }, function(error) {
+                    return response.error(error);
+                }, {useMasterKey: true});
+
+
+
+            }
+
+            else {
+
+                // create new UserInvites for these emails (people who are not yet on Papr, no user ID)
+
+                let UserInvitesSet = new Set();
+
+                for (var i = 0; i < userEmailArray.length; i++) {
+
+                    let newUserInvites = new USERINVITES();
+                    newUserInvites.set("email", userEmailArray[i].email);
+                    newUserInvites.set("workspace", Workspace);
+
+                    UserInvitesSet.add(newUserInvites);
+
+                    console.log("UserInvitesSet: " + JSON.stringify(UserInvitesSet));
+
+
+                }
+
+                let userInvitesArray= Array.from(new Set(UserInvitesSet));
+
+                console.log("userInvitesArray: " + JSON.stringify(userInvitesArray.length));
+
+
+
+                if (userInvitesArray.length > 0) {
+
+                    Parse.Object.saveAll(userInvitesArray, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then(function(results) {
+
+                        console.log("afterSave userInvitesArray: " + JSON.stringify(results));
+
+
+
+                        Workspace.fetch(Workspace.id, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((workspaceObject) => {
+
+                            // todo send emails to those users.
+
+
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime took invitePeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                            return response.success();
+
+
+
+
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return response.error(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+
+
+
+
+                    }, function(err) {
+                        // error
+                        return response.error(err);
+
+                    });
+
+
+                }
+
+
+
+            }
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            return response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+    }
+
+    getUserIdsFromEmails(0);
+
 
 
 }, {useMasterKey: true});
@@ -8806,7 +9117,6 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
         });
 
 });
-
 
 
 // Run beforeSave functions to count number of workspace followers abd members
@@ -16892,7 +17202,6 @@ function splitPostAndIndexFaster (request, response) {
 
 }
 
-
 function splitPostMessageAndIndex (request, response) {
 
     const NS_PER_SEC = 1e9;
@@ -17594,7 +17903,6 @@ function splitPostMessageAndIndex (request, response) {
     });
 
 }
-
 
 function splitUserAndIndex (request, response) {
 
