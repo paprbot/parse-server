@@ -1757,6 +1757,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
             if (ChannelFollowers.length > 0) {
 
                 let userArrayChannelFollowersSet = new Set();
+                let ChannelFollowersSet = new Set();
 
                 let ChannelObject = ChannelFollowers[0].get("channel");
 
@@ -1772,6 +1773,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                     //console.log("ChannelFollow: " + JSON.stringify(ChannelFollow));
 
                     userArrayChannelFollowersSet.add(ChannelFollow.get("user").id);
+                    ChannelFollowersSet.add(ChannelFollow);
 
                 }
 
@@ -1779,10 +1781,11 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                 console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowersSet.size));
 
                 let userArrayChannelFollowers = Array.from(userArrayChannelFollowersSet);
+                let arrayChannelFollowersSet = Array.from(ChannelFollowersSet);
 
                 console.log("::userArrayChannelFollowers:: " + JSON.stringify(userArrayChannelFollowers.length));
 
-                Parse.Object.saveAll(userArrayChannelFollowers, {
+                Parse.Object.saveAll(arrayChannelFollowersSet, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
