@@ -2243,7 +2243,7 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
     function updateAllWorkspaceFollowers(skip) {
 
-        let queryWorkspaceFollower = new Parse.Query(CHANNELFOLLOW);
+        let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
         queryWorkspaceFollower.containedIn("user", userArray);
         queryWorkspaceFollower.equalTo("workspace", Workspace);
         queryWorkspaceFollower.include("workspace");
@@ -2262,6 +2262,7 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
             if (WorkspaceFollowers.length > 0) {
 
                 let userArrayWorkspaceFollowersSet = new Set();
+                let workspaceFollowersSet = new Set();
 
                 let WorkspaceObject = WorkspaceFollowers[0].get("workspace");
 
@@ -2277,6 +2278,7 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                     //console.log("ChannelFollow: " + JSON.stringify(ChannelFollow));
 
                     userArrayWorkspaceFollowersSet.add(WorkspaceFollow.get("user").id);
+                    workspaceFollowersSet.add(WorkspaceFollow);
 
                 }
 
@@ -2284,10 +2286,11 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                 console.log("userArrayWorkspaceFollowersSet: " + JSON.stringify(userArrayWorkspaceFollowersSet.size));
 
                 let userArrayWorkspaceFollowers = Array.from(userArrayWorkspaceFollowersSet);
+                let arrayWorkspaceFollowers = Array.from(workspaceFollowersSet);
 
                 console.log("::userArrayWorkspaceFollowers:: " + JSON.stringify(userArrayWorkspaceFollowers.length));
 
-                Parse.Object.saveAll(userArrayWorkspaceFollowers, {
+                Parse.Object.saveAll(arrayWorkspaceFollowers, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
@@ -2297,15 +2300,15 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                     // that we have more results
                     // otherwise we finish
 
-                    console.log("saveAll results ChannelFollowers: " + JSON.stringify(results));
+                    console.log("saveAll results WorkspaceFollowers: " + JSON.stringify(results));
 
                     if (WorkspaceFollowers.length >= 500) {
 
-                        updateAllChannelFollows(skip + 500); // make a recursion call with different skip value
+                        updateAllWorkspaceFollowers(skip + 500); // make a recursion call with different skip value
 
                     } else {
 
-                        console.log("ChannelFollowers less than 500");
+                        console.log("updateAllWorkspaceFollowers less than 500");
 
                         let WorkspaceFollowSet = new Set();
 
@@ -2340,7 +2343,7 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                                     //let dupeArray = [3,2,3,3,5,2];
                                     let WorkspaceFollowArray = Array.from(new Set(WorkspaceFollowSet));
 
-                                    console.log("ChannelFollowArray length: " + JSON.stringify(WorkspaceFollowArray.length));
+                                    console.log("WorkspaceFollowArray length: " + JSON.stringify(WorkspaceFollowArray.length));
 
                                     if (WorkspaceFollowArray.length > 0) {
 
@@ -2491,7 +2494,7 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
             else {
 
-                // todo create new ChannelFollower for these Users
+                // todo create new WorkspaceFollower for these Users
 
                 let WorkspaceFollowSet = new Set();
 
