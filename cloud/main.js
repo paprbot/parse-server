@@ -2194,7 +2194,6 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
 }, {useMasterKey: true});
 
-
 // cloud API and function to addPeopleToWorkspace
 Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
@@ -21294,8 +21293,6 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
         let userACL = user.getACL();
 
-        //console.log("isNew: " + JSON.stringify(user.get("isNew")));
-        //console.log("isDirtyProfileimage: " + JSON.stringify(user.get("isDirtyProfileimage")));
 
         function updateAlgoliaWorkspaceExpertProfileImage (callback) {
 
@@ -21603,12 +21600,121 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
         }
 
+        function checkIfInvited (callback) {
+
+            let workspaceFollowersUserInvites = [];
+
+            if (user.get("isNew") === true) {
+
+                let USERINVITES = Parse.Object.extend("UserInvites");
+                let queryUserInvites = new Parse.Query(USERINVITES);
+
+                queryUserInvites.equalTo("email", user.get("email"));
+
+                queryUserInvites.limit(500);
+
+                queryUserInvites.find({
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((userInvites) => {
+
+                    console.log("user userInvites " + JSON.stringify(userInvites));
+
+                    if (userInvites.length > 0) {
+
+                        let workspaceFollowerSet = new Set();
+
+                        let Users = [];
+                        Users.push(user);
+
+                        for (var i = 0; i < userInvites.length; i++) {
+
+                            let workspaceObject = userInvites[i];
+                            console.log("workspaceObject: " + JSON.stringify(workspaceObject));
+
+
+                            Parse.Cloud.run("addPeopleToWorkspace", {
+                                workspace: workspaceObject,
+                                usersToAdd: Users
+
+                            }).then(function(workspaceFollower) {
+                                console.log("workspaceFollower: "+ JSON.stringify(workspaceFollower));
+
+                                workspaceFollowerSet.add(workspaceFollower);
+
+                                if ( i === (userInvites.length - 1)) {
+
+                                    console.log("workspaceFollowerSet 1: " + JSON.stringify(workspaceFollowerSet));
+                                    console.log("workspaceFollowerSet Size: " + JSON.stringify(workspaceFollowerSet.size));
+
+
+                                    //let dupeArray = [3,2,3,3,5,2];
+                                    let workspaceFollowerArray = Array.from(new Set(workspaceFollowerSet));
+
+                                    console.log("workspaceFollowerArray length: " + JSON.stringify(workspaceFollowerArray.length));
+
+                                    return callback (null, workspaceFollowerArray);
+
+
+
+                                }
+
+
+                            }, function(error) {
+                                return callback (error);
+                            }, {useMasterKey: true});
+
+
+
+
+                        }
+
+
+
+
+                    }
+
+                    else {
+
+                        return callback( null, workspaceFollowersUserInvites);
+
+
+                    }
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback (error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+
+            } else {
+
+                return callback (null, workspaceFollowersUserInvites);
+            }
+
+
+
+
+        }
+
+
         async.parallel([
             async.apply(updateAlgoliaWorkspaceExpertProfileImage),
             async.apply(prepIndex),
             async.apply(getSkills),
             async.apply(getSkillsToLearn),
-            async.apply(getWorkspaceFollowers)
+            async.apply(getWorkspaceFollowers),
+            async.apply(checkIfInvited)
 
 
         ], function (err, results) {
@@ -21627,6 +21733,9 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                 let mySkills = results[2];
                 let skillsToLearn = results[3];
                 let workspaceFollowers = results[4];
+                let checkIfInvited = results[5];
+
+                workspaceFollowers = workspaceFollowers.concat(checkIfInvited);
 
                 //console.log("userToSaveFinal: " + JSON.stringify(userToSaveFinal));
 
