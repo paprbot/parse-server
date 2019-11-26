@@ -2458,10 +2458,12 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
                                             SendNotifications ();
 
+                                            arrayWorkspaceFollowers = arrayWorkspaceFollowers.concat(WorkspaceFollowArray);
+
                                             let finalTime = process.hrtime(time);
                                             console.log(`finalTime took addPeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                                            response.success();
+                                            response.success(arrayWorkspaceFollowers);
 
 
 
@@ -2653,7 +2655,7 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                             let finalTime = process.hrtime(time);
                             console.log(`finalTime took addPeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                            response.success();
+                            response.success(workspaceFollowArray);
 
 
 
@@ -21639,10 +21641,10 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                                 workspace: workspaceObject,
                                 usersToAdd: Users
 
-                            }).then(function(workspaceFollower) {
-                                console.log("workspaceFollower: "+ JSON.stringify(workspaceFollower));
+                            }).then(function(workspaceFollowers) {
+                                console.log("workspaceFollower: "+ JSON.stringify(workspaceFollowers));
 
-                                workspaceFollowerSet.add(workspaceFollower);
+                                workspaceFollowerSet.add(workspaceFollowers[0]);
 
                                 if ( i === (userInvites.length - 1)) {
 
@@ -21656,7 +21658,6 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                                     console.log("workspaceFollowerArray length: " + JSON.stringify(workspaceFollowerArray.length));
 
                                     return callback (null, workspaceFollowerArray);
-
 
 
                                 }
