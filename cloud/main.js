@@ -18370,7 +18370,6 @@ function splitPostAndIndexFasterPrime (request, response) {
     }
 
 
-
     async.parallel([
         async.apply(indexPostSocial),
         async.apply(indexPostMessageQuestionSocial),
@@ -21992,9 +21991,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     }
 
-    function getPostSocials (skip, callback) {
+    function getPostSocials (callback) {
 
-        postSocialQuery.skip(skip);
+        //postSocialQuery.skip(skip);
 
         postSocialQuery.find({
 
@@ -22306,7 +22305,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         async.apply(getTopAnswerForQuestionPost),
         async.apply(getPostMessageComments),
         async.apply(getPostMessageQuestions),
-        async.apply(getPostSocials(0)),
+        async.apply(getPostSocials),
         async.apply(getPostMessageQuestionSocials),
         async.apply(getPostMessageAnswerSocials),
         async.apply(createPostSocial)
