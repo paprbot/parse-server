@@ -22360,9 +22360,10 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             postToSave.postQuestions = postMessageQuestions;
             postToSave.chatMessages = postMessageComments;
             postToSave.topAnswer = topAnswerForQuestionPost;
-            postToSave.user = simplifyUser(user);
+            postToSave.user = simplifyUser(userPostCreator);
 
-            console.log("isNewPost: " + JSON.stringify(isNewPost));
+            console.log("postToSave: " + JSON.stringify(postToSave));
+
 
             if (isNewPost === true) {
 
