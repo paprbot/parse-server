@@ -22368,43 +22368,34 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 // post is new there is only one postSocial for the user who created the post
                 postSocial = results[7];
-                postToSave.PostSocial = postSocial;
+                let postSocialNewlyCreated = [];
+                postSocialNewlyCreated.push(postSocial);
+                postSocials = postSocialNewlyCreated;
 
                 console.log("postToSave isNewPost: " + JSON.stringify(postToSave));
 
 
-                SendNotifications ();
-
-                let Final_Time = process.hrtime(time);
-                console.log(`splitPostAndIndexFaster took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
-
-                return response.success();
-
             }
 
-            else {
+            console.log("entering splitPostAndIndexFasterPrime...");
 
-                console.log("entering splitPostAndIndexFasterPrime...");
+            splitPostAndIndexFasterPrime({'user':currentUser, 'postJSON':postToSave, 'postSocials':postSocials, 'postMessageAnswerSocials':postMessageAnswerSocials, 'postMessageQuestionSocials':postMessageQuestionSocials, 'postACL':postACL, 'skip':0}, {
+                success: function (count) {
 
-                splitPostAndIndexFasterPrime({'user':currentUser, 'postJSON':postToSave, 'postSocials':postSocials, 'postMessageAnswerSocials':postMessageAnswerSocials, 'postMessageQuestionSocials':postMessageQuestionSocials, 'postACL':postACL, 'skip':0}, {
-                    success: function (count) {
+                    SendNotifications ();
 
-                        SendNotifications ();
+                    // todo check if postSocial > 500, if yes then skip 500 and get postSocials
 
-                        // todo check if postSocial > 500, if yes then skip 500 and get postSocials
+                    let Final_Time = process.hrtime(time);
+                    console.log(`splitPostAndIndexFaster after SendNotifications took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
-                        let Final_Time = process.hrtime(time);
-                        console.log(`splitPostAndIndexFaster after SendNotifications took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                    return response.success();
+                },
+                error: function (error) {
+                    return response.error(error);
+                }
+            });
 
-                        return response.success();
-                    },
-                    error: function (error) {
-                        return response.error(error);
-                    }
-                });
-
-
-            }
 
 
         } else {
