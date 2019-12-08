@@ -21993,6 +21993,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     function getPostSocials (callback) {
 
+        console.log("starting getPostSocials function.");
+
+
         //postSocialQuery.skip(skip);
 
         postSocialQuery.find({
@@ -22033,6 +22036,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     }
 
     function getPostMessageQuestionSocials (callback) {
+
+
+        console.log("starting getPostMessageQuestionSocials function.");
 
 
         let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
@@ -22085,6 +22091,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     }
 
     function getPostMessageAnswerSocials (callback) {
+
+        console.log("starting getPostMessageAnswerSocials function.");
 
 
         let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
@@ -22316,6 +22324,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         }
 
         // console.log("starting show results " + JSON.stringify(results.length));
+        console.log("isNewPost Post: " + JSON.stringify(isNewPost));
 
 
         if (results.length > 0) {
@@ -22343,7 +22352,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             let postMessageQuestionSocials = results[5];
             console.log("postMessageQuestionSocials: " + JSON.stringify(postMessageQuestionSocials));
 
-            let postMessageAnswerSocials = results[5];
+            let postMessageAnswerSocials = results[6];
             console.log("postMessageAnswerSocials: " + JSON.stringify(postMessageAnswerSocials));
 
             let postSocial;
@@ -22353,10 +22362,12 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             postToSave.topAnswer = topAnswerForQuestionPost;
             postToSave.user = simplifyUser(user);
 
-            if (isNewPost) {
+            console.log("isNewPost: " + JSON.stringify(isNewPost));
+
+            if (isNewPost === true) {
 
                 // post is new there is only one postSocial for the user who created the post
-                postSocial = results[6];
+                postSocial = results[7];
                 postToSave.PostSocial = postSocial;
 
                 console.log("postToSave isNewPost: " + JSON.stringify(postToSave));
@@ -22372,6 +22383,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             }
 
             else {
+
+                console.log("entering splitPostAndIndexFasterPrime...");
 
                 splitPostAndIndexFasterPrime({'user':currentUser, 'postJSON':postToSave, 'postSocials':postSocials, 'postMessageAnswerSocials':postMessageAnswerSocials, 'postMessageQuestionSocials':postMessageQuestionSocials, 'postACL':postACL, 'skip':0}, {
                     success: function (count) {
