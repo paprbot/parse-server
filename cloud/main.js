@@ -18632,7 +18632,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                     console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
 
-                    return finalPostIndexResult;
+                    return cb1 (null, finalPostIndexResult);
 
                 }
 
@@ -18703,7 +18703,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                     console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
 
-                    return  finalPostIndexResult;git
+                    return cb1 (null, finalPostIndexResult);
 
 
                 }
