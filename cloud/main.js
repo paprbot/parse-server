@@ -16358,9 +16358,9 @@ function splitPostAndIndexFaster (request, response) {
                     return cb(null, postSocialResult);
 
 
-                }, function (err, postQuestionMessagesSocialResult) {
+                }, function (err, PostSocialResult) {
 
-                    console.log("postQuestionMessagesSocialResult length: " + JSON.stringify(postQuestionMessagesSocialResult.length));
+                    console.log("PostSocialResult length: " + JSON.stringify(PostSocialResult.length));
 
                     if (err) {
                         return callback2(err);
@@ -16373,18 +16373,18 @@ function splitPostAndIndexFaster (request, response) {
 
                             //postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(JSON.parse(post_zero));
 
-                            postQuestionMessagesSocialResult.push(PostStar);
+                            PostSocialResult.push(PostStar);
 
 
                             // console.log("postQuestionMessagesSocialResult add: asd " + JSON.stringify(postQuestionMessagesSocialResult));
 
                         }
 
-                        if (postQuestionMessagesSocialResult.length > 0) {
+                        if (PostSocialResult.length > 0) {
 
-                            // console.log("postQuestionMessagesSocialResult.length adsf: " + JSON.stringify(postQuestionMessagesSocialResult.length));
+                            console.log("PostSocialResult: " + JSON.stringify(PostSocialResult));
 
-                            return callback2 (null, postQuestionMessagesSocialResult);
+                            return callback2 (null, PostSocialResult);
 
 
 
