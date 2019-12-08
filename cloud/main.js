@@ -18497,9 +18497,6 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         finalPostIndexResult.postQuestions = arrQuestions;
 
-                        console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
-
-                        return finalPostIndexResult;
 
                     }
 
@@ -18515,8 +18512,6 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                         //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                        return  finalPostIndexResult;
 
 
                     }
@@ -18608,9 +18603,6 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         finalPostIndexResult.topAnswer = arrAnswers;
 
-                        console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
-
-                        return finalPostIndexResult;
 
 
                     }
@@ -18628,10 +18620,12 @@ function splitPostAndIndexFasterPrime (request, response) {
                         //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                         //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
-                        return  finalPostIndexResult;
-
 
                     }
+
+                    console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
+
+                    return finalPostIndexResult;
 
                 }
 
@@ -18650,9 +18644,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                         });
 
                         finalPostIndexResult.postQuestions = arrQuestions;
-                        console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
 
-                        return  finalPostIndexResult;
 
                     }
 
@@ -18667,7 +18659,6 @@ function splitPostAndIndexFasterPrime (request, response) {
                         //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                         //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
-                        return  finalPostIndexResult;
 
 
                     }
@@ -18683,9 +18674,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                         });
 
                         finalPostIndexResult.topAnswer = arrQuestions;
-                        console.log(":::finalPostIndexResult null topAnswer postSocial::: " + JSON.stringify(finalPostIndexResult));
 
-                        return  finalPostIndexResult;
 
 
                     }
@@ -18701,10 +18690,13 @@ function splitPostAndIndexFasterPrime (request, response) {
                         //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                         //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
-                        return  finalPostIndexResult;
 
 
                     }
+
+                    console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
+
+                    return  finalPostIndexResult;git
 
 
                 }
@@ -22360,9 +22352,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             postToSave.postQuestions = postMessageQuestions;
             postToSave.chatMessages = postMessageComments;
             postToSave.topAnswer = topAnswerForQuestionPost;
-            postToSave.user = simplifyUser(userPostCreator);
+            //postToSave.user = simplifyUser(postToSave.user);
 
-            console.log("postToSave: " + JSON.stringify(postToSave));
+            console.log("postToSave f: " + JSON.stringify(postToSave));
 
 
             if (isNewPost === true) {
