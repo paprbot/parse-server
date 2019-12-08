@@ -21665,7 +21665,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     let USER = Parse.Object.extend("_User");
     let userPostCreator = new USER();
 
-    // Convert Parse.Object to JSON
+    // Convert Parse.Object too JSON
     let post = request.object;
     let mentions = post.get("mentions");
     //let postToSave = post.toJSON();
