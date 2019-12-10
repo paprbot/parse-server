@@ -18507,6 +18507,14 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         finalPostIndexResult.postQuestions = arrQuestions;
 
+                        indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
+                            if (err) {
+                                return response.error(err);
+                            }
+
+
+                        });
+
 
                     }
 
@@ -18522,6 +18530,14 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                         //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+
+                        indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
+                            if (err) {
+                                return response.error(err);
+                            }
+
+
+                        });
 
 
                     }
@@ -18639,6 +18655,14 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         finalPostIndexResult.postQuestions = arrQuestions;
 
+                        indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
+                            if (err) {
+                                return response.error(err);
+                            }
+
+
+                        });
+
 
                     }
 
@@ -18652,6 +18676,14 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                         //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+
+                        indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
+                            if (err) {
+                                return response.error(err);
+                            }
+
+
+                        });
 
 
                     }
@@ -18686,7 +18718,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                         //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
                         console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
-                        
+
                         indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
                             if (err) {
                                 return response.error(err);
