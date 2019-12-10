@@ -18347,7 +18347,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                 console.log(":::no postAnswerMessage 1:::");
 
-                let postAnswerMessage = [];
+                let postAnswerMessage = null;
 
 
                 return callback2(null, postAnswerMessage);
@@ -18363,7 +18363,7 @@ function splitPostAndIndexFasterPrime (request, response) {
             console.log(":::no postAnswers 3:::");
 
 
-            let postAnswers = [];
+            let postAnswers = null;
 
             return callback2 (null, postAnswers)
         }
