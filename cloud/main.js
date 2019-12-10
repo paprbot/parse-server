@@ -18462,9 +18462,9 @@ function splitPostAndIndexFasterPrime (request, response) {
                             }
                             else {
 
-                                console.log("null question 1");
+                                console.log("null postMessageSocial 1");
 
-                                let arrayPostMessageSocial = [];
+                                let arrayPostMessageSocial = null;
 
                                 question.PostMessageSocial = arrayPostMessageSocial;
 
