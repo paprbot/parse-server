@@ -18404,7 +18404,10 @@ function splitPostAndIndexFasterPrime (request, response) {
             //let finalPostMessageAnswerResults = results[2];
             //let finalPostMessageCommentResults = results[3];
 
-            async.mapSeries(finalPostIndexResults, function (finalPostIndexResult, cb1) {
+            for (var j = 0; j < finalPostIndexResults.length; j++) {
+
+                let finalPostIndexResult = finalPostIndexResults[j];
+
 
                 console.log("starting async.map finalPostIndexResults: ");
 
@@ -18421,7 +18424,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
 
-                        let arrQuestions = lodash.map(Questions, function(question){
+                        let arrQuestions = lodash.map(Questions, function (question) {
 
                             let postSocialId = finalPostIndexResult.PostSocial.objectId;
                             let userId = finalPostIndexResult.PostSocial.user.objectId;
@@ -18454,7 +18457,6 @@ function splitPostAndIndexFasterPrime (request, response) {
                                 console.log("question: " + JSON.stringify(question));
 
                                 return question;
-
 
 
                             }
@@ -18532,7 +18534,10 @@ function splitPostAndIndexFasterPrime (request, response) {
                         let postSocialId = finalPostIndexResult.PostSocial.objectId;
                         let userId = finalPostIndexResult.PostSocial.user.objectId;
 
-                        if (answer.PostMessageSocial.length > 0) {
+                        let arrayLength = answer.PostMessageSocial.length;
+                        let finalAnswer = answer;
+
+                        if (arrayLength > 0) {
 
                             let arrayPostMessageSocial = answer.PostMessageSocial;
 
@@ -18549,13 +18554,14 @@ function splitPostAndIndexFasterPrime (request, response) {
                                 if (postMessageSocialObj.get("user").id === userId) {
 
 
-                                    answer.PostMessageSocial = simplifyPostMessageSocialAnswer(postMessageSocialObj);
+                                    postMessageSocialObj = simplifyPostMessageSocialAnswer(postMessageSocialObj);
+                                    finalAnswer.PostMessageSocial = postMessageSocialObj;
 
                                 }
 
                             }
 
-                            console.log("answer: " + JSON.stringify(answer));
+                            console.log("answer: " + JSON.stringify(finalAnswer));
 
 
                         }
@@ -18565,7 +18571,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             let arrayPostMessageSocial = null;
 
-                            answer.topAnswer = arrayPostMessageSocial;
+                            answer.PostMessageSocial = arrayPostMessageSocial;
 
 
                         }
@@ -18573,8 +18579,17 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         console.log("finalPostMessageAnswerResults arrAnswers: " + JSON.stringify(answer));
 
-                        finalPostIndexResult.topAnswer = answer;
+                        finalPostIndexResult.topAnswer = finalAnswer;
 
+                        console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
+
+                        indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
+                            if (err) {
+                                return response.error(err);
+                            }
+
+
+                        });
 
 
                     }
@@ -18592,12 +18607,19 @@ function splitPostAndIndexFasterPrime (request, response) {
                         //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                         //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
+                        console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
+
+                        indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
+                            if (err) {
+                                return response.error(err);
+                            }
+
+
+                        });
+
 
                     }
 
-                    console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
-
-                    return cb1 (null, finalPostIndexResult);
 
                 }
 
@@ -18607,7 +18629,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                     if (finalPostMessageQuestionResults.length > 0) {
 
-                        let arrQuestions = lodash.map(Questions, function(question){
+                        let arrQuestions = lodash.map(Questions, function (question) {
 
                             question.PostMessageSocial = null;
 
@@ -18632,7 +18654,6 @@ function splitPostAndIndexFasterPrime (request, response) {
                         //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
 
-
                     }
 
                     if (finalPostMessageAnswerResults) {
@@ -18641,6 +18662,15 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         finalPostIndexResult.topAnswer = answer;
 
+                        console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
+
+                        indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
+                            if (err) {
+                                return response.error(err);
+                            }
+
+
+                        });
 
 
                     }
@@ -18655,51 +18685,38 @@ function splitPostAndIndexFasterPrime (request, response) {
                         //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                         //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
+                        console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
+                        
+                        indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
+                            if (err) {
+                                return response.error(err);
+                            }
+
+
+                        });
+
+
 
                     }
 
-                    console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
 
-                    return cb1 (null, finalPostIndexResult);
+                }
+
+                if (j === finalPostIndexResults.length - 1) {
+
+                    console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
+
+                    let beforeSaveElse_Time = process.hrtime(time);
+                    console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                    return response.success();
 
 
                 }
 
 
 
-
-            }, function (err, Posts) {
-
-                    console.log("Posts length: " + JSON.stringify(Posts.length));
-
-                    if (err) {
-                        return response.error(err);
-                    } else {
-
-                        console.log("final splitIndex for Posts: " + JSON.stringify(Posts));
-
-                        indexPosts.saveObjects(Posts, true, function(err, content) {
-                            if (err) {
-                                return response.error(err);
-                            }
-
-                            console.log("content splitfunction: " + JSON.stringify(content));
-
-
-                        });
-
-                        console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
-
-                        let beforeSaveElse_Time = process.hrtime(time);
-                        console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                        return response.success();
-
-
-
-                    }
-
-                });
+            }
 
 
 
