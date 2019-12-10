@@ -18546,42 +18546,54 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         console.log(":::finalPostMessageAnswerResults::: " + JSON.stringify(finalPostMessageAnswerResults));
 
+                        if (answer.PostMessageSocial) {
 
-                        let postSocialId = finalPostIndexResult.PostSocial.objectId;
-                        let userId = finalPostIndexResult.PostSocial.user.objectId;
+                            let postSocialId = finalPostIndexResult.PostSocial.objectId;
+                            let userId = finalPostIndexResult.PostSocial.user.objectId;
 
-                        let arrayLength = answer.PostMessageSocial.length;
-                        let finalAnswer = answer;
+                            let arrayLength = answer.PostMessageSocial.length;
 
-                        if (arrayLength > 0) {
+                            if (arrayLength > 0) {
 
-                            let arrayPostMessageSocial = answer.PostMessageSocial;
+                                let arrayPostMessageSocial = answer.PostMessageSocial;
 
-                            for (var i = 0; i < arrayPostMessageSocial.length; i++) {
+                                for (var i = 0; i < arrayPostMessageSocial.length; i++) {
 
-                                let postMessageSocialObj = arrayPostMessageSocial[i];
+                                    let postMessageSocialObj = arrayPostMessageSocial[i];
 
-                                console.log("arrayPostMessageSocial answer: " + JSON.stringify(postMessageSocialObj));
+                                    console.log("arrayPostMessageSocial answer: " + JSON.stringify(postMessageSocialObj));
 
-                                console.log("postSocialId::socialpostSocialId answer " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
+                                    console.log("postSocialId::socialpostSocialId answer " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
 
-                                console.log("userId::socialUserId answer " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.get("user").id));
+                                    console.log("userId::socialUserId answer " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.get("user").id));
 
-                                if (postMessageSocialObj.get("user").id === userId) {
+                                    if (postMessageSocialObj.get("user").id === userId) {
 
 
-                                    postMessageSocialObj = simplifyPostMessageSocialAnswer(postMessageSocialObj);
-                                    finalAnswer.PostMessageSocial = postMessageSocialObj;
+                                        postMessageSocialObj = simplifyPostMessageSocialAnswer(postMessageSocialObj);
+                                        answer.PostMessageSocial = postMessageSocialObj;
+
+                                    }
 
                                 }
 
+                                console.log("answer: " + JSON.stringify(answer));
+
+
+                            }
+                            else {
+
+                                console.log("null answer 1");
+
+                                let arrayPostMessageSocial = null;
+
+                                answer.PostMessageSocial = arrayPostMessageSocial;
+
+
                             }
 
-                            console.log("answer: " + JSON.stringify(finalAnswer));
 
-
-                        }
-                        else {
+                        } else {
 
                             console.log("null answer 1");
 
@@ -18593,9 +18605,12 @@ function splitPostAndIndexFasterPrime (request, response) {
                         }
 
 
+
+
+
                         console.log("finalPostMessageAnswerResults arrAnswers: " + JSON.stringify(answer));
 
-                        finalPostIndexResult.topAnswer = finalAnswer;
+                        finalPostIndexResult.topAnswer = answer;
 
                         console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
 
