@@ -2398,7 +2398,7 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                                                     notification.set("userTo", userTo);
                                                     notification.set("workspace", Workspace);
                                                     notification.set("type", 'addToWorkspace'); // mentions in post or postMessage
-                                                    notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + WorkspaceObject.get("name"));
+                                                    notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + WorkspaceObject.get("workspace_name"));
 
                                                     notifications.add(notification);
 
@@ -2505,7 +2505,7 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                                             notification.set("userTo", userTo);
                                             notification.set("workspace", Workspace);
                                             notification.set("type", 'addToWorkspace'); // mentions in post or postMessage
-                                            notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + WorkspaceObject.get("name"));
+                                            notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + WorkspaceObject.get("workspace_name"));
 
                                             notifications.add(notification);
 
@@ -2686,7 +2686,7 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                                         notification.set("userTo", userTo);
                                         notification.set("workspace", Workspace);
                                         notification.set("type", 'addToWorkspace'); // mentions in post or postMessage
-                                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + Workspace.get("name"));
+                                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + Workspace.get("workspace_name"));
 
                                         notifications.add(notification);
 
@@ -2784,6 +2784,14 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                     });
 
 
+                }
+
+                else {
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took addPeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                    response.success(workspaceFollowArray);
                 }
 
 
