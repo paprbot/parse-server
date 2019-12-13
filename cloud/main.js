@@ -2332,8 +2332,10 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
                             console.log("includesMatch: " + JSON.stringify(includesMatch));
 
+                            let WorkspaceFollowArray;
+
                             if(includesMatch === false) {
-                                // this user doesn't have a channelFollow, create one!
+                                // this user doesn't have a workspaceFollower, create one!
 
                                 let newWorkspaceFollow = new WORKSPACEFOLLOWER();
                                 newWorkspaceFollow.set("user", userArray[i]);
@@ -2343,143 +2345,242 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
                                 WorkspaceFollowSet.add(newWorkspaceFollow);
 
-                                if ( i === (userArray.length - 1)) {
 
-                                    console.log("WorkspaceFollowSet 1: " + JSON.stringify(WorkspaceFollowSet));
-                                    console.log("WorkspaceFollowSet Size: " + JSON.stringify(WorkspaceFollowSet.size));
+                            }
 
+                            if ( i === (userArray.length - 1)) {
 
-                                    //let dupeArray = [3,2,3,3,5,2];
-                                    let WorkspaceFollowArray = Array.from(new Set(WorkspaceFollowSet));
-
-                                    console.log("WorkspaceFollowArray length: " + JSON.stringify(WorkspaceFollowArray.length));
-
-                                    if (WorkspaceFollowArray.length > 0) {
-
-                                        Parse.Object.saveAll(WorkspaceFollowArray, {
-
-                                            useMasterKey: true
-                                            //sessionToken: sessionToken
-
-                                        }).then(function(results) {
-                                            // if we got 500 or more results then we know
-                                            // that we have more results
-                                            // otherwise we finish
-
-                                            function SendNotifications () {
-
-                                                console.log("starting SendNotifications function: " + JSON.stringify(WorkspaceFollowArray.length) );
+                                console.log("WorkspaceFollowSet 1: " + JSON.stringify(WorkspaceFollowSet));
+                                console.log("WorkspaceFollowSet Size: " + JSON.stringify(WorkspaceFollowSet.size));
 
 
-                                                if (WorkspaceFollowArray.length > 0) {
+                                //let dupeArray = [3,2,3,3,5,2];
+                                WorkspaceFollowArray = Array.from(new Set(WorkspaceFollowSet));
 
-                                                    let notifications = new Set();
+                                console.log("WorkspaceFollowArray length: " + JSON.stringify(WorkspaceFollowArray.length));
 
-                                                    for (let i = 0; i < WorkspaceFollowArray.length; i++) {
+                                if (WorkspaceFollowArray.length > 0) {
 
-                                                        let userId = WorkspaceFollowArray[i].get("user").id;
+                                    Parse.Object.saveAll(WorkspaceFollowArray, {
 
-                                                        let userTo = new USER();
-                                                        userTo.id = userId;
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
 
-                                                        let NOTIFICATION = Parse.Object.extend("Notification");
-                                                        let notification = new NOTIFICATION();
+                                    }).then(function(results) {
+                                        // if we got 500 or more results then we know
+                                        // that we have more results
+                                        // otherwise we finish
 
-                                                        notification.set("isDelivered", false);
-                                                        notification.set("hasSent", false);
-                                                        notification.set("isRead", false);
-                                                        notification.set("status", '0');
-                                                        notification.set("userFrom", currentUser);
-                                                        notification.set("userTo", userTo);
-                                                        notification.set("workspace", Workspace);
-                                                        notification.set("type", 'addToWorkspace'); // mentions in post or postMessage
-                                                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + WorkspaceObject.get("name"));
+                                        function SendNotifications () {
 
-                                                        notifications.add(notification);
-
-                                                        console.log("notification: " + JSON.stringify(notification));
-
-                                                        if (i === WorkspaceFollowArray.length - 1) {
+                                            console.log("starting SendNotifications function: " + JSON.stringify(WorkspaceFollowArray.length) );
 
 
-                                                            //let dupeArray = [3,2,3,3,5,2];
-                                                            let notificationArray = Array.from(new Set(notifications));
+                                            if (WorkspaceFollowArray.length > 0) {
 
-                                                            console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+                                                let notifications = new Set();
 
-                                                            if (notificationArray.length > 0) {
+                                                for (let i = 0; i < WorkspaceFollowArray.length; i++) {
 
-                                                                Parse.Object.saveAll(notificationArray, {
+                                                    let userId = WorkspaceFollowArray[i].get("user").id;
 
-                                                                    useMasterKey: true
-                                                                    //sessionToken: sessionToken
+                                                    let userTo = new USER();
+                                                    userTo.id = userId;
 
-                                                                }).then(function(result) {
-                                                                    // if we got 500 or more results then we know
-                                                                    // that we have more results
-                                                                    // otherwise we finish
+                                                    let NOTIFICATION = Parse.Object.extend("Notification");
+                                                    let notification = new NOTIFICATION();
 
-                                                                    return result;
+                                                    notification.set("isDelivered", false);
+                                                    notification.set("hasSent", false);
+                                                    notification.set("isRead", false);
+                                                    notification.set("status", '0');
+                                                    notification.set("userFrom", currentUser);
+                                                    notification.set("userTo", userTo);
+                                                    notification.set("workspace", Workspace);
+                                                    notification.set("type", 'addToWorkspace'); // mentions in post or postMessage
+                                                    notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + WorkspaceObject.get("name"));
+
+                                                    notifications.add(notification);
+
+                                                    console.log("notification: " + JSON.stringify(notification));
+
+                                                    if (i === WorkspaceFollowArray.length - 1) {
 
 
-                                                                }, function(err) {
-                                                                    // error
-                                                                    return response.error(err);
+                                                        //let dupeArray = [3,2,3,3,5,2];
+                                                        let notificationArray = Array.from(new Set(notifications));
 
-                                                                });
+                                                        console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                                                        if (notificationArray.length > 0) {
+
+                                                            Parse.Object.saveAll(notificationArray, {
+
+                                                                useMasterKey: true
+                                                                //sessionToken: sessionToken
+
+                                                            }).then(function(result) {
+                                                                // if we got 500 or more results then we know
+                                                                // that we have more results
+                                                                // otherwise we finish
+
+                                                                return result;
 
 
-                                                            }
+                                                            }, function(err) {
+                                                                // error
+                                                                return response.error(err);
 
-
-
-
+                                                            });
 
 
                                                         }
 
+
+
+
+
+
                                                     }
 
-
-
-
                                                 }
-                                                else {
-
-                                                    // no need to send notifications
 
 
 
-                                                    return WorkspaceFollowArray;
+
+                                            }
+                                            else {
+
+                                                // no need to send notifications
 
 
-                                                }
+
+                                                return WorkspaceFollowArray;
 
 
                                             }
 
-                                            SendNotifications ();
 
-                                            arrayWorkspaceFollowers = arrayWorkspaceFollowers.concat(WorkspaceFollowArray);
+                                        }
 
-                                            let finalTime = process.hrtime(time);
-                                            console.log(`finalTime took addPeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success(arrayWorkspaceFollowers);
+                                        SendNotifications ();
 
 
+                                    }, function(err) {
+                                        // error
+                                        return response.error(err);
 
-                                        }, function(err) {
-                                            // error
-                                            return response.error(err);
+                                    });
 
-                                        });
+
+                                }
+
+
+                                console.log("WorkspaceFollowArray length: " + JSON.stringify(arrayWorkspaceFollowers.length));
+
+                                function SendNotifications () {
+
+                                    console.log("starting SendNotifications function: " + JSON.stringify(arrayWorkspaceFollowers.length) );
+
+
+                                    if (arrayWorkspaceFollowers.length > 0) {
+
+                                        let notifications = new Set();
+
+                                        for (let i = 0; i < arrayWorkspaceFollowers.length; i++) {
+
+                                            let userId = arrayWorkspaceFollowers[i].get("user").id;
+
+                                            let userTo = new USER();
+                                            userTo.id = userId;
+
+                                            let NOTIFICATION = Parse.Object.extend("Notification");
+                                            let notification = new NOTIFICATION();
+
+                                            notification.set("isDelivered", false);
+                                            notification.set("hasSent", false);
+                                            notification.set("isRead", false);
+                                            notification.set("status", '0');
+                                            notification.set("userFrom", currentUser);
+                                            notification.set("userTo", userTo);
+                                            notification.set("workspace", Workspace);
+                                            notification.set("type", 'addToWorkspace'); // mentions in post or postMessage
+                                            notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + WorkspaceObject.get("name"));
+
+                                            notifications.add(notification);
+
+                                            console.log("notification: " + JSON.stringify(notification));
+
+                                            if (i === WorkspaceFollowArray.length - 1) {
+
+
+                                                //let dupeArray = [3,2,3,3,5,2];
+                                                let notificationArray = Array.from(new Set(notifications));
+
+                                                console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                                                if (notificationArray.length > 0) {
+
+                                                    Parse.Object.saveAll(notificationArray, {
+
+                                                        useMasterKey: true
+                                                        //sessionToken: sessionToken
+
+                                                    }).then(function(result) {
+                                                        // if we got 500 or more results then we know
+                                                        // that we have more results
+                                                        // otherwise we finish
+
+                                                        return result;
+
+
+                                                    }, function(err) {
+                                                        // error
+                                                        return response.error(err);
+
+                                                    });
+
+
+                                                }
+
+
+
+
+
+
+                                            }
+
+                                        }
+
+
+
+
+                                    }
+                                    else {
+
+                                        // no need to send notifications
+
+
+
+                                        return arrayWorkspaceFollowers;
 
 
                                     }
 
 
                                 }
+
+                                SendNotifications ();
+
+
+                                arrayWorkspaceFollowers = arrayWorkspaceFollowers.concat(WorkspaceFollowArray);
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took addPeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                                response.success(arrayWorkspaceFollowers);
+
+
 
                             }
 
