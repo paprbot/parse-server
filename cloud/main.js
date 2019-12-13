@@ -2749,7 +2749,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
     for (var j = 0; j < userEmails.length; j++) {
 
         let User = new USER();
-        User.email = userEmails[j].email;
+        User.set("email", userEmails[j].email);
         console.log("User: " + JSON.stringify(User));
 
         userEmailArray.push(User);
@@ -2775,16 +2775,18 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
 
         }).then((Users) => {
             // The object was retrieved successfully.
-            //console.log("ChannelFollowers " + JSON.stringify(ChannelFollowers));
+            console.log("Users " + JSON.stringify(Users));
 
             if (Users.length > 0) {
 
                 let userEmailsSet = new Set();
+                let userObjectIdSet = new Set ();
 
                 for (var i = 0; i < Users.length; i++) {
                     let userObject = Users[i];
 
                     userEmailsSet.add(userObject.get("email"));
+                    userObjectIdSet.add(userObject.id);
 
                 }
 
@@ -2792,14 +2794,20 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                 console.log("userEmailsSet: " + JSON.stringify(userEmailsSet.size));
 
                 let userArrayEmails = Array.from(userEmailsSet);
+                let userArrayObjectIds = Array.from(userObjectIdSet);
 
                 console.log("::userArrayEmails:: " + JSON.stringify(userArrayEmails.length));
 
+                console.log("::workspaceId:: " + JSON.stringify(workspaceId));
+                console.log("::useIDs:: " + JSON.stringify(userArrayObjectIds));
+
+
+
                 Parse.Cloud.run("addPeopleToWorkspace", {
                     workspace: workspaceId,
-                    usersToAdd: Users
+                    usersToAdd: userArrayObjectIds
 
-                }).then(function(result) {
+                },{useMasterKey: true}).then(function(result) {
                     console.log("addPeopleToWorkspace result: "+ JSON.stringify(result));
 
                     if (Users.length >= 500) {
@@ -18429,40 +18437,82 @@ function splitPostAndIndexFasterPrime (request, response) {
                             let postSocialId = finalPostIndexResult.PostSocial.objectId;
                             let userId = finalPostIndexResult.PostSocial.user.objectId;
 
-                            console.log("question.PostMessageSocial.length: " + JSON.stringify(question.PostMessageSocial.length));
+                            //console.log("question.PostMessageSocial.length: " + JSON.stringify(question.PostMessageSocial.length));
 
-                            if (question.PostMessageSocial.length > 0) {
+                            if (question.PostMessageSocial) {
 
-                                let arrayPostMessageSocial = question.PostMessageSocial;
+                                if (question.PostMessageSocial.length > 0) {
 
-                                for (var i = 0; i < arrayPostMessageSocial.length; i++) {
+                                    let arrayPostMessageSocial = question.PostMessageSocial;
 
-                                    let postMessageSocialObj = arrayPostMessageSocial[i];
+                                    for (var i = 0; i < arrayPostMessageSocial.length; i++) {
 
-                                    console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
+                                        let postMessageSocialObj = arrayPostMessageSocial[i];
 
-                                    console.log("postSocialId::socialpostSocialId " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
+                                        console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
 
-                                    console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.get("user").id));
+                                        console.log("postSocialId::socialpostSocialId " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
 
-                                    if (postMessageSocialObj.get("user").id === userId) {
+                                        console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.get("user").id));
+
+                                        if (postMessageSocialObj.get("user").id === userId) {
 
 
-                                        question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
+                                            question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
+
+                                        }
 
                                     }
 
+                                    console.log("question: " + JSON.stringify(question));
+
+                                    return question;
+
+
+                                }
+                                else {
+
+                                    console.log("null postMessageSocial 1");
+
+                                    let arrayPostMessageSocial = null;
+
+                                    question.PostMessageSocial = arrayPostMessageSocial;
+
+                                    return question;
+
+                                    /*
+
+                                     arrayPostMessageSocial.push(question.PostMessageSocial);
+
+                                     for (var i = 0; i < arrayPostMessageSocial.length; i++) {
+
+                                     let postMessageSocialObj = arrayPostMessageSocial[i];
+
+                                     console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
+
+
+                                     console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.user.objectId));
+
+                                     if (postMessageSocialObj.user.objectId === userId) {
+
+
+                                     question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
+
+                                     }
+
+                                     }
+
+                                     console.log("question: " + JSON.stringify(question));
+
+                                     return question;*/
+
+
                                 }
 
-                                console.log("question: " + JSON.stringify(question));
 
-                                return question;
+                            } else {
 
-
-                            }
-                            else {
-
-                                console.log("null postMessageSocial 1");
+                                console.log("null postMessageSocial 2");
 
                                 let arrayPostMessageSocial = null;
 
@@ -18470,34 +18520,10 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                 return question;
 
-                                /*
-
-                                 arrayPostMessageSocial.push(question.PostMessageSocial);
-
-                                 for (var i = 0; i < arrayPostMessageSocial.length; i++) {
-
-                                 let postMessageSocialObj = arrayPostMessageSocial[i];
-
-                                 console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
-
-
-                                 console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.user.objectId));
-
-                                 if (postMessageSocialObj.user.objectId === userId) {
-
-
-                                 question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
-
-                                 }
-
-                                 }
-
-                                 console.log("question: " + JSON.stringify(question));
-
-                                 return question;*/
-
 
                             }
+
+
 
 
                         });
@@ -23694,7 +23720,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                                 workspace: workspaceObject,
                                 usersToAdd: Users
 
-                            }).then(function(workspaceFollowers) {
+                            },{useMasterKey: true}).then(function(workspaceFollowers) {
                                 console.log("workspaceFollower: "+ JSON.stringify(workspaceFollowers));
 
                                 workspaceFollowerSet.add(workspaceFollowers[0]);
