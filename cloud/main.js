@@ -2748,11 +2748,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
 
     for (var j = 0; j < userEmails.length; j++) {
 
-        let User = new USER();
-        User.set("email", userEmails[j].email);
-        console.log("User: " + JSON.stringify(User));
-
-        userEmailArray.push(User);
+        userEmailArray.push(userEmails[j].email);
         console.log("userEmailArray: " + JSON.stringify(userEmailArray));
 
     }
@@ -2786,7 +2782,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                     let userObject = Users[i];
 
                     userEmailsSet.add(userObject.get("email"));
-                    userObjectIdSet.add(userObject.id);
+                    userObjectIdSet.add({"objectId": userObject.id});
 
                 }
 
@@ -2865,10 +2861,6 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
 
                                             // todo send Emails to users who got added to a workspace but are not on Papr yet
 
-                                            let finalTime = process.hrtime(time);
-                                            console.log(`finalTime took invitePeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                                            return response.success();
 
 
 
@@ -2877,11 +2869,6 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                                             return response.error(err);
 
                                         });
-
-
-                                    } else {
-
-                                        return response.success();
 
 
                                     }
@@ -2903,10 +2890,14 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                     }
 
 
-
                 }, function(error) {
                     return response.error(error);
                 }, {useMasterKey: true});
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took invitePeopleToWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                response.success();
 
 
 
