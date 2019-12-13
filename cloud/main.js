@@ -2901,10 +2901,11 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
 
 
                 Parse.Cloud.run("addPeopleToWorkspace", {
+                    //user: currentUser,
                     workspace: workspaceId,
                     usersToAdd: userArrayObjectIds
 
-                },{useMasterKey: true}).then(function(result) {
+                },{sessionToken: sessionToken}).then(function(result) {
                     console.log("addPeopleToWorkspace result: "+ JSON.stringify(result));
 
                     if (Users.length >= 500) {
@@ -23809,10 +23810,11 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
 
                             Parse.Cloud.run("addPeopleToWorkspace", {
+                                //user: currentUser,
                                 workspace: workspaceObject,
                                 usersToAdd: Users
 
-                            },{useMasterKey: true}).then(function(workspaceFollowers) {
+                            },{sessionToken: sessionToken}).then(function(workspaceFollowers) {
                                 console.log("workspaceFollower: "+ JSON.stringify(workspaceFollowers));
 
                                 workspaceFollowerSet.add(workspaceFollowers[0]);
