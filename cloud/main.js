@@ -2935,6 +2935,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                                 let userInvites = new USERINVITES();
                                 userInvites.set("email", userEmail.email);
                                 userInvites.set("workspace", Workspace);
+                                userInvites.set("userWhoInvited", currentUser);
 
                                 UserInvitesSet.add(userInvites);
 
@@ -23796,6 +23797,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
                     console.log("user userInvites " + JSON.stringify(userInvites));
 
+
                     if (userInvites.length > 0) {
 
                         let workspaceFollowerSet = new Set();
@@ -23805,8 +23807,13 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
                         for (var i = 0; i < userInvites.length; i++) {
 
-                            let workspaceObject = userInvites[i];
+                            let userInvite = userInvites[i];
+                            let userWhoInvited = userInvite.get("userWhoInvited");
+                            let workspaceObject = userInvite.get("workspace");
                             console.log("workspaceObject: " + JSON.stringify(workspaceObject));
+
+                            let sessionTokenUserWhoInvited = userWhoInvited.getSessionToken();
+
 
 
                             Parse.Cloud.run("addPeopleToWorkspace", {
@@ -23814,7 +23821,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                                 workspace: workspaceObject,
                                 usersToAdd: Users
 
-                            },{sessionToken: sessionToken}).then(function(workspaceFollowers) {
+                            },{sessionToken: sessionTokenUserWhoInvited}).then(function(workspaceFollowers) {
                                 console.log("workspaceFollower: "+ JSON.stringify(workspaceFollowers));
 
                                 workspaceFollowerSet.add(workspaceFollowers[0]);
