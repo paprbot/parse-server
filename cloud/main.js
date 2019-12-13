@@ -2685,8 +2685,8 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                                         notification.set("userFrom", currentUser);
                                         notification.set("userTo", userTo);
                                         notification.set("workspace", Workspace);
-                                        notification.set("type", 'addToChannel'); // mentions in post or postMessage
-                                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + workspaceObject.get("name"));
+                                        notification.set("type", 'addToWorkspace'); // mentions in post or postMessage
+                                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + Workspace.get("name"));
 
                                         notifications.add(notification);
 
@@ -2921,11 +2921,11 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                         for (var i = 0; i < userEmailArray.length; i++) {
 
                             let userEmail = userEmailArray[i];
-                            console.log("userEmail: " + JSON.stringify(userEmail.email));
+                            console.log("userEmail: " + JSON.stringify(userEmail));
                             console.log("userArrayEmails: " + JSON.stringify(userArrayEmails));
 
 
-                            let includesMatch = userArrayEmails.includes(userEmail.email);
+                            let includesMatch = userArrayEmails.includes(userEmail);
 
                             console.log("includesMatch: " + JSON.stringify(includesMatch));
 
@@ -2933,7 +2933,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                                 // this user doesn't have a channelFollow, create one!
 
                                 let userInvites = new USERINVITES();
-                                userInvites.set("email", userEmail.email);
+                                userInvites.set("email", userEmail);
                                 userInvites.set("workspace", Workspace);
                                 userInvites.set("userWhoInvited", currentUser);
 
@@ -3015,8 +3015,10 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                 for (var i = 0; i < userEmailArray.length; i++) {
 
                     let newUserInvites = new USERINVITES();
-                    newUserInvites.set("email", userEmailArray[i].email);
+                    newUserInvites.set("email", userEmailArray[i]);
                     newUserInvites.set("workspace", Workspace);
+                    newUserInvites.set("userWhoInvited", currentUser);
+
 
                     UserInvitesSet.add(newUserInvites);
 
