@@ -20656,10 +20656,129 @@ Parse.Cloud.beforeSave('Notification', function(request, response) {
                     notification.set("status", '0');
                 }
 
-                let diff = process.hrtime(time);
-                console.log(`beforeSave notification took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
 
-                return response.success();
+                function setWorkspaceFollower (callback) {
+
+                    let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+
+                    let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+                    queryWorkspaceFollower.equalTo("workspace", Workspace);
+                    queryWorkspaceFollower.equalTo("user", UserTo);
+                    queryWorkspaceFollower.first({
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+                    }).then((WorkspaceFollower) => {
+
+                        if (WorkspaceFollower) {
+
+                            notification.set("workspaceFollower", WorkspaceFollower);
+
+                            return callback(null, WorkspaceFollower);
+
+
+
+                        }
+                        else {
+
+
+                            // no workspaceFollowers to delete return
+                            return callback(null);
+
+                        }
+
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+
+                }
+
+                function setChannelFollower (callback) {
+
+                    let CHANNELFOLLOWER = Parse.Object.extend("ChannelFollow");
+
+                    let queryChannelFollower = new Parse.Query(CHANNELFOLLOWER);
+                    queryChannelFollower.equalTo("workspace", Channel);
+                    queryChannelFollower.equalTo("user", UserTo);
+                    queryChannelFollower.first({
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+                    }).then((ChannelFollow) => {
+
+                        if (ChannelFollow) {
+
+                            notification.set("channelFollower", ChannelFollow);
+
+                            return callback(null, ChannelFollow);
+
+
+
+                        }
+                        else {
+
+
+                            // no workspaceFollowers to delete return
+                            return callback(null);
+
+                        }
+
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+                }
+
+                async.parallel([
+                    async.apply(setWorkspaceFollower),
+                    async.apply(setChannelFollower)
+
+
+                ], function (err, results) {
+                    if (err) {
+                        return response.error(err);
+                    }
+
+                    if (results.length > 0) {
+
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took beforeSave Notification ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                        return response.success();
+
+
+                    } else {
+
+                        console.error(`ERROR: no workspaceFollower or channelFollower for beforeSave notifications cloud function `);
+
+
+                        return response.error();
+                    }
+
+                });
+
+
+
 
 
             }
