@@ -8912,7 +8912,26 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
         let USER = Parse.Object.extend("_User");
         let User = new USER();
-        User.id = postMessageSocial.get("user").id;
+        User.id = originalPostMessageSocial.get("user").id;
+        console.log("User originalPostMessageSocial: " + JSON.stringify(User));
+
+        let POST = Parse.Object.extend("Post");
+        let Post = new POST();
+        Post.id = originalPostMessageSocial.get("post").id;
+        console.log("Post originalPostMessageSocial: " + JSON.stringify(Post));
+
+
+        let CHANNEL = Parse.Object.extend("Channel");
+        let Channel = new CHANNEL();
+        Channel.id = originalPostMessageSocial.get("channel").id;
+        console.log("Channel originalPostMessageSocial: " + JSON.stringify(Channel));
+
+
+        let WORKSPACE = Parse.Object.extend("WorkSpace");
+        let Workspace = new WORKSPACE();
+        Workspace.id = originalPostMessageSocial.get("workspace").id;
+        console.log("Workspace originalPostMessageSocial: " + JSON.stringify(Workspace));
+
 
         function createPostSocialIfNotExists (cb) {
 
@@ -8925,7 +8944,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                 let queryPostSocial = new Parse.Query(POSTSOCIAL);
                 //queryPostSocial.include(["workspace", "post", "channel", "user"]);
 
-                queryPostSocial.equalTo("post", PostO);
+                queryPostSocial.equalTo("post", Post);
                 queryPostSocial.equalTo("user", User);
                 //queryPostMessageSocial.select(PostMessageArray);
 
@@ -8959,10 +8978,10 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                         //postSocial.set("deliveredDate", timeDelivered);
                         postSocial.set("hasRead", true);
                         //postSocial.set("readDate", timeRead);
-                        postSocial.set("user", user);
-                        postSocial.set("workspace", workspace);
-                        postSocial.set("channel", channel);
-                        postSocial.set("post", PostO);
+                        postSocial.set("user", User);
+                        postSocial.set("workspace", Workspace);
+                        postSocial.set("channel", Channel);
+                        postSocial.set("post", Post);
 
                         console.log("postSocial: " + JSON.stringify(postSocial));
 
@@ -18592,8 +18611,6 @@ function splitPostAndIndexFasterPrime (request, response) {
                                         return question;
 
 
-
-
                                     }
 
 
@@ -22592,7 +22609,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                         }, function(err) {
                             // error
-                            response.error(err);
+                            console.error(err);
+
+                            return err;
 
                         });
 
