@@ -18583,6 +18583,8 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                             let postMessageSocialObj = arrayPostMessageSocial[i];
 
+                                            let matchExists = false;
+
                                             console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
 
                                             console.log("postSocialId::socialpostSocialId " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
@@ -18593,11 +18595,20 @@ function splitPostAndIndexFasterPrime (request, response) {
 
 
                                                 question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
+                                                matchExists = true;
 
-                                            } else {
-
-                                                question.PostMessageSocial = null;
                                             }
+
+                                            if (i === arrayPostMessageSocial.length - 1) {
+
+                                                if (matchExists === false) {
+
+                                                    question.PostMessageSocial = null;
+                                                }
+
+
+                                            }
+
 
                                         }
 
@@ -18704,6 +18715,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                                     for (var i = 0; i < arrayPostMessageSocial.length; i++) {
 
                                         let postMessageSocialObj = arrayPostMessageSocial[i];
+                                        let matchExists = false;
 
                                         console.log("arrayPostMessageSocial answer: " + JSON.stringify(postMessageSocialObj));
 
@@ -18716,10 +18728,18 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                             postMessageSocialObj = simplifyPostMessageSocialAnswer(postMessageSocialObj);
                                             answer.PostMessageSocial = postMessageSocialObj;
+                                            matchExists = true;
 
-                                        } else {
+                                        }
 
-                                            answer.PostMessageSocial = null;
+                                        if (i === arrayPostMessageSocial.length - 1) {
+
+                                            if (matchExists === false) {
+
+                                                answer.PostMessageSocial = null;
+                                            }
+
+
                                         }
 
                                     }
@@ -19204,7 +19224,6 @@ function SendPostNotifications (request, response) {
 
 
 }
-
 
 function splitPostMessageAndIndex (request, response) {
 
