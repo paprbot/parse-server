@@ -4268,7 +4268,7 @@ Parse.Cloud.define("indexAlgolia", function(request, response) {
     let index;
 
     let query = new Parse.Query(collection);
-    query.limit(10000); // todo limit to at most 1000 results need to change and iterate until done todo
+    query.limit(200); // todo limit to at most 1000 results need to change and iterate until done todo
 
     console.log('collection: ' + request.params.collection);
 
@@ -4292,6 +4292,9 @@ Parse.Cloud.define("indexAlgolia", function(request, response) {
 
             break;
         case "PostMessage":
+
+            break;
+        case "PostMessageSocial":
 
             break;
 
@@ -7256,7 +7259,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
                 //post = Post;
                 countPosts_Time = process.hrtime(timeCountPosts);
-                console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
+                //console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
 
                 return callback(null, post);
 
@@ -7269,7 +7272,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         else {
 
             countPosts_Time = process.hrtime(timeCountPosts);
-            console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
+            //console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
 
             return callback(null, post);
 
@@ -7300,7 +7303,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             //console.log("getHashtags: " + JSON.stringify(hashtags));
 
             getHashtags_Time = process.hrtime(timeCountPosts);
-            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+            //console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
 
 
             return callback(null, post);
@@ -7318,7 +7321,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             //console.log("getHashtags: " + JSON.stringify(hashtags));
 
             getHashtags_Time = process.hrtime(timeCountPosts);
-            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+            //console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
 
             return callback(null, post);
 
@@ -7326,7 +7329,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         else {
 
             getHashtags_Time = process.hrtime(timeCountPosts);
-            console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
+            //console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
 
 
             return callback(null, post);
@@ -7376,7 +7379,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             }
 
             getMentions_Time = process.hrtime(timeCountPosts);
-            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+            //console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
 
 
             return callback(null, post);
@@ -7412,7 +7415,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             }
 
             getMentions_Time = process.hrtime(timeCountPosts);
-            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+            //console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
 
             return callback(null, post);
 
@@ -7420,7 +7423,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         else {
 
             getMentions_Time = process.hrtime(timeCountPosts);
-            console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
+            //console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
 
 
             return callback(null, post);
@@ -7457,7 +7460,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
                     }
 
                     archive_Time = process.hrtime(timeArchive);
-                    console.log(`archive_Time took ${(archive_Time[0] * NS_PER_SEC + archive_Time[1]) * MS_PER_NS} milliseconds`);
+                    //console.log(`archive_Time took ${(archive_Time[0] * NS_PER_SEC + archive_Time[1]) * MS_PER_NS} milliseconds`);
 
                     return callback(null, post);
 
@@ -7493,7 +7496,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             req.object.set("hasURL", hasurl);
 
             getURL_Time = process.hrtime(timeCountPosts);
-            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+            //console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
 
             return callback(null, post);
         }
@@ -7507,7 +7510,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             req.object.set("hasURL", hasurl);
 
             getURL_Time = process.hrtime(timeCountPosts);
-            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+            //console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
 
             return callback(null, post);
 
@@ -7515,7 +7518,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         else {
 
             getURL_Time = process.hrtime(timeCountPosts);
-            console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
+            //console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
 
             return callback(null, post);
 
@@ -9297,6 +9300,10 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
     let queryMemberRole = new Parse.Query(Parse.Role);
     let queryfollowerRole = new Parse.Query(Parse.Role);
+
+    if (workspace_follower.get("notificationCount") > 0) {
+        workspace_follower.set("isNotified", true);
+    }
 
 
     // if there is a new workspace_follower object increase counter for number of followers and members on a workspace
@@ -18965,6 +18972,240 @@ function splitPostAndIndexFasterPrime (request, response) {
 
 }
 
+function SendPostNotifications (request, response) {
+
+    let currentUser = request['user'];
+    console.log("SendNotifications user: " + JSON.stringify(currentUser));
+    //console.log("::Starting splitPostAndIndex:: " + JSON.stringify(request));
+
+    let post = request['post'];
+    console.log("SendNotifications post: " + JSON.stringify(post));
+
+    let workspace = request['workspace'];
+    console.log("SendPostNotifications workspace: " + JSON.stringify(workspace));
+
+    let channel = request['channel'];
+    console.log("SendPostNotifications channel: " + JSON.stringify(channel));
+
+    let postTitle = post.get('title');
+    console.log("SendPostNotifications postTitle: " + JSON.stringify(postTitle));
+
+    let mentions = request['mentions'];
+    console.log("SendNotifications mentions: " + JSON.stringify(mentions));
+
+    console.log("starting SendNotifications function: " + JSON.stringify(mentions.length) );
+
+
+    if (mentions.length > 0) {
+
+        let WORKSPACENOTIFICATIONSETTING = Parse.Object.extend("WorkSpaceNotificationSetting");
+        let queryWorkspaceNotificationSetting = new Parse.Query(WORKSPACENOTIFICATIONSETTING);
+        queryWorkspaceNotificationSetting.equalTo("workspace", workspace);
+        queryWorkspaceNotificationSetting.equalTo("user", currentUser);
+
+        //console.log("Request: " + JSON.stringify(request));
+        //console.log("objectID: " + objectToSave.objectId);
+        //console.log("objectID: " + objectToSave.user.objectId);
+
+        queryWorkspaceNotificationSetting.first({
+            useMasterKey: true
+            //sessionToken: sessionToken
+        }).then((WorkspaceNotificationSetting) => {
+
+            if (WorkspaceNotificationSetting) {
+
+                if (WorkspaceNotificationSetting.get("muteWorkspace") === true || WorkspaceNotificationSetting.get("onlyMentionMe") === false) {
+
+                    let notificationArray = [];
+
+                    return response.success(notificationArray);
+
+                }  else {
+
+                    let notifications = new Set();
+
+                    for (let i = 0; i < mentions.length; i++) {
+
+                        let userId = mentions[i];
+                        console.log("userId: " + JSON.stringify(userId));
+
+                        let userTo = new USER();
+                        userTo.id = userId;
+
+                        let NOTIFICATION = Parse.Object.extend("Notification");
+                        let notification = new NOTIFICATION();
+
+                        notification.set("isDelivered", false);
+                        notification.set("hasSent", false);
+                        notification.set("isRead", false);
+                        notification.set("status", 0);
+                        notification.set("userFrom", currentUser);
+                        notification.set("userTo", userTo);
+                        notification.set("workspace", workspace);
+                        notification.set("channel", channel);
+                        notification.set("post", post);
+                        notification.set("type", '5'); // mentions in post or postMessage
+                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a post: ' + postTitle);
+
+                        notifications.add(notification);
+
+                        console.log("notification: " + JSON.stringify(notification));
+
+                        if (i === mentions.length - 1) {
+
+
+                            //let dupeArray = [3,2,3,3,5,2];
+                            let notificationArray = Array.from(new Set(notifications));
+
+                            console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                            if (notificationArray.length > 0) {
+
+                                Parse.Object.saveAll(notificationArray, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                }).then(function(result) {
+                                    // if we got 500 or more results then we know
+                                    // that we have more results
+                                    // otherwise we finish
+
+
+                                }, function(err) {
+                                    // error
+                                    console.error(err);
+
+                                    return response.error(err);
+
+                                });
+
+                                return response.success(notificationArray);
+
+
+                            }
+
+
+
+
+
+
+                        }
+
+                    }
+
+
+                }
+
+
+            } else {
+
+                let notifications = new Set();
+
+                for (let i = 0; i < mentions.length; i++) {
+
+                    let userId = mentions[i];
+                    console.log("userId: " + JSON.stringify(userId));
+
+                    let userTo = new USER();
+                    userTo.id = userId;
+
+                    let NOTIFICATION = Parse.Object.extend("Notification");
+                    let notification = new NOTIFICATION();
+
+                    notification.set("isDelivered", false);
+                    notification.set("hasSent", false);
+                    notification.set("isRead", false);
+                    notification.set("status", 0);
+                    notification.set("userFrom", currentUser);
+                    notification.set("userTo", userTo);
+                    notification.set("workspace", workspace);
+                    notification.set("channel", channel);
+                    notification.set("post", post);
+                    notification.set("type", '5'); // mentions in post or postMessage
+                    notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a post: ' + postTitle);
+
+                    notifications.add(notification);
+
+                    console.log("notification: " + JSON.stringify(notification));
+
+                    if (i === mentions.length - 1) {
+
+
+                        //let dupeArray = [3,2,3,3,5,2];
+                        let notificationArray = Array.from(new Set(notifications));
+
+                        console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                        if (notificationArray.length > 0) {
+
+                            Parse.Object.saveAll(notificationArray, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            }).then(function(result) {
+                                // if we got 500 or more results then we know
+                                // that we have more results
+                                // otherwise we finish
+
+
+                            }, function(err) {
+                                // error
+                                console.error(err);
+
+                                return response.error(err);
+
+                            });
+
+                            return response.success(notificationArray);
+
+
+                        }
+
+
+
+
+
+
+                    }
+
+                }
+
+            }
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            console.log(error);
+            return response.error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+
+
+
+    }
+    else {
+
+        // no need to send notifications
+
+
+        let notificationArray = [];
+        return response.success(notificationArray);
+
+
+    }
+
+
+}
+
+
 function splitPostMessageAndIndex (request, response) {
 
     const NS_PER_SEC = 1e9;
@@ -21345,640 +21586,6 @@ Parse.Cloud.afterSave('Notification', function(request, response) {
 
 // Add and Update AlgoliaSearch post object if it's deleted from Parse
 
-/*
-Parse.Cloud.afterSave('Post', function(request, response) {
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let currentUser = request.user;
-
-    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
-
-    if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.afterSave.Post.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
-    }
-
-    let USER = Parse.Object.extend("_User");
-    let user = new USER();
-
-    // Convert Parse.Object to JSON
-    let post = request.object;
-    let mentions = post.get("mentions");
-    //let postToSave = post.toJSON();
-
-    //var Post = Parse.Object.extend("Post");
-    let POST = Parse.Object.extend("Post");
-    let queryPost = new Parse.Query(POST);
-    queryPost.include( ["user", "workspace", "channel"] );
-    queryPost.equalTo("objectId", post.id);
-
-
-    queryPost.first({
-        useMasterKey: true
-        //sessionToken: sessionToken
-    }).then((Post) => {
-
-        let postACL = Post.getACL();
-        //console.log("post: " + JSON.stringify(Post));
-
-        user = Post.get("user");
-
-        currentUser = currentUser ? currentUser : user;
-        console.log("currentUser afterSave Post: " + JSON.stringify(currentUser));
-
-        let CHANNEL = Parse.Object.extend("Channel");
-        let channel = new CHANNEL();
-        channel.id = Post.get("channel").id;
-
-        console.log("channel: " + JSON.stringify(channel));
-
-        let WORKSPACE = Parse.Object.extend("WorkSpace");
-        let workspace = new WORKSPACE();
-        workspace.id = Post.get("workspace").id;
-
-        let PostObject = Post;
-
-        let isNewPost = Post.get("isNew");
-
-        // todo need to remove this if statement since there is no child/parent post now we are using post and postMessage
-        if (post.get("post")) {
-            // this is a child post, so save it in relation array in it's parent post
-
-            let parentPost = post.get("post");
-
-            let postQuestionRelation = parentPost.relation("postQuestions");
-            postQuestionRelation.add(post);
-
-            parentPost.save(null, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            }).then((result) => {
-
-                // save was successful
-                if(result) {
-
-                    //console.log("parent post saved: " + JSON.stringify(result));
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime  afterSave Post parentPost took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                    return response.success();
-
-
-                } else {
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime  afterSave Post parentPost  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                    return response.error();
-
-                }
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-
-
-        }
-
-        else {
-            // this post is not a child post of a parent post (not threaded post) so save this parent post to algolia
-
-            function prepIndex(callback) {
-
-                // Successfully retrieved the object.
-                //console.log("ObjectToSave: " + JSON.stringify(post));
-
-                // Convert Parse.Object to JSON
-                let Post1 = simplifyPost(Post);
-
-                // Specify Algolia's objectID with the Parse.Object unique ID
-                //Post.objectID = Post.objectId;
-
-                // set _tags depending on the post ACL
-
-                if (postACL) {
-
-                    if (postACL.getPublicReadAccess()) {
-
-                        // this means it's public read access is true
-                        Post1._tags = ['*'];
-
-                    }
-
-
-
-
-                } else if (!postACL || postACL === null) {
-
-                    // this means it's public read write
-                    //console.log("no postACL for this post.");
-                    Post1._tags = ['*'];
-                }
-
-
-                return callback(null, Post1);
-
-            }
-
-            function getTopAnswerForQuestionPost(callback) {
-
-                console.log("starting getTopAnswerForQuestionPost function.");
-
-                if (Post.type === 'question') {
-
-                    let POSTMESSAGEQUESTION = Parse.Object.extend("PostMessage");
-                    let queryPostMessageQuestion = new Parse.Query(POSTMESSAGEQUESTION);
-                    //queryPostQuestionMessage.equalTo("workspace", workspace);
-                    //queryPostQuestionMessage.equalTo("channel", channel);
-                    queryPostMessageQuestion.equalTo("post", post);
-                    //queryPostQuestionMessage.equalTo("archive", false);
-                    queryPostMessageQuestion.equalTo("type", "answer");
-                    queryPostMessageQuestion.descending("voteRank");
-                    queryPostMessageQuestion.include( ["user"] );
-                    queryPostMessageQuestion.select(PostMessageAnswerArray);
-                    queryPostMessageQuestion.doesNotExist("parentPostMessage");
-                    queryPostMessageQuestion.first({
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-                    }).then((postQuestionMessage) => {
-
-                        console.log("starting getTopAnswerForQuestionPost: " + JSON.stringify(postQuestionMessage));
-
-
-                        if (postQuestionMessage) {
-
-                            postQuestionMessage = simplifyPostQuestionMessage(postQuestionMessage);
-                            return callback(null, postQuestionMessage);
-
-
-                        } else {
-
-                            let postQuestionMessage = null;
-                            // no workspaceFollowers to delete return
-                            return callback(null, postQuestionMessage);
-
-                        }
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        console.log(error);
-                        let postQuestionMessage = null;
-                        // no workspaceFollowers to delete return
-                        return callback(null, postQuestionMessage);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-                } else {
-
-                    // this post is not a question post but a normal post so no answer
-
-                    let postQuestionMessage = null;
-                    // no workspaceFollowers to delete return
-                    return callback(null, postQuestionMessage);
-                }
-
-
-
-            }
-
-            function getPostMessageComments(callback) {
-
-                    console.log("starting getPostMessageComments function.");
-
-                    let POSTMESSAGECOMMENT = Parse.Object.extend("PostMessage");
-                    let queryPostMessageComment = new Parse.Query(POSTMESSAGECOMMENT);
-                    //queryPostChatMessage.equalTo("workspace", workspace);
-                    //queryPostChatMessage.equalTo("channel", channel);
-                    queryPostMessageComment.equalTo("post", post);
-                    //queryPostMessageComment.select(PostMessageReplyArray_1);
-                    //queryPostMessageComment.equalTo("type", "comment");
-                    if (Post.type === 'question') {
-                        //queryPostMessageComment.equalTo("type", "question");
-                        //queryPostMessageComment.equalTo("type", "answer");
-
-                        queryPostMessageComment.select(PostMessageReplyArray_1);
-
-
-                    } else if (Post.type === 'post') {
-
-                        queryPostMessageComment.notEqualTo("type", "question");
-                        queryPostMessageComment.select(PostMessageReplyArray_2);
-
-                    }
-                    queryPostMessageComment.include( ["user"] );
-                    queryPostMessageComment.limit(2);
-                    queryPostMessageComment.descending("createdAt");
-
-                    //queryPostMessageComment.doesNotExist("parentPostMessage");
-                    queryPostMessageComment.find({
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-                    }).then((PostChatMessages) => {
-
-                        console.log("getPostMessageComments: " + JSON.stringify(PostChatMessages));
-
-
-                        if (PostChatMessages.length !== 0) {
-
-                            let simplifiedPostChatMessages = [];
-
-                            if (PostChatMessages.length === 2) {
-
-                                simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[1]));
-                                simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[0]));
-
-
-                            } else if (PostChatMessages.length === 1) {
-
-                                simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[0]));
-
-                            }
-
-                            console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages));
-
-
-                            return callback(null, simplifiedPostChatMessages);
-
-
-                        } else {
-
-                            let PostChatMessages = [];
-                            // no workspaceFollowers to delete return
-                            return callback(null, PostChatMessages);
-
-                        }
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        console.log(error);
-                        let PostChatMessages = [];
-                        // no workspaceFollowers to delete return
-                        return callback(null, PostChatMessages);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-
-
-
-            }
-
-
-            function getPostMessageQuestions(callback) {
-
-                    console.log("starting getPostMessageQuestions function.");
-
-                    let POSTMESSAGEQUESTION = Parse.Object.extend("PostMessage");
-                    let queryPostMessageQuestion = new Parse.Query(POSTMESSAGEQUESTION);
-                    //queryPostChatMessage.equalTo("workspace", workspace);
-                    //queryPostChatMessage.equalTo("channel", channel);
-                    queryPostMessageQuestion.equalTo("post", post);
-                    queryPostMessageQuestion.equalTo("type", "question");
-                    queryPostMessageQuestion.include( ["user"] );
-                    queryPostMessageQuestion.select(PostMessageQuestionArray);
-                    queryPostMessageQuestion.limit(10);
-                    queryPostMessageQuestion.doesNotExist("parentPostMessage");
-                    queryPostMessageQuestion.descending("likedCount");
-
-                    queryPostMessageQuestion.find({
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-                    }).then((PostChatMessages) => {
-
-                        console.log("getPostMessageQuestions: " + JSON.stringify(PostChatMessages));
-
-
-                        if (PostChatMessages.length !== 0) {
-
-                            let simplifiedPostChatMessages = [];
-
-                            for (var i = 0; i < PostChatMessages.length; i++) {
-
-                                simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
-                                //console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i]));
-
-                                if (i === (PostChatMessages.length-1)) {
-
-                                    // finished iterating through all items
-
-                                    return callback(null, simplifiedPostChatMessages);
-
-                                }
-
-                            }
-
-
-                        } else {
-
-                            let PostChatMessages = [];
-                            // no workspaceFollowers to delete return
-                            return callback(null, PostChatMessages);
-
-                        }
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        console.log(error);
-                        let PostChatMessages = [];
-                        // no workspaceFollowers to delete return
-                        return callback(null, PostChatMessages);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-
-
-            }
-
-            function createPostSocial (callback) {
-
-                console.log("starting createPostSocial function: " + JSON.stringify(isNewPost) );
-
-
-                if (isNewPost) {
-
-                    let POSTSOCIAL = Parse.Object.extend("PostSocial");
-                    let postSocial = new POSTSOCIAL();
-
-                    postSocial.set("isLiked", false);
-                    postSocial.set("isBookmarked", false);
-                    postSocial.set("archive", false);
-                    postSocial.set("isDelivered", false);
-                    postSocial.set("hasRead", false);
-                    postSocial.set("user", user);
-                    postSocial.set("workspace", workspace);
-                    postSocial.set("channel", channel);
-                    postSocial.set("post", PostObject);
-                    postSocial.set("postIsNew", true);
-                    postSocial.set("isExpanded", false);
-
-                    console.log("postSocial: " + JSON.stringify(postSocial));
-
-
-                    postSocial.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    }).then((PostSocial) => {
-                        // The object was retrieved successfully.
-                        //console.log("Result from get " + JSON.stringify(Workspace));
-
-                        console.log("done PostSocial : " + JSON.stringify(PostSocial));
-
-
-
-
-                        return callback (null, PostSocial);
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        return callback(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-
-                }
-                else {
-
-                    // todo create postSocial for other users who are editing post if they don't already have one.
-
-
-
-                    return callback (null, Post);
-
-
-                }
-
-
-            }
-
-            function SendNotifications () {
-
-                console.log("starting SendNotifications function: " + JSON.stringify(mentions.length) );
-
-
-                if (mentions.length > 0) {
-
-                    let notifications = new Set();
-
-                    for (let i = 0; i < mentions.length; i++) {
-
-                        let userId = mentions[i];
-                        console.log("userId: " + JSON.stringify(userId));
-
-                        let userTo = new USER();
-                        userTo.id = userId;
-
-                        let NOTIFICATION = Parse.Object.extend("Notification");
-                        let notification = new NOTIFICATION();
-
-                        notification.set("isDelivered", false);
-                        notification.set("hasSent", false);
-                        notification.set("isRead", false);
-                        notification.set("status", 0);
-                        notification.set("userFrom", currentUser);
-                        notification.set("userTo", userTo);
-                        notification.set("workspace", workspace);
-                        notification.set("channel", channel);
-                        notification.set("post", PostObject);
-                        notification.set("type", '5'); // mentions in post or postMessage
-                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a post: ' + PostObject.get("post_title"));
-
-                        notifications.add(notification);
-
-                        console.log("notification: " + JSON.stringify(notification));
-
-                        if (i === mentions.length - 1) {
-
-
-                            //let dupeArray = [3,2,3,3,5,2];
-                            let notificationArray = Array.from(new Set(notifications));
-
-                            console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
-
-                            if (notificationArray.length > 0) {
-
-                                Parse.Object.saveAll(notificationArray, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                }).then(function(result) {
-                                    // if we got 500 or more results then we know
-                                    // that we have more results
-                                    // otherwise we finish
-
-                                    return result;
-
-
-                                }, function(err) {
-                                    // error
-                                    response.error(err);
-
-                                });
-
-
-                            }
-
-
-
-
-
-
-                        }
-
-                    }
-
-
-
-
-                }
-                else {
-
-                    // no need to send notifications
-
-
-
-                    return mentions;
-
-
-                }
-
-
-            }
-
-
-            async.parallel([
-                async.apply(prepIndex),
-                async.apply(getPostMessageQuestions),
-                async.apply(getPostMessageComments),
-                async.apply(getTopAnswerForQuestionPost),
-                async.apply(createPostSocial)
-
-            ], function (err, results) {
-                if (err) {
-                    response.error(err);
-                }
-
-                // console.log("starting show results " + JSON.stringify(results.length));
-
-
-                if (results.length > 0) {
-
-                    //console.log("afterSave Post results length: " + JSON.stringify(results.length));
-
-                    let postToSave = results[0];
-                    let postMessageQuestions = results[1];
-                    let postMessageComments = results[2];
-                    //let postSocial = results[4];
-                    let topAnswerForQuestionPost = results[3];
-
-                    postToSave.postQuestions = postMessageQuestions;
-                    postToSave.chatMessages = postMessageComments;
-                    //postToSave.PostSocial = postSocial;
-                    postToSave.topAnswer = topAnswerForQuestionPost;
-                    postToSave.user = simplifyUser(user);
-
-
-                    //console.log("postQuestions: " + JSON.stringify(postMessageQuestions));
-                    //console.log("chatMessages: " + JSON.stringify(postMessageComments));
-                    //console.log("PostSocial: " + JSON.stringify(postSocial));
-                    //console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
-                    let PostSocial_txt = 'PostSocial';
-
-                    //console.log("postToSave afterSave Post: " + JSON.stringify(postToSave));
-
-                    splitPostAndIndexFaster({'user':currentUser, 'object':postToSave}, {
-                        success: function (count) {
-
-                            let Final_Time = process.hrtime(time);
-                            console.log(`splitPostAndIndexFaster took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
-
-                            SendNotifications ();
-
-                            response.success();
-                        },
-                        error: function (error) {
-                            return response.error(error);
-                        }
-                    });
-
-
-                } else {
-
-                    return response.error("error in afterSave Post");
-                }
-
-
-            });
-        }
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            console.log(error);
-
-            return response.error(error);
-        }, {
-
-            useMasterKey: true
-            //sessionToken: sessionToken
-
-        });
-
-
-
-}, {useMasterKey: true});
-*/
-
 // Add and Update AlgoliaSearch post object if it's deleted from Parse
 Parse.Cloud.afterSave('Post', function(request, response) {
 
@@ -22008,34 +21615,34 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     let originalPost = request.original;
 
-    console.log("originalPost: " + JSON.stringify(originalPost));
+    //console.log("originalPost: " + JSON.stringify(originalPost));
 
     userPostCreator = originalPost ? originalPost.get("user") : post.get("user");
-    console.log("userPostCreator afterSave Post: " + JSON.stringify(userPostCreator));
+    //console.log("userPostCreator afterSave Post: " + JSON.stringify(userPostCreator));
 
     currentUser = currentUser ? currentUser : userPostCreator;
-    console.log("currentUser afterSave Post: " + JSON.stringify(currentUser));
+    //console.log("currentUser afterSave Post: " + JSON.stringify(currentUser));
 
     let CHANNEL = Parse.Object.extend("Channel");
     let channel = new CHANNEL();
 
     channel.id = originalPost ? originalPost.get("channel").id : post.get("channel").id;
-    console.log("channel afterSave Post: " + JSON.stringify(channel));
+    //console.log("channel afterSave Post: " + JSON.stringify(channel));
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let workspace = new WORKSPACE();
 
     workspace.id = originalPost ? originalPost.get("workspace").id : post.get("workspace").id;
-    console.log("workspace afterSave Post: " + JSON.stringify(workspace));
+    //console.log("workspace afterSave Post: " + JSON.stringify(workspace));
 
     let isNewPost = post.get("isNew") ? post.get("isNew") : false;
-    console.log("isNewPost afterSave Post: " + JSON.stringify(isNewPost));
+    //console.log("isNewPost afterSave Post: " + JSON.stringify(isNewPost));
 
     let postType = post.get("type") ? post.get("type") : originalPost.get("type");
-    console.log("postType afterSave Post: " + JSON.stringify(postType));
+    //console.log("postType afterSave Post: " + JSON.stringify(postType));
 
     let postTitle = post.get("post_title") ? post.get("post_title") : originalPost.get("post_title");
-    console.log("postTitle afterSave Post: " + JSON.stringify(postTitle));
+    //console.log("postTitle afterSave Post: " + JSON.stringify(postTitle));
 
     // setup the queries
 
@@ -22111,7 +21718,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     function getPost (callback) {
 
-        console.log("starting getPost function.");
+        //console.log("starting getPost function.");
 
         queryPost.first({
             useMasterKey: true
@@ -22142,7 +21749,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     function getTopAnswerForQuestionPost(callback) {
 
-        console.log("starting getTopAnswerForQuestionPost function.");
+        //console.log("starting getTopAnswerForQuestionPost function.");
 
         if (postType === 'question') {
 
@@ -22151,7 +21758,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 //sessionToken: sessionToken
             }).then((postMessageAnswer) => {
 
-                console.log("getTopAnswerForQuestionPost postMessageAnswer: " + JSON.stringify(postMessageAnswer));
+                //console.log("getTopAnswerForQuestionPost postMessageAnswer: " + JSON.stringify(postMessageAnswer));
 
 
                 if (postMessageAnswer) {
@@ -22199,14 +21806,14 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     function getPostMessageComments(callback) {
 
-        console.log("starting getPostMessageComments function.");
+        //console.log("starting getPostMessageComments function.");
 
         queryPostMessageComment.find({
             useMasterKey: true
             //sessionToken: sessionToken
         }).then((PostChatMessages) => {
 
-            console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
+            //console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
 
             if (PostChatMessages.length !== 0) {
 
@@ -22224,7 +21831,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 }
 
-                console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages));
+                //console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages));
 
 
                 return callback(null, simplifiedPostChatMessages);
@@ -22260,7 +21867,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     function getPostMessageQuestions(callback) {
 
-        console.log("starting getPostMessageQuestions function.");
+        //console.log("starting getPostMessageQuestions function.");
 
         if (postType === 'post') {
 
@@ -22269,7 +21876,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 //sessionToken: sessionToken
             }).then((PostMessageQuestions) => {
 
-                console.log("PostMessageQuestions: " + JSON.stringify(PostMessageQuestions));
+                //console.log("PostMessageQuestions: " + JSON.stringify(PostMessageQuestions));
 
 
                 if (PostMessageQuestions.length !== 0) {
@@ -22329,7 +21936,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     function getPostSocials (callback) {
 
-        console.log("starting getPostSocials function.");
+        //console.log("starting getPostSocials function.");
 
 
         //postSocialQuery.skip(skip);
@@ -22352,7 +21959,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 let postSocials = [];
 
-                console.log("no postSocials");
+                //console.log("no postSocials");
 
                 return callback (null, postSocials);
 
@@ -22374,7 +21981,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     function getPostMessageQuestionSocials (callback) {
 
 
-        console.log("starting getPostMessageQuestionSocials function.");
+        //console.log("starting getPostMessageQuestionSocials function.");
 
 
         let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
@@ -22407,7 +22014,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 let postMessageSocials = [];
 
-                console.log("no postMessageSocials");
+                //console.log("no postMessageSocials");
 
                 return callback (null, postMessageSocials);
 
@@ -22428,7 +22035,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     function getPostMessageAnswerSocials (callback) {
 
-        console.log("starting getPostMessageAnswerSocials function.");
+        //console.log("starting getPostMessageAnswerSocials function.");
 
 
         let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
@@ -22461,7 +22068,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                 let postMessageAnswerSocials = [];
 
-                console.log("no postMessageAnswerSocials");
+                //console.log("no postMessageAnswerSocials");
 
                 return callback (null, postMessageAnswerSocials);
 
@@ -22482,7 +22089,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     function createPostSocial (callback) {
 
-        console.log("starting createPostSocial function: " + JSON.stringify(isNewPost) );
+        //console.log("starting createPostSocial function: " + JSON.stringify(isNewPost) );
 
 
         if (isNewPost) {
@@ -22502,7 +22109,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             postSocial.set("postIsNew", true);
             postSocial.set("isExpanded", false);
 
-            console.log("postSocial: " + JSON.stringify(postSocial));
+            //console.log("postSocial: " + JSON.stringify(postSocial));
 
 
             postSocial.save(null, {
@@ -22514,7 +22121,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 // The object was retrieved successfully.
                 //console.log("Result from get " + JSON.stringify(Workspace));
 
-                console.log("done PostSocial: " + JSON.stringify(PostSocial));
+                //console.log("done PostSocial: " + JSON.stringify(PostSocial));
 
 
 
@@ -22548,84 +22155,199 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     }
 
-    function SendNotifications () {
+    function SendNotifications ( ) {
 
         console.log("starting SendNotifications function: " + JSON.stringify(mentions.length) );
 
 
         if (mentions.length > 0) {
 
-            let notifications = new Set();
+            let WORKSPACENOTIFICATIONSETTING = Parse.Object.extend("WorkSpaceNotificationSetting");
+            let queryWorkspaceNotificationSetting = new Parse.Query(WORKSPACENOTIFICATIONSETTING);
+            queryWorkspaceNotificationSetting.equalTo("workspace", workspace);
+            queryWorkspaceNotificationSetting.equalTo("user", currentUser);
 
-            for (let i = 0; i < mentions.length; i++) {
+            //console.log("Request: " + JSON.stringify(request));
+            //console.log("objectID: " + objectToSave.objectId);
+            //console.log("objectID: " + objectToSave.user.objectId);
 
-                let userId = mentions[i];
-                console.log("userId: " + JSON.stringify(userId));
+            queryWorkspaceNotificationSetting.first({
+                useMasterKey: true
+                //sessionToken: sessionToken
+            }).then((WorkspaceNotificationSetting) => {
 
-                let userTo = new USER();
-                userTo.id = userId;
+                if (WorkspaceNotificationSetting) {
 
-                let NOTIFICATION = Parse.Object.extend("Notification");
-                let notification = new NOTIFICATION();
+                    if (WorkspaceNotificationSetting.get("muteWorkspace") === true || WorkspaceNotificationSetting.get("onlyMentionMe") === false) {
 
-                notification.set("isDelivered", false);
-                notification.set("hasSent", false);
-                notification.set("isRead", false);
-                notification.set("status", 0);
-                notification.set("userFrom", currentUser);
-                notification.set("userTo", userTo);
-                notification.set("workspace", workspace);
-                notification.set("channel", channel);
-                notification.set("post", post);
-                notification.set("type", '5'); // mentions in post or postMessage
-                notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a post: ' + postTitle);
+                        let notificationArray = [];
+                        return notificationArray;
+                    }  else {
 
-                notifications.add(notification);
+                        let notifications = new Set();
 
-                console.log("notification: " + JSON.stringify(notification));
+                        for (let i = 0; i < mentions.length; i++) {
 
-                if (i === mentions.length - 1) {
+                            let userId = mentions[i];
+                            console.log("userId: " + JSON.stringify(userId));
 
+                            let userTo = new USER();
+                            userTo.id = userId;
 
-                    //let dupeArray = [3,2,3,3,5,2];
-                    let notificationArray = Array.from(new Set(notifications));
+                            let NOTIFICATION = Parse.Object.extend("Notification");
+                            let notification = new NOTIFICATION();
 
-                    console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+                            notification.set("isDelivered", false);
+                            notification.set("hasSent", false);
+                            notification.set("isRead", false);
+                            notification.set("status", 0);
+                            notification.set("userFrom", currentUser);
+                            notification.set("userTo", userTo);
+                            notification.set("workspace", workspace);
+                            notification.set("channel", channel);
+                            notification.set("post", post);
+                            notification.set("type", '5'); // mentions in post or postMessage
+                            notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a post: ' + postTitle);
 
-                    if (notificationArray.length > 0) {
+                            notifications.add(notification);
 
-                        Parse.Object.saveAll(notificationArray, {
+                            console.log("notification: " + JSON.stringify(notification));
 
-                            useMasterKey: true
-                            //sessionToken: sessionToken
-
-                        }).then(function(result) {
-                            // if we got 500 or more results then we know
-                            // that we have more results
-                            // otherwise we finish
-
-                            return result;
+                            if (i === mentions.length - 1) {
 
 
-                        }, function(err) {
-                            // error
-                            console.error(err);
+                                //let dupeArray = [3,2,3,3,5,2];
+                                let notificationArray = Array.from(new Set(notifications));
 
-                            return err;
+                                console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
 
-                        });
+                                if (notificationArray.length > 0) {
+
+                                    Parse.Object.saveAll(notificationArray, {
+
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
+
+                                    }).then(function(result) {
+                                        // if we got 500 or more results then we know
+                                        // that we have more results
+                                        // otherwise we finish
+
+                                        return result;
+
+
+                                    }, function(err) {
+                                        // error
+                                        console.error(err);
+
+                                        return err;
+
+                                    });
+
+
+                                }
+
+
+
+
+
+
+                            }
+
+                        }
 
 
                     }
 
 
+                } else {
+
+                    let notifications = new Set();
+
+                    for (let i = 0; i < mentions.length; i++) {
+
+                        let userId = mentions[i];
+                        console.log("userId: " + JSON.stringify(userId));
+
+                        let userTo = new USER();
+                        userTo.id = userId;
+
+                        let NOTIFICATION = Parse.Object.extend("Notification");
+                        let notification = new NOTIFICATION();
+
+                        notification.set("isDelivered", false);
+                        notification.set("hasSent", false);
+                        notification.set("isRead", false);
+                        notification.set("status", 0);
+                        notification.set("userFrom", currentUser);
+                        notification.set("userTo", userTo);
+                        notification.set("workspace", workspace);
+                        notification.set("channel", channel);
+                        notification.set("post", post);
+                        notification.set("type", '5'); // mentions in post or postMessage
+                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a post: ' + postTitle);
+
+                        notifications.add(notification);
+
+                        console.log("notification: " + JSON.stringify(notification));
+
+                        if (i === mentions.length - 1) {
+
+
+                            //let dupeArray = [3,2,3,3,5,2];
+                            let notificationArray = Array.from(new Set(notifications));
+
+                            console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                            if (notificationArray.length > 0) {
+
+                                Parse.Object.saveAll(notificationArray, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                }).then(function(result) {
+                                    // if we got 500 or more results then we know
+                                    // that we have more results
+                                    // otherwise we finish
+
+                                    return result;
+
+
+                                }, function(err) {
+                                    // error
+                                    console.error(err);
+
+                                    return err;
+
+                                });
+
+
+                            }
 
 
 
+
+
+
+                        }
+
+                    }
 
                 }
 
-            }
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                console.log(error);
+                return response.error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
 
 
 
@@ -22721,7 +22443,18 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             splitPostAndIndexFasterPrime({'user':currentUser, 'postJSON':postToSave, 'postSocials':postSocials, 'postMessageAnswerSocials':postMessageAnswerSocials, 'postMessageQuestionSocials':postMessageQuestionSocials, 'postACL':postACL, 'skip':0}, {
                 success: function (count) {
 
-                    SendNotifications ();
+                    //SendNotifications ();
+
+                    SendPostNotifications({'user':currentUser, 'post':post, 'mentions':mentions, 'workspace':workspace, 'channel':channel}, {
+                        success: function (count) {
+
+                            let Final_Time = process.hrtime(time);
+                            console.log(`SendPostNotifications took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                        },
+                        error: function (error) {
+                            console.error(error);
+                        }
+                    });
 
                     // todo check if postSocial > 500, if yes then skip 500 and get postSocials
 
@@ -22744,9 +22477,6 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
 
     });
-
-
-
 
 
 
