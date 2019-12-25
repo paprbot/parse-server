@@ -18780,32 +18780,24 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             console.log("finalPostMessageAnswerResults arrAnswers: " + JSON.stringify(answer));
 
-                            if (answer.PostMessageSocial.length > 0) {
 
-                                console.log("issue matchExists: " + JSON.stringify(matchExists));
+                            finalPostIndexResult.topAnswer = answer;
+                            finalPostIndexResult.postQuestions = [];
 
-                                if (matchExists === false) {
+                            //console.log("finalPostMessageAnswerResults answer.PostMessageSocial: " + JSON.stringify(answer.PostMessageSocial));
 
-                                    answer.PostMessageSocial = null;
+
+                            console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
+
+                            indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
+                                if (err) {
+                                    return response.error(err);
                                 }
 
-                                finalPostIndexResult.topAnswer = answer;
-                                finalPostIndexResult.postQuestions = [];
 
-                                console.log("finalPostMessageAnswerResults answer.PostMessageSocial: " + JSON.stringify(answer.PostMessageSocial));
+                            });
 
-
-                                console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
-
-                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
-                                    if (err) {
-                                        return response.error(err);
-                                    }
-
-
-                                });
-
-                                return callback(null, finalPostIndexResult);
+                            return callback(null, finalPostIndexResult);
 
 
                             }
