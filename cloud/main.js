@@ -18705,7 +18705,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             console.log(":::finalPostMessageAnswerResults::: " + JSON.stringify(finalPostMessageAnswerResults));
 
-                            var matchExists = false;
+
 
                             if (answer.PostMessageSocial) {
 
@@ -18714,12 +18714,40 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                 let arrayLength = answer.PostMessageSocial.length;
 
+
                                 if (arrayLength > 0) {
+
+                                    let matchExists = false;
 
                                     let arrayPostMessageSocial = answer.PostMessageSocial;
 
+                                    let matchResult = lodash.findIndex(arrayPostMessageSocial, function(o) { 
 
-                                    for (var i = 0; i < arrayPostMessageSocial.length; i++) {
+                                        return o.user.id == userId; 
+
+                                    });
+
+                                    console.log("matchResult: " + JSON.stringify(matchResult));
+
+                                    if (matchResult === -1) {
+
+                                        // no match
+
+                                        answer.PostMessageSocial = null;
+
+                                    } else {
+
+                                        // match exists
+                                        let postMessageSocialObj = arrayPostMessageSocial[matchResult];
+                                        postMessageSocialObj = simplifyPostMessageSocialAnswer(postMessageSocialObj);
+                                        answer.PostMessageSocial = postMessageSocialObj;
+
+
+                                    }
+
+
+
+                                    /* for (var i = 0; i < arrayPostMessageSocial.length; i++) {
 
                                         let postMessageSocialObj = arrayPostMessageSocial[i];
 
@@ -18731,15 +18759,26 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                         if (postMessageSocialObj.get("user").id === userId) {
 
-
                                             postMessageSocialObj = simplifyPostMessageSocialAnswer(postMessageSocialObj);
                                             answer.PostMessageSocial = postMessageSocialObj;
                                             matchExists = true;
 
                                         }
 
+                                        if (i === arrayPostMessageSocial.length -1) {
 
-                                    }
+                                            if (matchExists === false) {
+
+                                                answer.PostMessageSocial = null;
+
+
+                                            }
+
+
+                                        }
+
+
+                                    } */
 
                                     /*if (answer.PostMessageSocial.length > 0) {
 
