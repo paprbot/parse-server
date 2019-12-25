@@ -18604,7 +18604,6 @@ function splitPostAndIndexFasterPrime (request, response) {
                                             }
 
 
-
                                         }
 
                                         if (question.PostMessageSocial.length > 0) {
@@ -18651,8 +18650,6 @@ function splitPostAndIndexFasterPrime (request, response) {
                                 }
 
 
-
-
                             });
 
                             console.log("arrQuestions: " + JSON.stringify(arrQuestions));
@@ -18662,7 +18659,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                             finalPostIndexResult.topAnswer = null;
 
 
-                            indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
+                            indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
                                 if (err) {
                                     return response.error(err);
                                 }
@@ -18670,7 +18667,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             });
 
-                            return callback (null, finalPostIndexResult);
+                            return callback(null, finalPostIndexResult);
 
 
                         }
@@ -18686,7 +18683,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                             //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                             //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
-                            indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
+                            indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
                                 if (err) {
                                     return response.error(err);
                                 }
@@ -18694,7 +18691,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             });
 
-                            return callback (null, finalPostIndexResult);
+                            return callback(null, finalPostIndexResult);
 
 
                         }
@@ -18722,7 +18719,6 @@ function splitPostAndIndexFasterPrime (request, response) {
                                     let arrayPostMessageSocial = answer.PostMessageSocial;
 
 
-
                                     for (var i = 0; i < arrayPostMessageSocial.length; i++) {
 
                                         let postMessageSocialObj = arrayPostMessageSocial[i];
@@ -18743,21 +18739,19 @@ function splitPostAndIndexFasterPrime (request, response) {
                                         }
 
 
-
                                     }
 
                                     /*if (answer.PostMessageSocial.length > 0) {
 
-                                        console.log("issue matchExists: " + JSON.stringify(matchExists));
+                                     console.log("issue matchExists: " + JSON.stringify(matchExists));
 
-                                        if (matchExists === false) {
+                                     if (matchExists === false) {
 
-                                            answer.PostMessageSocial = null;
-                                        }
-                                    }*/
+                                     answer.PostMessageSocial = null;
+                                     }
+                                     }*/
 
                                     console.log("answer prime: " + JSON.stringify(answer));
-
 
 
                                 }
@@ -18795,51 +18789,53 @@ function splitPostAndIndexFasterPrime (request, response) {
                                     answer.PostMessageSocial = null;
                                 }
 
-                            finalPostIndexResult.topAnswer = answer;
-                            finalPostIndexResult.postQuestions = [];
+                                finalPostIndexResult.topAnswer = answer;
+                                finalPostIndexResult.postQuestions = [];
 
-                            console.log("finalPostMessageAnswerResults answer.PostMessageSocial: " + JSON.stringify(answer.PostMessageSocial));
-
-
-                            console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
-
-                            indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
-                                if (err) {
-                                    return response.error(err);
-                                }
+                                console.log("finalPostMessageAnswerResults answer.PostMessageSocial: " + JSON.stringify(answer.PostMessageSocial));
 
 
-                            });
+                                console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
 
-                            return callback (null, finalPostIndexResult);
-
-
-                        }
-
-                        if (!finalPostMessageAnswerResults) {
-
-                            console.log("::no answer on post::");
-
-                            finalPostIndexResult.topAnswer = null;
-                            finalPostIndexResult.postQuestions = [];
-
-                            //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                            console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
-
-                            indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
-                                if (err) {
-                                    return response.error(err);
-                                }
+                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
+                                    if (err) {
+                                        return response.error(err);
+                                    }
 
 
-                            });
+                                });
 
-                            return callback (null, finalPostIndexResult);
+                                return callback(null, finalPostIndexResult);
 
+
+                            }
+
+                            if (!finalPostMessageAnswerResults) {
+
+                                console.log("::no answer on post::");
+
+                                finalPostIndexResult.topAnswer = null;
+                                finalPostIndexResult.postQuestions = [];
+
+                                //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+
+                                //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
+                                //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+
+                                console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
+
+                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
+                                    if (err) {
+                                        return response.error(err);
+                                    }
+
+
+                                });
+
+                                return callback(null, finalPostIndexResult);
+
+
+                            }
 
 
                         }
@@ -18847,138 +18843,133 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                     }
 
+                    else {
+
+                        finalPostIndexResult.PostSocial = null;
+
+                        if (finalPostIndexResult.type === 'post') {
+
+                            if (finalPostMessageQuestionResults.length > 0) {
+
+                                let arrQuestions = lodash.map(Questions, function (question) {
+
+                                    question.PostMessageSocial = null;
+
+                                    return question;
+
+                                });
+
+                                finalPostIndexResult.postQuestions = arrQuestions;
+                                finalPostIndexResult.topAnswer = null;
 
 
-                }
-
-                else {
-
-                    finalPostIndexResult.PostSocial = null;
-
-                    if (finalPostIndexResult.type === 'post') {
-
-                        if (finalPostMessageQuestionResults.length > 0) {
-
-                            let arrQuestions = lodash.map(Questions, function (question) {
-
-                                question.PostMessageSocial = null;
-
-                                return question;
-
-                            });
-
-                            finalPostIndexResult.postQuestions = arrQuestions;
-                            finalPostIndexResult.topAnswer = null;
+                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
+                                    if (err) {
+                                        return response.error(err);
+                                    }
 
 
-                            indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
-                                if (err) {
-                                    return response.error(err);
-                                }
+                                });
+
+                                return callback(null, finalPostIndexResult);
 
 
-                            });
+                            }
 
-                            return callback (null, finalPostIndexResult);
+                            if (finalPostMessageQuestionResults.length === 0) {
 
-
-                        }
-
-                        if (finalPostMessageQuestionResults.length === 0) {
-
-                            console.log("::no questions on post::");
+                                console.log("::no questions on post::");
 
 
-                            finalPostIndexResult.postQuestions = [];
-                            finalPostIndexResult.topAnswer = null;
+                                finalPostIndexResult.postQuestions = [];
+                                finalPostIndexResult.topAnswer = null;
 
-                            //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+                                //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
-                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+                                //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
+                                //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
-                            indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
-                                if (err) {
-                                    return response.error(err);
-                                }
-
-
-                            });
-
-                            return callback (null, finalPostIndexResult);
+                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
+                                    if (err) {
+                                        return response.error(err);
+                                    }
 
 
+                                });
 
-                        }
-
-
-                    } else if (finalPostIndexResult.type === 'question') {
-
-                        if (finalPostMessageAnswerResults) {
-
-                            answer.PostMessageSocial = null;
-
-                            finalPostIndexResult.topAnswer = answer;
-                            finalPostIndexResult.postQuestions = [];
+                                return callback(null, finalPostIndexResult);
 
 
-                            console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
-
-                            indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
-                                if (err) {
-                                    return response.error(err);
-                                }
-
-
-                            });
-
-                            return callback (null, finalPostIndexResult);
-
+                            }
 
 
                         }
+                        else if (finalPostIndexResult.type === 'question') {
 
-                        if (!finalPostMessageAnswerResults) {
+                            if (finalPostMessageAnswerResults) {
 
-                            console.log("::no answer on post::");
+                                answer.PostMessageSocial = null;
 
-                            finalPostIndexResult.topAnswer = null;
-                            finalPostIndexResult.postQuestions = [];
-
-                            //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                            console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
-
-                            indexPosts.saveObject(finalPostIndexResult, true, function(err, content) {
-                                if (err) {
-                                    return response.error(err);
-                                }
+                                finalPostIndexResult.topAnswer = answer;
+                                finalPostIndexResult.postQuestions = [];
 
 
-                            });
+                                console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
 
-                            return callback (null, finalPostIndexResult);
+                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
+                                    if (err) {
+                                        return response.error(err);
+                                    }
 
 
+                                });
+
+                                return callback(null, finalPostIndexResult);
+
+
+                            }
+
+                            if (!finalPostMessageAnswerResults) {
+
+                                console.log("::no answer on post::");
+
+                                finalPostIndexResult.topAnswer = null;
+                                finalPostIndexResult.postQuestions = [];
+
+                                //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+
+                                //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
+                                //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+
+                                console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
+
+                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
+                                    if (err) {
+                                        return response.error(err);
+                                    }
+
+
+                                });
+
+                                return callback(null, finalPostIndexResult);
+
+
+                            }
 
 
                         }
+                        else {
+
+                            console.error("incorrect post type, should be question or post");
+
+                            return callback(null, finalPostIndexResult);
+                        }
 
 
-                    } else {
-
-                        console.error("incorrect post type, should be question or post");
-
-                        return callback (null, finalPostIndexResult);
                     }
 
 
-
                 }
-
 
             }, function(err) {
                 if (err){
