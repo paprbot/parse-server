@@ -7688,7 +7688,8 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
     let text = postMessage.get("message");
     let workspace = postMessage.get("workspace");
     let post = postMessage.get("post");
-    //console.log("workspace_post: " + JSON.stringify(workspace));
+    console.log("postMessage: " + JSON.stringify(postMessage));
+
     let channel = postMessage.get("channel");
     //console.log("channel_post: " + JSON.stringify(channel));
     let parentPostMessage = postMessage.get("parentPostMessage");
@@ -9303,6 +9304,9 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
     if (workspace_follower.get("notificationCount") > 0) {
         workspace_follower.set("isNotified", true);
+    } else  {
+        workspace_follower.set("isNotified", false);
+
     }
 
 
@@ -18578,12 +18582,12 @@ function splitPostAndIndexFasterPrime (request, response) {
                                     if (question.PostMessageSocial.length > 0) {
 
                                         let arrayPostMessageSocial = question.PostMessageSocial;
+                                        let matchExists = false;
+
 
                                         for (var i = 0; i < arrayPostMessageSocial.length; i++) {
 
                                             let postMessageSocialObj = arrayPostMessageSocial[i];
-
-                                            let matchExists = false;
 
                                             console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
 
@@ -18599,17 +18603,18 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                             }
 
-                                            if (i === arrayPostMessageSocial.length - 1) {
-
-                                                if (matchExists === false) {
-
-                                                    question.PostMessageSocial = null;
-                                                }
 
 
+                                        }
+
+                                        if (question.PostMessageSocial.length > 0) {
+
+                                            console.log("issue matchExists: " + JSON.stringify(matchExists));
+
+                                            if (matchExists === false) {
+
+                                                question.PostMessageSocial = null;
                                             }
-
-
                                         }
 
                                         console.log("question prime: " + JSON.stringify(question));
@@ -18695,11 +18700,15 @@ function splitPostAndIndexFasterPrime (request, response) {
                         }
 
 
-                    } else if (finalPostIndexResult.type === 'question') {
+                    }
+
+                    else if (finalPostIndexResult.type === 'question') {
 
                         if (finalPostMessageAnswerResults) {
 
                             console.log(":::finalPostMessageAnswerResults::: " + JSON.stringify(finalPostMessageAnswerResults));
+
+                            var matchExists = false;
 
                             if (answer.PostMessageSocial) {
 
@@ -18712,10 +18721,11 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                     let arrayPostMessageSocial = answer.PostMessageSocial;
 
+
+
                                     for (var i = 0; i < arrayPostMessageSocial.length; i++) {
 
                                         let postMessageSocialObj = arrayPostMessageSocial[i];
-                                        let matchExists = false;
 
                                         console.log("arrayPostMessageSocial answer: " + JSON.stringify(postMessageSocialObj));
 
@@ -18732,19 +18742,22 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                         }
 
-                                        if (i === arrayPostMessageSocial.length - 1) {
 
-                                            if (matchExists === false) {
-
-                                                answer.PostMessageSocial = null;
-                                            }
-
-
-                                        }
 
                                     }
 
+                                    /*if (answer.PostMessageSocial.length > 0) {
+
+                                        console.log("issue matchExists: " + JSON.stringify(matchExists));
+
+                                        if (matchExists === false) {
+
+                                            answer.PostMessageSocial = null;
+                                        }
+                                    }*/
+
                                     console.log("answer prime: " + JSON.stringify(answer));
+
 
 
                                 }
@@ -18762,7 +18775,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             } else {
 
-                                console.log("null answer 1");
+                                console.log("null answer 2");
 
                                 let arrayPostMessageSocial = null;
 
@@ -18773,8 +18786,19 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             console.log("finalPostMessageAnswerResults arrAnswers: " + JSON.stringify(answer));
 
+                            if (answer.PostMessageSocial.length > 0) {
+
+                                console.log("issue matchExists: " + JSON.stringify(matchExists));
+
+                                if (matchExists === false) {
+
+                                    answer.PostMessageSocial = null;
+                                }
+
                             finalPostIndexResult.topAnswer = answer;
                             finalPostIndexResult.postQuestions = [];
+
+                            console.log("finalPostMessageAnswerResults answer.PostMessageSocial: " + JSON.stringify(answer.PostMessageSocial));
 
 
                             console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
@@ -19007,7 +19031,7 @@ function SendPostNotifications (request, response) {
     let channel = request['channel'];
     console.log("SendPostNotifications channel: " + JSON.stringify(channel));
 
-    let postTitle = post.get('title');
+    let postTitle = request['postTitle'];
     console.log("SendPostNotifications postTitle: " + JSON.stringify(postTitle));
 
     let mentions = request['mentions'];
@@ -22403,36 +22427,36 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         }
 
         // console.log("starting show results " + JSON.stringify(results.length));
-        console.log("isNewPost Post: " + JSON.stringify(isNewPost));
+        //console.log("isNewPost Post: " + JSON.stringify(isNewPost));
 
 
         if (results.length > 0) {
 
-            console.log("afterSave Post results length: " + JSON.stringify(results.length));
+            //console.log("afterSave Post results length: " + JSON.stringify(results.length));
 
             let postToSave = results[0];
             postToSave = simplifyPost(postToSave);
-            console.log("postToSave: " + JSON.stringify(postToSave));
+            //console.log("postToSave: " + JSON.stringify(postToSave));
 
             let topAnswerForQuestionPost = results[1];
-            console.log("topAnswerForQuestionPost: " + JSON.stringify(topAnswerForQuestionPost));
+            //console.log("topAnswerForQuestionPost: " + JSON.stringify(topAnswerForQuestionPost));
 
             let postMessageComments = results[2];
-            console.log("postMessageComments: " + JSON.stringify(postMessageComments));
+            //console.log("postMessageComments: " + JSON.stringify(postMessageComments));
 
             let postMessageQuestions = results[3];
-            console.log("postMessageQuestions: " + JSON.stringify(postMessageQuestions));
+            //console.log("postMessageQuestions: " + JSON.stringify(postMessageQuestions));
 
 
             // set all postSocials for this post to save/update algolia index
             let postSocials = results[4];
-            console.log("postSocials: " + JSON.stringify(postSocials));
+            //console.log("postSocials: " + JSON.stringify(postSocials));
 
             let postMessageQuestionSocials = results[5];
-            console.log("postMessageQuestionSocials: " + JSON.stringify(postMessageQuestionSocials));
+            //console.log("postMessageQuestionSocials: " + JSON.stringify(postMessageQuestionSocials));
 
             let postMessageAnswerSocials = results[6];
-            console.log("postMessageAnswerSocials: " + JSON.stringify(postMessageAnswerSocials));
+            //console.log("postMessageAnswerSocials: " + JSON.stringify(postMessageAnswerSocials));
 
             let postSocial;
 
@@ -22441,7 +22465,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             postToSave.topAnswer = topAnswerForQuestionPost;
             //postToSave.user = simplifyUser(postToSave.user);
 
-            console.log("postToSave f: " + JSON.stringify(postToSave));
+            //console.log("postToSave f: " + JSON.stringify(postToSave));
 
 
             if (isNewPost === true) {
@@ -22452,19 +22476,19 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 postSocialNewlyCreated.push(postSocial);
                 postSocials = postSocialNewlyCreated;
 
-                console.log("postToSave isNewPost: " + JSON.stringify(postToSave));
+                //console.log("postToSave isNewPost: " + JSON.stringify(postToSave));
 
 
             }
 
-            console.log("entering splitPostAndIndexFasterPrime...");
+            //console.log("entering splitPostAndIndexFasterPrime...");
 
             splitPostAndIndexFasterPrime({'user':currentUser, 'postJSON':postToSave, 'postSocials':postSocials, 'postMessageAnswerSocials':postMessageAnswerSocials, 'postMessageQuestionSocials':postMessageQuestionSocials, 'postACL':postACL, 'skip':0}, {
                 success: function (count) {
 
                     //SendNotifications ();
 
-                    SendPostNotifications({'user':currentUser, 'post':post, 'mentions':mentions, 'workspace':workspace, 'channel':channel}, {
+                    SendPostNotifications({'user':currentUser, 'post':post, 'postTitle':postTitle, 'mentions':mentions, 'workspace':workspace, 'channel':channel}, {
                         success: function (count) {
 
                             let Final_Time = process.hrtime(time);
