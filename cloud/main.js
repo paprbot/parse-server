@@ -18541,16 +18541,35 @@ function splitPostAndIndexFasterPrime (request, response) {
 
 
             let finalPostMessageQuestionResults = results[1];
-            //console.log("finalPostMessageQuestionResults: " + JSON.stringify(finalPostMessageQuestionResults));
+            console.log("finalPostMessageQuestionResults: " + JSON.stringify(finalPostMessageQuestionResults));
 
             let finalPostMessageAnswerResults = results[2];
             //console.log("finalPostMessageAnswerResults: " + JSON.stringify(finalPostMessageAnswerResults));
 
-            let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+            let arrayLength =  0;
 
-            let arrayLength = finalPostMessageAnswerResults.PostMessageSocial? finalPostMessageAnswerResults.PostMessageSocial.length : 0;
+            let arrayPostMessageSocial =  null;
 
-            let arrayPostMessageSocial = finalPostMessageAnswerResults.PostMessageSocial? finalPostMessageAnswerResults.PostMessageSocial : null;
+            let arrayQuestionLength = 0;
+
+
+            if (finalPostMessageAnswerResults) {
+
+                arrayLength = finalPostMessageAnswerResults.PostMessageSocial? finalPostMessageAnswerResults.PostMessageSocial.length : 0;
+
+                arrayPostMessageSocial = finalPostMessageAnswerResults.PostMessageSocial? finalPostMessageAnswerResults.PostMessageSocial : null;
+
+
+            }
+
+            if (finalPostMessageQuestionResults) {
+
+                arrayQuestionLength = finalPostMessageQuestionResults? finalPostMessageAnswerResults.length : 0;
+
+
+            }
+
+
 
             let nullFInalPostMessageQuestionResults = finalPostMessageQuestionResults;
 
@@ -18558,7 +18577,7 @@ function splitPostAndIndexFasterPrime (request, response) {
             //let finalPostMessageAnswerResults = results[2];
             //let finalPostMessageCommentResults = results[3];
 
-            async.map(finalPostIndexResults, function (finalPostIndexResult, cb7) {
+            async.mapSeries(finalPostIndexResults, function (finalPostIndexResult, cb7) {
 
                 console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
 
@@ -18572,79 +18591,90 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                     if (finalPostIndexResult.type === 'post') {
 
-                        if (finalPostMessageQuestionResults.length > 0) {
+                        if (arrayQuestionLength > 0) {
 
-                            //console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
+                            console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
 
                             let arrQuestions = lodash.map(Questions, function (question) {
 
                                 let postSocialId = finalPostIndexResult.PostSocial.objectId;
                                 let userId = finalPostIndexResult.PostSocial.user.objectId;
 
-                                //console.log("question.PostMessageSocial.length: " + JSON.stringify(question.PostMessageSocial.length));
+                                let questionPostMessageSocialLength = question.PostMessageSocial? question.PostMessageSocial.length : 0;
 
-                                if (question.PostMessageSocial) {
+                                console.log("question.PostMessageSocial.length: " + JSON.stringify(questionPostMessageSocialLength));
 
-                                    if (question.PostMessageSocial.length > 0) {
+                                if (questionPostMessageSocialLength > 0) {
 
-                                        let arrayPostMessageSocial = question.PostMessageSocial;
-                                        let matchExists = false;
+                                    let arrayPostMessageSocial = question.PostMessageSocial;
 
+                                    let matchResult = lodash.findIndex(arrayPostMessageSocial, function (o) {
 
-                                        for (var i = 0; i < arrayPostMessageSocial.length; i++) {
+                                        o = simplifyPostMessageSocialQuestion(o);
 
-                                            let postMessageSocialObj = arrayPostMessageSocial[i];
+                                        console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
+                                        return o.user.objectId === userId;
 
-                                            //console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
+                                    });
 
-                                            //console.log("postSocialId::socialpostSocialId " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
+                                    //console.log("matchResult: " + JSON.stringify(matchResult));
 
-                                            //console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.get("user").id));
+                                    if (matchResult === -1) {
 
-                                            if (postMessageSocialObj.get("user").id === userId) {
+                                        // no match
 
+                                        question.PostMessageSocial = null;
 
-                                                question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
-                                                matchExists = true;
+                                    } else {
 
-                                            }
-
-
-                                        }
-
-                                        if (question.PostMessageSocial.length > 0) {
-
-                                            //console.log("issue matchExists: " + JSON.stringify(matchExists));
-
-                                            if (matchExists === false) {
-
-                                                question.PostMessageSocial = null;
-                                            }
-                                        }
-
-                                        //console.log("question prime: " + JSON.stringify(question));
-
-                                        return question;
-
+                                        // match exists
+                                        let postMessageSocialObj = arrayPostMessageSocial[matchResult];
+                                        postMessageSocialObj = simplifyPostMessageSocialQuestion(postMessageSocialObj);
+                                        question.PostMessageSocial = postMessageSocialObj;
 
                                     }
-                                    else {
 
-                                        //console.log("null postMessageSocial 1");
 
-                                        let arrayPostMessageSocial = null;
 
-                                        question.PostMessageSocial = arrayPostMessageSocial;
+                                    /*for (var i = 0; i < arrayPostMessageSocial.length; i++) {
 
-                                        return question;
+                                        let postMessageSocialObj = arrayPostMessageSocial[i];
+
+                                        console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
+
+                                        console.log("postSocialId::socialpostSocialId " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
+
+                                        console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.get("user").id));
+
+                                        if (postMessageSocialObj.get("user").id === userId) {
+
+
+                                            question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
+                                            matchExists = true;
+
+                                        }
 
 
                                     }
 
 
-                                } else {
+                                    console.log("issue matchExists: " + JSON.stringify(matchExists));
 
-                                    //console.log("null postMessageSocial 2");
+                                    if (matchExists === false) {
+
+                                        question.PostMessageSocial = null;
+                                    }*/
+
+
+                                    console.log("question prime: " + JSON.stringify(question));
+
+                                    return question;
+
+
+                                }
+                                else {
+
+                                    console.log("null postMessageSocial 1");
 
                                     let arrayPostMessageSocial = null;
 
@@ -18656,9 +18686,10 @@ function splitPostAndIndexFasterPrime (request, response) {
                                 }
 
 
+
                             });
 
-                            //console.log("arrQuestions: " + JSON.stringify(arrQuestions));
+                            console.log("arrQuestions: " + JSON.stringify(arrQuestions));
 
 
                             finalPostIndexResult.postQuestions = arrQuestions;
@@ -18670,7 +18701,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         }
 
-                        else if (finalPostMessageQuestionResults.length === 0) {
+                        else if (arrayQuestionLength === 0) {
 
                             //console.log("::no questions on post::");
 
@@ -18694,9 +18725,9 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         if (finalPostMessageAnswerResults) {
 
-                            console.log(":::finalPostMessageAnswerResults::: " + JSON.stringify(finalPostMessageAnswerResults));
+                            //console.log(":::finalPostMessageAnswerResults::: " + JSON.stringify(finalPostMessageAnswerResults));
 
-                            console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
+                            //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
 
                             let postSocialId = finalPostIndexResult.PostSocial.objectId;
                             let userId = finalPostIndexResult.PostSocial.user.objectId;
@@ -18709,12 +18740,12 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                     o = simplifyPostMessageSocialAnswer(o);
 
-                                    console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
+                                    //console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
                                     return o.user.objectId === userId;
 
                                 });
 
-                                console.log("matchResult: " + JSON.stringify(matchResult));
+                                //console.log("matchResult: " + JSON.stringify(matchResult));
 
                                 if (matchResult === -1) {
 
@@ -18731,19 +18762,19 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                 }
 
-                                console.log("answer prime: " + JSON.stringify(answer));
+                                //console.log("answer prime: " + JSON.stringify(answer));
 
                                 finalPostIndexResult.topAnswer = answer;
                                 finalPostIndexResult.postQuestions = [];
 
-                                console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+                                //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
                                 return cb7(null, finalPostIndexResult);
 
                             }
                             else {
 
-                                console.log("null answer 1");
+                                //console.log("null answer 1");
 
                                 let arrayPostMessageSocial = null;
 
@@ -18763,7 +18794,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         else if (!finalPostMessageAnswerResults) {
 
-                            console.log("::no answer on post::");
+                            //console.log("::no answer on post::");
 
                             finalPostIndexResult.topAnswer = null;
                             finalPostIndexResult.postQuestions = [];
