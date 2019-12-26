@@ -17376,7 +17376,7 @@ function splitPostAndIndexFasterPrime (request, response) {
     //console.log("splitPostAndIndexFasterPrime postSocials: " + JSON.stringify(postSocials));
 
     let postMessageQuestionSocials = request['postMessageQuestionSocials'];
-   // console.log("splitPostAndIndexFasterPrime postMessageQuestionSocials: " + JSON.stringify(postMessageQuestionSocials));
+    console.log("splitPostAndIndexFasterPrime postMessageQuestionSocials: " + JSON.stringify(postMessageQuestionSocials));
 
     let postMessageAnswerSocials = request['postMessageAnswerSocials'];
     //console.log("splitPostAndIndexFasterPrime postMessageAnswerSocials: " + JSON.stringify(postMessageAnswerSocials));
@@ -18595,7 +18595,145 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
 
-                            let arrQuestions = lodash.map(Questions, function (question) {
+                            async.map(Questions, function (question, cb6) {
+
+                                let postSocialId = finalPostIndexResult.PostSocial.objectId;
+                                let userId = finalPostIndexResult.PostSocial.user.objectId;
+
+                                let questionPostMessageSocialLength = question.PostMessageSocial? question.PostMessageSocial.length : 0;
+
+                                console.log("question.PostMessageSocial.length: " + JSON.stringify(questionPostMessageSocialLength));
+
+                                if (questionPostMessageSocialLength > 0) {
+
+                                    let arrayPostMessageSocial = question.PostMessageSocial;
+
+                                    let matchResult = lodash.findIndex(arrayPostMessageSocial, function (o) {
+
+                                        o = simplifyPostMessageSocialQuestion(o);
+
+                                        console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
+                                        return o.user.objectId === userId;
+
+                                    });
+
+                                    //console.log("matchResult: " + JSON.stringify(matchResult));
+
+                                    if (matchResult === -1) {
+
+                                        // no match
+
+                                        question.PostMessageSocial = null;
+
+                                        console.log("question null prime: " + JSON.stringify(question));
+
+                                        return cb6 (null, question);
+
+                                    } else {
+
+                                        // match exists
+                                        let postMessageSocialObj = arrayPostMessageSocial[matchResult];
+                                        postMessageSocialObj = simplifyPostMessageSocialQuestion(postMessageSocialObj);
+                                        question.PostMessageSocial = postMessageSocialObj;
+
+                                        console.log("question prime: " + JSON.stringify(question));
+
+                                        return cb6 (null, question);
+
+
+                                    }
+
+
+
+                                    /*for (var i = 0; i < arrayPostMessageSocial.length; i++) {
+
+                                     let postMessageSocialObj = arrayPostMessageSocial[i];
+
+                                     console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
+
+                                     console.log("postSocialId::socialpostSocialId " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
+
+                                     console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.get("user").id));
+
+                                     if (postMessageSocialObj.get("user").id === userId) {
+
+
+                                     question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
+                                     matchExists = true;
+
+                                     }
+
+
+                                     }
+
+
+                                     console.log("issue matchExists: " + JSON.stringify(matchExists));
+
+                                     if (matchExists === false) {
+
+                                     question.PostMessageSocial = null;
+                                     }*/
+
+
+
+
+                                }
+                                else {
+
+                                    console.log("null postMessageSocial 1");
+
+                                    let arrayPostMessageSocial = null;
+
+                                    question.PostMessageSocial = arrayPostMessageSocial;
+
+                                    return cb6(null, question);
+
+
+                                }
+
+
+
+                            }, function (err, arrQuestions) {
+
+                                if (err) {
+                                    return response.error(err);
+                                } else {
+
+
+                                    if (arrQuestions.length > 0) {
+
+                                        console.log("arrQuestions: " + JSON.stringify(arrQuestions));
+
+
+                                        finalPostIndexResult.postQuestions = arrQuestions;
+                                        finalPostIndexResult.topAnswer = null;
+
+
+                                        return cb7(null, finalPostIndexResult);
+
+
+                                    }
+
+                                    else {
+
+                                        console.log("arrQuestions no results: " + JSON.stringify(arrQuestions));
+
+
+                                        finalPostIndexResult.postQuestions = [];
+                                        finalPostIndexResult.topAnswer = null;
+
+
+                                        return cb7(null, finalPostIndexResult);
+
+
+
+                                    }
+
+                                }
+
+                            });
+
+                            /*let arrQuestions = lodash.map(Questions, function (question) {
 
                                 let postSocialId = finalPostIndexResult.PostSocial.objectId;
                                 let userId = finalPostIndexResult.PostSocial.user.objectId;
@@ -18636,7 +18774,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
 
 
-                                    /*for (var i = 0; i < arrayPostMessageSocial.length; i++) {
+                                    for (var i = 0; i < arrayPostMessageSocial.length; i++) {
 
                                         let postMessageSocialObj = arrayPostMessageSocial[i];
 
@@ -18663,7 +18801,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                                     if (matchExists === false) {
 
                                         question.PostMessageSocial = null;
-                                    }*/
+                                    }
 
 
                                     console.log("question prime: " + JSON.stringify(question));
@@ -18687,21 +18825,14 @@ function splitPostAndIndexFasterPrime (request, response) {
 
 
 
-                            });
-
-                            console.log("arrQuestions: " + JSON.stringify(arrQuestions));
+                            }); */
 
 
-                            finalPostIndexResult.postQuestions = arrQuestions;
-                            finalPostIndexResult.topAnswer = null;
-
-
-                            return cb7(null, finalPostIndexResult);
 
 
                         }
 
-                        else if (arrayQuestionLength === 0) {
+                        else  {
 
                             //console.log("::no questions on post::");
 
@@ -21952,7 +22083,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     //console.log("userPostCreator afterSave Post: " + JSON.stringify(userPostCreator));
 
     currentUser = currentUser ? currentUser : userPostCreator;
-    //console.log("currentUser afterSave Post: " + JSON.stringify(currentUser));
+    console.log("currentUser afterSave Post: " + JSON.stringify(currentUser));
 
     let CHANNEL = Parse.Object.extend("Channel");
     let channel = new CHANNEL();
@@ -22198,7 +22329,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     function getPostMessageQuestions(callback) {
 
-        //console.log("starting getPostMessageQuestions function.");
+        console.log("starting getPostMessageQuestions function.");
 
         if (postType === 'post') {
 
@@ -22207,17 +22338,17 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 //sessionToken: sessionToken
             }).then((PostMessageQuestions) => {
 
-                //console.log("PostMessageQuestions: " + JSON.stringify(PostMessageQuestions));
+                console.log("PostMessageQuestions: " + JSON.stringify(PostMessageQuestions));
 
 
-                if (PostMessageQuestions.length !== 0) {
+                if (PostMessageQuestions.length > 0) {
 
                     let simplifiedPostMessageQuestions = [];
 
                     for (var i = 0; i < PostMessageQuestions.length; i++) {
 
                         simplifiedPostMessageQuestions.push(simplifyPostChatMessage(PostMessageQuestions[i]));
-                        //console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i]));
+                        //console.log("simplifyPostChatMessage: " + JSON.stringify(PostMessageQuestions[i]));
 
                         if (i === (PostMessageQuestions.length - 1)) {
 
@@ -22420,7 +22551,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     function createPostSocial (callback) {
 
-        //console.log("starting createPostSocial function: " + JSON.stringify(isNewPost) );
+        console.log("starting createPostSocial function: " + JSON.stringify(isNewPost) );
 
 
         if (isNewPost) {
@@ -22733,7 +22864,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
             //console.log("postMessageComments: " + JSON.stringify(postMessageComments));
 
             let postMessageQuestions = results[3];
-            //console.log("postMessageQuestions: " + JSON.stringify(postMessageQuestions));
+            console.log("postMessageQuestions: " + JSON.stringify(postMessageQuestions));
 
 
             // set all postSocials for this post to save/update algolia index
