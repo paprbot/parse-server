@@ -18537,11 +18537,11 @@ function splitPostAndIndexFasterPrime (request, response) {
             //console.log("afterSave PostSocial Post algolia index results length: " + JSON.stringify(results.length));
 
             let finalPostIndexResults = results[0];
-            console.log("finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.length));
+            //console.log("finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.length));
 
 
             let finalPostMessageQuestionResults = results[1];
-            console.log("finalPostMessageQuestionResults: " + JSON.stringify(finalPostMessageQuestionResults));
+            //console.log("finalPostMessageQuestionResults: " + JSON.stringify(finalPostMessageQuestionResults));
 
             let finalPostMessageAnswerResults = results[2];
             //console.log("finalPostMessageAnswerResults: " + JSON.stringify(finalPostMessageAnswerResults));
@@ -18579,7 +18579,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
             async.mapSeries(finalPostIndexResults, function (finalPostIndexResult, cb7) {
 
-                console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
+                //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
 
                 //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
@@ -18593,7 +18593,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         if (arrayQuestionLength > 0) {
 
-                            console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
+                            //console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
 
                             /*async.mapSeries(Questions, function (question, cb6) {
 
@@ -18800,12 +18800,12 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             });
 
-                            console.log("arrQuestions: " + JSON.stringify(arrQuestions));
+                            //console.log("arrQuestions: " + JSON.stringify(arrQuestions));
 
                             finalPostIndexResult.postQuestions = arrQuestions;
                             finalPostIndexResult.topAnswer = null;
 
-                            console.log("finalPostIndexResult cb7: " + JSON.stringify(finalPostIndexResult));
+                            //console.log("finalPostIndexResult cb7: " + JSON.stringify(finalPostIndexResult));
 
                             indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
 
@@ -18948,7 +18948,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                     if (finalPostIndexResultsMapped.length > 0) {
 
-                        console.log("finalPostIndexResultsMapped: " + JSON.stringify(finalPostIndexResultsMapped));
+                        //console.log("finalPostIndexResultsMapped: " + JSON.stringify(finalPostIndexResultsMapped));
 
                         if (finalPostIndexResults[0].type === 'question') {
 
