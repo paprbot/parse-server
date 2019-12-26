@@ -18789,9 +18789,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                     console.log("null postMessageSocial 1");
 
-                                    let arrayPostMessageSocial = null;
-
-                                    question.PostMessageSocial = arrayPostMessageSocial;
+                                    question.PostMessageSocial = null;
 
                                     return question;
 
@@ -18807,6 +18805,9 @@ function splitPostAndIndexFasterPrime (request, response) {
                             finalPostIndexResult.postQuestions = arrQuestions;
                             finalPostIndexResult.topAnswer = null;
 
+                            console.log("finalPostIndexResult cb7: " + JSON.stringify(finalPostIndexResult));
+
+                            indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
 
                             return cb7(null, finalPostIndexResult);
 
@@ -18823,6 +18824,8 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                             //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+
+                            indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
 
 
                             return cb7(null, finalPostIndexResult);
@@ -18947,8 +18950,11 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         console.log("finalPostIndexResultsMapped: " + JSON.stringify(finalPostIndexResultsMapped));
 
+                        if (finalPostIndexResults[0].type === 'question') {
 
-                        indexPosts.addObjects(finalPostIndexResultsMapped).catch(err => console.error(err));
+                            indexPosts.addObjects(finalPostIndexResultsMapped).catch(err => console.error(err));
+
+                        }
 
                         console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
