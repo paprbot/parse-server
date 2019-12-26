@@ -18537,7 +18537,7 @@ function splitPostAndIndexFasterPrime (request, response) {
             //console.log("afterSave PostSocial Post algolia index results length: " + JSON.stringify(results.length));
 
             let finalPostIndexResults = results[0];
-            //console.log("finalPostIndexResults: " + JSON.stringify(finalPostIndexResults));
+            console.log("finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.length));
 
 
             let finalPostMessageQuestionResults = results[1];
