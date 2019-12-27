@@ -20296,7 +20296,7 @@ function splitPostMessageAndIndex (request, response) {
 
                 let tags = ['*'];
 
-                //console.log("::starting postMessageSocialQuery no result on postMessageSocial::");
+                //console.log("::starting postMessangeSocialQuery no result on postMessageSocial::");
 
                 // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
 
