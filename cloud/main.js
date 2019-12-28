@@ -9157,8 +9157,8 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
                 PostMessage.save(null, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    //useMasterKey: true
+                    sessionToken: sessionToken
 
                 }).then((PostMessageSaved) => {
                     // The object was retrieved successfully.
@@ -9192,8 +9192,8 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
             Post.save(null, {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                //useMasterKey: true
+                sessionToken: sessionToken
 
             }).then((PostSaved) => {
                 // The object was retrieved successfully.
@@ -17373,10 +17373,10 @@ function splitPostAndIndexFasterPrime (request, response) {
     //console.log("splitPostAndIndexFasterPrime postACL: " + JSON.stringify(postACL));
 
     let postSocials = request['postSocials'];
-    console.log("splitPostAndIndexFasterPrime postSocials: " + JSON.stringify(postSocials));
+    //console.log("splitPostAndIndexFasterPrime postSocials: " + JSON.stringify(postSocials));
 
     let postMessageQuestionSocials = request['postMessageQuestionSocials'];
-    console.log("splitPostAndIndexFasterPrime postMessageQuestionSocials: " + JSON.stringify(postMessageQuestionSocials));
+    //console.log("splitPostAndIndexFasterPrime postMessageQuestionSocials: " + JSON.stringify(postMessageQuestionSocials));
 
     let postMessageAnswerSocials = request['postMessageAnswerSocials'];
     //console.log("splitPostAndIndexFasterPrime postMessageAnswerSocials: " + JSON.stringify(postMessageAnswerSocials));
@@ -17686,7 +17686,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                     //PostStar._tags = tags;
                     PostStar.PostSocial = null;
 
-                    console.log("PostStar with *tag: " + JSON.stringify(PostStar));
+                    //console.log("PostStar with *tag: " + JSON.stringify(PostStar));
 
 
 
@@ -18537,7 +18537,7 @@ function splitPostAndIndexFasterPrime (request, response) {
             //console.log("afterSave PostSocial Post algolia index results length: " + JSON.stringify(results.length));
 
             let finalPostIndexResults = results[0];
-            console.log("finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.length));
+            //console.log("finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.length));
 
 
             let finalPostMessageQuestionResults = results[1];
@@ -18855,12 +18855,12 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                     o = simplifyPostMessageSocialAnswer(o);
 
-                                    console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
+                                    //console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
                                     return o.user.objectId === userId;
 
                                 });
 
-                                console.log("matchResult: " + JSON.stringify(matchResult));
+                                //console.log("matchResult: " + JSON.stringify(matchResult));
 
 
                                 if (matchResult === -1) {
@@ -18878,7 +18878,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                 }
 
-                                console.log("answer prime: " + JSON.stringify(answer));
+                                //console.log("answer prime: " + JSON.stringify(answer));
 
 
 
@@ -21202,8 +21202,8 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
             PostObject.save(null, {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                //useMasterKey: true
+                sessionToken: sessionToken
 
             }).then((PostSaved) => {
                 // The object was retrieved successfully.
@@ -23127,14 +23127,14 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
             Post.save(null, {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                //useMasterKey: true
+                sessionToken: sessionToken
 
             }).then((PostSaved) => {
                 // The object was retrieved successfully.
                 //console.log("Result from get " + JSON.stringify(Workspace));
 
-                console.log("done saveParentPost : " + JSON.stringify(PostSaved));
+                //console.log("done saveParentPost : " + JSON.stringify(PostSaved));
 
 
                 return callback (null, PostSaved);
