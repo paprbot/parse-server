@@ -21190,7 +21190,16 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     function incrementPostSocialCount(cb) {
 
-        if (postSocial.get("isNew") === true) {
+
+        if (postSocial.get("isPostNew") === true && postSocial.get("isNew") === true) {
+
+            // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
+
+            return cb (null, postSocial);
+
+
+        }
+        else if (postSocial.get("isPostNew") === false && postSocial.get("isNew") === true) {
 
             post.increment("postSocialCount");
             let relation = post.relation("postSocial");
@@ -21206,8 +21215,8 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
             post.save(null, {
 
-                useMasterKey: true,
-                //sessionToken: sessionToken
+                //useMasterKey: true,
+                sessionToken: sessionToken
 
             }).then((Post) => {
                 // The object was retrieved successfully.
@@ -21243,13 +21252,13 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                 response.error(error);
             }, {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                //useMasterKey: true
+                sessionToken: sessionToken
 
             });
 
-
-        } else {
+        }
+        else if (postSocial.get("isPostNew") === false && postSocial.get("isNew") === false) {
 
             if (originalPostSocial.get("isLiked") === true && postSocial.get("isLiked") === true) {
 
@@ -21277,15 +21286,16 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
                 });
 
-            } else if (originalPostSocial.get("isLiked") === true && postSocial.get("isLiked") === false) {
+            }
+            else if (originalPostSocial.get("isLiked") === true && postSocial.get("isLiked") === false) {
 
                 // decrement likesCount for post
                 post.increment("likesCount", -1);
 
                 post.save(null, {
 
-                    useMasterKey: true,
-                    //sessionToken: sessionToken
+                    //useMasterKey: true,
+                    sessionToken: sessionToken
 
                 }).then((Post) => {
                     // The object was retrieved successfully.
@@ -21320,12 +21330,13 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                     response.error(error);
                 }, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    //useMasterKey: true
+                    sessionToken: sessionToken
 
                 });
 
-            } else if (originalPostSocial.get("isLiked") === false && postSocial.get("isLiked") === false) {
+            }
+            else if (originalPostSocial.get("isLiked") === false && postSocial.get("isLiked") === false) {
 
                 // do nothing, user didn't like this post
 
@@ -21352,15 +21363,16 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                 });
 
 
-            } else if (originalPostSocial.get("isLiked") === false && postSocial.get("isLiked") === true) {
+            }
+            else if (originalPostSocial.get("isLiked") === false && postSocial.get("isLiked") === true) {
 
                 // increment likesCount for post
                 post.increment("likesCount");
 
                 post.save(null, {
 
-                    useMasterKey: true,
-                    //sessionToken: sessionToken
+                    //useMasterKey: true,
+                    sessionToken: sessionToken
 
                 }).then((Post) => {
                     // The object was retrieved successfully.
@@ -21395,11 +21407,12 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                     response.error(error);
                 }, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    //useMasterKey: true
+                    sessionToken: sessionToken
 
                 });
-            } else {
+            }
+            else {
 
                 queryPost.first( {
 
@@ -21427,6 +21440,14 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
 
         }
+        else if (postSocial.get("isPostNew") === true && postSocial.get("isNew") === false) {
+
+            // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
+
+            return cb (null, postSocial);
+
+
+        }
 
 
     }
@@ -21436,15 +21457,15 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
         //console.log("starting updatePostsAlgolia: " + JSON.stringify(Post));
 
-        if (postSocial.get("isNew") && postSocial.get("isPostNew")) {
+        if (postSocial.get("isPostNew") === true && postSocial.get("isNew") === true) {
 
             // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
-
 
             return cb (null, PostObject);
 
 
-        } else {
+        }
+        else if (postSocial.get("isPostNew") === false && postSocial.get("isNew") === true) {
 
             console.log("PostObject: " + JSON.stringify(PostObject));
 
@@ -21469,18 +21490,56 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                 return cb(error);
             }, {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                //useMasterKey: true
+                sessionToken: sessionToken
 
             });
 
+
+        }
+        else if (postSocial.get("isPostNew") === false && postSocial.get("isNew") === false) {
+
+            console.log("PostObject: " + JSON.stringify(PostObject));
+
+            PostObject.save(null, {
+
+                //useMasterKey: true
+                sessionToken: sessionToken
+
+            }).then((PostSaved) => {
+                // The object was retrieved successfully.
+                //console.log("Result from get " + JSON.stringify(Workspace));
+
+                //console.log("done PostSaved : " + JSON.stringify(PostSaved));
+
+
+                return cb (null, PostSaved);
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return cb(error);
+            }, {
+
+                //useMasterKey: true
+                sessionToken: sessionToken
+
+            });
+
+
+        }
+        else if (postSocial.get("isPostNew") === true && postSocial.get("isNew") === false) {
+
+            // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
+
+            return cb (null, PostObject);
 
 
         }
 
 
     }
-
 
 
     async.waterfall([
@@ -23069,8 +23128,8 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         async.apply(getPostMessageQuestions),
         async.apply(getPostSocials),
         async.apply(getPostMessageQuestionSocials),
-        async.apply(getPostMessageAnswerSocials),
-        async.apply(createPostSocial)
+        async.apply(getPostMessageAnswerSocials)
+        //async.apply(createPostSocial)
 
     ], function (err, results) {
         if (err) {
