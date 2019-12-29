@@ -9176,8 +9176,8 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                     return cb2(error);
                 }, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    //useMasterKey: true
+                    sessionToken: sessionToken
 
                 });
 
@@ -9211,8 +9211,8 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
                 return cb2(error);
             }, {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                //useMasterKey: true
+                sessionToken: sessionToken
 
             });
 
@@ -21542,6 +21542,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     }
 
 
+
     async.waterfall([
         async.apply(incrementPostSocialCount),
         async.apply(updatePostsAlgolia1)
@@ -22391,8 +22392,17 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     let isNewPost = post.get("isNew") ? post.get("isNew") : false;
     //console.log("isNewPost afterSave Post: " + JSON.stringify(isNewPost));
 
-    let postType = post.get("type") ? post.get("type") : originalPost.get("type");
-    //console.log("postType afterSave Post: " + JSON.stringify(postType));
+    let postType;
+
+    if (originalPost) {
+
+        postType = post.get("type") ? post.get("type") : originalPost.get("type");
+        //console.log("postType afterSave Post: " + JSON.stringify(postType));
+
+    } else {
+        postType = post.get("type");
+        //console.log("postType afterSave Post: " + JSON.stringify(postType));
+    }
 
     let postTitle = post.get("post_title") ? post.get("post_title") : originalPost.get("post_title");
     //console.log("postTitle afterSave Post: " + JSON.stringify(postTitle));
@@ -23454,8 +23464,8 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                 return callback(error);
             }, {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                //useMasterKey: true
+                sessionToken: sessionToken
 
             });
 
