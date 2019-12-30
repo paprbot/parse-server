@@ -18998,7 +18998,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                 }
 
-                                //console.log("answer prime: " + JSON.stringify(answer));
+                                console.log("answer prime: " + JSON.stringify(answer));
 
 
 
