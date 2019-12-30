@@ -18537,7 +18537,7 @@ function splitPostAndIndexFasterPrime (request, response) {
             //console.log("afterSave PostSocial Post algolia index results length: " + JSON.stringify(results.length));
 
             let finalPostIndexResults = results[0];
-            //console.log("finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.length));
+            console.log("finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.length));
 
 
             let finalPostMessageQuestionResults = results[1];
@@ -18850,7 +18850,6 @@ function splitPostAndIndexFasterPrime (request, response) {
                             //console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
 
 
-
                             let arrQuestions = lodash.map(Questions, function (question) {
 
                                 let postSocialId = finalPostIndexResult.PostSocial.objectId;
@@ -18923,7 +18922,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             //console.log("finalPostIndexResult cb7: " + JSON.stringify(finalPostIndexResult));
 
-                            indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
+                            // indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
 
                             return cb7(null, finalPostIndexResult);
 
@@ -18941,7 +18940,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                             //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                             //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
-                            indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
+                            //indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
 
 
                             return cb7(null, finalPostIndexResult);
@@ -19043,10 +19042,61 @@ function splitPostAndIndexFasterPrime (request, response) {
                     }
 
 
+                }
+                else {
 
-                } else {
+                    if (finalPostIndexResult.type === 'post') {
 
-                    return cb7(null, finalPostIndexResult);
+                        if (arrayQuestionLength > 0) {
+
+                            let arrQuestions = lodash.map(Questions, function (question) {
+
+                                question.PostMessageSocial = null;
+
+                                return question;
+
+                            });
+
+                            //console.log("arrQuestions: " + JSON.stringify(arrQuestions));
+
+                            finalPostIndexResult.postQuestions = arrQuestions;
+                            finalPostIndexResult.topAnswer = null;
+
+                            return cb7(null, finalPostIndexResult);
+
+                        } else {
+
+                            finalPostIndexResult.topAnswer = null;
+                            finalPostIndexResult.postQuestions = [];
+
+                            return cb7(null, finalPostIndexResult);
+
+                        }
+
+
+                    }
+
+                    else if (finalPostIndexResult.type === 'question') {
+
+                        if (finalPostIndexResult.topAnswer) {
+
+                            finalPostIndexResult.topAnswer.PostMessageSocial = null;
+                            finalPostIndexResult.postQuestions = [];
+
+                            return cb7(null, finalPostIndexResult);
+
+                        } else {
+
+                            finalPostIndexResult.topAnswer = null;
+                            finalPostIndexResult.postQuestions = [];
+
+                            return cb7(null, finalPostIndexResult);
+
+                        }
+
+
+
+                    }
                 }
 
 
@@ -19061,13 +19111,13 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                     if (finalPostIndexResultsMapped.length > 0) {
 
-                        //console.log("finalPostIndexResultsMapped: " + JSON.stringify(finalPostIndexResultsMapped));
+                        console.log("finalPostIndexResultsMapped: " + JSON.stringify(finalPostIndexResultsMapped));
 
-                        if (finalPostIndexResults[0].type === 'question') {
+                        //if (finalPostIndexResults[0].type === 'question') {
 
-                            indexPosts.addObjects(finalPostIndexResultsMapped).catch(err => console.error(err));
+                        indexPosts.addObjects(finalPostIndexResultsMapped).catch(err => console.error(err));
 
-                        }
+                        //}
 
                         console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
@@ -19075,7 +19125,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                         console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
 
-                        response.success();
+                        return response.success();
 
 
                     }
