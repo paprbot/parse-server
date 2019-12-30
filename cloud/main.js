@@ -18539,7 +18539,6 @@ function splitPostAndIndexFasterPrime (request, response) {
             let finalPostIndexResults = results[0];
             console.log("finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.length));
 
-
             let finalPostMessageQuestionResults = results[1];
             //console.log("finalPostMessageQuestionResults: " + JSON.stringify(finalPostMessageQuestionResults));
 
@@ -18841,9 +18840,11 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                 let answer = finalPostMessageAnswerResults;
 
-                if (finalPostIndexResult.PostSocial) {
+                let usersPost = finalPostIndexResult;
 
-                    if (finalPostIndexResult.type === 'post') {
+                if (usersPost.PostSocial) {
+
+                    if (usersPost.type === 'post') {
 
                         if (arrayQuestionLength > 0) {
 
@@ -18852,8 +18853,8 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             let arrQuestions = lodash.map(Questions, function (question) {
 
-                                let postSocialId = finalPostIndexResult.PostSocial.objectId;
-                                let userId = finalPostIndexResult.PostSocial.user.objectId;
+                                let postSocialId = usersPost.PostSocial.objectId;
+                                let userId = usersPost.PostSocial.user.objectId;
 
                                 let questionPostMessageSocialLength = question.PostMessageSocial? question.PostMessageSocial.length : 0;
 
@@ -18917,12 +18918,14 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             //console.log("arrQuestions: " + JSON.stringify(arrQuestions));
 
-                            finalPostIndexResult.postQuestions = arrQuestions;
-                            finalPostIndexResult.topAnswer = null;
+                            usersPost.postQuestions = arrQuestions;
+                            usersPost.topAnswer = null;
 
                             //console.log("finalPostIndexResult cb7: " + JSON.stringify(finalPostIndexResult));
 
                             // indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
+
+                            finalPostIndexResult = usersPost;
 
                             return cb7(null, finalPostIndexResult);
 
@@ -18933,14 +18936,16 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             //console.log("::no questions on post::");
 
-                            finalPostIndexResult.postQuestions = [];
-                            finalPostIndexResult.topAnswer = null;
+                            usersPost.postQuestions = [];
+                            usersPost.topAnswer = null;
                             //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
                             //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
                             //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
                             //indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
+
+                            finalPostIndexResult = usersPost;
 
 
                             return cb7(null, finalPostIndexResult);
@@ -18951,7 +18956,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                     }
 
-                    else if (finalPostIndexResult.type === 'question') {
+                    else if (usersPost.type === 'question') {
 
                         if (finalPostMessageAnswerResults) {
 
@@ -18959,8 +18964,8 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
 
-                            let postSocialId = finalPostIndexResult.PostSocial.objectId;
-                            let userId = finalPostIndexResult.PostSocial.user.objectId;
+                            let postSocialId = usersPost.PostSocial.objectId;
+                            let userId = usersPost.PostSocial.user.objectId;
 
                             if (arrayLength > 0) {
 
@@ -19008,10 +19013,12 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             }
 
-                            finalPostIndexResult.topAnswer = answer;
-                            finalPostIndexResult.postQuestions = [];
+                            usersPost.topAnswer = answer;
+                            usersPost.postQuestions = [];
 
                             //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+
+                            finalPostIndexResult = usersPost;
 
                             return cb7(null, finalPostIndexResult);
 
@@ -19023,8 +19030,8 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             //console.log("::no answer on post::");
 
-                            finalPostIndexResult.topAnswer = null;
-                            finalPostIndexResult.postQuestions = [];
+                            usersPost.topAnswer = null;
+                            usersPost.postQuestions = [];
 
                             //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
@@ -19032,6 +19039,8 @@ function splitPostAndIndexFasterPrime (request, response) {
                             //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
 
                             //console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
+
+                            finalPostIndexResult = usersPost;
 
                             return cb7(null, finalPostIndexResult);
 
@@ -19045,7 +19054,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                 }
                 else {
 
-                    if (finalPostIndexResult.type === 'post') {
+                    if (usersPost.type === 'post') {
 
                         if (arrayQuestionLength > 0) {
 
@@ -19059,15 +19068,21 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             //console.log("arrQuestions: " + JSON.stringify(arrQuestions));
 
-                            finalPostIndexResult.postQuestions = arrQuestions;
-                            finalPostIndexResult.topAnswer = null;
+                            usersPost.postQuestions = arrQuestions;
+                            usersPost.topAnswer = null;
+
+                            finalPostIndexResult = usersPost;
 
                             return cb7(null, finalPostIndexResult);
 
-                        } else {
+                        }
 
-                            finalPostIndexResult.topAnswer = null;
-                            finalPostIndexResult.postQuestions = [];
+                        else {
+
+                            usersPost.topAnswer = null;
+                            usersPost.postQuestions = [];
+
+                            finalPostIndexResult = usersPost;
 
                             return cb7(null, finalPostIndexResult);
 
@@ -19076,19 +19091,25 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                     }
 
-                    else if (finalPostIndexResult.type === 'question') {
+                    else if (usersPost.type === 'question') {
 
-                        if (finalPostIndexResult.topAnswer) {
+                        if (usersPost.topAnswer) {
 
-                            finalPostIndexResult.topAnswer.PostMessageSocial = null;
-                            finalPostIndexResult.postQuestions = [];
+                            usersPost.topAnswer.PostMessageSocial = null;
+                            usersPost.postQuestions = [];
+
+                            finalPostIndexResult = usersPost;
 
                             return cb7(null, finalPostIndexResult);
 
-                        } else {
+                        }
 
-                            finalPostIndexResult.topAnswer = null;
-                            finalPostIndexResult.postQuestions = [];
+                        else {
+
+                            usersPost.topAnswer = null;
+                            usersPost.postQuestions = [];
+
+                            finalPostIndexResult = usersPost;
 
                             return cb7(null, finalPostIndexResult);
 
