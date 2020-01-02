@@ -24837,7 +24837,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
     function updateUserACLAlgolia (callback) {
 
-        if (channelfollow.get("isNew") === true) {
+        if (channelfollow.get("isNew") === true && channelfollow.get("isMember") === true) {
 
             user.fetch(user.id , {
 
@@ -24866,7 +24866,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                     }).then((Channel) => {
 
-                        // todo remove this channel algolia key access when user is removed from private channel
+
 
                         if (Channel) {
 
@@ -24958,7 +24958,14 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
 
 
-        } else {
+        }
+
+        else if (channelfollow.get("isNew") === false && channelfollow.get("isMember") === false) {
+
+            // todo remove this channel algolia key access when user is removed from private channel
+            return callback (null, channelfollow);
+        }
+        else {
 
             return callback (null, channelfollow);
         }
