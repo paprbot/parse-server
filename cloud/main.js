@@ -24904,7 +24904,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                     } else {
 
-                        tagFiltersSet.add(defaultTagFilters);
+                        tagFiltersSet.concat(defaultTagFilters);
 
                     }
 
@@ -25063,7 +25063,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                     else {
 
-                        tagFiltersSet.add(defaultTagFilters);
+                        tagFiltersSet.concat(defaultTagFilters);
 
                     }
 
@@ -25201,7 +25201,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                     } else {
 
-                        tagFiltersSet.add(defaultTagFilters);
+                        tagFiltersSet.concat(defaultTagFilters);
 
                     }
 
