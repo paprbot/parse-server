@@ -11234,6 +11234,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
     // if there is a post that got added, then increase counter, else ignoremyObject
     if (channelfollow.isNew()) {
 
+        channelfollow.set('isNew', true);
+
         if (!channelfollow.get("channel")) {
             return response.error("Channel is required.");
         }
@@ -12637,7 +12639,9 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
     }
     else if (!channelfollow.isNew() && (channelfollow.dirty("isFollower") || channelfollow.dirty("isMember"))) {
 
-        console.log("channelfollow.id: " + JSON.stringify(channelfollow.id));
+        //console.log("channelfollow.id: " + JSON.stringify(channelfollow.id));
+
+        channelfollow.set('isNew', false);
 
         queryChannelFollow.include(["user", "workspace", "channel"]);
         queryChannelFollow.get(channelfollow.id, {
@@ -14046,6 +14050,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
     }
     else {
+
+        channelfollow.set('isNew', false);
 
         let beforeSaveElse_Time = process.hrtime(time);
         console.log(`beforeSaveElse_Time channelFollow took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
@@ -24737,6 +24743,8 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
         console.log("channelfollow.isSelected: " + channelfollow.get("isSelected"));
 
+        //todo fix use originalChannelFollow and check for isSelected
+
         if (channelfollow.get("isSelected") === true) {
 
             // add selected ChannelFollow as pointer to workspace_follower
@@ -24841,7 +24849,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
         console.log("Starting updateUserACLAlgolia..");
 
-        if (channelfollow.get("isNew") === true && channelfollow.get("isMember") === true) {
+        if ( (channelfollow.get("isNew") === true || originalChannelFollow.get("isNew") === true)&& channelfollow.get("isMember") === true) {
 
             console.log("updateUserACLAlgolia enter into if statement 1...");
 
