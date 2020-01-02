@@ -7166,7 +7166,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     var workspace = post.get("workspace");
     //console.log("workspace_post: " + JSON.stringify(workspace));
     var channel = post.get("channel");
-    //console.log("channel_post: " + JSON.stringify(channel));
+    console.log("channel_post: " + JSON.stringify(channel));
 
     var toLowerCase = function(w) { return w.toLowerCase(); };
     //console.log("post: " + JSON.stringify(post));
@@ -7653,13 +7653,18 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     function getChannelACL (callback) {
 
         // get channel ACL and assign it to Post ACL
+        console.log('entering getChannelACL...');
         if (post.isNew()) {
+
+            console.log('entering getChannelACL post.isNew...' + JSON.stringify(post.isNew()));
+
 
             let CHANNEL = Parse.Object.extend("Channel");
             let Channel =  new CHANNEL();
             Channel.id = channel.id;
+            console.log("Channel.id: " + JSON.stringify(Channel.id) );
 
-            Channel.fetch(channel.id, {
+            Channel.fetch(Channel.id, {
 
                 useMasterKey: true
                 //sessionToken: sessionToken
