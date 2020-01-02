@@ -7690,7 +7690,9 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             Channel.id = channel.id;
             console.log("Channel.id: " + JSON.stringify(Channel.id) );
 
-            Channel.fetch(Channel.id, {
+            let queryChannel = new Parse.Query(CHANNEL);
+
+            queryChannel.get(Channel.id, {
 
                 useMasterKey: true
                 //sessionToken: sessionToken
@@ -7747,8 +7749,8 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         async.apply(getMentions),
         async.apply(getURL),
         async.apply(archivePostSocial),
-        async.apply(setDefaultValues)
-        //async.apply(getChannelACL)
+        async.apply(setDefaultValues),
+        async.apply(getChannelACL)
         //async.apply(createPostSocial)
         //async.apply(getIntents)
 
@@ -17526,6 +17528,12 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                     PostStar = PostStar.toJSON();
 
+                    if (post.workspace && post.channel) {
+
+                        var unique_channelId = post.workspace.objectId + '-' + post.channel.objectId;
+                        console.log("unique_channelId: " + JSON.stringify(unique_channelId));
+                    }
+
                     if (post.workspace) {
                         PostStar.workspace = post.workspace;
                         //console.log("setting workspace PostStar: " + JSON.stringify(PostStar.workspace));
@@ -17602,16 +17610,27 @@ function splitPostAndIndexFasterPrime (request, response) {
 
 
                             // this means this user has read access
-                            PostStar._tags = [user.id];
+                            PostStar._tags = [unique_channelId];
+                            console.log("PostStar private Access: " + JSON.stringify(PostStar._tags));
 
                         }
 
                         /*else if (!postACL.getPublicReadAccess() && postACL.getReadAccess(roleChannel)) {
 
                             // this means any user with this channel is private and channel-role will have access i.e. they are a member of this channel
-                            PostStar._tags = [roleChannel];
+                            PostStar._tags = [unique_channelId];
+                            console.log("PostStar private roleChannel: " + JSON.stringify(PostStar._tags));
 
-                        }*/
+                        } */
+
+                        else {
+
+                            // this means any user with this channel is private and channel-role will have access i.e. they are a member of this channel
+                            PostStar._tags = [unique_channelId];
+                            console.log("PostStar private roleChannel: " + JSON.stringify(PostStar._tags));
+
+
+                        }
 
 
 
@@ -17620,6 +17639,8 @@ function splitPostAndIndexFasterPrime (request, response) {
                         // this means it's public read write
                         //console.log("no postACL for this post.");
                         PostStar._tags = ['*'];
+                        console.log("PostStar * Access: " + JSON.stringify(PostStar._tags));
+
                     }
 
 
