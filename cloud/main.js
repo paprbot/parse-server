@@ -1705,7 +1705,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
     let CHANNEL = Parse.Object.extend("Channel");
     let Channel = new CHANNEL();
     Channel.id = channelId;
-    console.log("addPeopleToChannel Channel: " + JSON.stringify(Channel));
+    //console.log("addPeopleToChannel Channel: " + JSON.stringify(Channel));
 
     let WORKSPACE = Parse.Object.extend("WorkSpace");
     let Workspace = new WORKSPACE();
@@ -1714,26 +1714,26 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
     let USER = Parse.Object.extend("_User");
 
 
-    console.log("before updateAllChannelFollows: " + JSON.stringify(userArrayID));
+    //console.log("before updateAllChannelFollows: " + JSON.stringify(userArrayID));
 
     let userArray = [];
 
-    console.log("userArray Set: " + JSON.stringify(userArray));
+    //console.log("userArray Set: " + JSON.stringify(userArray));
 
-    console.log("userArray Set: " + JSON.stringify(userArray.length));
+    //console.log("userArray Set: " + JSON.stringify(userArray.length));
 
     for (var j = 0; j < userArrayID.length; j++) {
 
         let User = new USER();
         User.id = userArrayID[j].objectId;
-        console.log("User: " + JSON.stringify(User));
+        //console.log("User: " + JSON.stringify(User));
 
         userArray.push(User);
-        console.log("userArray: " + JSON.stringify(userArray));
+        //console.log("userArray: " + JSON.stringify(userArray));
 
     }
 
-    console.log("userArray: " + JSON.stringify(userArray));
+    //console.log("userArray: " + JSON.stringify(userArray));
 
 
     function updateAllChannelFollows(skip) {
@@ -1762,7 +1762,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                 let ChannelObject = ChannelFollowers[0].get("channel");
 
 
-                console.log("ChannelFollowers.length: " + JSON.stringify(ChannelFollowers.length));
+                //console.log("ChannelFollowers.length: " + JSON.stringify(ChannelFollowers.length));
 
 
                 for (var i = 0; i < ChannelFollowers.length; i++) {
@@ -1778,12 +1778,12 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                 }
 
 
-                console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowersSet.size));
+                //console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowersSet.size));
 
                 let userArrayChannelFollowers = Array.from(userArrayChannelFollowersSet);
                 let arrayChannelFollowersSet = Array.from(ChannelFollowersSet);
 
-                console.log("::userArrayChannelFollowers:: " + JSON.stringify(userArrayChannelFollowers.length));
+                //console.log("::userArrayChannelFollowers:: " + JSON.stringify(userArrayChannelFollowers.length));
 
                 Parse.Object.saveAll(arrayChannelFollowersSet, {
 
@@ -1795,7 +1795,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                     // that we have more results
                     // otherwise we finish
 
-                    console.log("saveAll results ChannelFollowers: " + JSON.stringify(results));
+                    //console.log("saveAll results ChannelFollowers: " + JSON.stringify(results));
 
                     if (ChannelFollowers.length >= 500) {
 
@@ -1804,15 +1804,16 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                     }
                     else {
 
-                        console.log("ChannelFollowers less than 500");
+                        //console.log("ChannelFollowers less than 500");
 
                         let ChannelFollowSet = new Set();
+
 
                         for (var i = 0; i < userArray.length; i++) {
 
                             let user = userArray[i];
-                            console.log("user: " + JSON.stringify(user.id));
-                            console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowers));
+                            //console.log("user: " + JSON.stringify(user.id));
+                            //console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowers));
 
 
                             let includesMatch = userArrayChannelFollowers.includes(user.id);
@@ -4775,8 +4776,12 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     let _tagPublic = '*';
     let _tagUserId = user.id;
 
-    let defaultTagFilters = [_tagUserId , _tagPublic];
-    let userOriginalTagFilters = userOriginal.get("tagFilters")? userOriginal.get("tagFilters") : defaultTagFilters;
+    let defaultTagFilters = new Set();
+    defaultTagFilters.add(_tagUserId);
+    defaultTagFilters.add(_tagPublic);
+    let defaultTagFiltersArray = Array.from(new Set(defaultTagFilters));
+
+    let userOriginalTagFilters = userOriginal.get("tagFilters")? userOriginal.get("tagFilters") : defaultTagFiltersArray;
 
     if (user.dirty("profileimage") || user.get("isWorkspaceUpdated") === true || user.get("isChannelUpdated") === true || user.dirty("title") || user.dirty("displayName") || user.dirty("fullname") || user.dirty("roles") || user.dirty("isOnline") || user.dirty("showAvailability")) {
 
@@ -4843,7 +4848,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
                 '4cbf716235b59cc21f2fa38eb29c4e39',
                 {
                     //validUntil: expiresAt,
-                    tagFilters: [ defaultTagFilters ],
+                    tagFilters: [ defaultTagFiltersArray ],
                     userToken: user.id
                 }
             );
@@ -4852,7 +4857,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
 
             user.set("algoliaSecureAPIKey", user_public_key);
-            user.set("tagFilters", defaultTagFilters);
+            user.set("tagFilters", defaultTagFiltersArray);
 
 
         }
@@ -24761,9 +24766,9 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
     let _tagPublic = '*';
     let _tagUserId = user.id;
 
-    let defaultTagFilters = [_tagUserId , _tagPublic];
-    //todo change to set to make sure items are unique
-
+    let defaultTagFilters = new Set();
+    defaultTagFilters.add(_tagUserId);
+    defaultTagFilters.add(_tagPublic);
 
     function addIsSelectedChannelFollowPointerWorkspaceFollow (callback) {
 
@@ -24873,9 +24878,9 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
     function updateUserACLAlgolia (callback) {
 
-        console.log("Starting updateUserACLAlgolia..");
+        //console.log("Starting updateUserACLAlgolia..");
 
-        if ( (channelfollow.get("isNew") === true || originalChannelFollow.get("isNew") === true)&& channelfollow.get("isMember") === true) {
+        if ( (channelfollow.get("isNew") === true) && channelfollow.get("isMember") === true) {
 
             console.log("updateUserACLAlgolia enter into if statement 1...");
 
@@ -24888,15 +24893,34 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                 if (User) {
 
-                    let tagFiltersArray = User.get("tagFilters")? User.get("tagFilters") : defaultTagFilters;
+                    let tagFiltersArray = User.get("tagFilters")? User.get("tagFilters") : [];
+                    console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
+
+                    let tagFiltersSet = new Set();
+
+                    if (tagFiltersArray.length > 0) {
+
+                        tagFiltersArray.forEach(item => tagFiltersSet.add(item));
+
+                    } else {
+
+                        tagFiltersSet = defaultTagFilters;
+
+                    }
+
+                    console.log("tagFiltersSet: " + JSON.stringify(tagFiltersSet));
+
+
                     console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
 
                     let unique_channelId = channelfollow.get("workspace").id + '-' + channelfollow.get("channel").id;
                     console.log("unique_channelId: " + JSON.stringify(unique_channelId));
 
-                    tagFiltersArray.push(unique_channelId);
+                    tagFiltersSet.add(unique_channelId);
 
-                    console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
+                    console.log("tagFiltersSet set: " + JSON.stringify(tagFiltersSet));
+
+                    let tagFiltersArrayFinal= Array.from(new Set(tagFiltersSet));
 
                     let CHANNEL = Parse.Object.extend("Channel");
                     let queryChannel = new Parse.Query(CHANNEL);
@@ -24918,7 +24942,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                                     '4cbf716235b59cc21f2fa38eb29c4e39',
                                     {
                                         //validUntil: expiresAt,
-                                        tagFilters: [ tagFiltersArray ],
+                                        tagFilters: [ tagFiltersArrayFinal ],
                                         userToken: user.id
                                     }
                                 );
@@ -25026,18 +25050,39 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                 if (User) {
 
-                    let tagFiltersArray = User.get("tagFilters")? User.get("tagFilters") : defaultTagFilters;
+                    let tagFiltersArray = User.get("tagFilters")? User.get("tagFilters") : [];
+                    console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
+
+                    let tagFiltersSet = new Set();
+
+                    if (tagFiltersArray.length > 0) {
+
+                        tagFiltersArray.forEach(item => tagFiltersSet.add(item));
+
+                    } else {
+
+                        tagFiltersSet = defaultTagFilters;
+
+                    }
+
+                    console.log("tagFiltersSet: " + JSON.stringify(tagFiltersSet));
+
+
                     console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
 
                     let unique_channelId = channelfollow.get("workspace").id + '-' + channelfollow.get("channel").id;
                     console.log("unique_channelId: " + JSON.stringify(unique_channelId));
 
-                    tagFiltersArray.push(unique_channelId);
+                    tagFiltersSet.add(unique_channelId);
 
-                    console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
+                    console.log("tagFiltersSet set: " + JSON.stringify(tagFiltersSet));
 
+                    let tagFiltersArrayFinal= Array.from(new Set(tagFiltersSet));
 
-                    channel.fetch(channel.id , {
+                    let CHANNEL = Parse.Object.extend("Channel");
+                    let queryChannel = new Parse.Query(CHANNEL);
+
+                    queryChannel.get(channel.id, {
 
                         useMasterKey: true
                         //sessionToken: sessionToken
@@ -25054,7 +25099,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                                     '4cbf716235b59cc21f2fa38eb29c4e39',
                                     {
                                         //validUntil: expiresAt,
-                                        tagFilters: [ tagFiltersArray ],
+                                        tagFilters: [ tagFiltersArrayFinal ],
                                         userToken: user.id
                                     }
                                 );
@@ -25106,6 +25151,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                     }, (error) => {
                         // The object was not retrieved successfully.
                         // error is a Parse.Error with an error code and message.
+                        console.error("error queryChannel afterSave ChannelFollow 2");
                         return callback (error);
                     }, {
 
@@ -25133,6 +25179,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                 //sessionToken: sessionToken
 
             });
+
         }
 
         else if (channelfollow.get("isNew") === false && channelfollow.get("isMember") === false  && originalChannelFollow.get("isMember") === false) {
