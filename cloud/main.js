@@ -1787,8 +1787,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                 Parse.Object.saveAll(arrayChannelFollowersSet, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    //useMasterKey: true
+                    sessionToken: sessionToken
 
                 }).then(function(results) {
                     // if we got 500 or more results then we know
@@ -1801,7 +1801,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                         updateAllChannelFollows(skip + 500); // make a recursion call with different skip value
 
-                    } else {
+                    }
+                    else {
 
                         console.log("ChannelFollowers less than 500");
 
@@ -1959,6 +1960,11 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                                             // error
                                             return response.error(err);
 
+                                        }, {
+
+                                            //useMasterKey: true
+                                            sessionToken: sessionToken
+
                                         });
 
 
@@ -1986,6 +1992,11 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                 }, function(err) {
                     // error
                     return response.error(err);
+
+                }, {
+
+                    //useMasterKey: true
+                    sessionToken: sessionToken
 
                 });
 
@@ -2025,8 +2036,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                     Parse.Object.saveAll(channelFollowArray, {
 
-                        useMasterKey: true
-                        //sessionToken: sessionToken
+                        //useMasterKey: true
+                        sessionToken: sessionToken
 
                     }).then(function(results) {
 
@@ -2167,6 +2178,11 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                     }, function(err) {
                         // error
                         return response.error(err);
+
+                    }, {
+
+                        //useMasterKey: true
+                        sessionToken: sessionToken
 
                     });
 
@@ -7721,8 +7737,8 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         async.apply(getMentions),
         async.apply(getURL),
         async.apply(archivePostSocial),
-        async.apply(setDefaultValues),
-        async.apply(getChannelACL)
+        async.apply(setDefaultValues)
+        //async.apply(getChannelACL)
         //async.apply(createPostSocial)
         //async.apply(getIntents)
 
