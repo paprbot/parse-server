@@ -24790,6 +24790,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
     let defaultTagFilters = new Set();
     defaultTagFilters.add(_tagUserId);
     defaultTagFilters.add(_tagPublic);
+    //console.log("defaultTagFilters: " + JSON.stringify(defaultTagFilters.size));
 
     function addIsSelectedChannelFollowPointerWorkspaceFollow (callback) {
 
@@ -24914,7 +24915,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                 if (User) {
 
-                    let tagFiltersArray = User.get("tagFilters")? User.get("tagFilters") : [];
+                    let tagFiltersArray = User.get("tagFilters")? User.get("tagFilters") : ["*", user.id];
                     console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
 
                     let tagFiltersSet = new Set();
@@ -24930,19 +24931,21 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                     }
 
-                    console.log("tagFiltersSet: " + JSON.stringify(tagFiltersSet));
+                    //console.log("tagFiltersSet: " + JSON.stringify(tagFiltersSet.size));
 
 
-                    console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
+                    //console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
 
                     let unique_channelId = channelfollow.get("workspace").id + '-' + channelfollow.get("channel").id;
-                    console.log("unique_channelId: " + JSON.stringify(unique_channelId));
+                    //console.log("unique_channelId: " + JSON.stringify(unique_channelId));
 
                     tagFiltersSet.add(unique_channelId);
 
-                    console.log("tagFiltersSet set: " + JSON.stringify(tagFiltersSet));
+                    //console.log("tagFiltersSet set: " + JSON.stringify(tagFiltersSet.size));
 
                     let tagFiltersArrayFinal= Array.from(new Set(tagFiltersSet));
+
+                    console.log("tagFiltersArrayFinal: " + JSON.stringify(tagFiltersArrayFinal));
 
                     let CHANNEL = Parse.Object.extend("Channel");
                     let queryChannel = new Parse.Query(CHANNEL);
@@ -25063,10 +25066,10 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                 if (User) {
 
                     let unique_channelId = channelfollow.get("workspace").id + '-' + channelfollow.get("channel").id;
-                    console.log("unique_channelId: " + JSON.stringify(unique_channelId));
+                    //console.log("unique_channelId: " + JSON.stringify(unique_channelId));
 
-                    let tagFiltersArray = User.get("tagFilters")? User.get("tagFilters") : [];
-                    console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
+                    let tagFiltersArray = User.get("tagFilters")? User.get("tagFilters") : ["*", user.id];
+                    //console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
 
                     let tagFiltersSet = new Set();
 
@@ -25090,12 +25093,14 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                     }
 
-                    console.log("tagFiltersSet: " + JSON.stringify(tagFiltersSet));
+                    //console.log("tagFiltersSet: " + JSON.stringify(tagFiltersSet));
 
 
-                    console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
+                    //console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
 
                     let tagFiltersArrayFinal= Array.from(new Set(tagFiltersSet));
+
+                    console.log("tagFiltersArrayFinal: " + JSON.stringify(tagFiltersArrayFinal));
 
                     let CHANNEL = Parse.Object.extend("Channel");
                     let queryChannel = new Parse.Query(CHANNEL);
@@ -25213,8 +25218,8 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                 if (User) {
 
-                    let tagFiltersArray = User.get("tagFilters")? User.get("tagFilters") : [];
-                    console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
+                    let tagFiltersArray = User.get("tagFilters")? User.get("tagFilters") : ["*", user.id];
+                    //console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
 
                     let tagFiltersSet = new Set();
 
@@ -25229,19 +25234,21 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
                     }
 
-                    console.log("tagFiltersSet: " + JSON.stringify(tagFiltersSet));
+                    //console.log("tagFiltersSet: " + JSON.stringify(tagFiltersSet));
 
 
-                    console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
+                    //console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
 
                     let unique_channelId = channelfollow.get("workspace").id + '-' + channelfollow.get("channel").id;
-                    console.log("unique_channelId: " + JSON.stringify(unique_channelId));
+                    //console.log("unique_channelId: " + JSON.stringify(unique_channelId));
 
                     tagFiltersSet.add(unique_channelId);
 
-                    console.log("tagFiltersSet set: " + JSON.stringify(tagFiltersSet));
+                    //console.log("tagFiltersSet set: " + JSON.stringify(tagFiltersSet));
 
                     let tagFiltersArrayFinal= Array.from(new Set(tagFiltersSet));
+
+                    console.log("tagFiltersArrayFinal: " + JSON.stringify(tagFiltersArrayFinal));
 
                     let CHANNEL = Parse.Object.extend("Channel");
                     let queryChannel = new Parse.Query(CHANNEL);
