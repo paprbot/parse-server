@@ -38,6 +38,7 @@ function simplifyUser (User) {
     if (expertOwner.isChannelUpdated === true || expertOwner.isChannelUpdated === false) {delete expertOwner.isChannelUpdated;}
     if (expertOwner.isUpdateAlgoliaIndex === true || expertOwner.isUpdateAlgoliaIndex === false) {delete expertOwner.isUpdateAlgoliaIndex;}
     if (expertOwner.isWorkspaceUpdated === true || expertOwner.isWorkspaceUpdated === false) {delete expertOwner.isWorkspaceUpdated;}
+    if (expertOwner.tagFilters) {delete expertOwner.tagFilters}
 
 
 

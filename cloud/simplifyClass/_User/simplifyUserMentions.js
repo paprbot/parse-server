@@ -37,8 +37,7 @@ function simplifyUser (User) {
     if (userMention.isDirtyTyping === true || userMention.isDirtyTyping === false) {delete userMention.isDirtyTyping;}
     if (userMention.ACL) {delete userMention.ACL}
     if (userMention.isSelectedWorkspaceFollower) {delete userMention.isSelectedWorkspaceFollower}
-
-
+    if (userMention.tagFilters) {delete userMention.tagFilters}
 
     return userMention;
 }

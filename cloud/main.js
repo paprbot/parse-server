@@ -4733,6 +4733,9 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     }
 
     let user = req.object;
+    let userOriginal = req.original;
+    console.log("userOriginal: " + JSON.stringify(userOriginal));
+
     let socialProfilePicURL = user.get("socialProfilePicURL");
     let profileImage = user.get("profileimage");
 
@@ -4751,6 +4754,8 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     let _tagPublic = '*';
     let _tagUserId = user.id;
 
+    let defaultTagFilters = [_tagUserId , _tagPublic];
+    let userOriginalTagFilters = userOriginal.get("tagFilters")? userOriginal.get("tagFilters") : defaultTagFilters;
 
     if (user.dirty("profileimage") || user.get("isWorkspaceUpdated") === true || user.get("isChannelUpdated") === true || user.dirty("title") || user.dirty("displayName") || user.dirty("fullname") || user.dirty("roles") || user.dirty("isOnline") || user.dirty("showAvailability")) {
 
@@ -4817,7 +4822,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
                 '4cbf716235b59cc21f2fa38eb29c4e39',
                 {
                     //validUntil: expiresAt,
-                    tagFilters: [ [_tagUserId , _tagPublic] ],
+                    tagFilters: [ defaultTagFilters ],
                     userToken: user.id
                 }
             );
@@ -4826,6 +4831,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
 
             user.set("algoliaSecureAPIKey", user_public_key);
+            user.set("tagFilters", defaultTagFilters);
 
 
         }
@@ -4882,7 +4888,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
                 '4cbf716235b59cc21f2fa38eb29c4e39',
                 {
                     //validUntil: expiresAt,
-                    tagFilters: [ [_tagUserId , _tagPublic] ],
+                    tagFilters: [ userOriginalTagFilters ],
                     userToken: user.id
                 }
             );
@@ -4895,12 +4901,16 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
             response.success();
 
 
-        } else {
+        }
+
+        else {
 
             response.success();
 
 
         }
+
+        response.success();
 
 
     }
@@ -7640,13 +7650,74 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
     }
 
+    function getChannelACL (callback) {
+
+        // get channel ACL and assign it to Post ACL
+        if (post.isNew()) {
+
+            let CHANNEL = Parse.Object.extend("Channel");
+            let Channel =  new CHANNEL();
+            Channel.id = channel.id;
+
+            Channel.fetch(channel.id, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((channelObject) => {
+                // The object was retrieved successfully.
+
+                if (channelObject) {
+
+                    let channelACL = channelObject.getACL();
+                    console.log("beforeSave Post channelACL: " + JSON.stringify(channelACL));
+
+                    post.setACL(channelACL);
+                    console.log("beforeSave Post post ACL: " + JSON.stringify(post.getACL()));
+
+                    return callback (null, post);
+
+
+                } else {
+
+                    return callback (null, post);
+                }
+
+
+
+            }, (error) => {
+                // No Channel, maybe was delete so ignore removing the channel experts and updating follower/member count for channel
+                //console.log("no channel found in afterDelete channelFollow maybe we are deleting a channel or workspace");
+
+                return callback (error);
+
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+        }
+
+        else {
+
+
+            return callback(null, post);
+
+        }
+
+    }
+
     async.parallel([
         async.apply(countPosts),
         async.apply(getHashtags),
         async.apply(getMentions),
         async.apply(getURL),
         async.apply(archivePostSocial),
-        async.apply(setDefaultValues)
+        async.apply(setDefaultValues),
+        async.apply(getChannelACL)
         //async.apply(createPostSocial)
         //async.apply(getIntents)
 
@@ -18860,6 +18931,8 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                 console.log("question.PostMessageSocial.length: " + JSON.stringify(questionPostMessageSocialLength));
 
+                                // todo check why this is null for my username
+
                                 if (questionPostMessageSocialLength > 0) {
 
                                     console.log("question.PostMessageSocial: " + JSON.stringify(question.PostMessageSocial));
@@ -18952,7 +19025,6 @@ function splitPostAndIndexFasterPrime (request, response) {
 
 
                         }
-
 
                     }
 
@@ -24636,6 +24708,10 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
     let workspace = new WORKSPACE();
     workspace.id = channelfollow.get("workspace").id;
 
+    let CHANNEL = Parse.Object.extend("Channel");
+    let channel = new CHANNEL();
+    channel.id = channelfollow.get("channel").id;
+
     console.log("afterSave ChannelFollow: " + JSON.stringify(channelfollow));
 
     let currentUser = request.user;
@@ -24649,12 +24725,17 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
         return;
     }
 
+    let _tagPublic = '*';
+    let _tagUserId = user.id;
+
+    let defaultTagFilters = [_tagUserId , _tagPublic];
+
 
     function addIsSelectedChannelFollowPointerWorkspaceFollow (callback) {
 
-        console.log("channelfollow.isSelected: " + channelfollow.toJSON().isSelected);
+        console.log("channelfollow.isSelected: " + channelfollow.get("isSelected"));
 
-        if (channelfollow.toJSON().isSelected === true) {
+        if (channelfollow.get("isSelected") === true) {
 
             // add selected ChannelFollow as pointer to workspace_follower
             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
@@ -24698,7 +24779,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
             });
 
         }
-        else if (channelfollow.toJSON().isSelected === false) {
+        else if (channelfollow.get("isSelected") === false) {
 
             // add selected ChannelFollow as pointer to workspace_follower
             let queryWorkspaceFollow = new Parse.Query("workspace_follower");
@@ -24741,7 +24822,8 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
             });
 
 
-        } else {
+        }
+        else {
 
 
 
@@ -24753,10 +24835,141 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
     }
 
+    function updateUserACLAlgolia (callback) {
+
+        if (channelfollow.get("isNew") === true) {
+
+            user.fetch(user.id , {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then((User) => {
+
+                if (User) {
+
+                    let tagFiltersArray = User.get("tagFilters")? User.get("tagFilters") : defaultTagFilters;
+                    console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
+
+                    let unique_channelId = channelfollow.get("workspace").id + '-' + channelfollow.get("channel").id;
+                    console.log("unique_channelId: " + JSON.stringify(unique_channelId));
+
+                    tagFiltersArray.push(unique_channelId);
+
+                    console.log("tagFiltersArray: " + JSON.stringify(tagFiltersArray));
+
+
+                    channel.fetch(channel.id , {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((Channel) => {
+
+                        // todo remove this channel algolia key access when user is removed from private channel
+
+                        if (Channel) {
+
+                            if (Channel.get("type") === 'private' || 'privateMembers' || 'privateAdmins' || 'privateExperts' || 'privateModerators' || 'privateOwners') {
+
+                                const user_public_key = client.generateSecuredApiKey(
+                                    '4cbf716235b59cc21f2fa38eb29c4e39',
+                                    {
+                                        //validUntil: expiresAt,
+                                        tagFilters: [ tagFiltersArray ],
+                                        userToken: user.id
+                                    }
+                                );
+
+                                console.log("new algoliaPublic in afterSave ChannelFollow key generated for " + JSON.stringify(user.id));
+
+                                user.set("algoliaSecureAPIKey", user_public_key);
+
+
+                                user.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                }).then((userSaved) => {
+                                    // The object was retrieved successfully.
+                                    //console.log("Result from get " + JSON.stringify(Workspace));
+
+                                    //console.log("done saveParentPost : " + JSON.stringify(PostSaved));
+                                    return callback (null, channelfollow);
+
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    return callback(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+
+
+
+                            } else {
+
+                                return callback (null, channelfollow);
+                            }
+
+
+
+                        } else {
+
+                            return callback (null, channelfollow);
+                        }
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback (error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                }
+
+                else {
+
+                    return callback (null, channelfollow);
+                }
+
+
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                return callback (error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+
+        } else {
+
+            return callback (null, channelfollow);
+        }
+
+
+    }
+
 
     async.parallel([
-        async.apply(addIsSelectedChannelFollowPointerWorkspaceFollow)
-        // async.apply(addChannelsToAlgolia)
+        async.apply(addIsSelectedChannelFollowPointerWorkspaceFollow),
+        async.apply(updateUserACLAlgolia)
 
     ], function (err, results) {
         if (err) {
