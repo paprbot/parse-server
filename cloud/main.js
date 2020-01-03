@@ -1914,7 +1914,9 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                                                                 }, function(err) {
                                                                     // error
-                                                                    response.error(err);
+                                                                    console.error(err);
+
+                                                                    return err;
 
                                                                 });
 
@@ -2119,7 +2121,14 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                                                 }, function(err) {
                                                     // error
-                                                    response.error(err);
+                                                    console.error(err);
+
+                                                    return err;
+
+                                                }, {
+
+                                                    useMasterKey: true
+                                                    //sessionToken: sessionToken
 
                                                 });
 
@@ -2451,7 +2460,9 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
                                                             }, function(err) {
                                                                 // error
-                                                                return response.error(err);
+                                                                console.error(err);
+
+                                                                return err;
 
                                                             });
 
@@ -2558,7 +2569,9 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
                                                     }, function(err) {
                                                         // error
-                                                        return response.error(err);
+                                                        console.error(err);
+
+                                                        return err;
 
                                                     });
 
@@ -2741,7 +2754,9 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
                                                 }, function(err) {
                                                     // error
-                                                    response.error(err);
+                                                    console.error(err);
+
+                                                    return err;
 
                                                 });
 
@@ -4290,7 +4305,7 @@ Parse.Cloud.define("indexAlgolia", function(request, response) {
     let index;
 
     let query = new Parse.Query(collection);
-    query.limit(200); // todo limit to at most 1000 results need to change and iterate until done todo
+    query.limit(100); // todo limit to at most 1000 results need to change and iterate until done todo
 
     console.log('collection: ' + request.params.collection);
 
@@ -19840,7 +19855,7 @@ function SendPostNotifications (request, response) {
                                     // error
                                     console.error(err);
 
-                                    return response.error(err);
+                                    return (err);
 
                                 });
 
@@ -19918,7 +19933,7 @@ function SendPostNotifications (request, response) {
                                 // error
                                 console.error(err);
 
-                                return response.error(err);
+                                return (err);
 
                             });
 
@@ -19968,6 +19983,9 @@ function SendPostNotifications (request, response) {
 
 
 }
+
+
+
 
 function splitPostMessageAndIndex (request, response) {
 
@@ -23601,7 +23619,9 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
                             }, function(err) {
                                 // error
-                                response.error(err);
+                                console.error(err);
+
+                                return err;
 
                             });
 
@@ -25831,7 +25851,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "NumberOfCanAskQuestionOnPostAllowed": "3",
                     "canCreateOfficeHoursPost": false,
                     "NumberOfCanCreateOfficeHoursPostAllowed": "0",
-                    "canMentionMembers": false
+                    "canMentionMembers": false,
+                    "canEditPost": false,
+                    "canDeletePost": false,
+                    "canArchivePost": false
                 });
                 //followerRole.save(null, {useMasterKey: true});
                 //console.log("followerRole: " + JSON.stringify(followerRole));
@@ -25857,7 +25880,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
                     "canCreateOfficeHoursPost": true,
                     "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                    "canMentionMembers": true
+                    "canMentionMembers": true,
+                    "canEditPost": false,
+                    "canDeletePost": false,
+                    "canArchivePost": false
                 });
                 //memberRole.save(null, {useMasterKey: true});
 
@@ -25882,7 +25908,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
                     "canCreateOfficeHoursPost": true,
                     "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                    "canMentionMembers": true
+                    "canMentionMembers": true,
+                    "canEditPost": false,
+                    "canDeletePost": true,
+                    "canArchivePost": true
                 });
                 //moderatorRole.save(null, {useMasterKey: true});
 
@@ -25907,7 +25936,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
                     "canCreateOfficeHoursPost": true,
                     "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                    "canMentionMembers": true
+                    "canMentionMembers": true,
+                    "canEditPost": false,
+                    "canDeletePost": true,
+                    "canArchivePost": true
                 });
                 //adminRole.save(null, {useMasterKey: true});
 
@@ -25932,7 +25964,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
                     "canCreateOfficeHoursPost": true,
                     "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                    "canMentionMembers": true
+                    "canMentionMembers": true,
+                    "canEditPost": false,
+                    "canDeletePost": true,
+                    "canArchivePost": true
                 });
                 //expertRole.save(null, {useMasterKey: true});
 
@@ -25958,7 +25993,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "NumberOfCanAskQuestionOnPostAllowed": "unlimited",
                     "canCreateOfficeHoursPost": true,
                     "NumberOfCanCreateOfficeHoursPostAllowed": "unlimited",
-                    "canMentionMembers": true
+                    "canMentionMembers": true,
+                    "canEditPost": false,
+                    "canDeletePost": true,
+                    "canArchivePost": true
                 });
                 //console.log("ownerRole 2: " + JSON.stringify(ownerRole));
                 //ownerRole.save(null, {useMasterKey: true});
