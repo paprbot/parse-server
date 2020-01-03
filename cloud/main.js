@@ -469,7 +469,6 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
 
 });
 
-
 // cloud API and function to addExperts to a workspace
 Parse.Cloud.define("setAsExpert", function(request, response) {
 
@@ -1448,7 +1447,6 @@ Parse.Cloud.define("removeModerator", function(request, response) {
         }, {useMasterKey: true});
 
 }, {useMasterKey: true});
-
 
 // cloud API and function to leave a workspace
 Parse.Cloud.define("leaveWorkspace", function(request, response) {
@@ -2894,7 +2892,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
 
     for (var j = 0; j < userEmails.length; j++) {
 
-        userEmailArray.push(userEmails[j].email);
+        userEmailArray.push(userEmails[j].email.toLowerCase());
         console.log("userEmailArray: " + JSON.stringify(userEmailArray));
 
     }
