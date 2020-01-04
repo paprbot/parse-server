@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1137ca0f-151a-4d26-bb2a-9465bbaa466f" name="Default Changelist" comment="" />
+    <list default="true" id="9e3eecf8-fefd-4117-abb8-604fe27c3400" name="Default Changelist" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -10,7 +10,7 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectId" id="1VtkXO0j1I91Vqij6KDb4D70tPR" />
+  <component name="ProjectId" id="1VuMmlzlN8gdplJAm8Km9Wmc6kI" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showExcludedFiles" value="true" />
@@ -18,6 +18,9 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="aspect.path.notification.shown" value="true" />
+    <property name="nodejs_package_manager_path" value="npm" />
     <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="ServiceViewManager">
@@ -34,22 +37,36 @@
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="1137ca0f-151a-4d26-bb2a-9465bbaa466f" name="Default Changelist" comment="" />
-      <created>1578079817944</created>
+      <changelist id="9e3eecf8-fefd-4117-abb8-604fe27c3400" name="Default Changelist" comment="" />
+      <created>1578098687432</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1578079817944</updated>
+      <updated>1578098687432</updated>
+      <workItem from="1578098690395" duration="4407000" />
     </task>
-    <servers />
+    <servers>
+      <GitHub url="https://github.com" />
+    </servers>
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="252" y="124" key="SettingsEditor" timestamp="1578079982493">
+    <state x="343" y="140" key="#Servers" timestamp="1578099317613">
       <screen x="0" y="0" width="1500" height="960" />
     </state>
-    <state x="252" y="124" key="SettingsEditor/0.0.1500.960@0.0.1500.960" timestamp="1578079982493" />
-    <state x="451" y="306" key="com.intellij.ide.util.TipDialog" timestamp="1578079831969">
+    <state x="343" y="140" key="#Servers/0.0.1500.960@0.0.1500.960" timestamp="1578099317613" />
+    <state x="206" y="0" width="1086" height="960" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1578104143838">
       <screen x="0" y="0" width="1500" height="960" />
     </state>
-    <state x="451" y="306" key="com.intellij.ide.util.TipDialog/0.0.1500.960@0.0.1500.960" timestamp="1578079831969" />
+    <state x="206" y="0" width="1086" height="960" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1500.960@0.0.1500.960" timestamp="1578104143838" />
+    <state x="331" y="224" key="IDE.errors.dialog" timestamp="1578104125958">
+      <screen x="0" y="0" width="1500" height="960" />
+    </state>
+    <state x="331" y="224" key="IDE.errors.dialog/0.0.1500.960@0.0.1500.960" timestamp="1578104125958" />
+    <state x="252" y="124" key="SettingsEditor" timestamp="1578099248227">
+      <screen x="0" y="0" width="1500" height="960" />
+    </state>
+    <state x="252" y="124" key="SettingsEditor/0.0.1500.960@0.0.1500.960" timestamp="1578099248227" />
   </component>
 </project>
