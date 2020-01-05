@@ -21007,7 +21007,7 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
 
-    console.log("beforeSave PostSocial request: " + JSON.stringify(request));
+    //console.log("beforeSave PostSocial request: " + JSON.stringify(request));
 
     let currentUser = request.user;
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
@@ -21581,7 +21581,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
             let finalTime = process.hrtime(time);
             console.log(`finalTime took afterSave PostSocial ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
-            response.success();
+            return response.success();
 
 
         }
@@ -28813,7 +28813,7 @@ Parse.Cloud.define("sendEmail", function(request, response) {
             pass: '341422f3b5a499c0c3a311c4bd42e851-us15'
         }*/
         host: 'smtp.sendgrid.net',
-        port: 587,
+        port: 465,
         secure: false,
         auth: {
             user: 'apikey',
