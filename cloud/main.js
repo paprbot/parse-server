@@ -21206,7 +21206,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
     queryPost.equalTo("objectId", post.id);
 
-    let isPostNew = postSocial.get("isPostNew")? postSocial.get("isPostNew") : false;
+    let isPostNew = postSocial.get("postIsNew")? postSocial.get("postIsNew") : false;
     let isNew = postSocial.get("isNew")? postSocial.get("isNew") : false;
 
     function incrementPostSocialCount(cb) {
