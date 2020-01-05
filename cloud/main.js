@@ -21164,7 +21164,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     let time = process.hrtime();
 
     let currentUser = request.user;
-    console.log("currentUser afterSave PostSocial: " + JSON.stringify(currentUser));
+    //console.log("currentUser afterSave PostSocial: " + JSON.stringify(currentUser));
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
@@ -21175,7 +21175,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
         return;
     }
 
-    console.log("request afterSave PostSocial: " + JSON.stringify(request));
+    //console.log("request afterSave PostSocial: " + JSON.stringify(request));
 
     // Get post object
     let POSTSOCIAL = Parse.Object.extend("PostSocial");
@@ -21199,17 +21199,20 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     let USER = Parse.Object.extend("_User");
     let owner = new USER();
     owner.id = postSocial.get("user") ? postSocial.get("user").id : currentUser.id;
-    console.log("afterSave PostSocial owner: " + JSON.stringify(owner));
+    //console.log("afterSave PostSocial owner: " + JSON.stringify(owner));
 
     let queryPost = new Parse.Query(POST);
     queryPost.include( ["user", "workspace", "channel"] );
     //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
     queryPost.equalTo("objectId", post.id);
 
+    let isPostNew = postSocial.get("isPostNew")? postSocial.get("isPostNew") : false;
+    let isNew = postSocial.get("isNew")? postSocial.get("isNew") : false;
+
     function incrementPostSocialCount(cb) {
 
 
-        if (postSocial.get("isPostNew") === true && postSocial.get("isNew") === true) {
+        if (isPostNew === true && isNew === true) {
 
             // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
 
@@ -21217,7 +21220,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
 
         }
-        else if (postSocial.get("isPostNew") === false && postSocial.get("isNew") === true) {
+        else if (isPostNew === false && isNew === true) {
 
             post.increment("postSocialCount");
             let relation = post.relation("postSocial");
@@ -21276,7 +21279,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
             });
 
         }
-        else if (postSocial.get("isPostNew") === false && postSocial.get("isNew") === false) {
+        else if (isPostNew === false && isNew === false) {
 
             if (originalPostSocial.get("isLiked") === true && postSocial.get("isLiked") === true) {
 
@@ -21458,7 +21461,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
 
         }
-        else if (postSocial.get("isPostNew") === true && postSocial.get("isNew") === false) {
+        else if (isPostNew === true && isNew === false) {
 
             // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
 
@@ -21475,7 +21478,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
         //console.log("starting updatePostsAlgolia: " + JSON.stringify(Post));
 
-        if (postSocial.get("isPostNew") === true && postSocial.get("isNew") === true) {
+        if (isPostNew === true && isNew === true) {
 
             // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
 
@@ -21483,7 +21486,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
 
         }
-        else if (postSocial.get("isPostNew") === false && postSocial.get("isNew") === true) {
+        else if (isPostNew === false && isNew === true) {
 
             console.log("PostObject: " + JSON.stringify(PostObject));
 
@@ -21515,7 +21518,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
 
         }
-        else if (postSocial.get("isPostNew") === false && postSocial.get("isNew") === false) {
+        else if (isPostNew === false && isNew === false) {
 
             console.log("PostObject: " + JSON.stringify(PostObject));
 
@@ -21547,7 +21550,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
 
         }
-        else if (postSocial.get("isPostNew") === true && postSocial.get("isNew") === false) {
+        else if (isPostNew === true && isNew === false) {
 
             // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
 
