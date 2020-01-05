@@ -18707,7 +18707,7 @@ function splitPostAndIndexFasterPrime (request, response) {
             //console.log("afterSave PostSocial Post algolia index results length: " + JSON.stringify(results.length));
 
             let finalPostIndexResults = results[0];
-            console.log("finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.length));
+            //console.log("finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.length));
 
             let finalPostMessageQuestionResults = results[1];
             //console.log("finalPostMessageQuestionResults: " + JSON.stringify(finalPostMessageQuestionResults));
@@ -19000,7 +19000,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                 }
             });*/
 
-            /*async.mapSeries(finalPostIndexResults, function (finalPostIndexResult, cb7) {
+            async.mapSeries(finalPostIndexResults, function (finalPostIndexResult, cb7) {
 
                 //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
 
@@ -19331,9 +19331,10 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                 }
 
-            });*/
+            });
+            // switched to async.map
 
-            let mapFinalPostIndexResults = lodash.map(finalPostIndexResults, function (finalPostIndexResult) {
+            /*let mapFinalPostIndexResults = lodash.map(finalPostIndexResults, function (finalPostIndexResult) {
 
                 //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
 
@@ -19654,7 +19655,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                 return response.success();
 
-            }
+            }*/
 
 
         }
