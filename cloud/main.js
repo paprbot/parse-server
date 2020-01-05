@@ -2497,6 +2497,8 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                                         SendNotifications ();
 
 
+
+
                                     }, function(err) {
                                         // error
                                         return response.error(err);
@@ -2606,6 +2608,8 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                                 SendNotifications ();
 
 
+
+
                                 arrayWorkspaceFollowers = arrayWorkspaceFollowers.concat(WorkspaceFollowArray);
 
                                 let finalTime = process.hrtime(time);
@@ -2643,7 +2647,6 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
 
             else {
 
-                // todo create new WorkspaceFollower for these Users
 
                 let WorkspaceFollowSet = new Set();
 
@@ -2858,6 +2861,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
     let time = process.hrtime();
 
     let currentUser = request.user;
+    let username = currentUser.get("username");
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
@@ -2941,8 +2945,6 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                 console.log("::workspaceId:: " + JSON.stringify(workspaceId));
                 console.log("::useIDs:: " + JSON.stringify(userArrayObjectIds));
 
-
-
                 Parse.Cloud.run("addPeopleToWorkspace", {
                     //user: currentUser,
                     workspace: workspaceId,
@@ -2955,7 +2957,8 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
 
                         getUserIdsFromEmails(skip + 500); // make a recursion call with different skip value
 
-                    } else {
+                    }
+                    else {
 
                         console.log("getUserIdsFromEmails less than 500");
 
@@ -2964,13 +2967,13 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                         for (var i = 0; i < userEmailArray.length; i++) {
 
                             let userEmail = userEmailArray[i];
-                            console.log("userEmail: " + JSON.stringify(userEmail));
-                            console.log("userArrayEmails: " + JSON.stringify(userArrayEmails));
+                            //console.log("userEmail: " + JSON.stringify(userEmail));
+                            //console.log("userArrayEmails: " + JSON.stringify(userArrayEmails));
 
 
                             let includesMatch = userArrayEmails.includes(userEmail);
 
-                            console.log("includesMatch: " + JSON.stringify(includesMatch));
+                            //console.log("includesMatch: " + JSON.stringify(includesMatch));
 
                             if(includesMatch === false) {
                                 // this user doesn't have a channelFollow, create one!
@@ -2984,14 +2987,14 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
 
                                 if ( i === (userEmailArray.length - 1)) {
 
-                                    console.log("UserInvitesSet 1: " + JSON.stringify(UserInvitesSet));
-                                    console.log("UserInvitesSet Size: " + JSON.stringify(UserInvitesSet.size));
+                                    //console.log("UserInvitesSet 1: " + JSON.stringify(UserInvitesSet));
+                                    //console.log("UserInvitesSet Size: " + JSON.stringify(UserInvitesSet.size));
 
 
                                     //let dupeArray = [3,2,3,3,5,2];
                                     let UserInvitesArray = Array.from(new Set(UserInvitesSet));
 
-                                    console.log("UserInvitesArray length: " + JSON.stringify(UserInvitesArray.length));
+                                    //console.log("UserInvitesArray length: " + JSON.stringify(UserInvitesArray.length));
 
                                     if (UserInvitesArray.length > 0) {
 
@@ -3005,7 +3008,19 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                                             // that we have more results
                                             // otherwise we finish
 
-                                            // todo send Emails to users who got added to a workspace but are not on Papr yet
+                                            Parse.Cloud.run("sendEmail", {
+                                                //user: currentUser,
+                                                workspaceName: Workspace.get("workspace_name"),
+                                                username: username,
+                                                workspaceID: workspaceId,
+                                                emails: userEmailArray
+
+                                            },{sessionToken: sessionToken}).then(function(result) {
+                                                console.log("sendEmail result: "+ JSON.stringify(result));
+
+                                            }, function(error) {
+                                                return response.error(error);
+                                            }, {useMasterKey: true});
 
 
 
@@ -3096,7 +3111,20 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
 
                         }).then((workspaceObject) => {
 
-                            // todo send emails to those users.
+
+                            Parse.Cloud.run("sendEmail", {
+                                //user: currentUser,
+                                workspaceName: Workspace.get("workspace_name"),
+                                username: username,
+                                workspaceID: workspaceId,
+                                emails: userEmailArray
+
+                            },{sessionToken: sessionToken}).then(function(result) {
+                                console.log("sendEmail result: "+ JSON.stringify(result));
+
+                            }, function(error) {
+                                return response.error(error);
+                            }, {useMasterKey: true});
 
 
 
@@ -28914,7 +28942,7 @@ Parse.Cloud.define("sendEmail", function(request, response) {
             }
             var htmlToSend = template(temp);
             var mailOptions = {
-                from: 'testmail.team5@gmail.com',
+                from: 'developer@papr.ai',
                 // from: 'Papr, Inc.',
                 to : request.params.emails[count.value],
                 subject : 'Papr.ai',
