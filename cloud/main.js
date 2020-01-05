@@ -21041,6 +21041,8 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
             return response.error("Post is required.");
         }
 
+
+
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
         Post.id = postSocial.get("post").id;
@@ -21092,6 +21094,14 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
                 }
                 if (!postSocial.get("hasRead")) {
                     postSocial.set("hasRead", false);
+                }
+
+                if (!postSocial.get("postIsNew")) {
+                    postSocial.set("postIsNew", false);
+                }
+
+                if (!postSocial.get("isExpanded")) {
+                    postSocial.set("isExpanded", false);
                 }
 
                 let diff = process.hrtime(time);
