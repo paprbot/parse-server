@@ -19000,7 +19000,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                 }
             });*/
 
-            async.mapSeries(finalPostIndexResults, function (finalPostIndexResult, cb7) {
+            /*async.mapSeries(finalPostIndexResults, function (finalPostIndexResult, cb7) {
 
                 //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
 
@@ -19331,408 +19331,224 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                 }
 
-            });
+            });*/
 
+            let mapFinalPostIndexResults = lodash.map(finalPostIndexResults, function (finalPostIndexResult) {
 
+                //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
 
-
-            /*
-            async.each(finalPostIndexResults, function (finalPostIndexResult, callback) {
-
-                console.log("starting async.map finalPostIndexResults: ");
-
-                console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+                //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
                 let Questions = finalPostMessageQuestionResults;
 
                 let answer = finalPostMessageAnswerResults;
 
-                if (finalPostIndexResult.PostSocial) {
+                let usersPost = finalPostIndexResult;
 
-                    if (finalPostIndexResult.type === 'post') {
+                if (usersPost.PostSocial) {
 
-                        if (finalPostMessageQuestionResults.length > 0) {
+                    if (usersPost.type === 'post') {
 
-                            console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
+                        if (arrayQuestionLength > 0) {
+
+                            //console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
+
 
                             let arrQuestions = lodash.map(Questions, function (question) {
 
-                                let postSocialId = finalPostIndexResult.PostSocial.objectId;
-                                let userId = finalPostIndexResult.PostSocial.user.objectId;
+                                let postSocialId = usersPost.PostSocial.objectId;
+                                let userId = usersPost.PostSocial.user.objectId;
 
-                                //console.log("question.PostMessageSocial.length: " + JSON.stringify(question.PostMessageSocial.length));
+                                let questionPostMessageSocialLength = question.PostMessageSocial? question.PostMessageSocial.length : 0;
 
-                                if (question.PostMessageSocial) {
+                                console.log("question.PostMessageSocial.length: " + JSON.stringify(questionPostMessageSocialLength));
 
-                                    if (question.PostMessageSocial.length > 0) {
+                                // todo check why this is null for my username
 
-                                        let arrayPostMessageSocial = question.PostMessageSocial;
-                                        let matchExists = false;
+                                if (questionPostMessageSocialLength > 0) {
 
+                                    console.log("question.PostMessageSocial: " + JSON.stringify(question.PostMessageSocial));
 
-                                        for (var i = 0; i < arrayPostMessageSocial.length; i++) {
-
-                                            let postMessageSocialObj = arrayPostMessageSocial[i];
-
-                                            console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
-
-                                            console.log("postSocialId::socialpostSocialId " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
-
-                                            console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.get("user").id));
-
-                                            if (postMessageSocialObj.get("user").id === userId) {
-
-
-                                                question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
-                                                matchExists = true;
-
-                                            }
-
-
-                                        }
-
-                                        if (question.PostMessageSocial.length > 0) {
-
-                                            console.log("issue matchExists: " + JSON.stringify(matchExists));
-
-                                            if (matchExists === false) {
-
-                                                question.PostMessageSocial = null;
-                                            }
-                                        }
-
-                                        console.log("question prime: " + JSON.stringify(question));
-
-                                        return question;
-
-
-                                    }
-                                    else {
-
-                                        console.log("null postMessageSocial 1");
-
-                                        let arrayPostMessageSocial = null;
-
-                                        question.PostMessageSocial = arrayPostMessageSocial;
-
-                                        return question;
-
-
-                                    }
-
-
-                                } else {
-
-                                    console.log("null postMessageSocial 2");
-
-                                    let arrayPostMessageSocial = null;
-
-                                    question.PostMessageSocial = arrayPostMessageSocial;
-
-                                    return question;
-
-
-                                }
-
-
-                            });
-
-                            console.log("arrQuestions: " + JSON.stringify(arrQuestions));
-
-
-                            finalPostIndexResult.postQuestions = arrQuestions;
-                            finalPostIndexResult.topAnswer = null;
-
-
-                            indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
-                                if (err) {
-                                    return response.error(err);
-                                }
-
-
-                            });
-
-                            return callback(null, finalPostIndexResult);
-
-
-                        }
-
-                        if (finalPostMessageQuestionResults.length === 0) {
-
-                            console.log("::no questions on post::");
-
-                            finalPostIndexResult.postQuestions = [];
-                            finalPostIndexResult.topAnswer = null;
-                            //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                            indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
-                                if (err) {
-                                    return response.error(err);
-                                }
-
-
-                            });
-
-                            return callback(null, finalPostIndexResult);
-
-
-                        }
-
-
-                    }
-
-                    else if (finalPostIndexResult.type === 'question') {
-
-                        if (finalPostMessageAnswerResults) {
-
-                            console.log(":::finalPostMessageAnswerResults::: " + JSON.stringify(finalPostMessageAnswerResults));
-
-                            if (answer.PostMessageSocial) {
-
-                                let postSocialId = finalPostIndexResult.PostSocial.objectId;
-                                let userId = finalPostIndexResult.PostSocial.user.objectId;
-
-                                let arrayLength = answer.PostMessageSocial.length;
-
-
-                                if (arrayLength > 0) {
-
-                                    let matchExists = false;
-
-                                    let arrayPostMessageSocial = answer.PostMessageSocial;
+                                    let arrayPostMessageSocial = question.PostMessageSocial;
 
                                     let matchResult = lodash.findIndex(arrayPostMessageSocial, function (o) {
 
-                                        o = simplifyPostMessageSocialAnswer(o);
+                                        o = simplifyPostMessageSocialQuestion(o);
 
                                         console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
                                         return o.user.objectId === userId;
 
                                     });
 
-                                    console.log("matchResult: " + JSON.stringify(matchResult));
+                                    //console.log("matchResult: " + JSON.stringify(matchResult));
 
                                     if (matchResult === -1) {
 
                                         // no match
 
-                                        answer.PostMessageSocial = null;
+                                        question.PostMessageSocial = null;
+                                        console.log("question null prime: " + JSON.stringify(question));
+
+                                        return question;
 
                                     } else {
 
                                         // match exists
                                         let postMessageSocialObj = arrayPostMessageSocial[matchResult];
-                                        postMessageSocialObj = simplifyPostMessageSocialAnswer(postMessageSocialObj);
-                                        answer.PostMessageSocial = postMessageSocialObj;
+                                        postMessageSocialObj = simplifyPostMessageSocialQuestion(postMessageSocialObj);
+                                        question.PostMessageSocial = postMessageSocialObj;
 
+                                        console.log("question prime: " + JSON.stringify(question));
+
+                                        return question;
 
                                     }
-
-
-                                    console.log("answer prime: " + JSON.stringify(answer));
 
 
                                 }
                                 else {
 
-                                    console.log("null answer 1");
-
-                                    let arrayPostMessageSocial = null;
-
-                                    answer.PostMessageSocial = arrayPostMessageSocial;
-
-
-                                }
-
-
-                            } else {
-
-                                console.log("null answer 2");
-
-                                let arrayPostMessageSocial = null;
-
-                                answer.PostMessageSocial = arrayPostMessageSocial;
-
-
-                            }
-
-                            console.log("finalPostMessageAnswerResults arrAnswers: " + JSON.stringify(answer));
-
-
-                            finalPostIndexResult.topAnswer = answer;
-                            finalPostIndexResult.postQuestions = [];
-
-                            //console.log("finalPostMessageAnswerResults answer.PostMessageSocial: " + JSON.stringify(answer.PostMessageSocial));
-
-
-                            console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
-
-                            indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
-                                if (err) {
-                                    return response.error(err);
-                                }
-
-
-                            });
-
-                            return callback(null, finalPostIndexResult);
-
-
-                            }
-
-                        if (!finalPostMessageAnswerResults) {
-
-                                console.log("::no answer on post::");
-
-                                finalPostIndexResult.topAnswer = null;
-                                finalPostIndexResult.postQuestions = [];
-
-                                //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                                //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                                //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                                console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
-
-                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
-                                    if (err) {
-                                        return response.error(err);
-                                    }
-
-
-                                });
-
-                                return callback(null, finalPostIndexResult);
-
-
-                            }
-
-
-                    }
-
-                    else {
-
-                        finalPostIndexResult.PostSocial = null;
-
-                        if (finalPostIndexResult.type === 'post') {
-
-                            if (finalPostMessageQuestionResults.length > 0) {
-
-                                let arrQuestions = lodash.map(Questions, function (question) {
+                                    console.log("null postMessageSocial 1");
 
                                     question.PostMessageSocial = null;
 
                                     return question;
 
-                                });
 
-                                finalPostIndexResult.postQuestions = arrQuestions;
-                                finalPostIndexResult.topAnswer = null;
+                                }
 
 
-                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
-                                    if (err) {
-                                        return response.error(err);
-                                    }
 
+                            });
 
-                                });
+                            //console.log("arrQuestions: " + JSON.stringify(arrQuestions));
 
-                                return callback(null, finalPostIndexResult);
+                            usersPost.postQuestions = arrQuestions;
+                            usersPost.topAnswer = null;
 
+                            //console.log("finalPostIndexResult cb7: " + JSON.stringify(finalPostIndexResult));
 
-                            }
+                            // indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
 
-                            if (finalPostMessageQuestionResults.length === 0) {
+                            finalPostIndexResult = usersPost;
 
-                                console.log("::no questions on post::");
-
-
-                                finalPostIndexResult.postQuestions = [];
-                                finalPostIndexResult.topAnswer = null;
-
-                                //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                                //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                                //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
-                                    if (err) {
-                                        return response.error(err);
-                                    }
-
-
-                                });
-
-                                return callback(null, finalPostIndexResult);
-
-
-                            }
+                            return finalPostIndexResult;
 
 
                         }
-                        else if (finalPostIndexResult.type === 'question') {
 
-                            if (finalPostMessageAnswerResults) {
+                        else  {
+
+                            //console.log("::no questions on post::");
+
+                            usersPost.postQuestions = [];
+                            usersPost.topAnswer = null;
+                            //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+
+                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
+                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+
+                            //indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
+
+                            finalPostIndexResult = usersPost;
+
+
+                            return finalPostIndexResult;
+
+
+                        }
+
+                    }
+
+                    else if (usersPost.type === 'question') {
+
+                        if (finalPostMessageAnswerResults) {
+
+                            //console.log(":::finalPostMessageAnswerResults::: " + JSON.stringify(finalPostMessageAnswerResults));
+
+                            //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
+
+                            let postSocialId = usersPost.PostSocial.objectId;
+                            let userId = usersPost.PostSocial.user.objectId;
+
+                            if (arrayLength > 0) {
+
+                                let matchExists = false;
+
+                                let matchResult = lodash.findIndex(arrayPostMessageSocial, function (o) {
+
+                                    o = simplifyPostMessageSocialAnswer(o);
+
+                                    //console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
+                                    return o.user.objectId === userId;
+
+                                });
+
+                                //console.log("matchResult: " + JSON.stringify(matchResult));
+
+
+                                if (matchResult === -1) {
+
+                                    // no match
+
+                                    answer.PostMessageSocial = null;
+
+                                } else {
+
+                                    // match exists
+                                    let postMessageSocialObj = arrayPostMessageSocial[matchResult];
+                                    postMessageSocialObj = simplifyPostMessageSocialAnswer(postMessageSocialObj);
+                                    answer.PostMessageSocial = postMessageSocialObj;
+
+                                }
+
+                                console.log("answer prime: " + JSON.stringify(answer));
+
+
+
+                            }
+                            else {
+
+                                //console.log("null answer 1");
 
                                 answer.PostMessageSocial = null;
 
-                                finalPostIndexResult.topAnswer = answer;
-                                finalPostIndexResult.postQuestions = [];
-
-
-                                console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
-
-                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
-                                    if (err) {
-                                        return response.error(err);
-                                    }
-
-
-                                });
-
-                                return callback(null, finalPostIndexResult);
 
 
                             }
 
-                            if (!finalPostMessageAnswerResults) {
+                            usersPost.topAnswer = answer;
+                            usersPost.postQuestions = [];
 
-                                console.log("::no answer on post::");
+                            //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
 
-                                finalPostIndexResult.topAnswer = null;
-                                finalPostIndexResult.postQuestions = [];
+                            finalPostIndexResult = usersPost;
 
-                                //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+                            return finalPostIndexResult;
 
-                                //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                                //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                                console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
-
-                                indexPosts.saveObject(finalPostIndexResult, true, function (err, content) {
-                                    if (err) {
-                                        return response.error(err);
-                                    }
-
-
-                                });
-
-                                return callback(null, finalPostIndexResult);
-
-
-                            }
 
 
                         }
-                        else {
 
-                            console.error("incorrect post type, should be question or post");
+                        else if (!finalPostMessageAnswerResults) {
 
-                            return callback(null, finalPostIndexResult);
+                            //console.log("::no answer on post::");
+
+                            usersPost.topAnswer = null;
+                            usersPost.postQuestions = [];
+
+                            //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
+
+                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
+                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
+
+                            //console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
+
+                            finalPostIndexResult = usersPost;
+
+                            return finalPostIndexResult;
+
+
                         }
 
 
@@ -19740,25 +19556,105 @@ function splitPostAndIndexFasterPrime (request, response) {
 
 
                 }
+                else {
 
-            }, function(err) {
-                if (err){
-                    console.log('ERROR', err);
-                    return response.error(err);
+                    if (usersPost.type === 'post') {
+
+                        if (arrayQuestionLength > 0) {
+
+                            let arrQuestions = lodash.map(Questions, function (question) {
+
+                                question.PostMessageSocial = null;
+
+                                return question;
+
+                            });
+
+                            //console.log("arrQuestions: " + JSON.stringify(arrQuestions));
+
+                            usersPost.postQuestions = arrQuestions;
+                            usersPost.topAnswer = null;
+
+                            finalPostIndexResult = usersPost;
+
+                            return finalPostIndexResult;
+
+                        }
+
+                        else {
+
+                            usersPost.topAnswer = null;
+                            usersPost.postQuestions = [];
+
+                            finalPostIndexResult = usersPost;
+
+                            return finalPostIndexResult;
+
+                        }
+
+
+                    }
+
+                    else if (usersPost.type === 'question') {
+
+                        if (usersPost.topAnswer) {
+
+                            usersPost.topAnswer.PostMessageSocial = null;
+                            usersPost.postQuestions = [];
+
+                            finalPostIndexResult = usersPost;
+
+                            return finalPostIndexResult;
+
+                        }
+
+                        else {
+
+                            usersPost.topAnswer = null;
+                            usersPost.postQuestions = [];
+
+                            finalPostIndexResult = usersPost;
+
+                            return finalPostIndexResult;
+
+                        }
+
+
+
+                    }
                 }
+
+
+            });
+
+
+            if (mapFinalPostIndexResults.length > 0) {
+
+                console.log("mapFinalPostIndexResults: " + JSON.stringify(mapFinalPostIndexResults));
+
+                //if (finalPostIndexResults[0].type === 'question') {
+
+                indexPosts.addObjects(mapFinalPostIndexResults).catch(err => console.error(err));
+
+                //}
 
                 console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
 
                 let beforeSaveElse_Time = process.hrtime(time);
                 console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
 
+
                 return response.success();
 
 
-            });*/
+            }
+
+            else {
 
 
+                return response.success();
 
+            }
 
 
         }
@@ -19771,7 +19667,6 @@ function splitPostAndIndexFasterPrime (request, response) {
         }
 
     });
-
 
 
 

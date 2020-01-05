@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9e3eecf8-fefd-4117-abb8-604fe27c3400" name="Default Changelist" comment="" />
+    <list default="true" id="e8f91948-61e7-42ff-8065-e4fedfdb1b6f" name="Default Changelist" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -10,7 +10,7 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectId" id="1VuMmlzlN8gdplJAm8Km9Wmc6kI" />
+  <component name="ProjectId" id="1VxVtTe3nxMa4M3Npkyh0nCNqIr" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showExcludedFiles" value="true" />
@@ -20,8 +20,12 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/.idea/azureSettings.xml" />
     <property name="nodejs_package_manager_path" value="npm" />
-    <property name="settings.editor.selected.configurable" value="preferences.externalTools" />
+    <property name="project.structure.last.edited" value="Artifacts" />
+    <property name="project.structure.proportion" value="0.15" />
+    <property name="project.structure.side.proportion" value="0.2" />
+    <property name="settings.editor.selected.configurable" value="settings.github" />
   </component>
   <component name="ServiceViewManager">
     <option name="viewStates">
@@ -35,55 +39,51 @@
       </list>
     </option>
   </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="9e3eecf8-fefd-4117-abb8-604fe27c3400" name="Default Changelist" comment="" />
-      <created>1578098687432</created>
+      <changelist id="e8f91948-61e7-42ff-8065-e4fedfdb1b6f" name="Default Changelist" comment="" />
+      <created>1578194948248</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1578098687432</updated>
-      <workItem from="1578098690395" duration="9027000" />
-      <workItem from="1578171220180" duration="91000" />
-      <workItem from="1578171349219" duration="76000" />
-      <workItem from="1578171469990" duration="277000" />
-      <workItem from="1578172981311" duration="51000" />
-      <workItem from="1578193137278" duration="857000" />
+      <updated>1578194948248</updated>
+      <workItem from="1578194955437" duration="2166000" />
     </task>
-    <servers>
-      <GitHub url="https://github.com" />
-    </servers>
+    <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="343" y="140" key="#Servers" timestamp="1578099317613">
+    <state x="206" y="26" width="1086" height="934" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1578196744470">
       <screen x="0" y="0" width="1500" height="960" />
     </state>
-    <state x="343" y="140" key="#Servers/0.0.1500.960@0.0.1500.960" timestamp="1578099317613" />
-    <state x="206" y="0" width="1086" height="960" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1578171669046">
+    <state x="206" y="26" width="1086" height="934" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1500.960@0.0.1500.960" timestamp="1578196744470" />
+    <state x="470" y="170" key="#com.intellij.ide.util.frameworkSupport.AddFrameworkSupportDialog" timestamp="1578195440470">
       <screen x="0" y="0" width="1500" height="960" />
     </state>
-    <state x="206" y="0" width="1086" height="960" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1500.960@0.0.1500.960" timestamp="1578171669046" />
-    <state x="520" y="313" key="#com.intellij.tools.ToolEditorDialog" timestamp="1578171652637">
+    <state x="470" y="170" key="#com.intellij.ide.util.frameworkSupport.AddFrameworkSupportDialog/0.0.1500.960@0.0.1500.960" timestamp="1578195440470" />
+    <state x="532" y="237" key="FileChooserDialogImpl" timestamp="1578196694006">
       <screen x="0" y="0" width="1500" height="960" />
     </state>
-    <state x="520" y="313" key="#com.intellij.tools.ToolEditorDialog/0.0.1500.960@0.0.1500.960" timestamp="1578171652637" />
-    <state x="531" y="183" key="FileChooserDialogImpl" timestamp="1578171003327">
+    <state x="532" y="237" key="FileChooserDialogImpl/0.0.1500.960@0.0.1500.960" timestamp="1578196694006" />
+    <state x="193" y="63" width="912" height="847" key="SettingsEditor" timestamp="1578196722804">
       <screen x="0" y="0" width="1500" height="960" />
     </state>
-    <state x="531" y="183" key="FileChooserDialogImpl/0.0.1500.960@0.0.1500.960" timestamp="1578171003327" />
-    <state x="331" y="224" key="IDE.errors.dialog" timestamp="1578104125958">
+    <state x="193" y="63" width="912" height="847" key="SettingsEditor/0.0.1500.960@0.0.1500.960" timestamp="1578196722804" />
+    <state x="419" y="338" key="SignInWindow" timestamp="1578195026079">
       <screen x="0" y="0" width="1500" height="960" />
     </state>
-    <state x="331" y="224" key="IDE.errors.dialog/0.0.1500.960@0.0.1500.960" timestamp="1578104125958" />
-    <state x="252" y="124" key="SettingsEditor" timestamp="1578171658332">
+    <state x="419" y="338" key="SignInWindow/0.0.1500.960@0.0.1500.960" timestamp="1578195026079" />
+    <state x="493" y="223" key="SubscriptionsDialog" timestamp="1578195033548">
       <screen x="0" y="0" width="1500" height="960" />
     </state>
-    <state x="252" y="124" key="SettingsEditor/0.0.1500.960@0.0.1500.960" timestamp="1578171658332" />
-    <state x="175" y="206" key="new project wizard" timestamp="1578171749620">
+    <state x="493" y="223" key="SubscriptionsDialog/0.0.1500.960@0.0.1500.960" timestamp="1578195033548" />
+    <state x="446" y="306" key="com.intellij.ide.util.TipDialog" timestamp="1578194956451">
       <screen x="0" y="0" width="1500" height="960" />
     </state>
-    <state x="175" y="206" key="new project wizard/0.0.1500.960@0.0.1500.960" timestamp="1578171749620" />
+    <state x="446" y="306" key="com.intellij.ide.util.TipDialog/0.0.1500.960@0.0.1500.960" timestamp="1578194956451" />
   </component>
 </project>
