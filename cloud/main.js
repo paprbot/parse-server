@@ -19214,7 +19214,9 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         }
 
-                    } else if (usersPost.type === 'question') {
+                    }
+
+                    else if (usersPost.type === 'question') {
 
                         if (finalPostMessageAnswerResults) {
 
@@ -19285,7 +19287,8 @@ function splitPostAndIndexFasterPrime (request, response) {
                             }
 
 
-                        } else if (!finalPostMessageAnswerResults) {
+                        }
+                        else if (!finalPostMessageAnswerResults) {
 
                             //console.log("::no answer on post::");
 
@@ -19307,6 +19310,11 @@ function splitPostAndIndexFasterPrime (request, response) {
                         }
 
 
+                    }
+
+                    else {
+
+                        return cb7 (null, finalPostIndexResult);
                     }
 
 
@@ -19345,7 +19353,8 @@ function splitPostAndIndexFasterPrime (request, response) {
                         }
 
 
-                    } else if (usersPost.type === 'question') {
+                    }
+                    else if (usersPost.type === 'question') {
 
                         if (usersPost.topAnswer) {
 
@@ -19368,6 +19377,10 @@ function splitPostAndIndexFasterPrime (request, response) {
                         }
 
 
+                    }
+                    else {
+
+                        return cb7 (null, finalPostIndexResult);
                     }
                 }
 
