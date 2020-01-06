@@ -9062,24 +9062,24 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
         let USER = Parse.Object.extend("_User");
         let User = new USER();
         User.id = originalPostMessageSocial.get("user").id;
-        console.log("User originalPostMessageSocial: " + JSON.stringify(User));
+        //console.log("User originalPostMessageSocial: " + JSON.stringify(User));
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
         Post.id = originalPostMessageSocial.get("post").id;
-        console.log("Post originalPostMessageSocial: " + JSON.stringify(Post));
+        //console.log("Post originalPostMessageSocial: " + JSON.stringify(Post));
 
 
         let CHANNEL = Parse.Object.extend("Channel");
         let Channel = new CHANNEL();
         Channel.id = originalPostMessageSocial.get("channel").id;
-        console.log("Channel originalPostMessageSocial: " + JSON.stringify(Channel));
+        //console.log("Channel originalPostMessageSocial: " + JSON.stringify(Channel));
 
 
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let Workspace = new WORKSPACE();
         Workspace.id = originalPostMessageSocial.get("workspace").id;
-        console.log("Workspace originalPostMessageSocial: " + JSON.stringify(Workspace));
+        //console.log("Workspace originalPostMessageSocial: " + JSON.stringify(Workspace));
 
 
         function createPostSocialIfNotExists (cb) {
@@ -9298,8 +9298,6 @@ Parse.Cloud.afterSave('PostMessageSocial', function(req, response) {
 
 
                 // let indexCount = parseInt(PostMessageSocialResult.get("algoliaIndexID"));
-
-
                 PostMessage.save(null, {
 
                     //useMasterKey: true
@@ -18614,17 +18612,17 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                 //console.log(" postMessageSocials: " + JSON.stringify(postMessageSocials));
                 let postMessageStar = new POSTMESSAGE();
-                postMessageStar.id = postAnswerMessage.objectId;
-                postMessageStar.message = postAnswerMessage.message;
-                postMessageStar.user = postAnswerMessage.user;
-                postMessageStar.numberOfDownVotes = postAnswerMessage.numberOfDownVotes;
-                postMessageStar.numberOfUpVotes = postAnswerMessage.numberOfUpVotes;
-                postMessageStar.upVotedByExpert = postAnswerMessage.upVotedByExpert;
-                postMessageStar.seenByExpert = postAnswerMessage.seenByExpert;
-                postMessageStar.createdAt = postAnswerMessage.createdAt;
-                postMessageStar.updatedAt = postAnswerMessage.updatedAt;
-                postMessageStar.objectId = postAnswerMessage.objectId;
-                postMessageStar.PostMessageSocial = null;
+                //postMessageStar.id = postAnswerMessage.objectId;
+                postMessageStar.set("message", postAnswerMessage.message);
+                postMessageStar.set("user", postAnswerMessage.user);
+                postMessageStar.set("numberOfDownVotes", postAnswerMessage.numberOfDownVotes);
+                postMessageStar.set("numberOfUpVotes", postAnswerMessage.numberOfUpVotes);
+                postMessageStar.set("upVotedByExpert", postAnswerMessage.upVotedByExpert);
+                postMessageStar.set("seenByExpert", postAnswerMessage.seenByExpert);
+                postMessageStar.set("createdAt", postAnswerMessage.createdAt);
+                postMessageStar.set("updatedAt", postAnswerMessage.updatedAt);
+                postMessageStar.set("objectId", postAnswerMessage.objectId);
+                postMessageStar.set("PostMessageSocial", null);
 
                 if (postMessageAnswerSocials.length > 0) {
 
@@ -18656,24 +18654,32 @@ function splitPostAndIndexFasterPrime (request, response) {
                     let mapPostAnswerMessageSocial = lodash.map(filteredPostMessageSocials, function (PostMessageSocials) {
 
                         let postMessage = new POSTMESSAGE();
-                        postMessage.id = postAnswerMessage.objectId;
-                        postMessage.message = postAnswerMessage.message;
-                        postMessage.user = postAnswerMessage.user;
-                        postMessage.numberOfDownVotes = postAnswerMessage.numberOfDownVotes;
-                        postMessage.numberOfUpVotes = postAnswerMessage.numberOfUpVotes;
-                        postMessage.upVotedByExpert = postAnswerMessage.upVotedByExpert;
-                        postMessage.seenByExpert = postAnswerMessage.seenByExpert;
-                        postMessage.createdAt = postAnswerMessage.createdAt;
-                        postMessage.updatedAt = postAnswerMessage.updatedAt;
-                        postMessage.objectId = postAnswerMessage.objectId;
+                        //postMessage.id = postAnswerMessage.objectId;
+                        postMessage.set("message", postAnswerMessage.message);
+                        postMessage.set("user", postAnswerMessage.user);
+                        postMessage.set("numberOfDownVotes", postAnswerMessage.numberOfDownVotes);
+                        postMessage.set("numberOfUpVotes", postAnswerMessage.numberOfUpVotes);
+                        postMessage.set("upVotedByExpert", postAnswerMessage.upVotedByExpert);
+                        postMessage.set("seenByExpert", postAnswerMessage.seenByExpert);
+                        postMessage.set("createdAt", postAnswerMessage.createdAt);
+                        postMessage.set("updatedAt", postAnswerMessage.updatedAt);
+                        postMessage.set("objectId", postAnswerMessage.objectId);
+                        postMessage = postMessage.toJSON();
+
+                        PostMessageSocials = simplifyPostMessageSocialAnswer(PostMessageSocials);
+
+                        //console.log("PostMessageSocials: " + JSON.stringify(PostMessageSocials));
+
                         postMessage.PostMessageSocial = PostMessageSocials;
+
+                        return postMessage;
 
                     });
 
                     mapPostAnswerMessageSocial.push(postMessageStar);
 
                     //postAnswerMessage.PostMessageSocial = filteredPostMessageSocials;
-                    console.log("done mapPostAnswerMessageSocial: " + JSON.stringify(mapPostAnswerMessageSocial));
+                    //console.log("done mapPostAnswerMessageSocial: " + JSON.stringify(mapPostAnswerMessageSocial));
 
                     return callback2(null, mapPostAnswerMessageSocial);
 
@@ -19056,7 +19062,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                 if (usersPost.PostSocial) {
 
                     //let postSocialId = usersPost.PostSocial.objectId;
-                    let userId = usersPost.PostSocial.user.objectId;
+                    let userId = usersPost.PostSocial? usersPost.PostSocial.user.objectId : null;
 
                     if (usersPost.type === 'post') {
 
@@ -19064,24 +19070,37 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                             //console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
 
-                            async.mapSeries(Questions, function (question, cb8) {
+                            async.map(Questions, function (question, cb8) {
 
                                 let questionPostMessageSocialLength = question.PostMessageSocial ? question.PostMessageSocial.length : 0;
 
-                                //console.log("question.PostMessageSocial.length: " + JSON.stringify(questionPostMessageSocialLength));
+                                let postMessageQuestion = new POSTMESSAGE();
+                                //postMessage.id = postAnswerMessage.objectId;
+                                postMessageQuestion.set("message", question.message);
+                                postMessageQuestion.set("user", question.user);
+                                postMessageQuestion.set("numberOfDownVotes", question.numberOfDownVotes);
+                                postMessageQuestion.set("numberOfUpVotes", question.numberOfUpVotes);
+                                postMessageQuestion.set("upVotedByExpert", question.upVotedByExpert);
+                                postMessageQuestion.set("seenByExpert", question.seenByExpert);
+                                postMessageQuestion.set("createdAt", question.createdAt);
+                                postMessageQuestion.set("updatedAt", question.updatedAt);
+                                postMessageQuestion.set("objectId", question.objectId);
+                                postMessageQuestion = postMessageQuestion.toJSON();
+                                postMessageQuestion.PostMessageSocial = question.PostMessageSocial? question.PostMessageSocial : [];
+
+                                console.log("postMessageQuestion: " + JSON.stringify(postMessageQuestion));
 
                                 if (questionPostMessageSocialLength > 0) {
 
                                     //console.log("question.PostMessageSocial: " + JSON.stringify(question.PostMessageSocial));
 
-                                    let arrayPostMessageSocial = question.PostMessageSocial;
+                                    let matchResult = lodash.findIndex(postMessageQuestion.PostMessageSocial, function (o) {
 
-                                    let matchResult = lodash.findIndex(arrayPostMessageSocial, function (o) {
+                                        o = o.toJSON();
 
-                                        o = simplifyPostMessageSocialQuestion(o);
-
-                                        //console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
+                                        console.log(JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult))+ " " + JSON.stringify(Questions.indexOf(question)) +  " o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
                                         return o.user.objectId === userId;
+
 
                                     });
 
@@ -19091,8 +19110,10 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                         // no match
 
-                                        question.PostMessageSocial = null;
+                                        postMessageQuestion.PostMessageSocial = null;
                                         //console.log("question null prime: " + JSON.stringify(question));
+
+                                        question = postMessageQuestion;
 
                                         return cb8(null, question);
 
@@ -19105,6 +19126,9 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                         //console.log("question prime: " + JSON.stringify(question));
 
+                                        postMessageQuestion = postMessageQuestion;
+                                        question = postMessageQuestion;
+
                                         return cb8(null, question);
 
                                     }
@@ -19114,7 +19138,10 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                     //console.log("null postMessageSocial 1");
 
-                                    question.PostMessageSocial = null;
+                                    postMessageQuestion.PostMessageSocial = null;
+                                    //console.log("question null prime: " + JSON.stringify(question));
+
+                                    question = postMessageQuestion;
 
                                     return cb8(null, question);
 
@@ -19216,10 +19243,17 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                 let matchResult = lodash.findIndex(finalPostMessageAnswerResults, function (o) {
 
-                                    o = simplifyPostMessageSocialAnswer(o);
 
-                                    console.log(SON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult))+ " o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
-                                    return o.PostMessageSocial.user.objectId === finalPostIndexResult.PostSocial.user.objectId;
+                                    if(o.PostMessageSocial) {
+
+                                        console.log(JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult))+ " o.user.objectId: " + JSON.stringify(o.PostMessageSocial.user.objectId) + ":: userId: " + JSON.stringify(userId));
+                                        return o.PostMessageSocial.user.objectId === userId;
+
+
+                                    } else {
+
+                                        return -1;
+                                    }
 
                                 });
 
@@ -22707,7 +22741,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                 //sessionToken: sessionToken
             }).then((PostMessageQuestions) => {
 
-                console.log("PostMessageQuestions: " + JSON.stringify(PostMessageQuestions));
+                //console.log("PostMessageQuestions: " + JSON.stringify(PostMessageQuestions));
 
 
                 if (PostMessageQuestions.length > 0) {
