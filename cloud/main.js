@@ -19086,17 +19086,17 @@ function splitPostAndIndexFasterPrime (request, response) {
                                 postMessageQuestion.set("updatedAt", question.updatedAt);
                                 postMessageQuestion.set("objectId", question.objectId);
                                 postMessageQuestion = postMessageQuestion.toJSON();
-                                postMessageQuestion.PostMessageSocial = question.PostMessageSocial? question.PostMessageSocial : [];
+                                question.PostMessageSocial = question.PostMessageSocial? question.PostMessageSocial : [];
 
-                                console.log("postMessageQuestion: " + JSON.stringify(postMessageQuestion));
+                                //console.log("postMessageQuestion: " + JSON.stringify(postMessageQuestion));
 
                                 if (questionPostMessageSocialLength > 0) {
 
                                     //console.log("question.PostMessageSocial: " + JSON.stringify(question.PostMessageSocial));
 
-                                    let matchResult = lodash.findIndex(postMessageQuestion.PostMessageSocial, function (o) {
+                                    let matchResult = lodash.findIndex(question.PostMessageSocial , function (o) {
 
-                                        o = o.toJSON();
+                                        o = simplifyPostMessageSocialQuestion(o);
 
                                         console.log(JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult))+ " " + JSON.stringify(Questions.indexOf(question)) +  " o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
                                         return o.user.objectId === userId;
@@ -19120,13 +19120,15 @@ function splitPostAndIndexFasterPrime (request, response) {
                                     } else {
 
                                         // match exists
-                                        let postMessageSocialObj = postMessageQuestion.PostMessageSocial[matchResult];
+                                        let postMessageSocialObj = question.PostMessageSocial[matchResult];
                                         postMessageSocialObj = simplifyPostMessageSocialQuestion(postMessageSocialObj);
-                                        question.PostMessageSocial = postMessageSocialObj;
+                                        //console.log("question postMessageSocialObj prime: " + JSON.stringify(postMessageSocialObj));
+
+                                        postMessageQuestion.PostMessageSocial = postMessageSocialObj;
 
                                         //console.log("question prime: " + JSON.stringify(question));
 
-                                        postMessageQuestion = postMessageQuestion;
+
                                         question = postMessageQuestion;
 
                                         return cb8(null, question);
