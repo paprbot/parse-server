@@ -19120,7 +19120,7 @@ function splitPostAndIndexFasterPrime (request, response) {
                                     } else {
 
                                         // match exists
-                                        let postMessageSocialObj = arrayPostMessageSocial[matchResult];
+                                        let postMessageSocialObj = postMessageQuestion.PostMessageSocial[matchResult];
                                         postMessageSocialObj = simplifyPostMessageSocialQuestion(postMessageSocialObj);
                                         question.PostMessageSocial = postMessageSocialObj;
 
