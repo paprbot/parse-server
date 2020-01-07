@@ -1745,8 +1745,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
         queryChannelFollower.find({
 
-            useMasterKey: true
-            //sessionToken: sessionToken
+            //useMasterKey: true
+            sessionToken: sessionToken
 
         }).then((ChannelFollowers) => {
             // The object was retrieved successfully.
@@ -1785,8 +1785,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                 Parse.Object.saveAll(arrayChannelFollowersSet, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    //useMasterKey: true
+                    sessionToken: sessionToken
 
                 }).then(function(results) {
                     // if we got 500 or more results then we know
@@ -1845,8 +1845,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                                         Parse.Object.saveAll(ChannelFollowArray, {
 
-                                            useMasterKey: true
-                                            //sessionToken: sessionToken
+                                            //useMasterKey: true
+                                            sessionToken: sessionToken
 
                                         }).then(function(results) {
                                             // if we got 500 or more results then we know
@@ -1963,8 +1963,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                                         }, {
 
-                                            useMasterKey: true
-                                            //sessionToken: sessionToken
+                                            //useMasterKey: true
+                                            sessionToken: sessionToken
 
                                         });
 
@@ -1996,8 +1996,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                 }, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    //useMasterKey: true
+                    sessionToken: sessionToken
 
                 });
 
@@ -2037,8 +2037,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                     Parse.Object.saveAll(channelFollowArray, {
 
-                        useMasterKey: true
-                        //sessionToken: sessionToken
+                        //useMasterKey: true
+                        sessionToken: sessionToken
 
                     }).then(function(results) {
 
@@ -2049,8 +2049,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                         queryChannel.get(Channel.id, {
 
-                            useMasterKey: true
-                            //sessionToken: sessionToken
+                            //useMasterKey: true
+                            sessionToken: sessionToken
 
                         }).then((channelObject) => {
 
@@ -2178,8 +2178,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                             return response.error(error);
                         }, {
 
-                            useMasterKey: true
-                            //sessionToken: sessionToken
+                            //useMasterKey: true
+                            sessionToken: sessionToken
 
                         });
 
@@ -2188,13 +2188,14 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
 
                     }, function(err) {
+                        console.error("error save.all channelFollow addPeopleToChannel");
                         // error
                         return response.error(err);
 
                     }, {
 
-                        useMasterKey: true
-                        //sessionToken: sessionToken
+                        //useMasterKey: true
+                        sessionToken: sessionToken
 
                     });
 
@@ -2212,8 +2213,8 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
             return response.error(error);
         }, {
 
-            useMasterKey: true
-            //sessionToken: sessionToken
+            //useMasterKey: true
+            sessionToken: sessionToken
 
         });
     }
