@@ -1616,8 +1616,8 @@ Parse.Cloud.define("leaveChannel", function(request, response) {
 
             queryChannelFollowerSelected.first({
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                //useMasterKey: true
+                sessionToken: sessionToken
 
             }).then((result_channelfollower) => {
                 // The object was retrieved successfully.
@@ -1646,8 +1646,8 @@ Parse.Cloud.define("leaveChannel", function(request, response) {
                 return response.error(error);
             }, {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                //useMasterKey: true
+                sessionToken: sessionToken
 
             });
 
@@ -25558,7 +25558,7 @@ Parse.Cloud.afterSave('Channel', function(request, response) {
                 channelFollow.set("isMember", true);
                 channelFollow.set("isFollower", true);
 
-                //console.log("channelFollow: " + JSON.stringify(channelFollow));
+                //console.log("channelFollow:d " + JSON.stringify(channelFollow));
 
                 channelFollow.save(null, {
 
