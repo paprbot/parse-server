@@ -2007,8 +2007,6 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
             else {
 
-                // todo create new ChannelFollower for these Users
-
                 let ChannelFollowSet = new Set();
 
                 for (var i = 0; i < userArray.length; i++) {
@@ -11321,7 +11319,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
 
         let channelFollowName = channelfollow.get("user").id + "-" + channelfollow.get("workspace").id + "-" + channelfollow.get("channel").id;
-        console.log("channelFollowName user: " + JSON.stringify(channelFollowName));
+        //console.log("channelFollowName user: " + JSON.stringify(channelFollowName));
 
         queryChannelFollow.equalTo("name", channelFollowName);
         queryChannelFollow.include(["user", "workspace", "channel"]);
@@ -12550,15 +12548,26 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 if (firstChannelResult) {
 
+                                    let firstChannelResultACL = firstChannelResult.getACL();
+
                                     if (firstChannelResult.get("expertsArray")) {
 
                                         finalChannelToSave.set("expertsArray", firstChannelResult.toJSON().expertsArray);
                                         console.log("expertsArray: " + JSON.stringify(firstChannelResult.toJSON().expertsArray));
 
                                     }
+
+                                    if(firstChannelResultACL) {
+
+                                        finalChannelToSave.setACL(firstChannelResultACL);
+                                        console.log("first finalChannelToSave ACL: " + JSON.stringify(finalChannelToSave.getACL()));
+
+                                    }
                                 }
 
                                 if (secondChannelResult) {
+
+                                    let secondChannelResultACL = secondChannelResult.getACL();
 
                                     if (secondChannelResult.get("followerCount")) {
                                         finalChannelToSave.set("followerCount", secondChannelResult.toJSON().followerCount);
@@ -12567,6 +12576,13 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                         finalChannelToSave.set("memberCount", secondChannelResult.toJSON().memberCount);
 
+
+                                    }
+
+                                    if(secondChannelResultACL) {
+
+                                        finalChannelToSave.setACL(secondChannelResultACL);
+                                        console.log("second finalChannelToSave ACL: " + JSON.stringify(finalChannelToSave.getACL()));
 
                                     }
 
