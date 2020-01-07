@@ -11360,8 +11360,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                 queryChannel.get(channel.id, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    //useMasterKey: true
+                    sessionToken: sessionToken
 
                 }).then((channelObject) => {
                     // The object was retrieved successfully.
@@ -11370,100 +11370,114 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                     //let Channel = channelObject;
 
-                    if(!channelfollow.get("isNewChannel")) {
+                    if (channelObject) {
 
-                        if (channelObject.get("name") === 'general') {
+                        if(!channelfollow.get("isNewChannel")) {
 
-                            channelfollow.set("isNewChannel", true);
+                            if (channelObject.get("name") === 'general') {
 
-                        } else {
-                            channelfollow.set("isNewChannel", false);
+                                channelfollow.set("isNewChannel", true);
+
+                            } else {
+                                channelfollow.set("isNewChannel", false);
+
+                            }
 
                         }
 
-                    }
+                        let OWNERUSER = Parse.Object.extend("_User");
+                        let ownerUser = new OWNERUSER();
+                        ownerUser.id = channelObject.get("user").id;
 
-                    let OWNERUSER = Parse.Object.extend("_User");
-                    let ownerUser = new OWNERUSER();
-                    ownerUser.id = channelObject.get("user").id;
+                        //let ownerChannel = Channel.get("user");
+                        console.log("channelType: " + JSON.stringify(channelObject.get("type")));
 
-                    //let ownerChannel = Channel.get("user");
-                    console.log("channelType: " + JSON.stringify(channelObject.get("type")));
+                        function addExpertsArrayToChannel (callback) {
 
-                    function addExpertsArrayToChannel (callback) {
-
-                        if (channelfollow.get("isNewChannel") === true) {
+                            if (channelfollow.get("isNewChannel") === true) {
 
 
-                            return callback (null, channelObject);
-                        } else if (channelfollow.get("isNewChannel") === false || !channelfollow.get("isNewChannel")) {
+                                return callback (null, channelObject);
+                            } else if (channelfollow.get("isNewChannel") === false || !channelfollow.get("isNewChannel")) {
 
-                            //var userRole = user.get("roles");
-                            user.fetch(user.id, {
-
-                                useMasterKey: true
-                                //sessionToken: sessionToken
-
-                            }).then((User) => {
-                                // The object was retrieved successfully.
-
-                                console.log("user object: " + JSON.stringify(User));
-                                let userRoleRelation = User.relation("roles");
-                                //let expertChannelRelation = channelObject.relation("experts");
-                                console.log("userRole: " + JSON.stringify(userRoleRelation));
-                                //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
-
-
-                                let expertRoleName = "expert-" + workspace.id;
-
-                                let userRoleRelationQuery = userRoleRelation.query();
-                                userRoleRelationQuery.equalTo("name", expertRoleName);
-                                userRoleRelationQuery.first({
+                                //var userRole = user.get("roles");
+                                user.fetch(user.id, {
 
                                     useMasterKey: true
                                     //sessionToken: sessionToken
 
-                                }).then((results) => {
+                                }).then((User) => {
                                     // The object was retrieved successfully.
 
-                                    if (results) {
-
-                                        // expert role exists, add as channel expert
-                                        //console.log("channelExpert: " + JSON.stringify(results));
-
-
-                                        let expertOwner = simplifyUser(User);
+                                    console.log("user object: " + JSON.stringify(User));
+                                    let userRoleRelation = User.relation("roles");
+                                    //let expertChannelRelation = channelObject.relation("experts");
+                                    console.log("userRole: " + JSON.stringify(userRoleRelation));
+                                    //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
 
 
-                                        channelObject.addUnique("expertsArray", expertOwner);
-                                        //expertChannelRelation.add(user);
+                                    let expertRoleName = "expert-" + workspace.id;
 
-                                        /*channelObject.save(null, {
+                                    let userRoleRelationQuery = userRoleRelation.query();
+                                    userRoleRelationQuery.equalTo("name", expertRoleName);
+                                    userRoleRelationQuery.first({
 
-                                         useMasterKey: true
-                                         //sessionToken: sessionToken
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
 
-                                         }
-                                         );*/
+                                    }).then((results) => {
+                                        // The object was retrieved successfully.
 
-                                        //expertChannelRelation.add(user);
+                                        if (results) {
 
-                                        console.log("addExpertsArrayToChannel channel in beforeSave ChannelFollow: " + JSON.stringify(channelObject));
-
-
-                                        return callback (null, channelObject);
-
+                                            // expert role exists, add as channel expert
+                                            //console.log("channelExpert: " + JSON.stringify(results));
 
 
-                                    }
-                                    else {
-                                        // no role exists don't add experts to channel
+                                            let expertOwner = simplifyUser(User);
 
+
+                                            channelObject.addUnique("expertsArray", expertOwner);
+                                            //expertChannelRelation.add(user);
+
+                                            /*channelObject.save(null, {
+
+                                             useMasterKey: true
+                                             //sessionToken: sessionToken
+
+                                             }
+                                             );*/
+
+                                            //expertChannelRelation.add(user);
+
+                                            console.log("addExpertsArrayToChannel channel in beforeSave ChannelFollow: " + JSON.stringify(channelObject));
+
+
+                                            return callback (null, channelObject);
+
+
+
+                                        }
+                                        else {
+                                            // no role exists don't add experts to channel
+
+                                            console.log("userRoleRelationQuery no result");
+
+
+                                            return callback (null, channel);
+                                        }
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
                                         console.log("userRoleRelationQuery no result");
+                                        return callback (error);
+                                    }, {
 
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
 
-                                        return callback (null, channel);
-                                    }
+                                    });
+
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
@@ -11476,1208 +11490,1114 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 });
 
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                console.log("userRoleRelationQuery no result");
-                                return callback (error);
-                            }, {
 
-                                useMasterKey: true
-                                //sessionToken: sessionToken
-
-                            });
+                            }
 
 
                         }
 
+                        function updateFollowersInChannel (callback) {
 
-                    }
+                            function removeAllPreviousSelectedChannelFollowerJoin (callback) {
 
-                    function updateFollowersInChannel (callback) {
+                                let queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
+                                queryChannelFollowIsSelected.equalTo("user", user);
+                                //queryChannelFollowIsSelected.equalTo("channel", Channel);
+                                queryChannelFollowIsSelected.equalTo("workspace", workspace);
+                                queryChannelFollowIsSelected.equalTo("isSelected", true);
 
-                        function removeAllPreviousSelectedChannelFollowerJoin (callback) {
+                                queryChannelFollowIsSelected.find({
 
-                            let queryChannelFollowIsSelected = new Parse.Query("ChannelFollow");
-                            queryChannelFollowIsSelected.equalTo("user", user);
-                            //queryChannelFollowIsSelected.equalTo("channel", Channel);
-                            queryChannelFollowIsSelected.equalTo("workspace", workspace);
-                            queryChannelFollowIsSelected.equalTo("isSelected", true);
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
 
-                            queryChannelFollowIsSelected.find({
+                                }).then((results) => {
+                                    // The object was retrieved successfully.
 
-                                useMasterKey: true
-                                //sessionToken: sessionToken
+                                    if (results) {
 
-                            }).then((results) => {
-                                // The object was retrieved successfully.
+                                        let previousChannelFollowers = results;
 
-                                if (results) {
+                                        // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
 
-                                    let previousChannelFollowers = results;
+                                        console.log("removePreviousWorkspaceFollowSelected" );
 
-                                    // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
+                                        // joining a workspace follower, so mark previous one as false
+                                        if (previousChannelFollowers.length > 0) {
 
-                                    console.log("removePreviousWorkspaceFollowSelected" );
+                                            console.log("marketing previous workspacefollow that isSelected to false: " +previousChannelFollowers.length );
 
-                                    // joining a workspace follower, so mark previous one as false
-                                    if (previousChannelFollowers.length > 0) {
+                                            async.map(previousChannelFollowers, function (channelFollow, cb) {
 
-                                        console.log("marketing previous workspacefollow that isSelected to false: " +previousChannelFollowers.length );
+                                                let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
+                                                let channel_follow =  new CHANNELFOLLOW();
+                                                channel_follow.id = channelFollow.id;
 
-                                        async.map(previousChannelFollowers, function (channelFollow, cb) {
+                                                channel_follow.set("isSelected",false);
+                                                //channel_follow.set("user", workspaceFollow.get("user"));
 
-                                            let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
-                                            let channel_follow =  new CHANNELFOLLOW();
-                                            channel_follow.id = channelFollow.id;
+                                                channel_follow.save(null, {
 
-                                            channel_follow.set("isSelected",false);
-                                            //channel_follow.set("user", workspaceFollow.get("user"));
+                                                    //useMasterKey: true
+                                                    sessionToken: sessionToken
+                                                });
 
-                                            channel_follow.save(null, {
+                                                channelFollow = channel_follow;
 
-                                                useMasterKey: true
-                                                //sessionToken: sessionToken
+                                                return cb (null, channelFollow);
+
+
+                                            }, function (err, previousChannelFollowers) {
+
+                                                //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
+
+                                                if (err) {
+                                                    return callback (err);
+                                                } else {
+
+                                                    return callback (null, previousChannelFollowers);
+
+
+                                                }
+
                                             });
 
-                                            channelFollow = channel_follow;
-
-                                            return cb (null, channelFollow);
 
 
-                                        }, function (err, previousChannelFollowers) {
+                                        } else {
 
-                                            //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
-
-                                            if (err) {
-                                                return callback (err);
-                                            } else {
-
-                                                return callback (null, previousChannelFollowers);
-
-
-                                            }
-
-                                        });
-
+                                            return callback (null, previousChannelFollowers);
+                                        }
 
 
                                     } else {
 
-                                        return callback (null, previousChannelFollowers);
+                                        // there was no workspace that was previously selected, return empty
+
+                                        return callback (null, results);
                                     }
 
+
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    return callback(error);
+                                }, {
+
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
+
+                                });
+
+                            }
+
+                            function updateAlgoliaUserMentionIndex (callback) {
+
+                                user.set("isChannelUpdated", true);
+
+                                user.save(null, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+                                return callback (null, user);
+
+
+                            }
+
+                            channelfollow.set("name", channelFollowName);
+                            //console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
+
+                            let channelACL = channelObject.getACL();
+                            let channelFollowACLPrivate = channelACL;
+                            let channelFollowACL = new Parse.ACL();
+
+                            // If this is a private channel, set ACL for owner to read and write
+                            if (channelObject.get("type") === 'private') {
+
+                                var adminRolePrivate = new Parse.Role();
+                                var adminNamePrivate = 'admin-' + workspace.id;
+                                adminRolePrivate.set("name", adminNamePrivate);
+
+                                channelACL.setReadAccess(user, true);
+                                channelACL.setWriteAccess(user, true);
+                                channel.setACL(channelACL);
+
+                                // set correct ACL for channelFollow
+                                //channelFollowACL.setPublicReadAccess(false);
+                                //channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACLPrivate.setReadAccess(user, true);
+                                channelFollowACLPrivate.setWriteAccess(user, true);
+                                //channelFollowACL.setReadAccess(ownerChannel, true);
+                                //channelFollowACL.setWriteAccess(ownerChannel, true);
+                                channelfollow.setACL(channelFollowACLPrivate);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+
+
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+
+
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+
+                                }
+                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+
+                                        return callback (error);
+                                    });
+
+
+
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                }
+                                else {
+
+                                    return callback (null, channel);
+
+                                }
+
+                            }
+                            else if (channelObject.get("type") === 'privateMembers') {
+
+                                // get member role for this workspace
+                                //var queryMemberRole = new Parse.Query(Parse.Role);
+                                var memberRole = new Parse.Role();
+                                var memberName = 'member-' + workspace.id;
+                                memberRole.set("name", memberName);
+
+                                // set correct ACL for channelFollow
+                                channelFollowACL.setPublicReadAccess(false);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(memberRole, true);
+                                channelFollowACL.setWriteAccess(memberRole, false);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                }
+                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                }
+                                else {
+
+                                    return callback (null, channel);
+
+                                }
+
+
+
+
+                            }
+                            else if (channelObject.get("type") === 'privateExperts') {
+
+                                // get expert role for this workspace
+                                var expertRole = new Parse.Role();
+                                var expertName = 'expert-' + workspace.id;
+                                expertRole.set("name", expertName);
+
+                                // set correct ACL for channelFollow
+                                channelFollowACL.setPublicReadAccess(false);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(expertRole, true);
+                                channelFollowACL.setWriteAccess(expertRole, false);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                }
+                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
 
                                 } else {
 
-                                    // there was no workspace that was previously selected, return empty
-
-                                    return callback (null, results);
+                                    return callback (null, channel);
                                 }
 
 
 
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                return callback(error);
-                            }, {
-
-                                useMasterKey: true
-                                //sessionToken: sessionToken
-
-                            });
-
-                        }
-
-                        function updateAlgoliaUserMentionIndex (callback) {
-
-                            user.set("isChannelUpdated", true);
-
-                            user.save(null, {
-
-                                useMasterKey: true
-                                //sessionToken: sessionToken
-
-                            });
-
-                            return callback (null, user);
-
-
-                        }
-
-                        channelfollow.set("name", channelFollowName);
-                        //console.log("Channel.getACL(): " + JSON.stringify(Channel.getACL()));
-
-                        let channelACL = channelObject.getACL();
-                        let channelFollowACLPrivate = channelACL;
-                        let channelFollowACL = new Parse.ACL();
-
-                        // If this is a private channel, set ACL for owner to read and write
-                        if (channelObject.get("type") === 'private') {
-
-                            var adminRolePrivate = new Parse.Role();
-                            var adminNamePrivate = 'admin-' + workspace.id;
-                            adminRolePrivate.set("name", adminNamePrivate);
-
-                            channelACL.setReadAccess(user, true);
-                            channelACL.setWriteAccess(user, true);
-                            channel.setACL(channelACL);
-
-                            // set correct ACL for channelFollow
-                            //channelFollowACL.setPublicReadAccess(false);
-                            //channelFollowACL.setPublicWriteAccess(false);
-                            channelFollowACLPrivate.setReadAccess(user, true);
-                            channelFollowACLPrivate.setWriteAccess(user, true);
-                            //channelFollowACL.setReadAccess(ownerChannel, true);
-                            //channelFollowACL.setWriteAccess(ownerChannel, true);
-                            channelfollow.setACL(channelFollowACLPrivate);
-
-                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                channel.increment("followerCount");
-                                channel.increment("memberCount");
-
-
-
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-
-
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-
                             }
-                            else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                channel.increment("followerCount");
-
-
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-
-
-                            }
-                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                // a member is by default always a follower.
-                                channel.increment("memberCount");
-                                channel.increment("followerCount");
-
-                                channelfollow.set("isFollower", true);
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            }
-                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                return response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                            }
-                            else {
-
-                                return callback (null, channel);
-
-                            }
-
-                        }
-                        else if (channelObject.get("type") === 'privateMembers') {
-
-                            // get member role for this workspace
-                            //var queryMemberRole = new Parse.Query(Parse.Role);
-                            var memberRole = new Parse.Role();
-                            var memberName = 'member-' + workspace.id;
-                            memberRole.set("name", memberName);
-
-                            // set correct ACL for channelFollow
-                            channelFollowACL.setPublicReadAccess(false);
-                            channelFollowACL.setPublicWriteAccess(false);
-                            channelFollowACL.setReadAccess(memberRole, true);
-                            channelFollowACL.setWriteAccess(memberRole, false);
-                            channelFollowACL.setReadAccess(user, true);
-                            channelFollowACL.setWriteAccess(user, true);
-                            channelFollowACL.setReadAccess(ownerUser, true);
-                            channelFollowACL.setWriteAccess(ownerUser, true);
-                            channelfollow.setACL(channelFollowACL);
-
-                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                channel.increment("followerCount");
-                                channel.increment("memberCount");
-
-
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            }
-                            else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                channel.increment("followerCount");
-
-
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            }
-                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                // a member is by default always a follower.
-                                channel.increment("memberCount");
-                                channel.increment("followerCount");
-                                channelfollow.set("isFollower", true);
-
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            }
-                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                return response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                            }
-                            else {
-
-                                return callback (null, channel);
-
-                            }
-
-
-
-
-                        }
-                        else if (channelObject.get("type") === 'privateExperts') {
-
-                            // get expert role for this workspace
-                            var expertRole = new Parse.Role();
-                            var expertName = 'expert-' + workspace.id;
-                            expertRole.set("name", expertName);
-
-                            // set correct ACL for channelFollow
-                            channelFollowACL.setPublicReadAccess(false);
-                            channelFollowACL.setPublicWriteAccess(false);
-                            channelFollowACL.setReadAccess(expertRole, true);
-                            channelFollowACL.setWriteAccess(expertRole, false);
-                            channelFollowACL.setReadAccess(user, true);
-                            channelFollowACL.setWriteAccess(user, true);
-                            channelFollowACL.setReadAccess(ownerUser, true);
-                            channelFollowACL.setWriteAccess(ownerUser, true);
-                            channelfollow.setACL(channelFollowACL);
-
-                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                channel.increment("followerCount");
-                                channel.increment("memberCount");
-
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            }
-                            else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                channel.increment("followerCount");
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                if (ChannelFollowIsSelected) {
-
-                                    channelFollowIsSelectedSave.set("isSelected", false);
-                                    channelFollowIsSelectedSave.save(null, {
-
-                                            useMasterKey: true
-                                            //sessionToken: sessionToken
+                            else if (channelObject.get("type") === 'privateAdmins') {
+
+                                // get admin role for this workspace
+                                var adminRole = new Parse.Role();
+                                var adminName = 'expert-' + workspace.id;
+                                adminRole.set("name", adminName);
+
+                                // set correct ACL for channelFollow
+                                channelFollowACL.setPublicReadAccess(false);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(adminRole, true);
+                                channelFollowACL.setWriteAccess(adminRole, false);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
                                         }
-                                    );
 
-                                }
-                                return callback (null, channel);
+                                        if (results) {
 
-                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                // a member is by default always a follower.
-                                channel.increment("memberCount");
-                                channel.increment("followerCount");
-                                channelfollow.set("isFollower", true);
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
+                                            return callback (null, channel);
 
+                                        } else {
 
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                return response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                            } else {
-
-                                return callback (null, channel);
-                            }
-
-
-
-                        }
-                        else if (channelObject.get("type") === 'privateAdmins') {
-
-                            // get admin role for this workspace
-                            var adminRole = new Parse.Role();
-                            var adminName = 'expert-' + workspace.id;
-                            adminRole.set("name", adminName);
-
-                            // set correct ACL for channelFollow
-                            channelFollowACL.setPublicReadAccess(false);
-                            channelFollowACL.setPublicWriteAccess(false);
-                            channelFollowACL.setReadAccess(adminRole, true);
-                            channelFollowACL.setWriteAccess(adminRole, false);
-                            channelFollowACL.setReadAccess(user, true);
-                            channelFollowACL.setWriteAccess(user, true);
-                            channelFollowACL.setReadAccess(ownerUser, true);
-                            channelFollowACL.setWriteAccess(ownerUser, true);
-                            channelfollow.setACL(channelFollowACL);
-
-                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                channel.increment("followerCount");
-                                channel.increment("memberCount");
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-                            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                channel.increment("followerCount");
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                // a member is by default always a follower.
-                                channel.increment("memberCount");
-                                channel.increment("followerCount");
-                                channelfollow.set("isFollower", true);
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                return response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                            } else {
-
-                                return callback (null, channel);
-
-                            }
-
-
-
-
-                        }
-                        else if (channelObject.get("type") === 'privateModerators') {
-
-                            // get moderator role for this workspace
-                            var moderatorRole = new Parse.Role();
-                            var moderatorName = 'expert-' + workspace.id;
-                            moderatorRole.set("name", moderatorName);
-
-                            // set correct ACL for channelFollow
-                            channelFollowACL.setPublicReadAccess(false);
-                            channelFollowACL.setPublicWriteAccess(false);
-                            channelFollowACL.setReadAccess(moderatorRole, true);
-                            channelFollowACL.setWriteAccess(moderatorRole, false);
-                            channelFollowACL.setReadAccess(user, true);
-                            channelFollowACL.setWriteAccess(user, true);
-                            channelFollowACL.setReadAccess(ownerUser, true);
-                            channelFollowACL.setWriteAccess(ownerUser, true);
-                            channelfollow.setACL(channelFollowACL);
-
-                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                channel.increment("followerCount");
-                                channel.increment("memberCount");
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                channel.increment("followerCount");
-
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                if (ChannelFollowIsSelected) {
-
-                                    channelFollowIsSelectedSave.set("isSelected", false);
-                                    channelFollowIsSelectedSave.save(null, {
-
-                                            useMasterKey: true
-                                            //sessionToken: sessionToken
+                                            return callback (null, channel);
                                         }
-                                    );
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    return callback (null, channel);
 
                                 }
-                                return callback (null, channel);
-
-                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                // a member is by default always a follower.
-                                channel.increment("memberCount");
-                                channel.increment("followerCount");
-                                channelfollow.set("isFollower", true);
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
 
 
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
 
-                                    if (results) {
 
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                            } else {
-
-                                return callback (null, channel);
                             }
+                            else if (channelObject.get("type") === 'privateModerators') {
 
+                                // get moderator role for this workspace
+                                var moderatorRole = new Parse.Role();
+                                var moderatorName = 'expert-' + workspace.id;
+                                moderatorRole.set("name", moderatorName);
+
+                                // set correct ACL for channelFollow
+                                channelFollowACL.setPublicReadAccess(false);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(moderatorRole, true);
+                                channelFollowACL.setWriteAccess(moderatorRole, false);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    return callback (null, channel);
+                                }
+
+
+
+                            }
+                            else if (channelObject.get("type") === 'privateOwners') {
+
+                                // get owner role for this workspace
+                                var ownerRole = new Parse.Role();
+                                var ownerName = 'expert-' + workspace.id;
+                                ownerRole.set("name", ownerName);
+
+                                // set correct ACL for channelFollow
+                                channelFollowACL.setPublicReadAccess(false);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(ownerRole, true);
+                                channelFollowACL.setWriteAccess(ownerRole, false);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    ChannelFollowIsSelected("isSelected", false);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                } else {
+
+                                    return callback (null, channel);
+
+                                }
+
+
+
+
+                            }
+                            else if (channelObject.get("type") === "public") {
+
+                                // do nothing, since ACL will be public read/write by default
+                                channelFollowACL.setPublicReadAccess(true);
+                                channelFollowACL.setPublicWriteAccess(false);
+                                channelFollowACL.setReadAccess(ownerUser, true);
+                                channelFollowACL.setWriteAccess(ownerUser, true);
+                                channelFollowACL.setReadAccess(user, true);
+                                channelFollowACL.setWriteAccess(user, true);
+                                channelfollow.setACL(channelFollowACL);
+
+                                if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
+                                    channel.increment("followerCount");
+                                    channel.increment("memberCount");
+
+
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                }
+                                else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+                                    channel.increment("followerCount");
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
+                                    // a member is by default always a follower.
+                                    channel.increment("memberCount");
+                                    channel.increment("followerCount");
+                                    channelfollow.set("isFollower", true);
+                                    // set isSelected for this channel to true and set previous channel that was selected to false
+                                    channelfollow.set("isSelected", true);
+                                    async.parallel([
+                                        async.apply(removeAllPreviousSelectedChannelFollowerJoin),
+                                        async.apply(updateAlgoliaUserMentionIndex)
+
+
+                                    ], function (err, results) {
+                                        if (err) {
+                                            response.error(err);
+                                        }
+
+                                        if (results) {
+
+                                            return callback (null, channel);
+
+                                        } else {
+
+                                            return callback (null, channel);
+                                        }
+
+                                    }, (error) => {
+                                        // The object was not retrieved successfully.
+                                        // error is a Parse.Error with an error code and message.
+                                        return callback (error);
+                                    });
+
+                                }
+                                else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
+
+                                    return response.error("Please set isFollower:true or isMember:true since one if required.");
+
+                                }
+                                else {
+
+                                    return callback (null, channel);
+
+                                }
+
+
+                            }
+                            else if (channelObject.get("type") !== 'private' || channelObject.get("type") !== 'public' || channelObject.get("type") !== 'privateOwners' || channelObject.get("type") !== 'privateModerators' || channelObject.get("type") !== 'privateAdmins' || channelObject.get("type") !== 'privateExperts' || channelObject.get("type") !== 'privateMembers') {
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+                                response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+                            }
 
 
                         }
-                        else if (channelObject.get("type") === 'privateOwners') {
-
-                            // get owner role for this workspace
-                            var ownerRole = new Parse.Role();
-                            var ownerName = 'expert-' + workspace.id;
-                            ownerRole.set("name", ownerName);
-
-                            // set correct ACL for channelFollow
-                            channelFollowACL.setPublicReadAccess(false);
-                            channelFollowACL.setPublicWriteAccess(false);
-                            channelFollowACL.setReadAccess(ownerRole, true);
-                            channelFollowACL.setWriteAccess(ownerRole, false);
-                            channelFollowACL.setReadAccess(user, true);
-                            channelFollowACL.setWriteAccess(user, true);
-                            channelFollowACL.setReadAccess(ownerUser, true);
-                            channelFollowACL.setWriteAccess(ownerUser, true);
-                            channelfollow.setACL(channelFollowACL);
-
-                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                channel.increment("followerCount");
-                                channel.increment("memberCount");
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
 
 
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
+                        async.parallel([
+                            async.apply(addExpertsArrayToChannel),
+                            async.apply(updateFollowersInChannel)
 
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            } else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                channel.increment("followerCount");
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                ChannelFollowIsSelected("isSelected", false);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                // a member is by default always a follower.
-                                channel.increment("memberCount");
-                                channel.increment("followerCount");
-                                channelfollow.set("isFollower", true);
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            } else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                return response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                            } else {
-
-                                return callback (null, channel);
-
+                        ], function (err, results) {
+                            if (err) {
+                                response.error(err);
                             }
-
-
-
-
-                        }
-                        else if (channelObject.get("type") === "public") {
-
-                            // do nothing, since ACL will be public read/write by default
-                            channelFollowACL.setPublicReadAccess(true);
-                            channelFollowACL.setPublicWriteAccess(false);
-                            channelFollowACL.setReadAccess(ownerUser, true);
-                            channelFollowACL.setWriteAccess(ownerUser, true);
-                            channelFollowACL.setReadAccess(user, true);
-                            channelFollowACL.setWriteAccess(user, true);
-                            channelfollow.setACL(channelFollowACL);
-
-                            if (channelfollow.get("isFollower") === true && channelfollow.get("isMember") === true) {
-                                channel.increment("followerCount");
-                                channel.increment("memberCount");
-
-
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            }
-                            else if (channelfollow.get("isFollower") === true && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-                                channel.increment("followerCount");
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            }
-                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && channelfollow.get("isMember") === true) {
-                                // a member is by default always a follower.
-                                channel.increment("memberCount");
-                                channel.increment("followerCount");
-                                channelfollow.set("isFollower", true);
-                                // set isSelected for this channel to true and set previous channel that was selected to false
-                                channelfollow.set("isSelected", true);
-                                async.parallel([
-                                    async.apply(removeAllPreviousSelectedChannelFollowerJoin),
-                                    async.apply(updateAlgoliaUserMentionIndex)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        response.error(err);
-                                    }
-
-                                    if (results) {
-
-                                        return callback (null, channel);
-
-                                    } else {
-
-                                        return callback (null, channel);
-                                    }
-
-                                }, (error) => {
-                                    // The object was not retrieved successfully.
-                                    // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
-                                    return callback (error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                });
-
-                            }
-                            else if ((channelfollow.get("isFollower") === false || !channelfollow.get("isFollower")) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
-
-                                return response.error("Please set isFollower:true or isMember:true since one if required.");
-
-                            }
-                            else {
-
-                                return callback (null, channel);
-
-                            }
-
-
-                        }
-                        else if (channelObject.get("type") !== 'private' || channelObject.get("type") !== 'public' || channelObject.get("type") !== 'privateOwners' || channelObject.get("type") !== 'privateModerators' || channelObject.get("type") !== 'privateAdmins' || channelObject.get("type") !== 'privateExperts' || channelObject.get("type") !== 'privateMembers') {
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                            response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
-                        }
-
-
-                    }
-
-
-
-                    async.parallel([
-                        async.apply(addExpertsArrayToChannel),
-                        async.apply(updateFollowersInChannel)
-
-                    ], function (err, results) {
-                        if (err) {
-                            response.error(err);
-                        }
-
-                        if (channelfollow.get("isNewChannel") === true) {
 
                             if (channelfollow.get("isNewChannel") === true) {
 
-                                channelfollow.set("isNewChannel", false);
+                                if (channelfollow.get("isNewChannel") === true) {
 
-                            }
-
-                            let beforeSave_Time = process.hrtime(time);
-                            console.log(`beforeSave_Time ChannelFollow took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
-
-                            response.success();
-
-                        }
-                        else if (channelfollow.get("isNewChannel") === false) {
-
-
-                            let FinalChannelToSave = Parse.Object.extend("Channel");
-                            let finalChannelToSave = new FinalChannelToSave();
-                            finalChannelToSave.id = channel.id;
-
-                            let FIRSTCHANNELRESULT = Parse.Object.extend("Channel");
-                            let firstChannelResult = new Parse.Object(FIRSTCHANNELRESULT);
-                            firstChannelResult = results[0];
-
-                            let SecondChannelResult = Parse.Object.extend("Channel");
-                            let secondChannelResult = new SecondChannelResult();
-                            secondChannelResult = results[1];
-
-                            console.log("firstChannelResult: " + JSON.stringify(firstChannelResult));
-                            console.log("secondChannelResult: " + JSON.stringify(secondChannelResult));
-
-                            if (firstChannelResult) {
-
-                                if (firstChannelResult.get("expertsArray")) {
-
-                                    finalChannelToSave.set("expertsArray", firstChannelResult.toJSON().expertsArray);
-                                    console.log("expertsArray: " + JSON.stringify(firstChannelResult.toJSON().expertsArray));
-
-                                }
-                            }
-
-                            if (secondChannelResult) {
-
-                                if (secondChannelResult.get("followerCount")) {
-                                    finalChannelToSave.set("followerCount", secondChannelResult.toJSON().followerCount);
-                                }
-                                if (secondChannelResult.get("memberCount")) {
-
-                                    finalChannelToSave.set("memberCount", secondChannelResult.toJSON().memberCount);
-
+                                    channelfollow.set("isNewChannel", false);
 
                                 }
 
+                                let beforeSave_Time = process.hrtime(time);
+                                console.log(`beforeSave_Time ChannelFollow took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                response.success();
+
+                            }
+                            else if (channelfollow.get("isNewChannel") === false) {
+
+
+                                let FinalChannelToSave = Parse.Object.extend("Channel");
+                                let finalChannelToSave = new FinalChannelToSave();
+                                finalChannelToSave.id = channel.id;
+
+                                let FIRSTCHANNELRESULT = Parse.Object.extend("Channel");
+                                let firstChannelResult = new Parse.Object(FIRSTCHANNELRESULT);
+                                firstChannelResult = results[0];
+
+                                let SecondChannelResult = Parse.Object.extend("Channel");
+                                let secondChannelResult = new SecondChannelResult();
+                                secondChannelResult = results[1];
+
+                                console.log("firstChannelResult: " + JSON.stringify(firstChannelResult));
+                                console.log("secondChannelResult: " + JSON.stringify(secondChannelResult));
+
+                                if (firstChannelResult) {
+
+                                    if (firstChannelResult.get("expertsArray")) {
+
+                                        finalChannelToSave.set("expertsArray", firstChannelResult.toJSON().expertsArray);
+                                        console.log("expertsArray: " + JSON.stringify(firstChannelResult.toJSON().expertsArray));
+
+                                    }
+                                }
+
+                                if (secondChannelResult) {
+
+                                    if (secondChannelResult.get("followerCount")) {
+                                        finalChannelToSave.set("followerCount", secondChannelResult.toJSON().followerCount);
+                                    }
+                                    if (secondChannelResult.get("memberCount")) {
+
+                                        finalChannelToSave.set("memberCount", secondChannelResult.toJSON().memberCount);
+
+
+                                    }
+
+                                }
+
+                                console.log("Channel async.Parallels: " + JSON.stringify(finalChannelToSave));
+
+                                finalChannelToSave.save(null, {
+
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
+
+                                });
+
+                                let beforeSave_Time = process.hrtime(time);
+                                console.log(`beforeSave_Time ChannelFollow took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
+
+                                response.success();
+
                             }
 
-                            console.log("Channel async.Parallels: " + JSON.stringify(finalChannelToSave));
 
-                            finalChannelToSave.save(null, {
 
-                                useMasterKey: true
-                                //sessionToken: sessionToken
-
-                            });
-
-                            let beforeSave_Time = process.hrtime(time);
-                            console.log(`beforeSave_Time ChannelFollow took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1]) * MS_PER_NS} milliseconds`);
-
-                            response.success();
-
-                        }
+                        });
 
 
 
-                    });
+                    } else {
+
+                        console.error("beforeSave ChannelFollow no channelObject returned");
+                        return response.error("beforeSave ChannelFollow no channelObject returned");
+                    }
 
 
 
@@ -12689,8 +12609,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                     response.error(error);
                 }, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    //useMasterKey: true
+                    sessionToken: sessionToken
 
                 });
             }
@@ -12718,8 +12638,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
         queryChannelFollow.include(["user", "workspace", "channel"]);
         queryChannelFollow.get(channelfollow.id, {
 
-            useMasterKey: true
-            //sessionToken: sessionToken
+            //useMasterKey: true
+            sessionToken: sessionToken
 
         }).then((result) => {
             // The object was retrieved successfully.
@@ -12774,8 +12694,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                         queryChannelFollowIsSelected.find({
 
-                            useMasterKey: true
-                            //sessionToken: sessionToken
+                            //useMasterKey: true
+                            sessionToken: sessionToken
 
                         }).then((channelFollowersResult) => {
                             // The object was retrieved successfully.
@@ -12851,8 +12771,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                             return callback(error);
                         }, {
 
-                            useMasterKey: true
-                            //sessionToken: sessionToken
+                            //useMasterKey: true
+                            sessionToken: sessionToken
 
                         });
 
@@ -12923,8 +12843,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -12949,13 +12869,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
 
@@ -12966,8 +12880,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -12993,13 +12907,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
@@ -13036,13 +12944,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
@@ -13051,8 +12953,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13078,13 +12980,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             }
@@ -13157,8 +13053,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13185,11 +13081,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     // error is a Parse.Error with an error code and message.
                                     //console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
@@ -13198,8 +13089,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13226,11 +13117,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     // error is a Parse.Error with an error code and message.
                                     //console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
@@ -13241,8 +13127,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13269,11 +13155,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     // error is a Parse.Error with an error code and message.
                                     //console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
@@ -13285,8 +13166,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13313,11 +13194,6 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                     // error is a Parse.Error with an error code and message.
                                     //console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             }
@@ -13334,8 +13210,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 response.success();
@@ -13355,8 +13231,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 response.success();
@@ -13417,8 +13293,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13443,13 +13319,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
 
@@ -13541,8 +13411,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13567,13 +13437,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
@@ -13582,8 +13446,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13609,13 +13473,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
@@ -13625,8 +13483,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13652,13 +13510,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
@@ -13667,8 +13519,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13694,13 +13546,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             }
@@ -13761,8 +13607,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13787,13 +13633,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             } else if ((result.get("isMember") === false || !result.get("isMember") ) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
@@ -13802,8 +13642,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13828,13 +13668,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             } else if ((result.get("isMember") === true) && (channelfollow.get("isMember") === false || !channelfollow.get("isMember"))) {
@@ -13845,8 +13679,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13871,13 +13705,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             } else if (result.get("isMember") === true && channelfollow.get("isMember") === true) {
@@ -13889,8 +13717,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -13915,13 +13743,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
                             }
@@ -13937,8 +13759,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 response.success();
@@ -13958,8 +13780,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 response.success();
@@ -14012,8 +13834,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
 
                                 Channel.save(null, {
 
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
                                 });
 
                                 async.parallel([
@@ -14038,13 +13860,7 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
                                 }, (error) => {
                                     // The object was not retrieved successfully.
                                     // error is a Parse.Error with an error code and message.
-                                    console.log("channelQuery not found");
                                     return response.error(error);
-                                }, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
                                 });
 
 
@@ -14114,8 +13930,8 @@ Parse.Cloud.beforeSave('ChannelFollow', function(req, response) {
             response.error(error);
         }, {
 
-            useMasterKey: true
-            //sessionToken: sessionToken
+            //useMasterKey: true
+            sessionToken: sessionToken
 
         });
 
@@ -19098,7 +18914,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                         o = simplifyPostMessageSocialQuestion(o);
 
-                                        console.log(JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult))+ " " + JSON.stringify(Questions.indexOf(question)) +  " o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
+                                        //console.log(JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult))+ " " + JSON.stringify(Questions.indexOf(question)) +  " o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
                                         return o.user.objectId === userId;
 
 
@@ -19365,7 +19181,7 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                                     if(o.PostMessageSocial) {
 
-                                        console.log(JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult))+ " o.user.objectId: " + JSON.stringify(o.PostMessageSocial.user.objectId) + ":: userId: " + JSON.stringify(userId));
+                                        //console.log(JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult))+ " o.user.objectId: " + JSON.stringify(o.PostMessageSocial.user.objectId) + ":: userId: " + JSON.stringify(userId));
                                         return o.PostMessageSocial.user.objectId === userId;
 
 
