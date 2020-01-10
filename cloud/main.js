@@ -25821,7 +25821,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "canMentionMembers": false,
                     "canEditPost": false,
                     "canDeletePost": false,
-                    "canArchivePost": false
+                    "canArchivePost": false,
+                    "canEditUserRole": false
                 });
                 //followerRole.save(null, {useMasterKey: true});
                 //console.log("followerRole: " + JSON.stringify(followerRole));
@@ -25850,7 +25851,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "canMentionMembers": true,
                     "canEditPost": false,
                     "canDeletePost": false,
-                    "canArchivePost": false
+                    "canArchivePost": false,
+                    "canEditUserRole": false
                 });
                 //memberRole.save(null, {useMasterKey: true});
 
@@ -25878,7 +25880,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "canMentionMembers": true,
                     "canEditPost": false,
                     "canDeletePost": true,
-                    "canArchivePost": true
+                    "canArchivePost": true,
+                    "canEditUserRole": false
                 });
                 //moderatorRole.save(null, {useMasterKey: true});
 
@@ -25906,7 +25909,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "canMentionMembers": true,
                     "canEditPost": false,
                     "canDeletePost": true,
-                    "canArchivePost": true
+                    "canArchivePost": true,
+                    "canEditUserRole": true
                 });
                 //adminRole.save(null, {useMasterKey: true});
 
@@ -25934,7 +25938,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "canMentionMembers": true,
                     "canEditPost": false,
                     "canDeletePost": true,
-                    "canArchivePost": true
+                    "canArchivePost": true,
+                    "canEditUserRole": true
+
                 });
                 //expertRole.save(null, {useMasterKey: true});
 
@@ -25963,7 +25969,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                     "canMentionMembers": true,
                     "canEditPost": false,
                     "canDeletePost": true,
-                    "canArchivePost": true
+                    "canArchivePost": true,
+                    "canEditUserRole": true
+
                 });
                 //console.log("ownerRole 2: " + JSON.stringify(ownerRole));
                 //ownerRole.save(null, {useMasterKey: true});
