@@ -11,14 +11,43 @@ var querystring = require('querystring');
 var process = require('process');
 var mongoClient = require("mongodb").MongoClient;
 var Promise = require('promise');
+
+const isProduction = false;
+var fileForPushNotification;
+var keyFileForPushNotification;
 // Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
-var indexPosts = client.initIndex('dev_posts');
-var indexUsers = client.initIndex('dev_users');
-var indexMeetings = client.initIndex('dev_meetings');
-var indexChannel = client.initIndex('dev_channels');
-var indexWorkspaces = client.initIndex('dev_workspaces');
-var indexSkills = client.initIndex('dev_skills');
-var indexPostMessage = client.initIndex('dev_postMessages');
+var indexPosts;
+var indexUsers;
+var indexMeetings;
+var indexChannel ;
+var indexWorkspaces;
+var indexSkills ;
+var indexPostMessage;
+
+if( isProduction ){
+    fileForPushNotification = 'apns-prod-cert.pem';
+    keyFileForPushNotification = 'Key-Distribution.pem';
+    indexPosts = client.initIndex('prod_posts');
+    indexUsers = client.initIndex('prod_users');
+    indexMeetings = client.initIndex('prod_meetings');
+    indexChannel = client.initIndex('prod_channels');
+    indexWorkspaces = client.initIndex('prod_workspaces');
+    indexSkills = client.initIndex('prod_skills');
+    indexPostMessage = client.initIndex('prod_postMessages');
+} else {
+    fileForPushNotification = 'apns-dev-cert.pem';
+    keyFileForPushNotification = 'Key-Development.pem';
+    indexPosts = client.initIndex('dev_posts');
+    indexUsers = client.initIndex('dev_users');
+    indexMeetings = client.initIndex('dev_meetings');
+    indexChannel = client.initIndex('dev_channels');
+    indexWorkspaces = client.initIndex('dev_workspaces');
+    indexSkills = client.initIndex('dev_skills');
+    indexPostMessage = client.initIndex('dev_postMessages');
+
+}
+
+
 
 const requestPromise = require('request-promise');
 var fs = require('fs');
@@ -82,16 +111,7 @@ const path = require('path');
 var cron = require('node-cron');
 
 // Set production mode and add certification and key file accordingly
-const isProduction = false;
-var fileForPushNotification;
-var keyFileForPushNotification;
-if( isProduction ){
-    fileForPushNotification = 'apns-prod-cert.pem';
-    keyFileForPushNotification = 'Key-Distribution.pem';
-} else {
-    fileForPushNotification = 'apns-dev-cert.pem';
-    keyFileForPushNotification = 'Key-Development.pem';
-}
+
 var options = {
     cert: path.resolve(fileForPushNotification),
     key: path.resolve(keyFileForPushNotification),
@@ -28968,7 +28988,7 @@ cron.schedule('*/1 * * * *', () => {
     var User = Parse.Object.extend('User');
     var user = new Parse.Query(User);
     user.exists("deviceToken");
-    console.log("user: " + JSON.stringify(user));
+    //console.log("user: " + JSON.stringify(user));
     var Notification = Parse.Object.extend('Notification');
     var query = new Parse.Query(Notification);
     query.include('userTo.deviceToken');
@@ -28991,6 +29011,7 @@ cron.schedule('*/1 * * * *', () => {
 
                     };
                 note.topic = "ai.papr.dev";
+                console.log("deviceToken: " + JSON.stringify(result.get("userTo")) + " " + JSON.stringify( result.get("userTo").get("deviceToken")));
                 apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
                     result.set("hasSent", true);
                     result.save(null, {
