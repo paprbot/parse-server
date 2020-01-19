@@ -4821,15 +4821,6 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     let socialProfilePicURL = user.get("socialProfilePicURL");
     let profileImage = user.get("profileimage");
 
-    let workspaceFollower = Parse.Object.extend("workspace_follower");
-    let queryWorkspaceFollower = new Parse.Query(workspaceFollower);
-    queryWorkspaceFollower.equalTo("isSelected", true);
-    queryWorkspaceFollower.equalTo("user", user);
-
-    let userObject = Parse.Object.extend("_User");
-    let userQuery = new Parse.Query(userObject);
-    userQuery.equalTo("objectId", user.id);
-
     //console.log("_User req: " + JSON.stringify(req));
 
     //let expiresAt = session.get("expiresAt");
@@ -4837,13 +4828,21 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     let _tagUserId = user.id;
 
     let defaultTagFilters = new Set();
-    defaultTagFilters.add(_tagUserId);
+    if (_tagUserId) {
+
+        defaultTagFilters.add(_tagUserId);
+    }
+
     defaultTagFilters.add(_tagPublic);
     let defaultTagFiltersArray = Array.from(new Set(defaultTagFilters));
 
-    let userOriginalTagFilters = userOriginal.get("tagFilters")? userOriginal.get("tagFilters") : defaultTagFiltersArray;
+    let userOriginalTagFilters = userOriginal? userOriginal.get("tagFilters") : defaultTagFiltersArray;
+    if (userOriginalTagFilters.length === 1) {
+        userOriginalTagFilters.push(_tagUserId);
 
-    if (user.dirty("profileimage") || user.get("isWorkspaceUpdated") === true || user.get("isChannelUpdated") === true || user.dirty("title") || user.dirty("displayName") || user.dirty("fullname") || user.dirty("roles") || user.dirty("isOnline") || user.dirty("showAvailability")) {
+    }
+
+    if (user.dirty("profileimage") === true || user.get("isWorkspaceUpdated") === true || user.get("isChannelUpdated") === true || user.dirty("title") === true || user.dirty("displayName")  === true|| user.dirty("fullname")  === true|| user.dirty("roles")  === true|| user.dirty("isOnline")  === true || user.dirty("showAvailability")  === true ) {
 
         user.set("isUpdateAlgoliaIndex", true);
 
@@ -4864,7 +4863,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
 
 
-    if (user.dirty("profileimage")) {
+    if (user.dirty("profileimage") === true && profileImage) {
 
         user.set("isDirtyProfileimage", true);
 
@@ -4872,25 +4871,25 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
 
     }
-    else if (!user.dirty("profileimage")) {user.set("isDirtyProfileimage", false);}
+    else if (user.dirty("profileimage") === false) {user.set("isDirtyProfileimage", false);}
 
-    if (user.dirty("isOnline")) {
+    if (user.dirty("isOnline") === true) {
         user.set("isDirtyIsOnline", true);
 
     }
-    else if (!user.dirty("isOnline")) {user.set("isDirtyIsOnline", false);}
+    else if (user.dirty("isOnline") === false) {user.set("isDirtyIsOnline", false);}
 
-    if (user.dirty("showAvailability")) {
+    if (user.dirty("showAvailability") === true) {
         user.set("isDirtyShowAvailability", true);
 
     }
-    else if (!user.dirty("showAvailability")) {user.set("isDirtyShowAvailability", false);}
+    else if (user.dirty("showAvailability") === false) {user.set("isDirtyShowAvailability", false);}
 
-    if (user.dirty("isTyping")) {
+    if (user.dirty("isTyping") === true) {
         user.set("isDirtyTyping", true);
 
     }
-    else if (!user.dirty("isTyping")) {user.set("isDirtyTyping", false);}
+    else if (user.dirty("isTyping") === false || !user.dirty("isTyping")) {user.set("isDirtyTyping", false);}
 
     if (user.isNew()) {
         user.set("isNew", true);
@@ -5041,9 +5040,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
     let queryWorkspace = new Parse.Query(WORKspace);
 
-    if (workspace.dirty("skills")) {
+    if (workspace.dirty("skills") === true) {
         workspace.set("isDirtySkills", true);
-    } else if (!workspace.dirty("skills")) {
+    } else if (workspace.dirty("skills") === false || !workspace.dirty("skills")) {
         workspace.set("isDirtySkills", false);
 
     }
@@ -26133,11 +26132,11 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
             expertObject = workspace.get("experts");
             let expertsArray = [];
 
-            if (workspace.get("isNew")) {
+            if (workspace.get("isNew") === true) {
 
                 expertsArray = workspace.get("expertsArray");
 
-                //console.log("isNew Workspace expertsArray: " + JSON.stringify(expertsArray));
+                console.log("isNew Workspace expertsArray: " + JSON.stringify(expertsArray));
 
                 return callback (null, expertsArray);
 
@@ -26145,7 +26144,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 //console.log("workspace.dirty_experts: " + JSON.stringify(workspace.dirty("experts")));
 
-                if (workspace.get("isDirtyExperts")) {
+                if (workspace.get("isDirtyExperts") === true) {
 
                     // expert being added or removed, update algolia, else return callback.
 
@@ -26187,10 +26186,11 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                             for (let i = 0; i < experts.length; i++) {
 
+                                experts[i] = simplifyUser(experts[i]);
                                 let expertObject = experts[i];
 
                                 let userRolesRelation = expertObject.relation("roles");
-                                console.log("userRolesRelation afterSave Workspace: " + JSON.stringify(userRolesRelation));
+                                //console.log("userRolesRelation afterSave Workspace: " + JSON.stringify(userRolesRelation));
                                 userRolesRelation.add(expertrole); // add owner role to the user roles field.
                                 expertObject.save(null, {
 
@@ -26264,7 +26264,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
             let followersArray = [];
 
-            if (workspace.get("isNew")) {
+            if (workspace.get("isNew") === true) {
 
                 //console.log("isNew Workspace no followers yet except workspace owner: " + JSON.stringify(followersArray));
 
@@ -26292,8 +26292,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
 
-                    delete workspaceToSave.skills;
-                    delete workspaceToSave.experts;
+                    workspaceToSave = simplifyWorkspace(workspaceToSave);
 
                     workspaceToSave.objectID = workspaceToSave.objectId;
                     workspaceToSave['followers'] = followers;
@@ -26392,8 +26391,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     //console.log("workspace new workspace to save: " + JSON.stringify(workspaceFollower));
 
-                    delete workspaceToSave.skills;
-                    delete workspaceToSave.experts;
+                    workspaceToSave = simplifyWorkspace(workspaceToSave);
 
                     workspaceToSave.objectID = workspaceToSave.objectId;
                     followersArray.push(workspaceFollower);
@@ -26494,7 +26492,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
             //console.log("results length: " + JSON.stringify(results.length));
 
-            if(workspace.get("isNew")) {
+            if(workspace.get("isNew") === true) {
                 workspaceToSave = results[4];
                 workspace.set("isDirtyExperts", true);
 
@@ -26509,7 +26507,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
             workspaceToSave["skills"] = skillsToSave;
 
 
-            if (workspace.get("isDirtyExperts")) {
+            if (workspace.get("isDirtyExperts") === true) {
                 workspaceToSave["experts"] = expertsToSave;
                 delete workspaceToSave.expertsArray;
             } else {
@@ -26519,10 +26517,9 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
             }
 
-            delete workspaceToSave.isDirtySkills;
-            delete workspaceToSave.isDirtyExperts;
-            delete workspaceToSave.isNew;
+
             //delete workspaceToSave.expertsArray;
+
 
             if (workspace.get("isNew") === true) {
 

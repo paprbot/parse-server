@@ -1,9 +1,6 @@
-/**
- * Created by shawk on 5/10/2019.
- */
 
 
-function simplifyWorkspaceFollowersUserIndex (WorkspaceFollower) {
+function simplifyWorkspaceFollower (WorkspaceFollower) {
 
     let workspaceFollower = WorkspaceFollower.toJSON();
     if (workspaceFollower.archive === true || workspaceFollower.archive === false) {delete workspaceFollower.archive;}
@@ -28,5 +25,5 @@ function simplifyWorkspaceFollowersUserIndex (WorkspaceFollower) {
     return workspaceFollower;
 }
 
-module.exports = simplifyWorkspaceFollowersUserIndex;
+module.exports = simplifyWorkspaceFollower;
 

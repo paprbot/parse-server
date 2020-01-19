@@ -9,13 +9,17 @@
   },
   "license": "MIT",
   "dependencies": {
+    "algoliasearch": "^3.35.1",
     "apn": "^2.2.0",
+    "async": "^3.1.0",
     "buffer-shims": "^1.0.0",
     "counter": "^0.1.1",
-    "email-templates": "^5.0.2",
+    "email-templates": "^5.1.0",
     "express": "^4.13.4",
     "fs": "0.0.1-security",
+    "graphql": "^14.5.8",
     "handlebars": "^4.0.12",
+    "mathjs": "^6.5.0",
     "node-cron": "^2.0.3",
     "node-deeplink": "^0.5.0",
     "nodemailer": "^4.7.0",
@@ -24,13 +28,16 @@
     "parse-server": "2.3.x",
     "parse-server-azure-config": "^1.0.0",
     "path": "^0.12.7",
-    "url-regex": "^4.1.1"
+    "react": "^16.12.0",
+    "request-promise": "^4.2.5",
+    "url-regex": "^4.1.1",
+    "yn": "^4.0.0"
   },
   "scripts": {
     "start": "node index.js",
     "postinstall": "git update-index --skip-worktree local.js & exit 0"
   },
   "engines": {
-    "node": "6.9.4"
+    "node": "12.13.0"
   }
 }
