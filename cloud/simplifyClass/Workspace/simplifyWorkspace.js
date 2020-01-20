@@ -15,7 +15,6 @@ function simplifyWorkspace (Workspace) {
     if (workspace.postCount) {delete workspace.postCount;}
     if (workspace.memberCount) {delete workspace.memberCount;}
     if (workspace.followerCount) {delete workspace.followerCount;}
-    if (workspace.archive === true || workspace.archive ===  false) {delete workspace.archive;}
     if (workspace.ACL) {delete workspace.ACL;}
     if (workspace.description) {delete workspace.description;}
     if (workspace.channelCount) {delete workspace.channelCount;}

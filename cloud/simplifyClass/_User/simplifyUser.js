@@ -10,11 +10,11 @@ function simplifyUser (User) {
     if (expertOwner.deviceToken) {delete expertOwner.deviceToken;}
     if (expertOwner.emailVerified === true || expertOwner.emailVerified === false) {delete expertOwner.emailVerified;}
     if (expertOwner.user_location) {delete expertOwner.user_location;}
-    if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null) {delete expertOwner.LinkedInURL;}
+    if (expertOwner.LinkedInURL || expertOwner.LinkedInURL === null || expertOwner.LinkedInURL === "" ) {delete expertOwner.LinkedInURL;}
     if (expertOwner.authData) {delete expertOwner.authData;}
     if (expertOwner.username) {delete expertOwner.username;}
     if (expertOwner.completedProfileSignup === true || expertOwner.completedProfileSignup ===  false) {delete expertOwner.completedProfileSignup;}
-    if (expertOwner.passion) {delete expertOwner.passion;}
+    if (expertOwner.passion || expertOwner.passion === null || expertOwner.passion === "") {delete expertOwner.passion;}
     if (expertOwner.identities) {delete expertOwner.identities;}
     if (expertOwner.email) {delete expertOwner.email;}
     if (expertOwner.isDirtyProfileimage === true || expertOwner.isDirtyProfileimage === false) {delete expertOwner.isDirtyProfileimage;}
@@ -29,7 +29,7 @@ function simplifyUser (User) {
     if (expertOwner.roles) {delete expertOwner.roles;}
     if (expertOwner.algoliaSecureAPIKey) {delete expertOwner.algoliaSecureAPIKey;}
     if (expertOwner.currentCompany) {delete expertOwner.currentCompany;}
-    if (expertOwner.title) { delete  expertOwner.title;}
+    if (expertOwner.title || expertOwner.title === null || expertOwner.title === "") { delete  expertOwner.title;}
     if (expertOwner.isLogin === true || expertOwner.isLogin === false) {delete expertOwner.isLogin;}
     if (expertOwner.isDirtyShowAvailability === true || expertOwner.isDirtyShowAvailability === false) {delete expertOwner.isDirtyShowAvailability;}
     if (expertOwner.isDirtyTyping === true || expertOwner.isDirtyTyping === false) {delete expertOwner.isDirtyTyping;}
