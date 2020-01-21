@@ -24,7 +24,7 @@ var indexWorkspaces;
 var indexSkills ;
 var indexPostMessage;
 
-if( isProduction ){
+if( isProduction === true ){
     fileForPushNotification = 'apns-dev-cert.pem';
     keyFileForPushNotification = 'Key-Development.pem';
     indexPosts = client.initIndex('prod_posts');
@@ -2358,6 +2358,8 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                     console.log("saveAll results WorkspaceFollowers: " + JSON.stringify(results));
 
                     if (WorkspaceFollowers.length >= 500) {
+
+                        // create notificationSettings for 500 users before creating new workspaces for additional users.
 
 
 
@@ -25433,6 +25435,10 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
     let user = new USER();
     user.id = workspace_follow.get("user").id;
 
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let Workspace = new WORKSPACE();
+    Workspace.id = workspace_follow.get("workspace").id;
+
     let WORKSPACEFOLLOW = Parse.Object.extend("workspace_follower");
     let workspace_follower = new WORKSPACEFOLLOW();
     workspace_follower.id = workspace_follow.id;
@@ -25481,10 +25487,43 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
 
 
     }
+    function createWorkspaceNotificationSettings (callback) {
+
+        if (workspace_follow.get("isNew") === true) {
+
+            let WORKSPACENOTIFICATIONSETTINGS = Parse.Object.extend("WorkSpaceNotificationSetting");
+            let workspace_notification_settings = new WORKSPACENOTIFICATIONSETTINGS();
+
+            workspace_notification_settings.set("user", user);
+            workspace_notification_settings.set("workspace", Workspace);
+            workspace_notification_settings.set("muteWorkspace", false);
+            workspace_notification_settings.set("onlyMentionMe", true);
+            workspace_notification_settings.set("repliesToMessageEnabled", false);
+            workspace_notification_settings.set("answerToMyQuestionEnabled", false);
+            workspace_notification_settings.set("allPostOrMessages", false);
+            workspace_notification_settings.set("unansweredQuestionEnabled", false);
+
+            workspace_notification_settings.save(null, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            return callback (null, workspace_notification_settings);
+
+
+
+        } else {
+
+            return callback (null, workspace_follow);
+        }
+
+    }
 
     async.parallel([
-        async.apply(addIsSelectedWorkspaceFollowPointerToUser)
-        // async.apply(addChannelsToAlgolia)
+        async.apply(addIsSelectedWorkspaceFollowPointerToUser),
+        async.apply(createWorkspaceNotificationSettings)
 
     ], function (err, results) {
         if (err) {
