@@ -5242,7 +5242,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
     console.log("workspace isNew: " + JSON.stringify(workspace.isNew()));
 
-    if (workspace.isNew() === true) {
+    if (workspace.isNew()) {
 
 
         queryWorkspace.equalTo("workspace_url", workspace.get("workspace_url"));
@@ -5326,7 +5326,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
 
     }
-    else if (workspace.isNew() === false && workspace.dirty("workspace_url") === true) {
+    else if (!workspace.isNew() && workspace.dirty("workspace_url") === true) {
 
         workspace.set("isNew", false);
         console.log("set workspace isNew to false");
@@ -5618,7 +5618,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
 
     }
-    else if (workspace.isNew() === false && workspace.dirty("workspace_url") === true) {
+    else if (!workspace.isNew()  && workspace.dirty("workspace_url") === true) {
 
 
         workspace.set("isNew", false);
@@ -9492,6 +9492,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
     // if there is a new workspace_follower object increase counter for number of followers and members on a workspace
     if (workspace_follower.isNew()) {
 
+        workspace_follower.set("isNew", true);
+
         let workspace = workspace_follower.get("workspace");
 
         //let WORKSPACE = Parse.Object.extend("WorkSpace");
@@ -10062,6 +10064,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
     }
     else if (!workspace_follower.isNew() && (workspace_follower.dirty("isFollower") || workspace_follower.dirty("isMember"))) {
+
+        workspace_follower.set("isNew", false);
 
         let previousQueryWorkspaceFollowerJoin = new Parse.Query(WORKSPACEFOLLOWER);
         previousQueryWorkspaceFollowerJoin.include("workspace");
@@ -11290,6 +11294,8 @@ Parse.Cloud.beforeSave('workspace_follower', function(req, response) {
 
     }
     else {
+
+        workspace_follower.set("isNew", false);
 
         console.log("do nothing at all");
 
@@ -18659,264 +18665,6 @@ function splitPostAndIndexFasterPrime (request, response) {
 
             }
 
-
-            //let finalPostMessageAnswerResults = results[2];
-            //let finalPostMessageCommentResults = results[3];
-
-            /*let promises = finalPostIndexResults.map(function(finalPostIndexResult) {
-
-                let Questions = finalPostMessageQuestionResults;
-
-                let answer = finalPostMessageAnswerResults;
-
-                if (finalPostIndexResult.PostSocial) {
-
-                    if (finalPostIndexResult.type === 'post') {
-
-                        if (arrayQuestionLength > 0) {
-
-                            //console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
-
-
-                            let arrQuestions = lodash.map(Questions, function (question) {
-
-                                let postSocialId = finalPostIndexResult.PostSocial.objectId;
-                                let userId = finalPostIndexResult.PostSocial.user.objectId;
-
-                                let questionPostMessageSocialLength = question.PostMessageSocial? question.PostMessageSocial.length : 0;
-
-                                console.log("question.PostMessageSocial.length: " + JSON.stringify(questionPostMessageSocialLength));
-
-                                if (questionPostMessageSocialLength > 0) {
-
-                                    console.log("question.PostMessageSocial: " + JSON.stringify(question.PostMessageSocial));
-
-                                    let arrayPostMessageSocial = question.PostMessageSocial;
-
-                                    let matchResult = lodash.findIndex(arrayPostMessageSocial, function (o) {
-
-                                        o = simplifyPostMessageSocialQuestion(o);
-
-                                        console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
-                                        return o.user.objectId === userId;
-
-                                    });
-
-                                    //console.log("matchResult: " + JSON.stringify(matchResult));
-
-                                    if (matchResult === -1) {
-
-                                        // no match
-
-                                        question.PostMessageSocial = null;
-                                        console.log("question null prime: " + JSON.stringify(question));
-
-                                        return question;
-
-                                    } else {
-
-                                        // match exists
-                                        let postMessageSocialObj = arrayPostMessageSocial[matchResult];
-                                        postMessageSocialObj = simplifyPostMessageSocialQuestion(postMessageSocialObj);
-                                        question.PostMessageSocial = postMessageSocialObj;
-
-                                        console.log("question prime: " + JSON.stringify(question));
-
-                                        return question;
-
-                                    }
-
-
-
-
-
-
-
-
-
-                                }
-                                else {
-
-                                    console.log("null postMessageSocial 1");
-
-                                    question.PostMessageSocial = null;
-
-                                    return question;
-
-
-                                }
-
-
-
-                            });
-
-                            //console.log("arrQuestions: " + JSON.stringify(arrQuestions));
-
-                            finalPostIndexResult.postQuestions = arrQuestions;
-                            finalPostIndexResult.topAnswer = null;
-
-                            //console.log("finalPostIndexResult cb7: " + JSON.stringify(finalPostIndexResult));
-
-                            //indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
-
-                            return finalPostIndexResult;
-
-
-                        }
-
-                        else  {
-
-                            //console.log("::no questions on post::");
-
-                            finalPostIndexResult.postQuestions = [];
-                            finalPostIndexResult.topAnswer = null;
-                            //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                            //indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
-
-                            return finalPostIndexResult;
-
-
-                        }
-
-
-                    }
-
-                    else if (finalPostIndexResult.type === 'question') {
-
-                        if (finalPostMessageAnswerResults) {
-
-                            //console.log(":::finalPostMessageAnswerResults::: " + JSON.stringify(finalPostMessageAnswerResults));
-
-                            //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
-
-                            let postSocialId = finalPostIndexResult.PostSocial.objectId;
-                            let userId = finalPostIndexResult.PostSocial.user.objectId;
-
-                            if (arrayLength > 0) {
-
-                                let matchExists = false;
-
-                                let matchResult = lodash.findIndex(arrayPostMessageSocial, function (o) {
-
-                                    o = simplifyPostMessageSocialAnswer(o);
-
-                                    //console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
-                                    return o.user.objectId === userId;
-
-                                });
-
-                                //console.log("matchResult: " + JSON.stringify(matchResult));
-
-
-                                if (matchResult === -1) {
-
-                                    // no match
-
-                                    answer.PostMessageSocial = null;
-
-                                } else {
-
-                                    // match exists
-                                    let postMessageSocialObj = arrayPostMessageSocial[matchResult];
-                                    postMessageSocialObj = simplifyPostMessageSocialAnswer(postMessageSocialObj);
-                                    answer.PostMessageSocial = postMessageSocialObj;
-
-                                }
-
-                                //console.log("answer prime: " + JSON.stringify(answer));
-
-
-
-                            }
-                            else {
-
-                                //console.log("null answer 1");
-
-                                answer.PostMessageSocial = null;
-
-
-
-                            }
-
-                            finalPostIndexResult.topAnswer = answer;
-                            finalPostIndexResult.postQuestions = [];
-
-                            //indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
-
-                            return finalPostIndexResult;
-
-
-
-                        }
-
-                        else if (!finalPostMessageAnswerResults) {
-
-                            //console.log("::no answer on post::");
-
-                            finalPostIndexResult.topAnswer = null;
-                            finalPostIndexResult.postQuestions = [];
-
-                            //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                            //indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
-
-                            return finalPostIndexResult;
-
-
-                        }
-
-
-                    }
-
-
-
-                } else {
-
-                    //indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
-
-                    return finalPostIndexResult;
-                }
-            });
-
-            Promise.all(promises).then(function(finalPostIndexResultsMapped) {
-                // deal with the results as you wish
-
-                if (finalPostIndexResultsMapped.length > 0) {
-
-                    //console.log("finalPostIndexResultsMapped: " + JSON.stringify(finalPostIndexResultsMapped));
-
-                    //if (finalPostIndexResults[0].type === 'question') {
-
-                    indexPosts.addObjects(finalPostIndexResultsMapped).catch(err => console.error(err));
-
-                    //}
-
-                    console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
-
-                    let beforeSaveElse_Time = process.hrtime(time);
-                    console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-
-                    return response.success();
-
-
-                }
-
-                else {
-
-
-                    return response.success();
-
-                }
-            });*/
-
             async.mapSeries(finalPostIndexResults, function (finalPostIndexResult, cb7) {
 
                 //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
@@ -19411,320 +19159,6 @@ function splitPostAndIndexFasterPrime (request, response) {
             });
 
 
-            // switched to async.map
-
-            /*let mapFinalPostIndexResults = lodash.map(finalPostIndexResults, function (finalPostIndexResult) {
-
-                //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
-
-                //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-
-                let Questions = finalPostMessageQuestionResults;
-
-                let answer = finalPostMessageAnswerResults;
-
-                let usersPost = finalPostIndexResult;
-
-                if (usersPost.PostSocial) {
-
-                    let postSocialId = usersPost.PostSocial.objectId;
-                    let userId = usersPost.PostSocial.user.objectId;
-
-                    if (usersPost.type === 'post') {
-
-                        if (arrayQuestionLength > 0) {
-
-                            //console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
-
-
-                            let arrQuestions = lodash.map(Questions, function (question) {
-
-                                let questionPostMessageSocialLength = question.PostMessageSocial? question.PostMessageSocial.length : 0;
-
-                                console.log("question.PostMessageSocial.length: " + JSON.stringify(questionPostMessageSocialLength));
-
-                                if (questionPostMessageSocialLength > 0) {
-
-                                    console.log("question.PostMessageSocial: " + JSON.stringify(question.PostMessageSocial));
-
-                                    let arrayPostMessageSocial = question.PostMessageSocial;
-
-                                    let matchResult = lodash.findIndex(arrayPostMessageSocial, function (o) {
-
-                                        o = simplifyPostMessageSocialQuestion(o);
-
-                                        console.log(JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)) + " o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
-                                        return o.user.objectId === userId;
-
-                                    });
-
-                                    //console.log("matchResult: " + JSON.stringify(matchResult));
-
-                                    if (matchResult === -1) {
-
-                                        // no match
-
-                                        question.PostMessageSocial = null;
-                                        console.log("question null prime: " + JSON.stringify(question));
-
-                                        return question;
-
-                                    } else {
-
-                                        // match exists
-                                        let postMessageSocialObj = arrayPostMessageSocial[matchResult];
-                                        postMessageSocialObj = simplifyPostMessageSocialQuestion(postMessageSocialObj);
-                                        question.PostMessageSocial = postMessageSocialObj;
-
-                                        console.log("question prime: " + JSON.stringify(question));
-
-                                        return question;
-
-                                    }
-
-
-                                }
-                                else {
-
-                                    console.log("null postMessageSocial 1");
-
-                                    question.PostMessageSocial = null;
-
-                                    return question;
-
-
-                                }
-
-
-
-                            });
-
-                            console.log("arrQuestions: " + JSON.stringify(arrQuestions));
-
-                            usersPost.postQuestions = arrQuestions;
-                            usersPost.topAnswer = null;
-
-                            console.log("finalPostIndexResult cb7: " + JSON.stringify(finalPostIndexResult));
-
-                            // indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
-
-                            finalPostIndexResult = usersPost;
-
-                            return finalPostIndexResult;
-
-
-                        }
-
-                        else  {
-
-                            console.log("::no questions on post::");
-
-                            usersPost.postQuestions = [];
-                            usersPost.topAnswer = null;
-                            //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                            //indexPosts.addObject(finalPostIndexResult).catch(err => console.error(err));
-
-                            finalPostIndexResult = usersPost;
-
-
-                            return finalPostIndexResult;
-
-
-                        }
-
-                    }
-
-                    else if (usersPost.type === 'question') {
-
-                        if (finalPostMessageAnswerResults) {
-
-                            //console.log(":::finalPostMessageAnswerResults::: " + JSON.stringify(finalPostMessageAnswerResults));
-
-                            //console.log("starting async.map finalPostIndexResults: " + JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult)));
-
-                            if (arrayLength > 0) {
-
-                                let matchExists = false;
-
-                                let matchResult = lodash.findIndex(arrayPostMessageSocial, function (o) {
-
-                                    o = simplifyPostMessageSocialAnswer(o);
-
-                                    //console.log("o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
-                                    return o.user.objectId === userId;
-
-                                });
-
-                                //console.log("matchResult: " + JSON.stringify(matchResult));
-
-
-                                if (matchResult === -1) {
-
-                                    // no match
-
-                                    answer.PostMessageSocial = null;
-
-                                } else {
-
-                                    // match exists
-                                    let postMessageSocialObj = arrayPostMessageSocial[matchResult];
-                                    postMessageSocialObj = simplifyPostMessageSocialAnswer(postMessageSocialObj);
-                                    answer.PostMessageSocial = postMessageSocialObj;
-
-                                }
-
-                                console.log("answer prime: " + JSON.stringify(answer));
-
-
-
-                            }
-                            else {
-
-                                console.log("null answer 1");
-
-                                answer.PostMessageSocial = null;
-
-
-
-                            }
-
-                            usersPost.topAnswer = answer;
-                            usersPost.postQuestions = [];
-
-                            console.log("finalPostIndexResult answer: " + JSON.stringify(finalPostIndexResult));
-
-                            finalPostIndexResult = usersPost;
-
-                            return finalPostIndexResult;
-
-
-
-                        }
-
-                        else if (!finalPostMessageAnswerResults) {
-
-                            console.log("::no answer on post::");
-
-                            usersPost.topAnswer = null;
-                            usersPost.postQuestions = [];
-
-                            //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                            //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                            //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                            //console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
-
-                            finalPostIndexResult = usersPost;
-
-                            return finalPostIndexResult;
-
-
-                        }
-
-
-                    }
-
-
-                }
-                else if (!usersPost.PostSocial || usersPost.PostSocial === null) {
-
-                    if (usersPost.type === 'post') {
-
-                        if (arrayQuestionLength > 0) {
-
-                            let arrQuestions = lodash.map(Questions, function (question) {
-
-                                question.PostMessageSocial = null;
-
-                                return question;
-
-                            });
-
-                            console.log("arrQuestions null postSocial: " + JSON.stringify(arrQuestions));
-
-                            usersPost.postQuestions = arrQuestions;
-                            usersPost.topAnswer = null;
-
-                            finalPostIndexResult = usersPost;
-
-                            return finalPostIndexResult;
-
-                        }
-
-                        else {
-
-                            usersPost.topAnswer = null;
-                            usersPost.postQuestions = [];
-
-                            finalPostIndexResult = usersPost;
-
-                            return finalPostIndexResult;
-
-                        }
-
-
-                    }
-
-                    else if (usersPost.type === 'question') {
-
-                        if (usersPost.topAnswer) {
-
-                            usersPost.topAnswer.PostMessageSocial = null;
-                            usersPost.postQuestions = [];
-
-                            finalPostIndexResult = usersPost;
-
-                            return finalPostIndexResult;
-
-                        }
-
-                        else {
-
-                            usersPost.topAnswer = null;
-                            usersPost.postQuestions = [];
-
-                            finalPostIndexResult = usersPost;
-
-                            return finalPostIndexResult;
-
-                        }
-
-
-
-                    }
-                }
-
-
-            });
-
-
-            if (mapFinalPostIndexResults.length > 0) {
-
-                console.log("mapFinalPostIndexResults: " + JSON.stringify(mapFinalPostIndexResults));
-
-                //if (finalPostIndexResults[0].type === 'question') {
-
-                indexPosts.addObjects(mapFinalPostIndexResults).catch(err => console.error(err));
-
-                //}
-
-                console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
-
-                let beforeSaveElse_Time = process.hrtime(time);
-                console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-
-                return response.success();
-
-
-            }*/
-
 
 
         }
@@ -19974,9 +19408,6 @@ function SendPostNotifications (request, response) {
 
 
 }
-
-
-
 
 function splitPostMessageAndIndex (request, response) {
 
@@ -20679,6 +20110,373 @@ function splitPostMessageAndIndex (request, response) {
     });
 
 }
+
+function splitWorkspaceAndIndex (request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    var loop = request['loop'];
+    console.log("loop: " + JSON.stringify(loop));
+
+    let user = request['user'];
+    //console.log("splitPostAndIndex user: " + JSON.stringify(user));
+    //console.log("::Starting splitPostMessageAndIndex:: " + JSON.stringify(request));
+
+    let workspace = request['object'];
+    //console.log("postMessage: " + JSON.stringify(postMessage));
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let Workspace = new WORKSPACE();
+    Workspace.id = workspace.objectId;
+    // note object needs to be toJSON()
+    //console.log("PostMessage: " + JSON.stringify(PostMessage));
+
+    let count = (request['count'])? request['count'] : 0;
+    //console.log("count: " + JSON.stringify(count));
+
+    let workspaceFollowerQuery = new Parse.Query("PostMessageSocial");
+
+    workspaceFollowerQuery.equalTo('workspace', Workspace);
+
+    workspaceFollowerQuery.limit(10000);
+
+    workspaceFollowerQuery.skip(count);
+
+    workspaceFollowerQuery.find({
+        useMasterKey: true
+        //sessionToken: sessionToken
+    }).then((workspaceFollowerResults) => {
+
+        //console.log("postMessageSocialResults.length: " + JSON.stringify(postMessageSocialResults));
+
+        if (workspaceFollowerResults.length > 0) {
+
+            let tags;
+
+            //console.log("starting postMessageSocialQuery");
+
+            if (count === 0 ) {
+
+                // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
+
+                //console.log("className: " + JSON.stringify(className));
+                let WORKSPACERSTAR = Parse.Object.extend("WorkSpace");
+                var WorkspaceStar = new WORKSPACERSTAR();
+                WorkspaceStar.id = workspace.objectId;
+
+                WorkspaceStar = WorkspaceStar.toJSON();
+
+                workspace.followers = [  ];
+
+                if (workspace.type === 'public') {
+
+                    tags = ['*'];
+                } else if (workspace.type === 'private') {
+
+                    tags = [WorkspaceStar.id ];
+                }
+
+                if (workspace.archive === true || workspace.archive === false ) {
+                    WorkspaceStar.archive = workspace.archive;
+                    //console.log("setting wWorkspaceStar.archive: " + JSON.stringify(WorkspaceStar.archive));
+
+                }
+
+                if (workspace.workspace_name) {
+                    WorkspaceStar.workspace_name = workspace.workspace_name;
+                    //console.log("setting WorkspaceStar.workspace_name: " + JSON.stringify(WorkspaceStar.workspace_name));
+
+                }
+
+                if (workspace.workspace_url) {
+                    WorkspaceStar.workspace_url = workspace.workspace_url;
+                    //console.log("setting WorkspaceStar.workspace_url : " + JSON.stringify(WorkspaceStar.workspace_url ));
+
+                }
+
+
+                if (workspace.mission) {
+                    WorkspaceStar.mission = workspace.mission;
+                    //console.log("setting WorkspaceStar.mission: " + JSON.stringify(WorkspaceStar.mission));
+
+                }
+
+                if (workspace.skills) {
+                    WorkspaceStar.skills = workspace.skills;
+                    //console.log("setting WorkspaceStar.skills : " + JSON.stringify(WorkspaceStar.skills ));
+
+                }
+
+                if (workspace.experts) {
+                    WorkspaceStar.experts = workspace.experts;
+                    //console.log("setting WorkspaceStar.experts: " + JSON.stringify(WorkspaceStar.experts));
+
+                }
+
+                if (workspace.image) {
+                    WorkspaceStar.image = workspace.image;
+                    //console.log("setting WorkspaceStar.image: " + JSON.stringify(WorkspaceStar.image));
+
+                }
+
+
+                if (workspace.type) {
+                    WorkspaceStar.type = workspace.type;
+                    //console.log("setting WorkspaceStar.type: " + JSON.stringify(WorkspaceStar.type));
+
+                }
+
+                if (workspace.updatedAt) {
+                    WorkspaceStar.updatedAt = workspace.updatedAt;
+                    //console.log("setting uWorkspaceStar.updatedAt: " + JSON.stringify(WorkspaceStar.updatedAt));
+                }
+                if (workspace.createdAt) {
+
+                    WorkspaceStar.createdAt = workspace.createdAt;
+                    //console.log("setting WorkspaceStar.createdAt: " + JSON.stringify(WorkspaceStar.createdAt));
+                }
+
+                let workspaceObjectID = workspace.objectId + '-0';
+
+                WorkspaceStar.objectID = workspaceObjectID;
+                WorkspaceStar._tags = tags;
+
+                //console.log("WorkspaceStar with * tag: " + JSON.stringify(WorkspaceStar));
+
+
+            }
+
+            //console.log("starting PostMessageStar async.map");
+
+
+            async.map(workspaceFollowerResults, function (workspaceFollowerResult, cb) {
+
+                //console.log("postSocialResults.length: " + JSON.stringify(postSocialResults.length));
+                let WORKSPACEUSER = Parse.Object.extend("WorkSpace");
+                let WorkspaceUser = new WORKSPACEUSER();
+                WorkspaceUser.id = workspace.objectId;
+
+                let USER = Parse.Object.extend("_User");
+                let UserResult = new USER();
+                UserResult.id = workspaceFollowerResult.get("user").id;
+
+                WorkspaceUser = WorkspaceUser.toJSON();
+
+                if (workspace.archive === true || workspace.archive === false ) {
+                    WorkspaceUser.archive = workspace.archive;
+                    //console.log("setting wWorkspaceStar.archive: " + JSON.stringify(WorkspaceStar.archive));
+
+                }
+
+                if (workspace.workspace_name) {
+                    WorkspaceUser.workspace_name = workspace.workspace_name;
+                    //console.log("setting WorkspaceStar.workspace_name: " + JSON.stringify(WorkspaceStar.workspace_name));
+
+                }
+
+                if (workspace.workspace_url) {
+                    WorkspaceUser.workspace_url = workspace.workspace_url;
+                    //console.log("setting WorkspaceStar.workspace_url : " + JSON.stringify(WorkspaceStar.workspace_url ));
+
+                }
+
+
+                if (workspace.mission) {
+                    WorkspaceUser.mission = workspace.mission;
+                    //console.log("setting WorkspaceStar.mission: " + JSON.stringify(WorkspaceStar.mission));
+
+                }
+
+                if (workspace.skills) {
+                    WorkspaceUser.skills = workspace.skills;
+                    //console.log("setting WorkspaceStar.skills : " + JSON.stringify(WorkspaceStar.skills ));
+
+                }
+
+                if (workspace.experts) {
+                    WorkspaceUser.experts = workspace.experts;
+                    //console.log("setting WorkspaceStar.experts: " + JSON.stringify(WorkspaceStar.experts));
+
+                }
+
+                if (workspace.image) {
+                    WorkspaceUser.image = workspace.image;
+                    //console.log("setting WorkspaceStar.image: " + JSON.stringify(WorkspaceStar.image));
+
+                }
+
+
+                if (workspace.type) {
+                    WorkspaceUser.type = workspace.type;
+                    //console.log("setting WorkspaceStar.type: " + JSON.stringify(WorkspaceStar.type));
+
+                }
+
+                if (workspace.updatedAt) {
+                    WorkspaceUser.updatedAt = workspace.updatedAt;
+                    //console.log("setting uWorkspaceStar.updatedAt: " + JSON.stringify(WorkspaceStar.updatedAt));
+                }
+                if (workspace.createdAt) {
+
+                    WorkspaceUser.createdAt = workspace.createdAt;
+                    //console.log("setting WorkspaceStar.createdAt: " + JSON.stringify(WorkspaceStar.createdAt));
+                }
+
+                let tagUser = [];
+
+                tagUser.push(UserResult.id);
+
+
+                let workspaceObjectID = workspace.objectId + '-' + UserResult.id;
+
+
+                WorkspaceUser.objectID = workspaceObjectID;
+                WorkspaceUser._tags = tagUser;
+
+                workspaceFollowerResult = simplifyWorkspaceFollowersUserIndex(workspaceFollowerResult);
+                WorkspaceUser.followers = [ workspaceFollowerResult ];
+
+
+                //console.log("postMessage splitObjectAndIndex object: " + JSON.stringify(PostMessageUser));
+
+                workspaceFollowerResult = WorkspaceUser;
+
+                return cb (null, workspaceFollowerResult);
+
+
+            }, function (err, workspaceFollowResults) {
+
+                //console.log("postMessageSocialResults length: " + JSON.stringify(postMessageSocialResults.length));
+
+                if (err) {
+                    return response.error(err);
+                } else {
+
+                    if (count === 0 ) {
+
+                        //console.log("postMessageSocialResults: " + JSON.stringify(postMessageSocialResults));
+
+
+                        //postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(JSON.parse(post_zero));
+
+                        workspaceFollowResults.push(WorkspaceStar);
+
+
+                        //console.log("postMessageSocialResults add: asd " + JSON.stringify(postMessageSocialResults));
+
+                    }
+
+                    if (workspaceFollowResults.length > 0) {
+
+                        //console.log("postMessageSocialResults.length adsf: " + JSON.stringify(postMessageSocialResults.length));
+
+                        indexWorkspaces.saveObjects(workspaceFollowResults, true, function(err, content) {
+                            if (err) {
+                                return response.error(err);
+                            }
+
+                            //console.log("content: " + JSON.stringify(content));
+
+
+
+                        });
+
+                        console.log("Parse<>Algolia prod_workspaces saved from splitWorkspaceAndIndex function ");
+
+                        let beforeSaveElse_Time = process.hrtime(time);
+                        console.log(`beforeSaveElse_Time splitWorkspaceAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                        response.success();
+
+
+
+                    }
+
+                    else {
+
+                        return response.error(err);
+
+                    }
+
+                }
+
+            });
+
+        }
+        else {
+
+            if (count === 0) {
+
+                let tags = [ ];
+
+                if (workspace.type === 'public') {
+
+                    tags = ['*'];
+                } else if (workspace.type === 'private') {
+
+                    tags = [workspace.objectId ];
+                }
+
+                //console.log("::starting postMessangeSocialQuery no result on postMessageSocial::");
+
+                // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
+
+                let workspaceObjectID = workspace.objectId + '-0';
+
+                workspace.objectID = workspaceObjectID;
+                workspace._tags = tags;
+                workspace.followers = [ ];
+
+                //console.log("postMessage with * tag: " + JSON.stringify(postMessage));
+
+
+                indexWorkspaces.saveObject(workspace, true, function(err, content) {
+                    if (err) {
+                        return response.error(err);
+                    }
+
+                    //console.log("content: " + JSON.stringify(content));
+
+
+
+                });
+
+                console.log("Parse<>Algolia prod_workspaces saved from splitWorkspaceAndIndex function ");
+
+                let beforeSaveElse_Time = process.hrtime(time);
+                console.log(`beforeSaveElse_Time splitWorkspaceAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
+
+                response.success();
+
+
+
+
+            } else {
+
+                return response.success();
+            }
+
+
+        }
+
+
+
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        //console.log(error);
+        return response.error(error);
+    }, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+}
+
 
 function splitUserAndIndex (request, response) {
 
@@ -22566,7 +22364,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     let postSocialQuery = new Parse.Query("PostSocial");
     postSocialQuery.equalTo('post', post);
-    postSocialQuery.limit(1000);
+    postSocialQuery.limit(10000);
 
     let postACL = null;
 
@@ -26349,9 +26147,11 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                     for (var i = 0; i < followers.length; i++) {
 
+                        followers[i] = simplifyWorkspaceFollowersUserIndex(followers[i]);
+
                         if (workspaceToSave.type === 'private') {
-                            viewableBy.push(followers[i].toJSON().user.objectId);
-                            //console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
+                            viewableBy.push(followers[i].user.objectId);
+                            console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
                         }
 
 
@@ -26616,6 +26416,21 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
             //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
             console.log("workspaceToSave final: " + JSON.stringify(workspaceToSave));
 
+            splitWorkspaceAndIndex({'user':currentUser, 'object':workspaceToSave}, {
+                success: function (count) {
+
+                    let Final_Time = process.hrtime(time);
+                    console.log(`splitWorkspaceAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+                    return response.success();
+                },
+                error: function (error) {
+                    return response.error(error);
+                }
+            });
+
+            /*
+
             indexWorkspaces.partialUpdateObject(workspaceToSave, true, function(err, content) {
                 if (err) return response.error(err);
 
@@ -26625,7 +26440,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
                 console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
                 return response.success();
 
-            });
+            });*/
 
 
         });
