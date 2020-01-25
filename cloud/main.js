@@ -4829,7 +4829,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     //let expiresAt = session.get("expiresAt");
     let _tagPublic = '*';
     let _tagUserId = user.id;
-    console.log("_tagUserId: " + JSON.stringify(_tagUserId));
+    //console.log("_tagUserId: " + JSON.stringify(_tagUserId));
 
     let defaultTagFilters = new Set();
     if (_tagUserId) {
@@ -4841,11 +4841,11 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
     defaultTagFilters.add(_tagPublic);
     let defaultTagFiltersArray = Array.from(new Set(defaultTagFilters));
 
-    console.log("defaultTagFilters: " + JSON.stringify((defaultTagFilters)) );
+    //console.log("defaultTagFilters: " + JSON.stringify((defaultTagFilters)) );
 
     let userOriginalTagFilters = userOriginal? userOriginal.get("tagFilters") : defaultTagFiltersArray;
-    console.log("userOriginalTagFilters: " + JSON.stringify(userOriginalTagFilters));
-    console.log("userOriginalTagFilters.length: " + JSON.stringify(userOriginalTagFilters.length));
+    //console.log("userOriginalTagFilters: " + JSON.stringify(userOriginalTagFilters));
+    //console.log("userOriginalTagFilters.length: " + JSON.stringify(userOriginalTagFilters.length));
 
 
     if (user.dirty("profileimage") === true || user.get("isWorkspaceUpdated") === true || user.get("isChannelUpdated") === true || user.dirty("title") || user.dirty("displayName") === true || user.dirty("fullname") === true || user.dirty("roles") === true || user.dirty("isOnline") === true || user.dirty("showAvailability") === true) {
@@ -4972,7 +4972,7 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
             user.set("isLogin", false);
 
             if (userOriginalTagFilters.length === 1) {
-                console.log("userOriginalTagFilters 1: " + JSON.stringify(userOriginalTagFilters.length));
+                //console.log("userOriginalTagFilters 1: " + JSON.stringify(userOriginalTagFilters.length));
                 userOriginalTagFilters.push(_tagUserId);
                 user.set("tagFilters", userOriginalTagFilters);
 
@@ -5242,7 +5242,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
     console.log("workspace isNew: " + JSON.stringify(workspace.isNew()));
 
-    if (workspace.isNew()) {
+    if (workspace.isNew() === true) {
 
 
         queryWorkspace.equalTo("workspace_url", workspace.get("workspace_url"));
@@ -5326,7 +5326,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
 
     }
-    else if (!workspace.isNew() && workspace.dirty("workspace_url") === true) {
+    else if (workspace.isNew() === false && workspace.dirty("workspace_url") === true) {
 
         workspace.set("isNew", false);
         console.log("set workspace isNew to false");
@@ -5618,7 +5618,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
 
     }
-    else if (!workspace.isNew()  && workspace.dirty("workspace_url") === true) {
+    else if (!workspace.isNew() === false  && workspace.dirty("workspace_url") === false) {
 
 
         workspace.set("isNew", false);
@@ -5887,7 +5887,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
     }
     else {
-
+        workspace.set("isNew", false);
 
         let finalTime = process.hrtime(time);
         console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
@@ -25260,7 +25260,7 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
 
         //console.log("workspace_follow.isSelected: " + workspace_follow.toJSON().isSelected);
 
-        if (workspace_follow.toJSON().isSelected === true) {
+        if (workspace_follow.get("isNew") === true) {
 
             //console.log("workspaceFollow aftersave user: " + JSON.stringify(user));
 
@@ -25631,21 +25631,21 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
         let OWNER = Parse.Object.extend("_User");
         let owner = new OWNER();
         owner = Workspace.get("user");
-        console.log("owner: " + JSON.stringify(owner));
+        //console.log("owner: " + JSON.stringify(owner));
 
         let USER = Parse.Object.extend("_User");
         let User = new USER();
         User.id = Workspace.get("user").id;
-        console.log("User: " + JSON.stringify(User));
+        //console.log("User: " + JSON.stringify(User));
 
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let WorkSpace = new WORKSPACE();
         WorkSpace.id =  workspace.id;
-        console.log("WorkSpace: " + JSON.stringify(WorkSpace));
+        //console.log("WorkSpace: " + JSON.stringify(WorkSpace));
 
         workspace = Workspace;
         workspaceToSave = simplifyWorkspace(Workspace);
-        console.log("Workspace from afterSave Query: " + JSON.stringify(workspaceToSave));
+        //console.log("Workspace from afterSave Query: " + JSON.stringify(workspaceToSave));
 
         let skillObject = Parse.Object.extend("Skill");
         //var skillsRelation = new skillObject.relation("skills");
@@ -26355,10 +26355,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
             console.log("isNew dd: " + JSON.stringify(workspace.get("isNew")));
 
             if(workspace.get("isNew") === true) {
-                console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
+                //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
 
                 workspaceToSave = results[4];
-                console.log("workspaceToSave after: " + JSON.stringify(workspaceToSave));
+                //console.log("workspaceToSave after: " + JSON.stringify(workspaceToSave));
                 workspace.set("isDirtyExperts", true);
 
             } else {
