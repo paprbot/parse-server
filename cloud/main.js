@@ -20136,7 +20136,7 @@ function splitWorkspaceAndIndex (request, response) {
     let count = (request['count'])? request['count'] : 0;
     //console.log("count: " + JSON.stringify(count));
 
-    let workspaceFollowerQuery = new Parse.Query("PostMessageSocial");
+    let workspaceFollowerQuery = new Parse.Query("workspace_follower");
 
     workspaceFollowerQuery.equalTo('workspace', Workspace);
 
@@ -20153,8 +20153,6 @@ function splitWorkspaceAndIndex (request, response) {
 
         if (workspaceFollowerResults.length > 0) {
 
-            let tags;
-
             //console.log("starting postMessageSocialQuery");
 
             if (count === 0 ) {
@@ -20165,17 +20163,19 @@ function splitWorkspaceAndIndex (request, response) {
                 let WORKSPACERSTAR = Parse.Object.extend("WorkSpace");
                 var WorkspaceStar = new WORKSPACERSTAR();
                 WorkspaceStar.id = workspace.objectId;
+                console.log("workspace: " + JSON.stringify(WorkspaceStar.id));
 
                 WorkspaceStar = WorkspaceStar.toJSON();
 
                 workspace.followers = [  ];
+                let tags = [];
 
                 if (workspace.type === 'public') {
 
-                    tags = ['*'];
+                    tags.push("*");
                 } else if (workspace.type === 'private') {
 
-                    tags = [WorkspaceStar.id ];
+                    tags.push(workspace.objectId);
                 }
 
                 if (workspace.archive === true || workspace.archive === false ) {
@@ -20199,6 +20199,24 @@ function splitWorkspaceAndIndex (request, response) {
 
                 if (workspace.mission) {
                     WorkspaceStar.mission = workspace.mission;
+                    //console.log("setting WorkspaceStar.mission: " + JSON.stringify(WorkspaceStar.mission));
+
+                }
+
+                if (workspace.description) {
+                    WorkspaceStar.description = workspace.description;
+                    //console.log("setting WorkspaceStar.mission: " + JSON.stringify(WorkspaceStar.mission));
+
+                }
+
+                if (workspace.memberCount) {
+                    WorkspaceStar.memberCount = workspace.memberCount;
+                    //console.log("setting WorkspaceStar.mission: " + JSON.stringify(WorkspaceStar.mission));
+
+                }
+
+                if (workspace.followerCount) {
+                    WorkspaceStar.followerCount = workspace.followerCount;
                     //console.log("setting WorkspaceStar.mission: " + JSON.stringify(WorkspaceStar.mission));
 
                 }
@@ -20285,6 +20303,24 @@ function splitWorkspaceAndIndex (request, response) {
 
                 if (workspace.mission) {
                     WorkspaceUser.mission = workspace.mission;
+                    //console.log("setting WorkspaceStar.mission: " + JSON.stringify(WorkspaceStar.mission));
+
+                }
+
+                if (workspace.description) {
+                    WorkspaceUser.description = workspace.description;
+                    //console.log("setting WorkspaceStar.mission: " + JSON.stringify(WorkspaceStar.mission));
+
+                }
+
+                if (workspace.memberCount) {
+                    WorkspaceUser.memberCount = workspace.memberCount;
+                    //console.log("setting WorkspaceStar.mission: " + JSON.stringify(WorkspaceStar.mission));
+
+                }
+
+                if (workspace.followerCount) {
+                    WorkspaceUser.followerCount = workspace.followerCount;
                     //console.log("setting WorkspaceStar.mission: " + JSON.stringify(WorkspaceStar.mission));
 
                 }

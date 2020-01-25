@@ -6,7 +6,7 @@ module.exports = {
             classNames: ["_User", "PostMessage", "PostMessageSocial"],
             redisURL: 'redis://user:YQU8q92fG6nMhU1GqWmVTE2ds1fin+th7At+ReO4myM=@parseserverwestRedis.redis.cache.windows.net:6379',
             logLevel: 'VERBOSE',
-            serverURL: 'ws://parseserverwest.azurewebsites.net/parse'
+            serverURL: 'ws://parseserverwest-development.azurewebsites.net/parse'
         },
         maxUploadSize: '50mb',
         allowClientClassCreation: yn(process.env.CLIENT_CLASS_CREATION) || false
