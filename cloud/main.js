@@ -19198,14 +19198,21 @@ function SendPostNotifications (request, response) {
     //console.log("SendNotifications mentions: " + JSON.stringify(mentions));
 
     //console.log("starting SendNotifications function: " + JSON.stringify(mentions.length) );
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let Workspace = new WORKSPACE();
+    Workspace.id = workspace.id;
+
+    let USER = Parse.Object.extend("_User");
+    let CurrentUser = new USER();
+    CurrentUser.id = currentUser.id;
 
 
     if (mentions.length > 0) {
 
         let WORKSPACENOTIFICATIONSETTING = Parse.Object.extend("WorkSpaceNotificationSetting");
         let queryWorkspaceNotificationSetting = new Parse.Query(WORKSPACENOTIFICATIONSETTING);
-        queryWorkspaceNotificationSetting.equalTo("workspace", workspace);
-        queryWorkspaceNotificationSetting.equalTo("user", currentUser);
+        queryWorkspaceNotificationSetting.equalTo("workspace", Workspace);
+        queryWorkspaceNotificationSetting.equalTo("user", CurrentUser);
 
         //console.log("Request: " + JSON.stringify(request));
         //console.log("objectID: " + objectToSave.objectId);
@@ -19243,9 +19250,9 @@ function SendPostNotifications (request, response) {
                         notification.set("hasSent", false);
                         notification.set("isRead", false);
                         notification.set("status", 0);
-                        notification.set("userFrom", currentUser);
+                        notification.set("userFrom", CurrentUser);
                         notification.set("userTo", userTo);
-                        notification.set("workspace", workspace);
+                        notification.set("workspace", Workspace);
                         notification.set("channel", channel);
                         notification.set("post", post);
                         notification.set("type", '5'); // mentions in post or postMessage
@@ -19321,9 +19328,9 @@ function SendPostNotifications (request, response) {
                     notification.set("hasSent", false);
                     notification.set("isRead", false);
                     notification.set("status", 0);
-                    notification.set("userFrom", currentUser);
+                    notification.set("userFrom", CurrentUser);
                     notification.set("userTo", userTo);
-                    notification.set("workspace", workspace);
+                    notification.set("workspace", Workspace);
                     notification.set("channel", channel);
                     notification.set("post", post);
                     notification.set("type", '5'); // mentions in post or postMessage
@@ -23193,7 +23200,7 @@ Parse.Cloud.afterSave('Post', function(request, response) {
                     let Final_Time = process.hrtime(time);
                     console.log(`splitPostAndIndexFasterPrime after SendNotifications took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
-                    return response.success();
+                    response.success();
                 },
                 error: function (error) {
                     return response.error(error);
