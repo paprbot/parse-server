@@ -24,9 +24,9 @@ var indexWorkspaces;
 var indexSkills ;
 var indexPostMessage;
 
-if( isProduction === true ){
-    fileForPushNotification = 'apns-dev-cert.pem';
-    keyFileForPushNotification = 'Key-Development.pem';
+if( isProduction === false ){
+    fileForPushNotification = 'apns-prod-cert.pem';
+    keyFileForPushNotification = 'Key-Distribution.pem';
     indexPosts = client.initIndex('prod_posts');
     indexUsers = client.initIndex('prod_users');
     indexMeetings = client.initIndex('prod_meetings');
@@ -21679,7 +21679,7 @@ Parse.Cloud.beforeSave('Notification', function(request, response) {
                     let CHANNELFOLLOWER = Parse.Object.extend("ChannelFollow");
 
                     let queryChannelFollower = new Parse.Query(CHANNELFOLLOWER);
-                    queryChannelFollower.equalTo("workspace", Channel);
+                    queryChannelFollower.equalTo("channel", Channel);
                     queryChannelFollower.equalTo("user", UserTo);
                     queryChannelFollower.first({
                         useMasterKey: true
@@ -22262,6 +22262,50 @@ Parse.Cloud.afterSave('Notification', function(request, response) {
 
 });
 
+Parse.Cloud.afterSave('_Installation', function(request, response) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    console.log("currentUser afterSave _Installation: " + JSON.stringify(currentUser));
+
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.afterSave._Installation.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    //console.log("request afterSave Notification: " + JSON.stringify(request));
+
+    // Get notification object
+    let installation = request.object;
+    console.log("installation: " + JSON.stringify(installation));
+
+    let USER = Parse.Object.extend("_User");
+    let User = new USER();
+    User.id = currentUser.id;
+
+    User.set("deviceToken", installation.get("deviceToken"));
+
+    User.save(null, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+    let finalTime = process.hrtime(time);
+    console.log(`finalTime took afterSave Notification ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+    return response.success();
+
+});
 
 // Add and Update AlgoliaSearch post object if it's deleted from Parse
 
@@ -28948,14 +28992,15 @@ cron.schedule('*/1 * * * *', () => {
             }, function(err) {
                 if (err){
                     console.log('ERROR', err);
-                    return response.error(err);
+                    //return response.error(err);
                 }
-                return response.success("Notification sent to all users");
+                console.log("otification sent to all users");
+                //return response.success("Notification sent to all users");
             });
         },
         error: function(e) {
             console.error(e);
-            return response.error(e);
+            //return response.error(e);
         }
     });
 });
@@ -28986,7 +29031,7 @@ Parse.Cloud.define('sendStaticPushNotification', (request, response) => {
     note.title = "Papr.ai";
     note.body = "test message";
     note.payload = {'messageFrom': 'John Doe'};
-    note.topic = "ai.papr.dev";
+    note.topic = "ai.papr";
     apnProvider.send(note, deviceToken).then( (result) => {
         if((result.sent).length == 1) {
             console.log("Sent To ", deviceToken);

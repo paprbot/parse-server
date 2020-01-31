@@ -13,5 +13,25 @@ module.exports = {
     },
     dashboard: {},
     storage: {},
-    push: {}
+    push: {
+
+            ios: [
+                {
+                    cert: './apns-prod-cert.pem',
+                    key: './Key-Distribution.pem',
+                    passphrase: '', // optional password to your p12/PFX
+                    bundleId: 'ai.papr',
+                    production: true
+                },
+                {
+                    cert: './apns-dev-cert.pem',
+                    key: './Key-Development.pem',
+                    passphrase: '', // optional password to your p12/PFX
+                    bundleId: 'ai.papr.dev',
+                    production: false
+                }
+            ]
+
+
+    }
 }
