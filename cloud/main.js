@@ -2040,7 +2040,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                     ChannelFollowSet.add(newChannelFollow);
 
-                    console.log("ChannelFollowArray: " + JSON.stringify(ChannelFollowSet));
+                    //console.log("ChannelFollowArray: " + JSON.stringify(ChannelFollowSet));
 
 
                 }
@@ -5003,6 +5003,31 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
         else {
 
+            if (userOriginalTagFilters.length === 1) {
+                //console.log("userOriginalTagFilters 1: " + JSON.stringify(userOriginalTagFilters.length));
+                userOriginalTagFilters.push(_tagUserId);
+                user.set("tagFilters", userOriginalTagFilters);
+
+            }
+
+            // new session, create a new algoliaAPIKey for this user
+
+            // generate a public API key for user 42. Here, records are tagged with:
+            //  - 'user_XXXX' if they are visible by user XXXX
+            const user_public_key = client.generateSecuredApiKey(
+                '4cbf716235b59cc21f2fa38eb29c4e39',
+                {
+                    //validUntil: expiresAt,
+                    tagFilters: [ userOriginalTagFilters ],
+                    userToken: user.id
+                }
+            );
+
+            console.log("new algoliaPublic key generated for " + JSON.stringify(user.id));
+
+
+            user.set("algoliaSecureAPIKey", user_public_key);
+
             response.success();
 
 
@@ -5349,7 +5374,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
             } else {
 
-                if (workspace.dirty("experts")) {
+                if (workspace.dirty("experts") || workspace.get("isDirtyExperts") === true) {
 
                     let workspaceExpertObjects = req.object.toJSON().experts.objects;
                     let exp__op = req.object.toJSON().experts.__op;
@@ -5627,7 +5652,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
         //console.log("workspace Experts.dirty: " + workspace.dirty("experts"));
 
-        if (workspace.dirty("experts")) {
+        if (workspace.dirty("experts") || workspace.get("isDirtyExperts") === true) {
 
             workspace.set("isDirtyExperts", true);
 
@@ -5872,7 +5897,9 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
 
 
-            } else {
+            }
+
+            else {
 
                 let finalTime = process.hrtime(time);
                 console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
@@ -20542,6 +20569,9 @@ function splitUserAndIndex (request, response) {
 
     let objectToSave = object;
 
+    let USER = Parse.Object.extend("_User");
+
+
     async.forEachSeries(workspaceFollowers, function (workspaceFollower, cb1) {
 
         let WORKSPACE = Parse.Object.extend("WorkSpace");
@@ -20555,6 +20585,8 @@ function splitUserAndIndex (request, response) {
 
         var userObject = workspaceFollowers[async_map_index].get("user");
         //console.log("userObject: " + JSON.stringify(userObject));
+        let UserObject = new USER();
+        UserObject.id = userObject.id;
 
         let queryRole = new Parse.Query(Parse.Role);
 
@@ -20567,6 +20599,7 @@ function splitUserAndIndex (request, response) {
 
             queryChannelFollow.equalTo("workspace", workspace);
             queryChannelFollow.equalTo("isFollower", true);
+            queryChannelFollow.equalTo("user", UserObject);
 
             queryChannelFollow.find({
 
@@ -20631,7 +20664,7 @@ function splitUserAndIndex (request, response) {
                         let channelFollowClassName = channelFollowObject.get("className");
                         let channelFollowObjectId = channelFollowObject.id;
 
-                        channelFollowObject = objectToSave
+                        channelFollowObject = objectToSave;
 
                         channelFollowObject.objectID = object.objectId + '-' + channelFollowWorkspaceId + '-' + channelFollowChannelId;
 
@@ -22294,18 +22327,25 @@ Parse.Cloud.afterSave('_Installation', function(request, response) {
     let installation = request.object;
     console.log("installation: " + JSON.stringify(installation));
 
-    let USER = Parse.Object.extend("_User");
-    let User = new USER();
-    User.id = currentUser.id;
+    if (currentUser) {
 
-    User.set("deviceToken", installation.get("deviceToken"));
+        let USER = Parse.Object.extend("_User");
+        let User = new USER();
+        User.id = currentUser.id;
 
-    User.save(null, {
+        User.set("deviceToken", installation.get("deviceToken"));
 
-        useMasterKey: true
-        //sessionToken: sessionToken
+        User.save(null, {
 
-    });
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+
+    }
+
+
 
     let finalTime = process.hrtime(time);
     console.log(`finalTime took afterSave Notification ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
@@ -24126,9 +24166,9 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
             //console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
 
-            if (user.get("isDirtyProfileimage") === false && user.get("isDirtyIsOnline") === false && user.get("isDirtyTyping") === false && user.get("isDirtyShowAvailability") === false) {
+            if ((user.get("isDirtyProfileimage") === false || !user.get("isDirtyProfileimage")) && (user.get("isDirtyIsOnline") === false || !user.get("isDirtyIsOnline")) && (user.get("isDirtyTyping") === false || !user.get("isDirtyTyping")) && ( user.get("isDirtyShowAvailability") === false || !user.get("isDirtyShowAvailability"))) {
 
-                console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
+                //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
 
                 return callback (null, user);
 
@@ -24178,6 +24218,93 @@ Parse.Cloud.afterSave('_User', function(request, response) {
                     console.log("arrWorkspaces: " + JSON.stringify(arrWorkspaces));
 
                     Parse.Object.saveAll(arrWorkspaces, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then(function(results) {
+
+                        return callback (null, results);
+
+
+
+                    }, function(err) {
+                        // error
+                        return callback (err);
+
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback (error);
+
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            }
+
+
+
+
+
+
+        }
+
+        function updateAlgoliaPostsProfileImage (callback) {
+
+            //console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
+
+            if ((user.get("isDirtyProfileimage") === false || !user.get("isDirtyProfileimage")) && (user.get("isDirtyIsOnline") === false  || !user.get("isDirtyIsOnline")) && (user.get("isDirtyTyping") === false || user.get("isDirtyTyping") === true || !user.get("isDirtyTyping")) && ( user.get("isDirtyShowAvailability") === false || !user.get("isDirtyShowAvailability"))) {
+
+                //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
+
+                return callback (null, user);
+
+            }
+
+            else if (user.get("isNew") === true) {
+
+                return callback (null, user);
+            }
+
+            else {
+
+                var POST = Parse.Object.extend("Post");
+                var postQuery = new Parse.Query(POST);
+                var USER = Parse.Object.extend("_User");
+                var UserObject = new USER();
+                UserObject.id = user.id;
+
+                //console.log("username: " + JSON.stringify(userToSave.username));
+                postQuery.equalTo("user", UserObject);
+                //postQuery.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "image"]);
+
+                postQuery.find({
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((objectsToIndex) => {
+                    // The object was retrieved successfully.
+                    //console.log("Result from get " + JSON.stringify(objectsToIndex.length));
+
+                    var posts = objectsToIndex;
+                    //console.log("workspaces length: " + JSON.stringify(workspaces.length));
+
+
+                    Parse.Object.saveAll(posts, {
 
                         useMasterKey: true
                         //sessionToken: sessionToken
@@ -24538,7 +24665,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
             async.apply(getSkills),
             async.apply(getSkillsToLearn),
             async.apply(getWorkspaceFollowers),
-            async.apply(checkIfInvited)
+            async.apply(checkIfInvited),
+            async.apply(updateAlgoliaPostsProfileImage)
 
 
         ], function (err, results) {
@@ -24873,6 +25001,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                                 console.log("new algoliaPublic in afterSave ChannelFollow key generated for " + JSON.stringify(user.id));
 
                                 user.set("algoliaSecureAPIKey", user_public_key);
+                                user.set("tagFilters", tagFiltersArrayFinal);
 
 
                                 user.save(null, {
@@ -25028,6 +25157,8 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                                 console.log("new algoliaPublic in afterSave ChannelFollow key generated for " + JSON.stringify(user.id));
 
                                 user.set("algoliaSecureAPIKey", user_public_key);
+                                user.set("tagFilters", tagFiltersArrayFinal);
+
 
 
                                 user.save(null, {
@@ -25176,6 +25307,8 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
                                 console.log("new algoliaPublic in afterSave ChannelFollow key generated for " + JSON.stringify(user.id));
 
                                 user.set("algoliaSecureAPIKey", user_public_key);
+                                user.set("tagFilters", tagFiltersArrayFinal);
+
 
 
                                 user.save(null, {
@@ -26076,7 +26209,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                 return callback (null, expertsArray);
 
-            } else {
+            }
+            else {
 
                 //console.log("workspace.dirty_experts: " + JSON.stringify(workspace.dirty("experts")));
 
@@ -26122,8 +26256,10 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
                             for (let i = 0; i < experts.length; i++) {
 
-                                experts[i] = simplifyUser(experts[i]);
                                 let expertObject = experts[i];
+                                //console.log("expertObject: " + JSON.stringify(expertObject));
+
+                                experts[i] = simplifyUser(expertObject);
 
                                 let userRolesRelation = expertObject.relation("roles");
                                 //console.log("userRolesRelation afterSave Workspace: " + JSON.stringify(userRolesRelation));
@@ -26457,17 +26593,8 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
 
             workspaceToSave["skills"] = skillsToSave;
-
-
-            if (workspace.get("isDirtyExperts") === true) {
-                workspaceToSave["experts"] = expertsToSave;
-                delete workspaceToSave.expertsArray;
-            } else {
-
-                delete workspaceToSave.experts;
-                delete workspaceToSave.expertsArray;
-
-            }
+            workspaceToSave["experts"] = expertsToSave;
+            console.log("experts: " + JSON.stringify(expertsToSave));
 
 
             //delete workspaceToSave.expertsArray;
