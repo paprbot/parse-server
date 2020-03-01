@@ -5523,12 +5523,96 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                     }
                     else {
 
-                        // do nothing to expertArray
+                        if (workspace.get("isDirtyExperts") === true) {
 
-                        let finalTime = process.hrtime(time);
-                        console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+                            let expertRelationQuery = expertRelation.query();
+                            expertRelationQuery.find({
 
-                        response.success();
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            }).then((experts) => {
+                                // The object was retrieved successfully.
+
+                                if (experts.length > 0) {
+
+                                    let emptyArray = [];
+
+                                    workspace.set("expertsArray", emptyArray);
+
+                                    async.map(experts, function (expert, cb) {
+
+                                        let expertUser = simplifyUser(expert);
+
+                                        //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                                        expert = expertUser;
+
+                                        workspace.addUnique("expertsArray", expertUser);
+                                        //expertArray.push(expertOwner);
+
+                                        return cb (null, expert);
+
+
+                                    }, function (err, experts) {
+
+                                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                                        if (err) {response.error(err);}
+
+                                        else {
+
+                                            //workspace.set("expertsArray", workspaceExpertObjects);
+                                            //workspace.remove("expertsArray", workspaceExpertObjects);
+                                            //console.log("workspace 2: " + JSON.stringify(workspace));
+
+                                            let finalTime = process.hrtime(time);
+                                            console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                                            response.success();
+
+                                        }
+
+                                    });
+
+
+
+                                }
+                                else {
+
+                                    let finalTime = process.hrtime(time);
+                                    console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                                    response.success();
+
+
+                                }
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                console.log("userRoleRelationQuery no result");
+                                return response.error(error);
+                            }, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+
+
+
+
+                        }
+
+                        else {
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                            response.success();
+
+                        }
+
                     }
 
 
