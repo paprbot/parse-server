@@ -5085,6 +5085,8 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
     }
 
+    //console.log("exp__op experts first: " + JSON.stringify(req.operation.op(experts)));
+
     function archiveWorkspaceFollowers (callback) {
 
         let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
@@ -5643,7 +5645,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
 
     }
-    else if (!workspace.isNew() === false  && workspace.dirty("workspace_url") === false) {
+    else if (workspace.isNew() === false  && workspace.dirty("workspace_url") === false) {
 
 
         workspace.set("isNew", false);
@@ -5658,6 +5660,8 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
             let workspaceExpertObjects = req.object.toJSON().experts.objects;
             let exp__op = req.object.toJSON().experts.__op;
+            console.log("exp__op: " + JSON.stringify(exp__op));
+
 
             if (exp__op === "AddRelation") {
 
@@ -19459,6 +19463,10 @@ function splitPostMessageAndIndex (request, response) {
     let postMessage = request['object'];
     //console.log("postMessage: " + JSON.stringify(postMessage));
 
+    let topAnswerForQuestionPostMessage = request['topAnswerForQuestionPostMessage'];
+
+    let parentPostMessageUser = request['parentPostMessageUser'];
+
     let POSTMESSAGE = Parse.Object.extend("PostMessage");
     let PostMessage = new POSTMESSAGE();
     PostMessage.id = postMessage.objectId;
@@ -19643,7 +19651,14 @@ function splitPostMessageAndIndex (request, response) {
 
                 if (postMessage.parentPostMessage) {
                     PostMessageStar.parentPostMessage = postMessage.parentPostMessage;
-                    //console.log("setting parentPostMessage PostMessageStar: " + JSON.stringify(PostMessageStar.parentPostMessage));
+
+                    PostMessageStar.parentPostMessage.user = parentPostMessageUser;
+                    if (postMessage.type === 'question') {
+
+                        PostMessageStar.parentPostMessage.topAnswerForQuestionPostMessage = topAnswerForQuestionPostMessage;
+                    }
+                    console.log("setting parentPostMessage PostMessageStar: " + JSON.stringify(PostMessageStar.parentPostMessage));
+
                 }
 
                 if (postMessage.postMessageSocialCount) {
@@ -19891,7 +19906,15 @@ function splitPostMessageAndIndex (request, response) {
 
                 if (postMessage.parentPostMessage) {
                     PostMessageUser.parentPostMessage = postMessage.parentPostMessage;
-                    //console.log("setting parentPostMessage PostMessageUser: " + JSON.stringify(PostMessageUser.parentPostMessage));
+
+                    PostMessageUser.parentPostMessage.user = parentPostMessageUser;
+
+                    if (postMessage.type === 'question') {
+
+                        PostMessageUser.parentPostMessage.topAnswerForQuestionPostMessage = topAnswerForQuestionPostMessage;
+                    }
+
+                    console.log("setting parentPostMessage PostMessageUser: " + JSON.stringify(PostMessageUser.parentPostMessage));
                 }
 
                 if (postMessage.postMessageSocialCount) {
@@ -20015,6 +20038,7 @@ function splitPostMessageAndIndex (request, response) {
                 PostMessageUser.PostMessageSocial = postMessageSocialResult;
 
 
+
                 //console.log("postMessage splitObjectAndIndex object: " + JSON.stringify(PostMessageUser));
 
                 postMessageSocialResult = PostMessageUser;
@@ -20096,6 +20120,13 @@ function splitPostMessageAndIndex (request, response) {
                 postMessage.objectID = postMessageObjectID;
                 postMessage._tags = tags;
                 postMessage.PostMessageSocial = null;
+
+                postMessage.parentPostMessage.user = parentPostMessageUser;
+
+                if (postMessage.type === 'question') {
+
+                    postMessage.parentPostMessage.topAnswerForQuestionPostMessage = topAnswerForQuestionPostMessage;
+                }
 
                 //console.log("postMessage with * tag: " + JSON.stringify(postMessage));
 
@@ -23457,6 +23488,64 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
         }
 
+        function getParentPostMessageUser (callback) {
+
+            if (PostMessage.get("parentPostMessage")) {
+
+                ParentPostMessage.fetch(ParentPostMessage.id, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((parentPostMessage) => {
+
+                    let User = new USER();
+                    User = parentPostMessage.get("user");
+
+                    User.fetch(User.id, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((userObject) => {
+
+                        userObject = simplifyUser(userObject);
+
+                        return callback (null, userObject);
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            } else {
+
+                let postMessage = [];
+                return callback(null, postMessage);
+            }
+
+        }
+
         function saveParentPost (callback) {
 
             Post.save(null, {
@@ -23587,7 +23676,8 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
         async.parallel([
             async.apply(prepIndex),
             async.apply(getTopAnswerForQuestionMessage),
-            async.apply(saveParentPost)
+            async.apply(saveParentPost),
+            async.apply(getParentPostMessageUser)
 
 
         ], function (err, results) {
@@ -23602,7 +23692,8 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                 postMessageToSave = results[0];
                 //let chatMessages = results[2];
                 //let postSocial = results[3];
-                //let topAnswerForQuestionPost = results[3];
+                let topAnswerForQuestionPostMessage = results[1];
+                let parentPostMessageUser = results[3];
 
                 //postToSave.postQuestions = postQuestions;
                 //postToSave.chatMessages = chatMessages;
@@ -23613,9 +23704,11 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                 //console.log("postQuestions: " + JSON.stringify(postQuestions));
                 //console.log("chatMessages: " + JSON.stringify(chatMessages));
                 //console.log("PostSocial: " + JSON.stringify(postSocial));
-                //console.log("topAnswer: " + JSON.stringify(postToSave.topAnswer));
+                console.log("topAnswerForQuestionPostMessage: " + JSON.stringify(topAnswerForQuestionPostMessage));
+                console.log("parentPostMessageUser: " + JSON.stringify(parentPostMessageUser));
 
-                splitPostMessageAndIndex({'user':currentUser, 'object':postMessageToSave}, {
+
+                splitPostMessageAndIndex({'user':currentUser, 'object':postMessageToSave, 'topAnswerForQuestionPostMessage':topAnswerForQuestionPostMessage, 'parentPostMessageUser':parentPostMessageUser}, {
                     success: function (count) {
 
                         let Final_Time = process.hrtime(time);
