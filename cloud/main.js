@@ -7504,7 +7504,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     }
 
                 }
-                
+
             }
             else {
 
@@ -24856,6 +24856,104 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
         }
 
+        function updateChannelExpertProfileImage (callback) {
+
+            //console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
+
+            if ((user.get("isDirtyProfileimage") === false || !user.get("isDirtyProfileimage")) && (user.get("isDirtyIsOnline") === false || !user.get("isDirtyIsOnline")) && (user.get("isDirtyTyping") === false || !user.get("isDirtyTyping")) && ( user.get("isDirtyShowAvailability") === false || !user.get("isDirtyShowAvailability"))) {
+
+                //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
+
+                return callback (null, user);
+
+            }
+
+            else if (user.get("isNew") === true) {
+
+                return callback (null, user);
+            }
+
+            else {
+
+                var CHANNEL = Parse.Object.extend("Channel");
+                var channelQuery = new Parse.Query(CHANNEL);
+                var User = Parse.Object.extend("_User");
+                var userQuery = new Parse.Query(User);
+
+
+                userQuery.equalTo("objectId", userToSave.objectId);
+                //console.log("username: " + JSON.stringify(userToSave.username));
+                channelQuery.matchesQuery("experts", userQuery);
+                //channelQuery.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "image"]);
+
+                channelQuery.find({
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }).then((objectsToIndex) => {
+                    // The object was retrieved successfully.
+                    //console.log("Result from get " + JSON.stringify(objectsToIndex.length));
+
+                    var channels = objectsToIndex;
+                    //console.log("workspaces length: " + JSON.stringify(workspaces.length));
+
+                    let arrChannels = lodash.map(channels, function(channelObject) {
+
+                        let ChannelObj = new CHANNEL();
+                        ChannelObj.id = channelObject.id;
+                        ChannelObj.set("isDirtyExperts", true);
+                        channelObject = ChannelObj;
+
+                        return channelObject;
+
+                    });
+
+                    //console.log("arrChannels: " + JSON.stringify(arrChannels));
+
+                    Parse.Object.saveAll(arrChannels, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then(function(results) {
+
+                        return callback (null, results);
+
+
+
+                    }, function(err) {
+                        // error
+                        return callback (err);
+
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    return callback (error);
+
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            }
+
+
+
+
+        }
+
         function prepIndex(callback) {
 
             // set _tags depending on the post ACL
@@ -25173,7 +25271,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
             async.apply(getSkillsToLearn),
             async.apply(getWorkspaceFollowers),
             async.apply(checkIfInvited),
-            async.apply(updateAlgoliaPostsProfileImage)
+            async.apply(updateAlgoliaPostsProfileImage),
+            async.apply(updateChannelExpertProfileImage)
 
 
         ], function (err, results) {
