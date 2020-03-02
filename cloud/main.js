@@ -5883,7 +5883,6 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
 
             }
-
             else {
 
                 if (workspace.get("isDirtyExperts") === true) {
@@ -6759,6 +6758,8 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
         let channelName = channel.get("name");
         channelName = channelName.toLowerCase().trim();
 
+        let expertRelation = workspace.relation("experts");
+
         function archiveChannelFollowers (callback) {
 
             if (channel.dirty("archive")) {
@@ -7268,12 +7269,261 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
         }
 
+        function updateExpertsArray (callback) {
+
+
+            if (channel.dirty("experts") || channel.get("isDirtyExperts") === true) {
+
+                if (channel.dirty("experts")) { channel.set("isDirtyExperts", true);}
+
+                let channelExpertObjects = req.object.toJSON().experts.objects;
+                let exp__op = req.object.toJSON().experts.__op;
+                //console.log("exp__op: " + JSON.stringify(exp__op));
+
+
+                if (exp__op === "AddRelation") {
+
+                    // add expert to expertsArray
+
+                    async.map(channelExpertObjects, function (object, cb) {
+
+
+                        let channelExpertObject = new Parse.Object("_User");
+                        channelExpertObject.set("objectId", object.objectId);
+
+                        //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                        channelExpertObject.fetch(channelExpertObject.id, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((expert) => {
+
+                            let expertOwner = simplifyUser(expert);
+
+                            //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                            //o[key] = expertOwner;
+
+                            channel.addUnique("expertsArray", expertOwner);
+                            /*workspace.save(null, {
+
+                             useMasterKey: true
+                             //sessionToken: sessionToken
+
+                             });*/
+
+                            object = expertOwner;
+                            //expertArray.push(expertOwner);
+
+                            return cb (null, object);
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback (error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                    }, function (err, channelExpertObjects) {
+
+                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                        if (err) {return callback (err);} else {
+
+
+
+                            //expertArray = result.get("expertsArray");
+                            //console.log("result: " + JSON.stringify(result));
+
+                            //result.Add("expertsArray", JSON.stringify(workspaceExpertObjects[0]));
+                            //console.log("expertsArray: " + JSON.stringify(result.get("expertsArray")));
+
+                            //workspace.addUnique("expertsArray", workspaceExpertObjects[0]);
+                            //console.log("expertsArray Result: " + JSON.stringify(workspace.get("expertsArray")));
+
+                            //workspace.set("expertsArray", workspaceExpertObjects);
+                            //console.log("workspace 2: " + JSON.stringify(workspace));
+
+                            channel.set("isDirtyExperts", false);
+
+                            return callback  (null, channelExpertObjects);
+
+
+                        }
+
+                    });
+
+                }
+                else if (exp__op === "RemoveRelation") {
+
+                    async.map(channelExpertObjects, function (object, cb) {
+
+                        let channelExpertObject = new Parse.Object("_User");
+                        channelExpertObject.set("objectId", object.objectId);
+
+                        //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                        channelExpertObject.fetch(channelExpertObject.id, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((expert) => {
+
+                            let expertOwner = simplifyUser(expert);
+
+                            //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                            object = expertOwner;
+                            channel.remove("expertsArray", expertOwner);
+                            //expertArray.push(expertOwner);
+
+                            return cb (null, object);
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback (error);
+
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                    }, function (err, channelExpertObjects) {
+
+                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                        if (err) {return callback (err);} else {
+
+                            //workspace.set("expertsArray", workspaceExpertObjects);
+                            //workspace.remove("expertsArray", workspaceExpertObjects);
+                            //console.log("workspace 2: " + JSON.stringify(workspace));
+
+                            channel.set("isDirtyExperts", false);
+
+                            return callback (null, channelExpertObjects);
+
+                        }
+
+                    });
+
+
+                }
+                else {
+
+                    if (channel.get("isDirtyExperts") === true) {
+
+                        let expertRelationQuery = expertRelation.query();
+                        expertRelationQuery.find({
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }).then((experts) => {
+                            // The object was retrieved successfully.
+
+                            if (experts.length > 0) {
+
+                                let emptyArray = [];
+
+                                channel.set("expertsArray", emptyArray);
+
+                                async.map(experts, function (expert, cb) {
+
+                                    let expertUser = simplifyUser(expert);
+
+                                    //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                                    expert = expertUser;
+
+                                    channel.addUnique("expertsArray", expertUser);
+                                    //expertArray.push(expertOwner);
+
+                                    return cb (null, expert);
+
+
+                                }, function (err, experts) {
+
+                                    //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+
+                                    if (err) {response.error(err);}
+
+                                    else {
+
+                                        //workspace.set("expertsArray", workspaceExpertObjects);
+                                        //workspace.remove("expertsArray", workspaceExpertObjects);
+                                        //console.log("workspace 2: " + JSON.stringify(workspace));
+
+                                        channel.set("isDirtyExperts", false);
+
+                                        return callback (null, experts);
+
+                                    }
+
+                                });
+
+
+
+                            }
+                            else {
+
+                                let emptyExperts = [];
+                                return callback (null, emptyExperts);
+
+
+                            }
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            return callback (error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+
+
+
+                    }
+
+                    else {
+
+                        return callback (null, channel.get("expertsArray"));
+
+                    }
+
+                }
+                
+            }
+            else {
+
+                channel.set("isDirtyExperts", false);
+
+                return callback (null, channel.get("expertsArray"));
+
+            }
+
+
+        }
+
         async.parallel([
             async.apply(archiveChannelFollowers),
             async.apply(unarchiveChannelFollowers),
             async.apply(updateChannelName),
             async.apply(updateChannelType),
-            async.apply(allowMemberPostCreate)
+            async.apply(allowMemberPostCreate),
+            async.apply(updateExpertsArray)
 
         ], function (err, results) {
             if (err) {
