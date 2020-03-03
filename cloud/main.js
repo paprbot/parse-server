@@ -29688,6 +29688,12 @@ cron.schedule('*/1 * * * *', () => {
     var user = new Parse.Query(User);
     user.exists("deviceToken");
     //console.log("user: " + JSON.stringify(user));
+
+    //let notification_body = result.get("message");
+    //let userMention = notification_body.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
+    //userMention = userMention.match(/(^|\s)(\[@[a-z\d]+));
+    // let userNameMention = notification_body.match.(^|)(@[a-z\d]+)
+
     var Notification = Parse.Object.extend('Notification');
     var query = new Parse.Query(Notification);
     query.include('userTo.deviceToken');
@@ -29734,7 +29740,7 @@ cron.schedule('*/1 * * * *', () => {
                     console.log('ERROR', err);
                     //return response.error(err);
                 }
-                console.log("otification sent to all users");
+                console.log("notification sent to all users");
                 //return response.success("Notification sent to all users");
             });
         },
