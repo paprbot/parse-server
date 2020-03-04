@@ -15,7 +15,7 @@ var Promise = require('promise');
 const isProduction = true;
 var fileForPushNotification;
 var keyFileForPushNotification;
-// Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
+// Initialize the Algolia Search Indexes for posts, users, hashtags and meetings..
 var indexPosts;
 var indexUsers;
 var indexMeetings;
