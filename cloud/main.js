@@ -15,7 +15,7 @@ var Promise = require('promise');
 const isProduction = true;
 var fileForPushNotification;
 var keyFileForPushNotification;
-// Initialize the Algolia Search Indexes for posts, users, hashtags and meetings..
+// Initialize the Algolia Search Indexes for posts, users, hashtags and meetings
 var indexPosts;
 var indexUsers;
 var indexMeetings;
@@ -8726,6 +8726,15 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
 
     }
 
+    function markUpVotedByExpertTrue (callback) {
+
+        // check if creator of this postMesage is already an expert in this Workspace, then mark this as true
+
+
+
+
+    }
+
 
 
     async.parallel([
@@ -9276,11 +9285,107 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
                     }
 
+                    function markIsUpVotedByExpertTrue (callback) {
+
+                        let isExpert;
+
+                        if (postMessageSocial.get("voteValue") === 1) {
+
+                            // check if the user is an expert, if yes then mark true
+
+                            User.fetch(User.id, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            }).then((UserObject) => {
+                                // The object was retrieved successfully.
+
+                                let userRoles= UserObject.get("roles");
+
+                                //console.log('userRoles: ' + JSON.stringify(userRoles));
+
+                                let queryRole = userRoles.query();
+
+                                let roleName = 'expert-' + workspace.id;
+
+                                queryRole.equalTo('workspace', workspace);
+                                queryRole.equalTo('name', roleName);
+
+                                queryRole.first({
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                }).then((expertRole) => {
+
+
+                                    if (expertRole) {
+
+                                        // user is not an expert return
+                                        isExpert = true;
+
+                                        return callback (null, isExpert);
+
+
+                                    }
+
+                                    else {
+
+                                        // user is not an expert return
+                                        isExpert = false;
+
+                                        return callback (null, isExpert);
+                                    }
+
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    //console.log(error);
+                                    return callback(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                console.log("userRoleRelationQuery no result");
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+
+
+
+
+
+                        } else {
+
+                            isExpert = false;
+
+                            return callback (null, isExpert);
+
+
+                        }
+
+
+
+
+                    }
+
 
                     async.series([
                         async.apply(countPostMessageLikes),
                         async.apply(countPostMessageUnRead),
-                        async.apply(countPostMessageVote)
+                        async.apply(countPostMessageVote),
+                        async.apply(markIsUpVotedByExpertTrue)
 
                     ], function (err, results_Final) {
                         if (err) {
@@ -9296,6 +9401,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                             let PostMessageCountLikes = results_Final[0];
                             let PostMessageCountUnRead = results_Final[1];
                             let PostMessageCountVote = results_Final[2];
+                            let isUpVotedByExpert = results_Final[3];
 
                             if (PostMessageCountLikes) {
                                 if (PostMessageCountLikes.get("likedCount")) {
@@ -9322,21 +9428,37 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
                             //console.log("PostMessageToSaveFinal: " + JSON.stringify(PostMessageToSaveFinal));
 
+                            if (isUpVotedByExpert === true) {
+
+                                PostMessageToSaveFinal.set("upVotedByExpert", true);
+                            } else {
+
+                                PostMessageToSaveFinal.set("upVotedByExpert", false);
+                            }
 
                             PostMessageToSaveFinal.save(null, {
+
+
+                                useMasterKey: true,
+                                //sessionToken: sessionToken
+
+                            });
+
+                            return cb (null, PostMessageToSaveFinal);
+
+
+                            /*
+                            PostMessageToSaveFinal.save(null, {
+
 
                                 useMasterKey: true,
                                 //sessionToken: sessionToken
 
                             }).then((PostMessageObj) => {
-                                // The object was retrieved successfully.
-                                //console.log("PostMessageObj: " + JSON.stringify(PostMessageObj.id));
 
-                                //console.log("queryPostMessage: " + JSON.stringify(queryPostMessage));
 
                                 let queryPostMessage = new Parse.Query(POSTMESSAGE);
                                 queryPostMessage.include( ["user"] );
-                                //queryPost.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url", "channel.name", "channel.type", "channel.archive", "post_title", "questionAnswerEnabled" /*,"transcript"*/]);
                                 queryPostMessage.equalTo("objectId", PostMessageObj.id);
 
 
@@ -9346,12 +9468,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                                     //sessionToken: sessionToken
 
                                 }).then((PostMessageObject) => {
-                                    // The object was retrieved successfully.
-                                    //console.log("Result from get " + JSON.stringify(Workspace));
 
-                                    //PostMessage = PostMessageObject;
-
-                                    //console.log("PostMessageObject: " + JSON.stringify(PostMessageObject));
 
                                     PostMessageToSaveFinal = PostMessageObject;
 
@@ -9382,6 +9499,8 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
                                 //sessionToken: sessionToken
 
                             });
+
+                            */
 
 
                         } else {
@@ -9536,7 +9655,9 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
         });
 
 
-    } else {
+    }
+
+    else {
 
         postMessageSocial.set("isNew", false);
 
@@ -9550,18 +9671,19 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
         Post.id = originalPostMessageSocial.get("post").id;
         //console.log("Post originalPostMessageSocial: " + JSON.stringify(Post));
 
-
         let CHANNEL = Parse.Object.extend("Channel");
         let Channel = new CHANNEL();
         Channel.id = originalPostMessageSocial.get("channel").id;
         //console.log("Channel originalPostMessageSocial: " + JSON.stringify(Channel));
-
 
         let WORKSPACE = Parse.Object.extend("WorkSpace");
         let Workspace = new WORKSPACE();
         Workspace.id = originalPostMessageSocial.get("workspace").id;
         //console.log("Workspace originalPostMessageSocial: " + JSON.stringify(Workspace));
 
+        let POSTMESSAGE = Parse.Object.extend("PostMessage");
+        let PostMessage = new POSTMESSAGE();
+        PostMessage.id = originalPostMessageSocial.get("postMessage").id;
 
         function createPostSocialIfNotExists (cb) {
 
@@ -9668,10 +9790,623 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
 
         }
 
+        function countPostMessageSocial (cb) {
+
+            //console.log("starting countPostMessageSocial: ");
+
+            let PostMessageToSave = PostMessage;
+            //console.log("PostMessageToSave: " + JSON.stringify(PostMessageToSave));
+
+            let PostMessageSocialResult = originalPostMessageSocial;
+            //console.log("PostMessageSocialResult: " + JSON.stringify(PostMessageSocialResult));
+
+            let PostToSave = Post;
+            //console.log("PostToSave: " + JSON.stringify(PostToSave));
+
+            function countPostMessageLikes(callback) {
+
+                //console.log("starting countPostMessageLikes: ");
+
+                if ((postMessageSocial.get("isLiked") === false || !postMessageSocial.get("isLiked")) && (PostMessageSocialResult.get("isLiked") === false || !PostMessageSocialResult.get("isLiked"))) {
+                    // original isLiked == false and new isLiked also === false don't increment
+
+
+                    return callback(null, PostMessageToSave);
+
+                }
+
+                else if ((postMessageSocial.get("isLiked") === false) && PostMessageSocialResult.get("isLiked") === true) {
+
+                    // decrement since user unLiked
+
+                    PostMessageToSave.increment("likedCount", -1);
+                    //console.log("PostMessageToSave 3 likedCount: " + JSON.stringify(PostMessageToSave.get("likedCount")));
+
+
+                    return callback(null, PostMessageToSave);
+
+                }
+
+                else if (postMessageSocial.get("isLiked") === true && (PostMessageSocialResult.get("isLiked") === false || !PostMessageSocialResult.get("isLiked"))) {
+
+                    // increment because the user liked
+
+                    PostMessageToSave.increment("likedCount");
+                    //console.log("PostMessageToSave 4 likedCount: " + JSON.stringify(PostMessageToSave.get("likedCount")));
+
+
+                    return callback(null, PostMessageToSave);
+
+                }
+                else if (postMessageSocial.get("isLiked") === true && PostMessageSocialResult.get("isLiked") === true) {
+
+                    // No change don't increment
+
+
+                    return callback(null, PostMessageToSave);
+
+                }
+
+
+            }
+
+            function countPostMessageUnRead(callback) {
+
+                //console.log("starting countPostMessageUnRead: ");
+
+                if ((postMessageSocial.get("hasRead") === false || !postMessageSocial.get("hasRead")) && (PostMessageSocialResult.get("hasRead") === false || !PostMessageSocialResult.get("hasRead"))) {
+                    // original hasRead == false and new hasRead also === false don't increment
+
+
+                    return callback(null, PostToSave);
+
+                }
+
+                else if ((postMessageSocial.get("hasRead") === false ) && PostMessageSocialResult.get("hasRead") === true) {
+
+                    // increment user marked previous messages that he read as unRead
+
+                    PostToSave.increment("postMessageUnReadCount");
+                    PostToSave.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((PostObject) => {
+                        // The object was retrieved successfully.
+                        //console.log("PostObject: " + JSON.stringify(PostObject));
+
+                        return callback(null, PostObject);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                }
+
+                else if (postMessageSocial.get("hasRead") === true && (PostMessageSocialResult.get("hasRead") === false || !PostMessageSocialResult.get("hasRead"))) {
+
+                    // decrement user read the message
+
+                    PostToSave.increment("postMessageUnReadCount", -1);
+                    PostToSave.save(null, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then((PostObject) => {
+                        // The object was retrieved successfully.
+                        //console.log("PostObject: " + JSON.stringify(PostObject));
+
+                        return callback(null, PostObject);
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        return callback(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                }
+                else if (postMessageSocial.get("hasRead") === true && PostMessageSocialResult.get("hasRead") === true) {
+
+                    // No change don't increment
+
+
+                    return callback(null, PostToSave);
+
+                }
+
+
+
+            }
+
+            function countPostMessageVote(callback) {
+
+                //console.log("starting countPostMessageVote: " + JSON.stringify(PostMessageToSave));
+
+                let postMessageSocialVoteValue = postMessageSocial.get("voteValue");
+                //console.log("postMessageSocialVoteValue: " + JSON.stringify(postMessageSocialVoteValue));
+
+                if (postMessageSocialVoteValue === -1 || 0 || 1) {
+
+                        // postQuestionMessageVote already exists
+
+                        if (
+                            (postMessageSocialVoteValue === -1 ) && (PostMessageSocialResult.get("voteValue") === -1) ||
+                            (postMessageSocialVoteValue === 0 ) && (PostMessageSocialResult.get("voteValue") === 0) ||
+                            (postMessageSocialVoteValue === 1 ) && (PostMessageSocialResult.get("voteValue") === 1)
+
+
+                        ) {
+                            // same value as before do nothing
+
+                            //console.log("postMessageSocialVoteValue: " + JSON.stringify(postMessageSocialVoteValue) + "PostMessageSocialResult: " + JSON.stringify(PostMessageSocialResult.get("voteValue")));
+
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+
+                        else if ((postMessageSocialVoteValue === 1) && PostMessageSocialResult.get("voteValue") === -1) {
+
+                            // User previously downVoted this question but now changed their mind and upVoted it.
+
+                            PostMessageToSave.increment("numberOfDownVotes", -1);
+                            PostMessageToSave.increment("numberOfUpVotes");
+
+                            //console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
+                            //console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
+
+                            User.fetch(User.id, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            }).then((UserObject) => {
+                                // The object was retrieved successfully.
+
+                                let userRoles= UserObject.get("roles");
+
+                                //console.log('userRoles: ' + JSON.stringify(userRoles));
+
+                                let queryRole = userRoles.query();
+
+                                let roleName = 'expert-' + workspace.id;
+
+                                queryRole.equalTo('workspace', workspace);
+                                queryRole.equalTo('name', roleName);
+
+                                queryRole.first({
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                }).then((expertRole) => {
+
+
+                                    if (expertRole) {
+
+                                        // user is not an expert return
+                                        PostMessageToSave.set("upVotedByExpert", true);
+
+                                        return callback (null, PostMessageToSave);
+
+
+                                    }
+
+                                    else {
+
+                                        // user is not an expert return
+                                        PostMessageToSave.set("upVotedByExpert", false);
+
+                                        return callback (null, PostMessageToSave);
+                                    }
+
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    //console.log(error);
+                                    return callback(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                console.log("userRoleRelationQuery no result");
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+
+
+
+
+
+                        }
+
+                        else if ((postMessageSocialVoteValue === 1) && PostMessageSocialResult.get("voteValue") === 0) {
+
+                            // User previously no state, but now he upVoted
+
+                            PostMessageToSave.increment("numberOfUpVotes");
+
+                            //console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
+
+                            User.fetch(User.id, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            }).then((UserObject) => {
+                                // The object was retrieved successfully.
+
+                                let userRoles= UserObject.get("roles");
+
+                                //console.log('userRoles: ' + JSON.stringify(userRoles));
+
+                                let queryRole = userRoles.query();
+
+                                let roleName = 'expert-' + workspace.id;
+
+                                queryRole.equalTo('workspace', workspace);
+                                queryRole.equalTo('name', roleName);
+
+                                queryRole.first({
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                }).then((expertRole) => {
+
+
+                                    if (expertRole) {
+
+                                        // user is not an expert return
+                                        PostMessageToSave.set("upVotedByExpert", true);
+
+                                        return callback (null, PostMessageToSave);
+
+
+                                    }
+
+                                    else {
+
+                                        // user is not an expert return
+                                        PostMessageToSave.set("upVotedByExpert", false);
+
+                                        return callback (null, PostMessageToSave);
+                                    }
+
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    //console.log(error);
+                                    return callback(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                console.log("userRoleRelationQuery no result");
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+                        }
+
+                        else if (postMessageSocialVoteValue === 0 && PostMessageSocialResult.get("voteValue") === -1) {
+
+                            // User previously downvoted but now removed downvote
+
+                            PostMessageToSave.increment("numberOfDownVotes", -1);
+
+                            //console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+                        else if (postMessageSocialVoteValue === 0 && PostMessageSocialResult.get("voteValue") === 1) {
+
+                            // User previously upVoted, but now user removes the upVote
+
+                            PostMessageToSave.increment("numberOfUpVotes", -1);
+
+                            //console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
+
+                            User.fetch(User.id, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            }).then((UserObject) => {
+                                // The object was retrieved successfully.
+
+                                let userRoles= UserObject.get("roles");
+
+                                //console.log('userRoles: ' + JSON.stringify(userRoles));
+
+                                let queryRole = userRoles.query();
+
+                                let roleName = 'expert-' + workspace.id;
+
+                                queryRole.equalTo('workspace', workspace);
+                                queryRole.equalTo('name', roleName);
+
+                                queryRole.first({
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                }).then((expertRole) => {
+
+
+                                    if (expertRole) {
+
+                                        // user is not an expert return
+                                        PostMessageToSave.set("upVotedByExpert", false);
+
+                                        return callback (null, PostMessageToSave);
+
+
+                                    }
+
+                                    else {
+
+                                        // user is not an expert return
+                                        PostMessageToSave.set("upVotedByExpert", false);
+
+                                        return callback (null, PostMessageToSave);
+                                    }
+
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    //console.log(error);
+                                    return callback(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                console.log("userRoleRelationQuery no result");
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+
+                        }
+
+                        else if ((postMessageSocialVoteValue === -1) && PostMessageSocialResult.get("voteValue") === 1) {
+
+                            // User previously upvoted, but now downvoted
+
+                            PostMessageToSave.increment("numberOfDownVotes");
+                            PostMessageToSave.increment("numberOfUpVotes", -1);
+
+                            //console.log("PostMessageToSave numberOfUpVotes: " + JSON.stringify(PostMessageToSave.get("numberOfUpVotes")));
+                            //console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
+
+                            User.fetch(User.id, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            }).then((UserObject) => {
+                                // The object was retrieved successfully.
+
+                                let userRoles= UserObject.get("roles");
+
+                                //console.log('userRoles: ' + JSON.stringify(userRoles));
+
+                                let queryRole = userRoles.query();
+
+                                let roleName = 'expert-' + workspace.id;
+
+                                queryRole.equalTo('workspace', workspace);
+                                queryRole.equalTo('name', roleName);
+
+                                queryRole.first({
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+                                }).then((expertRole) => {
+
+
+                                    if (expertRole) {
+
+                                        // user is not an expert return
+                                        PostMessageToSave.set("upVotedByExpert", false);
+
+                                        return callback (null, PostMessageToSave);
+
+
+                                    }
+
+                                    else {
+
+                                        // user is not an expert return
+                                        PostMessageToSave.set("upVotedByExpert", false);
+
+                                        return callback (null, PostMessageToSave);
+                                    }
+
+
+                                }, (error) => {
+                                    // The object was not retrieved successfully.
+                                    // error is a Parse.Error with an error code and message.
+                                    //console.log(error);
+                                    return callback(error);
+                                }, {
+
+                                    useMasterKey: true
+                                    //sessionToken: sessionToken
+
+                                });
+
+
+                            }, (error) => {
+                                // The object was not retrieved successfully.
+                                // error is a Parse.Error with an error code and message.
+                                console.log("userRoleRelationQuery no result");
+                                return callback (error);
+                            }, {
+
+                                useMasterKey: true
+                                //sessionToken: sessionToken
+
+                            });
+                        }
+
+                        else if ((postMessageSocialVoteValue === -1) && PostMessageSocialResult.get("voteValue") === 0) {
+
+                            // User previously no state, but now he downVoted
+
+                            PostMessageToSave.increment("numberOfDownVotes");
+
+                            //console.log("PostMessageToSave numberOfDownVotes: " + JSON.stringify(PostMessageToSave.get("numberOfDownVotes")));
+
+                            return callback(null, PostMessageToSave);
+
+                        }
+
+
+                        else {
+
+                            //console.log("Else in postMessageVoteValue");
+
+
+                            return callback(null, PostMessageToSave);
+
+
+                        }
+
+
+
+                } else {
+
+                    //console.log("No postMessageVoteValue: " + JSON.stringify(postMessageSocialVoteValue));
+
+
+                    return callback(null, PostMessageToSave);
+
+
+                }
+
+
+
+            }
+
+
+            async.series([
+                async.apply(countPostMessageLikes),
+                async.apply(countPostMessageUnRead),
+                async.apply(countPostMessageVote)
+
+            ], function (err, results_Final) {
+                if (err) {
+                    response.error(err);
+                }
+
+                //console.log("final countPostMessageSocial: " + JSON.stringify(results_Final.length));
+                let PostMessageToSaveFinal = new POSTMESSAGE();
+                PostMessageToSaveFinal.id = PostMessageToSave.id;
+
+                if (results_Final.length > 0) {
+
+                    let PostMessageCountLikes = results_Final[0];
+                    let PostMessageCountUnRead = results_Final[1];
+                    let PostMessageCountVote = results_Final[2];
+
+                    if (PostMessageCountLikes) {
+                        if (PostMessageCountLikes.get("likedCount")) {
+                            PostMessageToSaveFinal.set("likedCount", PostMessageCountLikes.get("likedCount"));
+
+                        }
+
+                    }
+
+                    //console.log("PostMessageCountVote: " + JSON.stringify(PostMessageCountVote));
+
+
+                    if (PostMessageCountVote) {
+                        if (PostMessageCountVote.get("numberOfDownVotes")) {
+                            PostMessageToSaveFinal.set("numberOfDownVotes", PostMessageCountVote.get("numberOfDownVotes"));
+
+                        }
+                        if (PostMessageCountVote.get("numberOfUpVotes")) {
+                            PostMessageToSaveFinal.set("numberOfUpVotes", PostMessageCountVote.get("numberOfUpVotes"));
+
+                        }
+                        if (PostMessageCountVote.get("upVotedByExpert")){
+                            PostMessageToSaveFinal.set("upVotedByExpert", PostMessageCountVote.get("upVotedByExpert"));
+
+                        }
+
+                    }
+
+                    PostMessageToSaveFinal.save(null, {
+
+                        useMasterKey: true,
+                        //sessionToken: sessionToken
+
+                    });
+
+                    return cb (null, PostMessageToSaveFinal);
+
+
+                } else {
+                    return cb (null, PostMessageToSaveFinal);
+
+                }
+
+
+
+            });
+
+        }
+
 
         async.series([
 
-            async.apply(createPostSocialIfNotExists)
+            async.apply(createPostSocialIfNotExists),
+            async.apply(countPostMessageSocial)
 
         ], function (err, results_Final) {
             if (err) {
@@ -21285,7 +22020,9 @@ function splitUserAndIndex (request, response) {
 
 
 
-                        } else {
+                        }
+
+                        else {
 
                             console.error("User doesn't have any roles, function splitUserAndIndex function.");
 
@@ -29689,10 +30426,23 @@ cron.schedule('*/1 * * * *', () => {
     user.exists("deviceToken");
     //console.log("user: " + JSON.stringify(user));
 
-    //let notification_body = result.get("message");
-    //let userMention = notification_body.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
-    //userMention = userMention.match(/(^|\s)(\[@[a-z\d]+));
-    // let userNameMention = notification_body.match.(^|)(@[a-z\d]+)
+    let notification_body = result.get("message");
+    //let p = '[@shawkat:QK5IjSVtwF] mentioned you in a message: Great #tip [@Sam:wW30jjrrjO] I also would add the following: /n 1. Talk to your customers and users to build deep understanding of what their un-met needs are and understand their drivers for success /n 2. Deep dive on your product’s metrics and understand how product decisions were made /n 3. Understand your company and product #OKR or goals';
+
+    const userMentionRegex = /(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi;
+    const userNameMentionRegex = /(^|\s|)(\@[a-z\d]+)/gi;
+    let userMentions = notification_body.match(userMentionRegex);
+    //console.log(userMentions);
+
+    for (var j = 0; j < userMentions.length; j++) {
+
+        let userNameMention = userMentions[j].match(/(^|\s|)(\@[a-z\d]+)/gi);
+        notification_body = notification_body.replace(userMentions[j], ' ' + userNameMention)
+
+    }
+
+    //console.log(notification_body);
+
 
     var Notification = Parse.Object.extend('Notification');
     var query = new Parse.Query(Notification);
@@ -29706,7 +30456,7 @@ cron.schedule('*/1 * * * *', () => {
                 note.expiry = Math.floor(Date.now() / 1000) + 3600;
                 note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
                 note.title = "Papr.ai",
-                    note.body = result.get("message"),
+                    note.body = notification_body,
                     note.payload = {
                         'workspace' : result.get("workspace"),
                         'channel' : result.get("channel"),
@@ -29715,8 +30465,8 @@ cron.schedule('*/1 * * * *', () => {
                         'postMessage' : result.get("postMessage"),
 
                     };
-                note.topic = "ai.papr.dev";
-                console.log("deviceToken: " + JSON.stringify(result.get("userTo")) + " " + JSON.stringify( result.get("userTo").get("deviceToken")));
+                note.topic = "ai.papr";
+                //console.log("deviceToken: " + JSON.stringify(result.get("userTo")) + " " + JSON.stringify( result.get("userTo").get("deviceToken")));
                 apnProvider.send(note, result.get("userTo").get("deviceToken")).then( (res) => {
                     result.set("hasSent", true);
                     result.save(null, {
@@ -29740,7 +30490,7 @@ cron.schedule('*/1 * * * *', () => {
                     console.log('ERROR', err);
                     //return response.error(err);
                 }
-                console.log("notification sent to all users");
+                console.log("notification sent to users");
                 //return response.success("Notification sent to all users");
             });
         },
