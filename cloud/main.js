@@ -7714,7 +7714,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     var workspace = post.get("workspace");
     //console.log("workspace_post: " + JSON.stringify(workspace));
     var channel = post.get("channel");
-    console.log("channel_post: " + JSON.stringify(channel));
+    //console.log("channel_post: " + JSON.stringify(channel));
 
     var toLowerCase = function(w) { return w.toLowerCase(); };
     //console.log("post: " + JSON.stringify(post));
@@ -24406,16 +24406,23 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
                     //SendNotifications ();
 
-                    SendPostNotifications({'user':currentUser, 'post':post, 'postTitle':postTitle, 'mentions':mentions, 'workspace':workspace, 'channel':channel}, {
-                        success: function (count) {
+                    if (isNewPost === true) {
 
-                            let Final_Time = process.hrtime(time);
-                            console.log(`SendPostNotifications took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
-                        },
-                        error: function (error) {
-                            console.error(error);
-                        }
-                    });
+                        SendPostNotifications({'user':currentUser, 'post':post, 'postTitle':postTitle, 'mentions':mentions, 'workspace':workspace, 'channel':channel}, {
+                            success: function (count) {
+
+                                let Final_Time = process.hrtime(time);
+                                console.log(`SendPostNotifications took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                            },
+                            error: function (error) {
+                                console.error(error);
+                            }
+                        });
+
+
+                    }
+
+
 
                     // todo check if postSocial > 500, if yes then skip 500 and get postSocials
 
@@ -25459,7 +25466,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
                     });
 
-                    console.log("arrWorkspaces: " + JSON.stringify(arrWorkspaces));
+                    //console.log("arrWorkspaces: " + JSON.stringify(arrWorkspaces));
 
                     Parse.Object.saveAll(arrWorkspaces, {
 
@@ -25533,6 +25540,8 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
                 //console.log("username: " + JSON.stringify(userToSave.username));
                 postQuery.equalTo("user", UserObject);
+                //postQuery.limit(20);
+
                 //postQuery.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "image"]);
 
                 postQuery.find({
@@ -25585,10 +25594,6 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
 
             }
-
-
-
-
 
 
         }
@@ -25685,8 +25690,6 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
 
             }
-
-
 
 
         }
@@ -27971,7 +27974,7 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
             //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
             //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-            console.log("workspaceToSave final: " + JSON.stringify(workspaceToSave));
+            //console.log("workspaceToSave final: " + JSON.stringify(workspaceToSave));
 
             splitWorkspaceAndIndex({'user':currentUser, 'object':workspaceToSave}, {
                 success: function (count) {
