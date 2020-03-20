@@ -7910,7 +7910,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         // if there is a post that got added and no mentions from client then add mentions
         if (post.isNew() && !post.mentions) {
 
-            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
+            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\]|\[@[a-z\d]+( |-|_)[a-z\d]+:[a-z\d]+\])/gi);
             //console.log("mentions: " + JSON.stringify(mentions));
             //mentions = _.map(mentions, toLowerCase);
             if (mentions) {
@@ -7946,7 +7946,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
         else if (!post.isNew() && post.dirty("text") && !post.dirty("mentions")) {
 
-            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
+            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\]|\[@[a-z\d]+( |-|_)[a-z\d]+:[a-z\d]+\])/gi);
             //console.log("mentions: " + JSON.stringify(mentions));
             //mentions = _.map(mentions, toLowerCase);
             if (mentions) {
