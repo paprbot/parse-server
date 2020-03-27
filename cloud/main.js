@@ -30313,10 +30313,10 @@ Parse.Cloud.define("sendEmail", function(request, response) {
         }*/
         host: 'smtp.sendgrid.net',
         port: 465,
-        secure: false,
+        secure: true,
         auth: {
             user: 'apikey',
-            pass: '341422f3b5a499c0c3a311c4bd42e851-us15'
+            pass: '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'
         }
     });
     var readHTMLFile = function(path, callback) {
@@ -30347,13 +30347,13 @@ Parse.Cloud.define("sendEmail", function(request, response) {
                 workspace : request.params.workspaceName,
                 username : request.params.username,
                 workspaceId : request.params.workspaceID,
-                email : request.params.emails[count.value]
+                email :  allMail[key].email
             }
             var htmlToSend = template(temp);
             var mailOptions = {
                 from: 'developer@papr.ai',
                 // from: 'Papr, Inc.',
-                to : request.params.emails[count.value],
+                to :  allMail[key].email,
                 subject : 'Papr.ai',
                 html : htmlToSend
             };
