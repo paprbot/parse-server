@@ -30429,21 +30429,6 @@ cron.schedule('*/1 * * * *', () => {
     user.exists("deviceToken");
     //console.log("user: " + JSON.stringify(user));
 
-    let notification_body = result.get("message");
-    //let p = '[@shawkat:QK5IjSVtwF] mentioned you in a message: Great #tip [@Sam:wW30jjrrjO] I also would add the following: /n 1. Talk to your customers and users to build deep understanding of what their un-met needs are and understand their drivers for success /n 2. Deep dive on your product’s metrics and understand how product decisions were made /n 3. Understand your company and product #OKR or goals';
-
-    const userMentionRegex = /(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi;
-    const userNameMentionRegex = /(^|\s|)(\@[a-z\d]+)/gi;
-    let userMentions = notification_body.match(userMentionRegex);
-    //console.log(userMentions);
-
-    for (var j = 0; j < userMentions.length; j++) {
-
-        let userNameMention = userMentions[j].match(/(^|\s|)(\@[a-z\d]+)/gi);
-        notification_body = notification_body.replace(userMentions[j], ' ' + userNameMention)
-
-    }
-
     //console.log(notification_body);
 
 
@@ -30455,6 +30440,22 @@ cron.schedule('*/1 * * * *', () => {
     query.find({
         success: function(results) {
             async.each(results, function (result, callback) {
+
+                let notification_body = result.get("message");
+                //let p = '[@shawkat:QK5IjSVtwF] mentioned you in a message: Great #tip [@Sam:wW30jjrrjO] I also would add the following: /n 1. Talk to your customers and users to build deep understanding of what their un-met needs are and understand their drivers for success /n 2. Deep dive on your product’s metrics and understand how product decisions were made /n 3. Understand your company and product #OKR or goals';
+
+                const userMentionRegex = /(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi;
+                const userNameMentionRegex = /(^|\s|)(\@[a-z\d]+)/gi;
+                let userMentions = notification_body.match(userMentionRegex);
+                //console.log(userMentions);
+
+                for (var j = 0; j < userMentions.length; j++) {
+
+                    let userNameMention = userMentions[j].match(/(^|\s|)(\@[a-z\d]+)/gi);
+                    notification_body = notification_body.replace(userMentions[j], ' ' + userNameMention)
+
+                }
+
                 var note = new apn.Notification();
                 note.expiry = Math.floor(Date.now() / 1000) + 3600;
                 note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
