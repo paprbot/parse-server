@@ -2940,7 +2940,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
 
         }).then((Users) => {
             // The object was retrieved successfully.
-            console.log("Users " + JSON.stringify(Users));
+            //console.log("Users " + JSON.stringify(Users));
 
             if (Users.length > 0) {
 
@@ -2997,7 +2997,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                             //console.log("includesMatch: " + JSON.stringify(includesMatch));
 
                             if(includesMatch === false) {
-                                // this user doesn't have a channelFollow, create one!
+                                // this user doesn't have a workspaceFollow, create one!
 
                                 let userInvites = new USERINVITES();
                                 userInvites.set("email", userEmail);
@@ -3034,7 +3034,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                                                 workspaceName: Workspace.get("workspace_name"),
                                                 username: username,
                                                 workspaceID: workspaceId,
-                                                emails: userEmailArray
+                                                emails: userEmails
 
                                             },{sessionToken: sessionToken}).then(function(result) {
                                                 console.log("sendEmail result: "+ JSON.stringify(result));
@@ -3138,7 +3138,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                                 workspaceName: Workspace.get("workspace_name"),
                                 username: username,
                                 workspaceID: workspaceId,
-                                emails: userEmailArray
+                                emails: userEmails
 
                             },{sessionToken: sessionToken}).then(function(result) {
                                 console.log("sendEmail result: "+ JSON.stringify(result));
