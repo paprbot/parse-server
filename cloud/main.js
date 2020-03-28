@@ -2883,6 +2883,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
 
     let currentUser = request.user;
     let username = currentUser.get("username");
+    let fullname = currentUser.get("fullname");
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
@@ -3032,7 +3033,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                                             Parse.Cloud.run("sendEmail", {
                                                 //user: currentUser,
                                                 workspaceName: Workspace.get("workspace_name"),
-                                                username: username,
+                                                username: fullname,
                                                 workspaceID: workspaceId,
                                                 emails: userEmails
 
@@ -3136,7 +3137,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", function(request, response) {
                             Parse.Cloud.run("sendEmail", {
                                 //user: currentUser,
                                 workspaceName: Workspace.get("workspace_name"),
-                                username: username,
+                                username: fullname,
                                 workspaceID: workspaceId,
                                 emails: userEmails
 
@@ -28285,12 +28286,29 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
     }
 
+    function searchAlgoliaObjectIds (callback) {
+
+
+        indexPosts.search('', {
+            attributesToRetrieve: ['objectId', 'objectID'],
+            filters: 'objectId:' + post.id,
+            hitsPerPage: 1000,
+        }).then(({ hits }) => {
+            console.log(hits);
+
+            return callback (null, hits);
+        });
+
+
+
+    }
+
 
     async.parallel([
         async.apply(deletePostSocial),
         //async.apply(deletePostQuestion),
         async.apply(deletePostMessage),
-        async.apply(generateAlgoliaObjectIDs)
+        async.apply(searchAlgoliaObjectIds)
 
     ], function (err, results) {
         if (err) {
@@ -28715,11 +28733,28 @@ Parse.Cloud.afterDelete('PostMessage', function(request, response) {
 
     }
 
+    function searchAlgoliaObjectIds (callback) {
+
+
+        indexPostMessage.search('', {
+            attributesToRetrieve: ['objectId', 'objectID'],
+            filters: 'objectId:' + postMessage.id,
+            hitsPerPage: 1000,
+        }).then(({ hits }) => {
+            console.log(hits);
+
+            return callback (null, hits);
+        });
+
+
+
+    }
+
 
     async.parallel([
         async.apply(deletePostMessageSocial),
         async.apply(deletePostMessageThreads),
-        async.apply(generateAlgoliaObjectIDs)
+        async.apply(searchAlgoliaObjectIds)
 
     ], function (err, results) {
         if (err) {
@@ -28728,11 +28763,11 @@ Parse.Cloud.afterDelete('PostMessage', function(request, response) {
 
         if (results) {
 
-            let postIdArray = results[2];
-            console.log("postIDArray: " + JSON.stringify(postIdArray));
+            let postMessageIdArray = results[2];
+            //console.log("postIDArray: " + JSON.stringify(postMessageIdArray));
 
             // Remove the object from Algolia
-            indexPosts.deleteObjects(postIdArray, function(err, content) {
+            indexPostMessage.deleteObjects(postMessageIdArray, function(err, content) {
                 if (err) {
                     response.error(err);
                 }
@@ -30288,18 +30323,81 @@ Parse.Cloud.afterDelete('Skill', function(request) {
 
 
 // Delete AlgoliaSearch user object if it's deleted from Parse
-Parse.Cloud.afterDelete('_User', function(request) {
+Parse.Cloud.afterDelete('_User', function(request, response) {
 
-    // Get Algolia objectID
-    var objectID = request.object.id;
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
 
-    // Remove the object from Algolia
-    indexUsers.deleteObject(objectID, function(err, content) {
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.afterDelete-User.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    let USER = Parse.Object.extend("_User");
+    let user = new USER();
+    user.id = request.object;
+
+
+    //console.log("request afterDelete Post: " + JSON.stringify(request));
+
+
+    function searchAlgoliaObjectIds (callback) {
+
+
+        indexUsers.search('', {
+            attributesToRetrieve: ['objectId', 'objectID'],
+            filters: 'objectId:' + user.id,
+            hitsPerPage: 1000,
+        }).then(({ hits }) => {
+            console.log(hits);
+
+            return callback (null, hits);
+        });
+
+
+
+    }
+
+
+    async.parallel([
+        async.apply(searchAlgoliaObjectIds)
+
+    ], function (err, results) {
         if (err) {
-            throw err;
+            return response.error(err);
         }
-        console.log('Parse<>Algolia object deleted');
+
+        if (results) {
+
+            let userIdArray = results[0];
+            //console.log("postIDArray: " + JSON.stringify(postIdArray));
+
+            // Remove the object from Algolia
+            indexUsers.deleteObjects(userIdArray, function(err, content) {
+                if (err) {
+                    return response.error(err);
+                }
+                console.log('Parse<>Algolia user deleted');
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took afterDelete user ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                return response.success(content);
+            });
+
+
+
+        }
+
     });
+
 });
 
 Parse.Cloud.define("sendEmail", function(request, response) {
@@ -30354,7 +30452,7 @@ Parse.Cloud.define("sendEmail", function(request, response) {
                 from: 'developer@papr.ai',
                 // from: 'Papr, Inc.',
                 to :  allMail[key].email,
-                subject : 'Papr.ai',
+                subject : request.params.username + 'invited you to join his group on Papr',
                 html : htmlToSend
             };
             transporter.sendMail(mailOptions).then(function(info){
