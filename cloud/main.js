@@ -588,6 +588,124 @@ Parse.Cloud.define("setAsExpert", function(request, response) {
 
 }, {useMasterKey: true});
 
+// cloud API and function to get position of postMessages in Algolia
+Parse.Cloud.define('getPostMessagePosition', async request => {
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.cloudFunction.getPostMessagePosition.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    //get request params
+    let objectId = request.params.objectId;
+    //let WorkspaceId = request.params.workspaceId;
+
+    //console.log("currentUser: " + JSON.stringify(currentUser));
+
+    var clientUser = algoliasearch('K3ET7YKLTI', currentUser.get("algoliaSecureAPIKey"));
+
+    let indexPostMessageUser = clientUser.initIndex('prod_postMessages');
+
+    return await indexPostMessageUser.findObject(hit => hit.objectId == objectId, {
+        query: ""
+    }).then(obj => {
+        console.log(obj);
+        return obj;
+
+        //return response.success(obj);
+    }).catch((error) => {
+        console.log(error);
+        throw error;
+    });
+});
+
+Parse.Cloud.define('getPostPosition', async request => {
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.cloudFunction.getPostPosition.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    //get request params
+    let objectId = request.params.objectId;
+    //let WorkspaceId = request.params.workspaceId;
+
+    //console.log("currentUser: " + JSON.stringify(currentUser));
+
+    var clientUser = algoliasearch('K3ET7YKLTI', currentUser.get("algoliaSecureAPIKey"));
+
+    let indexPostUser = clientUser.initIndex('prod_posts');
+
+    return await indexPostUser.findObject(hit => hit.objectId == objectId, {
+        query: ""
+    }).then(obj => {
+        console.log(obj);
+        return obj;
+
+        //return response.success(obj);
+    }).catch((error) => {
+        console.log(error);
+        throw error;
+    });
+});
+
+Parse.Cloud.define('getWorkspacePosition', async request => {
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.cloudFunction.getWorkspacePosition.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    //get request params
+    let objectId = request.params.objectId;
+    //let WorkspaceId = request.params.workspaceId;
+
+    //console.log("currentUser: " + JSON.stringify(currentUser));
+
+    var clientUser = algoliasearch('K3ET7YKLTI', currentUser.get("algoliaSecureAPIKey"));
+
+    let indexWorkspaceUser = clientUser.initIndex('prod_workspaces');
+
+    return await indexWorkspaceUser.findObject(hit => hit.objectId == objectId, {
+        query: ""
+    }).then(obj => {
+        console.log(obj);
+        return obj;
+
+        //return response.success(obj);
+    }).catch((error) => {
+        console.log(error);
+        throw error;
+    });
+});
+
 // cloud API and function to removeExpert to a workspace
 Parse.Cloud.define("removeExpert", function(request, response) {
 
@@ -8312,9 +8430,10 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
     }
 
     let postMessage = req.object;
+    let postOriginalMessage = req.original;
     let text = postMessage.get("message");
     let workspace = postMessage.get("workspace");
-    let post = postMessage.get("post");
+    let post = postOriginalMessage.get("post");
     console.log("postMessage: " + JSON.stringify(postMessage));
 
     let channel = postMessage.get("channel");
