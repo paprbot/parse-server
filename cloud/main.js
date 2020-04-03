@@ -616,7 +616,8 @@ Parse.Cloud.define('getPostMessagePosition', async request => {
     let indexPostMessageUser = clientUser.initIndex('prod_postMessages');
 
     return await indexPostMessageUser.findObject(hit => hit.objectId == objectId, {
-        query: ""
+        query: "",
+        hitsPerPage: 20
     }).then(obj => {
         console.log(obj);
         return obj;
@@ -655,7 +656,8 @@ Parse.Cloud.define('getPostPosition', async request => {
     let indexPostUser = clientUser.initIndex('prod_posts');
 
     return await indexPostUser.findObject(hit => hit.objectId == objectId, {
-        query: ""
+        query: "",
+        hitsPerPage: 20
     }).then(obj => {
         console.log(obj);
         return obj;
@@ -694,7 +696,8 @@ Parse.Cloud.define('getWorkspacePosition', async request => {
     let indexWorkspaceUser = clientUser.initIndex('prod_workspaces');
 
     return await indexWorkspaceUser.findObject(hit => hit.objectId == objectId, {
-        query: ""
+        query: "",
+        hitsPerPage: 20
     }).then(obj => {
         console.log(obj);
         return obj;
@@ -30522,12 +30525,7 @@ Parse.Cloud.afterDelete('_User', function(request, response) {
 Parse.Cloud.define("sendEmail", function(request, response) {
     // Email configuration
     var transporter = nodemailer.createTransport({
-        /*host: 'smtp.gmail.com',
-        port: 587,
-        auth: {
-            user: 'apikey',
-            pass: '341422f3b5a499c0c3a311c4bd42e851-us15'
-        }*/
+
         host: 'smtp.sendgrid.net',
         port: 465,
         secure: true,
@@ -30546,7 +30544,7 @@ Parse.Cloud.define("sendEmail", function(request, response) {
                 callback(null, html);
             }
         });
-    }
+    };
     // var i = 0;
     let allMail = request.params.emails;
     var counter = require('counter'),
@@ -30556,7 +30554,12 @@ Parse.Cloud.define("sendEmail", function(request, response) {
         console.log("Total count : ", Object.keys(allMail).length);
     }).start();
     var flag = 0;
-    for (key in allMail) {
+    for (var j = 0; j < allMail.length; j++) {
+
+        let emailSingle = allMail[j];
+
+        console.log("email: " + JSON.stringify(allMail[j]));
+        console.log("emailSingle: " + JSON.stringify(emailSingle.email));
 
         readHTMLFile(__dirname + '/templates/email-template.html', function(err, html) {
             var template = handlebars.compile(html);
@@ -30564,28 +30567,34 @@ Parse.Cloud.define("sendEmail", function(request, response) {
                 workspace : request.params.workspaceName,
                 username : request.params.username,
                 workspaceId : request.params.workspaceID,
-                email :  allMail[key].email
-            }
+                email :  emailSingle.email
+            };
             var htmlToSend = template(temp);
             var mailOptions = {
                 from: 'developer@papr.ai',
                 // from: 'Papr, Inc.',
-                to :  allMail[key].email,
-                subject : request.params.username + 'invited you to join his group on Papr',
+                to :  emailSingle.email,
+                subject : request.params.username + ' invited you to join his Workspace on Papr',
                 html : htmlToSend
             };
             transporter.sendMail(mailOptions).then(function(info){
-                console.log("Mail sent ", info.response);
+                console.log("Mail sent: " + JSON.stringify(emailSingle.email) + info.response);
             }).catch(function(err){
                 console.log(err);
                 response.error(err);
             });
-            count.value += 1;
-            if(Object.keys(allMail).length == count.value){
+
+            if (j === allMail.length - 1) {
                 response.success("Mail sent");
             }
+
+
         });
+
+
     }
+
+
 });
 
 Parse.Cloud.define("sendNotification", function(request, response) {
