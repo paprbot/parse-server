@@ -588,8 +588,7 @@ Parse.Cloud.define("setAsExpert", function(request, response) {
 
 }, {useMasterKey: true});
 
-// cloud API and function to get position of postMessages in Algolia
-Parse.Cloud.define('getPostMessagePosition', async request => {
+/*Parse.Cloud.define('getPostMessagePosition', function(request, response) {
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
@@ -607,6 +606,11 @@ Parse.Cloud.define('getPostMessagePosition', async request => {
 
     //get request params
     let objectId = request.params.objectId;
+    let HitsPerPage = request.params.hitsPerPage;
+    HitsPerPage = HitsPerPage? HitsPerPage : 20;
+
+    let POSTMESSAGE = Parse.Object.extend("PostMessage");
+
     //let WorkspaceId = request.params.workspaceId;
 
     //console.log("currentUser: " + JSON.stringify(currentUser));
@@ -615,12 +619,83 @@ Parse.Cloud.define('getPostMessagePosition', async request => {
 
     let indexPostMessageUser = clientUser.initIndex('prod_postMessages');
 
-    return await indexPostMessageUser.findObject(hit => hit.objectId == objectId, {
+    indexPostMessageUser.findObject(hit => hit.objectId === objectId, {
         query: "",
-        hitsPerPage: 20
+        hitsPerPage: HitsPerPage
+
     }).then(obj => {
-        console.log(obj);
-        return obj;
+        //console.log(obj);
+
+        let PostMessage = new POSTMESSAGE();
+        PostMessage.id = obj.object.objectId;
+        PostMessage = PostMessage.toJSON();
+        PostMessage.page = obj.page;
+        PostMessage.position = obj.position;
+        PostMessage.hitsPerPage = HitsPerPage;
+
+        console.log("PostMessage Position: " + JSON.stringify(PostMessage));
+
+        return response.success(PostMessage);
+
+        //return response.success(obj);
+    }).catch((error) => {
+        console.log(error);
+        return response.error(error);
+    });
+
+
+
+}, {useMasterKey: true});*/
+
+// cloud API and function to get position of postMessages in Algolia
+Parse.Cloud.define('getPostMessagePosition', async request => {
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        return (JSON.stringify({
+            code: 'PAPR.ERROR.cloudFunction.getPostMessagePosition.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+
+    }
+
+    //get request params
+    let objectId = request.params.objectId;
+    let HitsPerPage = request.params.hitsPerPage;
+    HitsPerPage = HitsPerPage? HitsPerPage : 20;
+
+    let POSTMESSAGE = Parse.Object.extend("PostMessage");
+
+    //let WorkspaceId = request.params.workspaceId;
+
+    //console.log("currentUser: " + JSON.stringify(currentUser));
+
+    var clientUser = algoliasearch('K3ET7YKLTI', currentUser.get("algoliaSecureAPIKey"));
+
+    let indexPostMessageUser = clientUser.initIndex('prod_postMessages');
+
+    return await indexPostMessageUser.findObject(hit => hit.objectId === objectId, {
+        query: "",
+        hitsPerPage: HitsPerPage
+
+    }).then(obj => {
+        //console.log(obj);
+
+        let PostMessage = new POSTMESSAGE();
+        PostMessage.id = obj.object.objectId;
+        PostMessage = PostMessage.toJSON();
+        PostMessage.page = obj.page;
+        PostMessage.position = obj.position;
+        PostMessage.hitsPerPage = HitsPerPage;
+
+        console.log("PostMessage Position: " + JSON.stringify(PostMessage));
+
+        return PostMessage;
 
         //return response.success(obj);
     }).catch((error) => {
@@ -629,7 +704,7 @@ Parse.Cloud.define('getPostMessagePosition', async request => {
     });
 });
 
-Parse.Cloud.define('getPostPosition', async request => {
+/*Parse.Cloud.define('getPostPosition', function(request, response) {
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
     let time = process.hrtime();
@@ -647,7 +722,11 @@ Parse.Cloud.define('getPostPosition', async request => {
 
     //get request params
     let objectId = request.params.objectId;
+    let HitsPerPage = request.params.hitsPerPage;
+    HitsPerPage = HitsPerPage? HitsPerPage : 20;
+
     //let WorkspaceId = request.params.workspaceId;
+    let POST = Parse.Object.extend("Post");
 
     //console.log("currentUser: " + JSON.stringify(currentUser));
 
@@ -655,12 +734,78 @@ Parse.Cloud.define('getPostPosition', async request => {
 
     let indexPostUser = clientUser.initIndex('prod_posts');
 
-    return await indexPostUser.findObject(hit => hit.objectId == objectId, {
+    indexPostUser.findObject(hit => hit.objectId === objectId, {
         query: "",
-        hitsPerPage: 20
+        hitsPerPage: HitsPerPage
     }).then(obj => {
-        console.log(obj);
-        return obj;
+        //console.log(obj);
+
+        let PostPosition = new POST();
+        PostPosition.id = obj.object.objectId;
+        PostPosition = PostPosition.toJSON();
+        PostPosition.page = obj.page;
+        PostPosition.position = obj.position;
+        PostPosition.hitsPerPage = HitsPerPage;
+
+        console.log("Post Position: " + JSON.stringify(PostPosition));
+
+        return response.success(PostPosition);
+
+        //return response.success(obj);
+    }).catch((error) => {
+        console.log(error);
+        return response.error(error);
+    });
+
+
+}, {useMasterKey: true});*/
+
+
+Parse.Cloud.define('getPostPosition', async request => {
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        return (JSON.stringify({
+            code: 'PAPR.ERROR.cloudFunction.getPostPosition.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));;
+    }
+
+    //get request params
+    let objectId = request.params.objectId;
+    let HitsPerPage = request.params.hitsPerPage;
+    HitsPerPage = HitsPerPage? HitsPerPage : 20;
+
+    //let WorkspaceId = request.params.workspaceId;
+    let POST = Parse.Object.extend("Post");
+
+    //console.log("currentUser: " + JSON.stringify(currentUser));
+
+    var clientUser = algoliasearch('K3ET7YKLTI', currentUser.get("algoliaSecureAPIKey"));
+
+    let indexPostUser = clientUser.initIndex('prod_posts');
+
+    return await indexPostUser.findObject(hit => hit.objectId === objectId, {
+        query: "",
+        hitsPerPage: HitsPerPage
+    }).then(obj => {
+        //console.log(obj);
+
+        let Post = new POST();
+        Post.id = obj.object.objectId;
+        Post = Post.toJSON();
+        Post.page = obj.page;
+        Post.position = obj.position;
+        Post.hitsPerPage = HitsPerPage;
+
+        console.log("Post Position: " + JSON.stringify(Post));
+
+        return Post;
 
         //return response.success(obj);
     }).catch((error) => {
@@ -668,6 +813,62 @@ Parse.Cloud.define('getPostPosition', async request => {
         throw error;
     });
 });
+
+/*Parse.Cloud.define('getWorkspacePosition', function(request, response) {
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        response.error(JSON.stringify({
+            code: 'PAPR.ERROR.cloudFunction.getPostPosition.UNAUTHENTICATED_USER',
+            message: 'Unauthenticated user.'
+        }));
+        return;
+    }
+
+    //get request params
+    let objectId = request.params.objectId;
+    let HitsPerPage = request.params.hitsPerPage;
+    HitsPerPage = HitsPerPage? HitsPerPage : 20;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+
+
+    //console.log("currentUser: " + JSON.stringify(currentUser));
+
+    var clientUser = algoliasearch('K3ET7YKLTI', currentUser.get("algoliaSecureAPIKey"));
+
+    let indexWorkspaceUser = clientUser.initIndex('prod_workspaces');
+
+    indexWorkspaceUser.findObject(hit => hit.objectId === objectId, {
+        query: "",
+        hitsPerPage: HitsPerPage
+    }).then(obj => {
+
+        let Workspace = new WORKSPACE();
+        Workspace.id = obj.object.objectId;
+        Workspace = Workspace.toJSON();
+        Workspace.page = obj.page;
+        Workspace.position = obj.position;
+        Workspace.hitsPerPage = HitsPerPage;
+
+        console.log("Workspace Position: " + JSON.stringify(Workspace));
+
+        return response.success(Workspace);
+
+        //return response.success(obj);
+    }).catch((error) => {
+        console.log(error);
+        return response.error(error);
+    });
+
+
+}, {useMasterKey: true});*/
+
 
 Parse.Cloud.define('getWorkspacePosition', async request => {
     const NS_PER_SEC = 1e9;
@@ -678,16 +879,20 @@ Parse.Cloud.define('getWorkspacePosition', async request => {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
+        return (JSON.stringify({
             code: 'PAPR.ERROR.cloudFunction.getWorkspacePosition.UNAUTHENTICATED_USER',
             message: 'Unauthenticated user.'
         }));
-        return;
     }
 
     //get request params
     let objectId = request.params.objectId;
     //let WorkspaceId = request.params.workspaceId;
+    let HitsPerPage = request.params.hitsPerPage;
+    HitsPerPage = HitsPerPage? HitsPerPage : 20;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+
 
     //console.log("currentUser: " + JSON.stringify(currentUser));
 
@@ -695,12 +900,20 @@ Parse.Cloud.define('getWorkspacePosition', async request => {
 
     let indexWorkspaceUser = clientUser.initIndex('prod_workspaces');
 
-    return await indexWorkspaceUser.findObject(hit => hit.objectId == objectId, {
+    return await indexWorkspaceUser.findObject(hit => hit.objectId === objectId, {
         query: "",
-        hitsPerPage: 20
+        hitsPerPage: HitsPerPage
     }).then(obj => {
-        console.log(obj);
-        return obj;
+
+        let Workspace = new WORKSPACE();
+        Workspace.id = obj.object.objectId;
+        Workspace = Workspace.toJSON();
+        Workspace.page = obj.page;
+        Workspace.position = obj.position;
+
+        console.log("Workspace Position: " + JSON.stringify(Workspace));
+
+        return Workspace;
 
         //return response.success(obj);
     }).catch((error) => {
@@ -2022,6 +2235,9 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                                                         notification.set("workspace", Workspace);
                                                         notification.set("channel", Channel);
                                                         notification.set("type", 'addToChannel'); // mentions in post or postMessage
+                                                        notification.set("userFromDisplayName", currentUser.get("displayName"));
+                                                        notification.set("messageTitle", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'added you to this channel: ');
+                                                        notification.set("messageDescription", ChannelObject.get("name"));
                                                         notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this channel: ' + ChannelObject.get("name"));
 
                                                         notifications.add(notification);
@@ -2225,6 +2441,9 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
                                         notification.set("workspace", Workspace);
                                         notification.set("channel", Channel);
                                         notification.set("type", 'addToChannel'); // mentions in post or postMessage
+                                        notification.set("userFromDisplayName", currentUser.get("displayName"));
+                                        notification.set("messageTitle", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'added you to this channel: ');
+                                        notification.set("messageDescription", channelObject.get("name"));
                                         notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this channel: ' + channelObject.get("name"));
 
                                         notifications.add(notification);
@@ -2569,6 +2788,9 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                                                     notification.set("userTo", userTo);
                                                     notification.set("workspace", Workspace);
                                                     notification.set("type", 'addToWorkspace'); // mentions in post or postMessage
+                                                    notification.set("userFromDisplayName", currentUser.get("displayName"));
+                                                    notification.set("messageTitle", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'added you to this workspace: ');
+                                                    notification.set("messageDescription", WorkspaceObject.get("workspace_name"));
                                                     notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + WorkspaceObject.get("workspace_name"));
 
                                                     notifications.add(notification);
@@ -2680,6 +2902,9 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                                             notification.set("userTo", userTo);
                                             notification.set("workspace", Workspace);
                                             notification.set("type", 'addToWorkspace'); // mentions in post or postMessage
+                                            notification.set("userFromDisplayName", currentUser.get("displayName"));
+                                            notification.set("messageTitle", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'added you to this workspace: ');
+                                            notification.set("messageDescription", WorkspaceObject.get("workspace_name"));
                                             notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + WorkspaceObject.get("workspace_name"));
 
                                             notifications.add(notification);
@@ -2864,6 +3089,9 @@ Parse.Cloud.define("addPeopleToWorkspace", function(request, response) {
                                         notification.set("userTo", userTo);
                                         notification.set("workspace", Workspace);
                                         notification.set("type", 'addToWorkspace'); // mentions in post or postMessage
+                                        notification.set("userFromDisplayName", currentUser.get("displayName"));
+                                        notification.set("messageTitle", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'added you to this workspace: ');
+                                        notification.set("messageDescription", Workspace.get("workspace_name"));
                                         notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this workspace: ' + Workspace.get("workspace_name"));
 
                                         notifications.add(notification);
@@ -8032,7 +8260,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         // if there is a post that got added and no mentions from client then add mentions
         if (post.isNew() && !post.mentions) {
 
-            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\]|\[@[a-z\d]+( |-|_)[a-z\d]+:[a-z\d]+\])/gi);
+            mentions = text.match(/(^|\s)(\[@[a-zA-Z\d]+:[a-zA-Z\d]+\]|\[@[a-zA-Z\d]+( |-|_|.)[a-zA-Z\d]+:[a-zA-Z\d]+\])/gi);
             //console.log("mentions: " + JSON.stringify(mentions));
             //mentions = _.map(mentions, toLowerCase);
             if (mentions) {
@@ -8041,8 +8269,8 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
                     //console.log("mention: " + JSON.stringify(mention));
 
-                    mention = mention.toString().match(/([a-z\d]+\])/gi);
-                    mention = mention.toString().match(/([a-z\d]+[^\]])/gi, '');
+                    mention = mention.toString().match(/([a-zA-Z\d]+\])/gi);
+                    mention = mention.toString().match(/([a-zA-Z\d]+[^\]])/gi, '');
 
                     //console.log("mention 1: " + JSON.stringify(mention));
                     return mention[0];
@@ -8068,7 +8296,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
         // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
         else if (!post.isNew() && post.dirty("text") && !post.dirty("mentions")) {
 
-            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\]|\[@[a-z\d]+( |-|_)[a-z\d]+:[a-z\d]+\])/gi);
+            mentions = text.match(/(^|\s)(\[@[a-zA-Z\d]+:[a-zA-Z\d]+\]|\[@[a-zA-Z\d]+( |-|_|.)[a-zA-Z\d]+:[a-zA-Z\d]+\])/gi);
             //console.log("mentions: " + JSON.stringify(mentions));
             //mentions = _.map(mentions, toLowerCase);
             if (mentions) {
@@ -8077,8 +8305,8 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
                     //console.log("mention: " + JSON.stringify(mention));
 
-                    mention = mention.toString().match(/([a-z\d]+\])/gi);
-                    mention = mention.toString().match(/([a-z\d]+[^\]])/gi, '');
+                    mention = mention.toString().match(/([a-zA-Z\d]+\])/gi);
+                    mention = mention.toString().match(/([a-zA-Z\d]+[^\]])/gi, '');
 
                     //console.log("mention 1: " + JSON.stringify(mention));
                     return mention[0];
@@ -8436,9 +8664,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
     let postOriginalMessage = req.original;
     let text = postMessage.get("message");
     let workspace = postMessage.get("workspace");
-    let post = postOriginalMessage.get("post");
-    console.log("postMessage: " + JSON.stringify(postMessage));
-
+    let post = postMessage.get("post");
     let channel = postMessage.get("channel");
     //console.log("channel_post: " + JSON.stringify(channel));
     let parentPostMessage = postMessage.get("parentPostMessage");
@@ -8675,7 +8901,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
         // if there is a post that got added and no mentions from client then add mentions
         if (postMessage.isNew() && !postMessage.mentions) {
 
-            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
+            mentions = text.match(/(^|\s)(\[@[a-zA-Z\d]+:[a-zA-Z\d]+\]|\[@[a-zA-Z\d]+( |-|_|.)[a-zA-Z\d]+:[a-zA-Z\d]+\])/gi);
             //console.log("mentions: " + JSON.stringify(mentions));
             //mentions = _.map(mentions, toLowerCase);
             if (mentions) {
@@ -8684,8 +8910,8 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
 
                     //console.log("mention: " + JSON.stringify(mention));
 
-                    mention = mention.toString().match(/([a-z\d]+\])/gi);
-                    mention = mention.toString().match(/([a-z\d]+[^\]])/gi, '');
+                    mention = mention.toString().match(/([a-zA-Z\d]+\])/gi);
+                    mention = mention.toString().match(/([a-zA-Z\d]+[^\]])/gi, '');
 
                     //console.log("mention 1: " + JSON.stringify(mention));
                     return mention[0];
@@ -8711,7 +8937,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
         // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
         else if (!postMessage.isNew() && postMessage.dirty("message") && !postMessage.dirty("mentions")) {
 
-            mentions = text.match(/(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi);
+            mentions = text.match(/(^|\s)(\[@[a-zA-Z\d]+:[a-zA-Z\d]+\]|\[@[a-zA-Z\d]+( |-|_|.)[a-zA-Z\d]+:[a-zA-Z\d]+\])/gi);
             //console.log("mentions: " + JSON.stringify(mentions));
             //mentions = _.map(mentions, toLowerCase);
             if (mentions) {
@@ -8720,8 +8946,8 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
 
                     //console.log("mention: " + JSON.stringify(mention));
 
-                    mention = mention.toString().match(/([a-z\d]+\])/gi);
-                    mention = mention.toString().match(/([a-z\d]+[^\]])/gi, '');
+                    mention = mention.toString().match(/([a-zA-Z\d]+\])/gi);
+                    mention = mention.toString().match(/([a-zA-Z\d]+[^\]])/gi, '');
 
                     //console.log("mention 1: " + JSON.stringify(mention));
                     return mention[0];
@@ -20512,212 +20738,212 @@ function SendPostNotifications (request, response) {
 
     if (mentions.length > 0) {
 
-        let WORKSPACENOTIFICATIONSETTING = Parse.Object.extend("WorkSpaceNotificationSetting");
-        let queryWorkspaceNotificationSetting = new Parse.Query(WORKSPACENOTIFICATIONSETTING);
-        queryWorkspaceNotificationSetting.equalTo("workspace", Workspace);
-        queryWorkspaceNotificationSetting.equalTo("user", CurrentUser);
+        let notifications = new Set();
 
-        //console.log("Request: " + JSON.stringify(request));
-        //console.log("objectID: " + objectToSave.objectId);
-        //console.log("objectID: " + objectToSave.user.objectId);
+        for (let i = 0; i < mentions.length; i++) {
 
-        queryWorkspaceNotificationSetting.first({
-            useMasterKey: true
-            //sessionToken: sessionToken
-        }).then((WorkspaceNotificationSetting) => {
+            let userId = mentions[i];
+            console.log("userId: " + JSON.stringify(userId));
 
-            if (WorkspaceNotificationSetting) {
+            let userTo = new USER();
+            userTo.id = userId;
 
-                if (WorkspaceNotificationSetting.get("muteWorkspace") === true || WorkspaceNotificationSetting.get("onlyMentionMe") === false) {
+            let NOTIFICATION = Parse.Object.extend("Notification");
+            let notification = new NOTIFICATION();
 
-                    let notificationArray = [];
+            notification.set("isDelivered", false);
+            notification.set("hasSent", false);
+            notification.set("isRead", false);
+            notification.set("status", 0);
+            notification.set("userFrom", CurrentUser);
+            notification.set("userTo", userTo);
+            notification.set("workspace", Workspace);
+            notification.set("channel", channel);
+            notification.set("post", post);
+            notification.set("type", 'post'); // mentions in post or postMessage
+            notification.set("userFromDisplayName", currentUser.get("displayName"));
+            notification.set("messageTitle", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'mentioned you in a post: ');
+            notification.set("messageDescription", postTitle);
+            notification.set("message", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'mentioned you in a post: ' + postTitle);
+
+            notifications.add(notification);
+
+            //console.log("notification: " + JSON.stringify(notification));
+
+            if (i === mentions.length - 1) {
+
+
+                //let dupeArray = [3,2,3,3,5,2];
+                let notificationArray = Array.from(new Set(notifications));
+
+                //console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                if (notificationArray.length > 0) {
+
+                    Parse.Object.saveAll(notificationArray, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then(function (result) {
+                        // if we got 500 or more results then we know
+                        // that we have more results
+                        // otherwise we finish
+
+
+                    }, function (err) {
+                        // error
+                        console.error(err);
+
+                        return (err);
+
+                    });
 
                     return response.success(notificationArray);
 
-                }  else {
 
-                    let notifications = new Set();
+                } else {
 
-                    for (let i = 0; i < mentions.length; i++) {
-
-                        let userId = mentions[i];
-                        console.log("userId: " + JSON.stringify(userId));
-
-                        let userTo = new USER();
-                        userTo.id = userId;
-
-                        let NOTIFICATION = Parse.Object.extend("Notification");
-                        let notification = new NOTIFICATION();
-
-                        notification.set("isDelivered", false);
-                        notification.set("hasSent", false);
-                        notification.set("isRead", false);
-                        notification.set("status", 0);
-                        notification.set("userFrom", CurrentUser);
-                        notification.set("userTo", userTo);
-                        notification.set("workspace", Workspace);
-                        notification.set("channel", channel);
-                        notification.set("post", post);
-                        notification.set("type", '5'); // mentions in post or postMessage
-                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a post: ' + postTitle);
-
-                        notifications.add(notification);
-
-                        //console.log("notification: " + JSON.stringify(notification));
-
-                        if (i === mentions.length - 1) {
-
-
-                            //let dupeArray = [3,2,3,3,5,2];
-                            let notificationArray = Array.from(new Set(notifications));
-
-                            //console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
-
-                            if (notificationArray.length > 0) {
-
-                                Parse.Object.saveAll(notificationArray, {
-
-                                    useMasterKey: true
-                                    //sessionToken: sessionToken
-
-                                }).then(function(result) {
-                                    // if we got 500 or more results then we know
-                                    // that we have more results
-                                    // otherwise we finish
-
-
-                                }, function(err) {
-                                    // error
-                                    console.error(err);
-
-                                    return (err);
-
-                                });
-
-                                return response.success(notificationArray);
-
-
-                            }
-
-
-
-
-
-
-                        }
-
-                    }
-
-
+                    return response.success(notificationArray);
                 }
 
-
-            } else {
-
-                let notifications = new Set();
-
-                for (let i = 0; i < mentions.length; i++) {
-
-                    let userId = mentions[i];
-                    //console.log("userId: " + JSON.stringify(userId));
-
-                    let userTo = new USER();
-                    userTo.id = userId;
-
-                    let NOTIFICATION = Parse.Object.extend("Notification");
-                    let notification = new NOTIFICATION();
-
-                    notification.set("isDelivered", false);
-                    notification.set("hasSent", false);
-                    notification.set("isRead", false);
-                    notification.set("status", 0);
-                    notification.set("userFrom", CurrentUser);
-                    notification.set("userTo", userTo);
-                    notification.set("workspace", Workspace);
-                    notification.set("channel", channel);
-                    notification.set("post", post);
-                    notification.set("type", '5'); // mentions in post or postMessage
-                    notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a post: ' + postTitle);
-
-                    notifications.add(notification);
-
-                    //console.log("notification: " + JSON.stringify(notification));
-
-                    if (i === mentions.length - 1) {
-
-
-                        //let dupeArray = [3,2,3,3,5,2];
-                        let notificationArray = Array.from(new Set(notifications));
-
-                        //console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
-
-                        if (notificationArray.length > 0) {
-
-                            Parse.Object.saveAll(notificationArray, {
-
-                                useMasterKey: true
-                                //sessionToken: sessionToken
-
-                            }).then(function(result) {
-                                // if we got 500 or more results then we know
-                                // that we have more results
-                                // otherwise we finish
-
-
-                            }, function(err) {
-                                // error
-                                console.error(err);
-
-                                return (err);
-
-                            });
-
-                            return response.success(notificationArray);
-
-
-                        }
-
-
-
-
-
-
-                    }
-
-                }
 
             }
 
 
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            console.log(error);
-            return response.error(error);
-        }, {
-
-            useMasterKey: true
-            //sessionToken: sessionToken
-
-        });
-
-
-
-
+        }
     }
+
     else {
 
-        // no need to send notifications
-
-
-        let notificationArray = [];
-        return response.success(notificationArray);
-
-
+        return response.success();
     }
 
 
 }
+
+function SendPostMessageNotifications (request, response) {
+
+    let currentUser = request['user'];
+    //console.log("SendNotifications user: " + JSON.stringify(currentUser));
+    //console.log("::Starting splitPostAndIndex:: " + JSON.stringify(request));
+
+    let post = request['post'];
+    //console.log("SendNotifications post: " + JSON.stringify(post));
+
+    let postMessage = request['postMessage'];
+    //console.log("SendNotifications postMessage: " + JSON.stringify(postMessage));
+
+    let workspace = request['workspace'];
+    //console.log("SendPostNotifications workspace: " + JSON.stringify(workspace));
+
+    let channel = request['channel'];
+    //console.log("SendPostNotifications channel: " + JSON.stringify(channel));
+
+    let postMessageDescription = request['postMessageDescription'];
+    //console.log("SendPostNotifications postTitle: " + JSON.stringify(postTitle));
+
+    let mentions = request['mentions'];
+    //console.log("SendNotifications mentions: " + JSON.stringify(mentions));
+
+    //console.log("starting SendNotifications function: " + JSON.stringify(mentions.length) );
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let Workspace = new WORKSPACE();
+    Workspace.id = workspace.id;
+
+    let USER = Parse.Object.extend("_User");
+    let CurrentUser = new USER();
+    CurrentUser.id = currentUser.id;
+
+
+    if (mentions.length > 0) {
+
+
+        let notifications = new Set();
+
+        for (let i = 0; i < mentions.length; i++) {
+
+            let userId = mentions[i];
+            // console.log("userId: " + JSON.stringify(userId));
+
+            let userTo = new USER();
+            userTo.id = userId;
+
+            let NOTIFICATION = Parse.Object.extend("Notification");
+            let notification = new NOTIFICATION();
+
+            notification.set("isDelivered", false);
+            notification.set("hasSent", false);
+            notification.set("isRead", false);
+            notification.set("status", 0);
+            notification.set("userFrom", CurrentUser);
+            notification.set("userTo", userTo);
+            notification.set("workspace", Workspace);
+            notification.set("channel", channel);
+            notification.set("post", post);
+            notification.set("postMessage", postMessage);
+            notification.set("type", 'message'); // mentions in post or postMessage
+            notification.set("userFromDisplayName", currentUser.get("displayName"));
+            notification.set("messageTitle", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'mentioned you in a message: ');
+            notification.set("messageDescription", postMessage.get("message"));
+            notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a message: ' + postMessage.get("message"));
+
+            notifications.add(notification);
+
+            //console.log("notification: " + JSON.stringify(notification));
+
+            if (i === mentions.length - 1) {
+
+
+                //let dupeArray = [3,2,3,3,5,2];
+                let notificationArray = Array.from(new Set(notifications));
+
+                //console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+
+                if (notificationArray.length > 0) {
+
+                    Parse.Object.saveAll(notificationArray, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }).then(function (result) {
+                        // if we got 500 or more results then we know
+                        // that we have more results
+                        // otherwise we finish
+
+
+                    }, function (err) {
+                        // error
+                        console.error(err);
+
+                        return (err);
+
+                    });
+
+                    return response.success(notificationArray);
+
+
+                } else {
+
+                    return response.success(notificationArray);
+                }
+
+
+            }
+
+
+
+
+        }
+    } else {
+
+        return response.success();
+    }
+
+
+}
+
 
 function splitPostMessageAndIndex (request, response) {
 
@@ -22868,7 +23094,7 @@ Parse.Cloud.beforeSave('Notification', function(request, response) {
         //console.log("isBookmarked: "+postSocial.get("isBookmarked"));
         notification.set("isNew", true);
 
-        if (!notification.get("channel") && ((notification.get("type") === '5') || (notification.get("type") === 'addToChannel')) ) {
+        if (!notification.get("channel") && ((notification.get("type") === 'post') || (notification.get("type") === 'addToChannel') || (notification.get("type") === 'message') || (notification.get("type") === 'message'))  ) {
             return response.error("Channel is required.");
         }
         if (!notification.get("userFrom")) {
@@ -22880,7 +23106,7 @@ Parse.Cloud.beforeSave('Notification', function(request, response) {
         if (!notification.get("workspace")) {
             return response.error("Workspace is required.");
         }
-        if (!notification.get("post") && notification.get("type") === '5') {
+        if (!notification.get("post") && (notification.get("type") === 'post') || notification.get("type") === 'message') {
             return response.error("Post is required.");
         }
 
@@ -23064,9 +23290,71 @@ Parse.Cloud.beforeSave('Notification', function(request, response) {
 
                 }
 
+                function checkNotificationSettings (callback) {
+
+                    let WORKSPACENOTIFICATIONSETTING = Parse.Object.extend("WorkSpaceNotificationSetting");
+                    let queryWorkspaceNotificationSetting = new Parse.Query(WORKSPACENOTIFICATIONSETTING);
+                    queryWorkspaceNotificationSetting.equalTo("workspace", Workspace);
+                    queryWorkspaceNotificationSetting.equalTo("user", UserTo);
+
+                    //console.log("Request: " + JSON.stringify(request));
+                    //console.log("objectID: " + objectToSave.objectId);
+                    //console.log("objectID: " + objectToSave.user.objectId);
+
+                    queryWorkspaceNotificationSetting.first({
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+                    }).then((WorkspaceNotificationSetting) => {
+
+                        if (WorkspaceNotificationSetting) {
+
+                            if (WorkspaceNotificationSetting.get("muteWorkspace") === true || WorkspaceNotificationSetting.get("onlyMentionMe") === false) {
+
+                                notification.set("hasSent", true);
+
+                                // don't send device notificcations, set this flag to true
+
+                                return callback (null, WorkspaceNotificationSetting);
+
+                            }  else {
+
+
+                                // send notifications don't set any flag it's already sends notifications
+
+                                return callback (null, WorkspaceNotificationSetting);
+
+
+                            }
+
+
+                        }
+                        else {
+
+                            // do nothing send notifications by default to user
+                            return callback (null, WorkspaceNotificationSetting);
+
+                        }
+
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        console.log(error);
+                        return callback (error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+
+                }
+
                 async.parallel([
                     async.apply(setWorkspaceFollower),
-                    async.apply(setChannelFollower)
+                    async.apply(setChannelFollower),
+                    async.apply(checkNotificationSettings)
 
 
                 ], function (err, results) {
@@ -24626,6 +24914,8 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
 
         currentUser = currentUser ? currentUser : user;
 
+        let postMessageDescription = PostMessage.get("message");
+
 
         let CHANNEL = Parse.Object.extend("Channel");
         let channel = new CHANNEL();
@@ -24886,7 +25176,7 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                     notification.set("channel", channel);
                     notification.set("post", Post);
                     notification.set("postMessage", postMessage);
-                    notification.set("type", '5'); // mentions in post or postMessage
+                    notification.set("type", 'message'); // mentions in post or postMessage
                     notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'mentioned you in a message: ' + postMessage.get("message"));
 
                     notifications.add(notification);
@@ -24992,12 +25282,21 @@ Parse.Cloud.afterSave('PostMessage', function(request, response) {
                 splitPostMessageAndIndex({'user':currentUser, 'object':postMessageToSave, 'topAnswerForQuestionPostMessage':topAnswerForQuestionPostMessage, 'parentPostMessageUser':parentPostMessageUser}, {
                     success: function (count) {
 
-                        let Final_Time = process.hrtime(time);
-                        console.log(`splitPostMessageAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+                        SendPostMessageNotifications({'user':currentUser, 'post':Post, 'postMessage':postMessage, 'postMessageDescription':postMessageDescription, 'mentions':mentions, 'workspace':workspace, 'channel':channel}, {
+                            success: function (count) {
 
-                        SendNotifications ();
+                                let Final_Time = process.hrtime(time);
+                                console.log(`SendPostMessageNotifications took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
 
-                        return response.success();
+                                return response.success();
+                            },
+                            error: function (error) {
+                                return response.error(error);
+                            }
+                        });
+
+
+
                     },
                     error: function (error) {
                         return response.error(error);
@@ -28194,46 +28493,49 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
             //sessionToken: sessionToken
         }).then((postSocials) => {
 
+            let userObjectIDs = [];
 
-            if (postSocials) {
-
-                /*Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
-
-                 if (error) {
-
-                 console.error("Error deleteChannelFollowers " + error.code + ": " + error.message);
-                 return callback(error);
+            if (postSocials.length > 0) {
 
 
-                 }
+                for (var i = 0; i < postSocials.length; i++) {
 
-                 if (result) {
+                    let object = postSocials[i];
+                    let objectFinal = post.id + '-' + object.get("user").id;
 
-                 return callback(null, result);
-                 }
-                 });*/
+                    userObjectIDs.push(objectFinal);
 
-                Parse.Object.destroyAll(postSocials, {
-                    success: function(result) {
-                        console.log('Did successfully delete postSocials in afterDelete Post Cloud Function');
-                        return callback(null, result);
-                    },
-                    error: function(error) {
-                        console.error("Error  delete postSocials " + error.code + ": " + error.message);
-                        return callback(error);
-                    },
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    if (i === (postSocials.length-1)) {
 
-                });
+                        // finished iterating through all items
+
+                        Parse.Object.destroyAll(postSocials, {
+                            success: function(result) {
+                                console.log('Did successfully delete postSocials in afterDelete postMessageSocial Cloud Function');
+                                //return callback(null, userObjectIDs);
+                            },
+                            error: function(error) {
+                                console.error("Error  delete postMessageSocial " + error.code + ": " + error.message);
+                                return callback(error);
+                            },
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                        return callback(null, userObjectIDs);
+
+                    }
+
+                }
 
 
 
             } else {
 
-                postSocials = [];
+                //postSocials = [];
                 // no workspaceFollowers to delete return
-                return callback(null, postSocials);
+                return callback(null, userObjectIDs);
 
             }
 
@@ -28416,9 +28718,23 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
             filters: 'objectId:' + post.id,
             hitsPerPage: 1000,
         }).then(({ hits }) => {
-            console.log(hits);
 
-            return callback (null, hits);
+            let mapAlgoliaObjects = lodash.map(hits, function (hit) {
+
+                hit =  post.id + '-' + hit.objectID;
+
+                //console.log("hit: " + JSON.stringify(hit));
+
+
+                return hit;
+
+            });
+
+            let channelObjectID = post.id + '-' + channel.id;
+            let zero = post.id + '-0';
+
+            mapAlgoliaObjects.push(zero);
+            mapAlgoliaObjects.push(channelObjectID);
         });
 
 
@@ -28439,7 +28755,12 @@ Parse.Cloud.afterDelete('Post', function(request, response) {
 
         if (results) {
 
+            let userObjectIDsFinal = results[0];
+
             let postIdArray = results[2];
+
+            postIdArray= postIdArray.concat(userObjectIDsFinal);
+
             //console.log("postIDArray: " + JSON.stringify(postIdArray));
 
             // Remove the object from Algolia
@@ -28635,53 +28956,58 @@ Parse.Cloud.afterDelete('PostMessage', function(request, response) {
         let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
         //queryPostSocial.equalTo("workspace", workspace);
         //queryPostSocial.equalTo("channel", channel);
-        queryPostMessageSocial.equalTo("post", post);
+        queryPostMessageSocial.equalTo("postMessage", postMessage);
         queryPostMessageSocial.limit(10000);
         queryPostMessageSocial.find({
             useMasterKey: true
             //sessionToken: sessionToken
-        }).then((postMessageSocial) => {
+        }).then((postMessageSocials) => {
+
+            let userObjectIDs = [];
 
 
-            if (postMessageSocial) {
-
-                /*Parse.Object.destroyAll(Channel_Followers, {sessionToken: sessionToken}).catch(function(error, result) {
-
-                 if (error) {
-
-                 console.error("Error deleteChannelFollowers " + error.code + ": " + error.message);
-                 return callback(error);
+            if (postMessageSocials.length > 0) {
 
 
-                 }
+                for (var i = 0; i < postMessageSocials.length; i++) {
 
-                 if (result) {
+                    let object = postMessageSocials[i];
+                    let objectFinal = postMessage.id + '-' + object.get("user").id;
 
-                 return callback(null, result);
-                 }
-                 });*/
+                    userObjectIDs.push(objectFinal);
 
-                Parse.Object.destroyAll(postMessageSocial, {
-                    success: function(result) {
-                        console.log('Did successfully delete postSocials in afterDelete postMessageSocial Cloud Function');
-                        return callback(null, result);
-                    },
-                    error: function(error) {
-                        console.error("Error  delete postMessageSocial " + error.code + ": " + error.message);
-                        return callback(error);
-                    },
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    if (i === (postMessageSocials.length-1)) {
 
-                });
+                        // finished iterating through all items
+
+                        Parse.Object.destroyAll(postMessageSocials, {
+                            success: function(result) {
+                                console.log('Did successfully delete postSocials in afterDelete postMessageSocial Cloud Function');
+                                return callback(null, userObjectIDs);
+                            },
+                            error: function(error) {
+                                console.error("Error  delete postMessageSocial " + error.code + ": " + error.message);
+                                return callback(error);
+                            },
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                    }
+
+                }
+
+
+
 
 
 
             } else {
 
-                postMessageSocial = [];
+                //postMessageSocial = [];
                 // no workspaceFollowers to delete return
-                return callback(null, postMessageSocial);
+                return callback(null, userObjectIDs);
 
             }
 
@@ -28706,6 +29032,7 @@ Parse.Cloud.afterDelete('PostMessage', function(request, response) {
         let queryPostMessage = new Parse.Query(POSTMESSAGE);
         //queryPostSocial.equalTo("workspace", workspace);
         //queryPostSocial.equalTo("channel", channel);
+        queryPostMessage.equalTo("parentPostMessage", postMessage);
         queryPostMessage.equalTo("post", post);
         queryPostMessage.limit(10000);
         queryPostMessage.find({
@@ -28863,9 +29190,31 @@ Parse.Cloud.afterDelete('PostMessage', function(request, response) {
             filters: 'objectId:' + postMessage.id,
             hitsPerPage: 1000,
         }).then(({ hits }) => {
-            console.log(hits);
+            //console.log("hits: " + JSON.stringify(hits));
 
-            return callback (null, hits);
+
+            //console.log("hits: " + JSON.stringify(hits));
+
+            let mapAlgoliaObjects = lodash.map(hits, function (hit) {
+
+                hit =  postMessage.id + '-' + hit.objectID;
+
+                //console.log("hit: " + JSON.stringify(hit));
+
+
+                return hit;
+
+            });
+
+            let channelObjectID = postMessage.id + '-' + channel.id;
+            let zero = postMessage.id + '-0';
+
+            mapAlgoliaObjects.push(zero);
+            mapAlgoliaObjects.push(channelObjectID);
+
+            //console.log("mapAlgoliaObjects: " + JSON.stringify(mapAlgoliaObjects));
+
+            return callback (null, mapAlgoliaObjects);
         });
 
 
@@ -28875,7 +29224,7 @@ Parse.Cloud.afterDelete('PostMessage', function(request, response) {
 
     async.parallel([
         async.apply(deletePostMessageSocial),
-        async.apply(deletePostMessageThreads),
+        //async.apply(deletePostMessageThreads),
         async.apply(searchAlgoliaObjectIds)
 
     ], function (err, results) {
@@ -28885,8 +29234,12 @@ Parse.Cloud.afterDelete('PostMessage', function(request, response) {
 
         if (results) {
 
-            let postMessageIdArray = results[2];
+            let postMessageIdArray = results[1];
             //console.log("postIDArray: " + JSON.stringify(postMessageIdArray));
+            let userObjectIDsFinal = results[0];
+
+            postMessageIdArray= postMessageIdArray.concat(userObjectIDsFinal);
+            //console.log("final Concat: " + JSON.stringify(postMessageIdArray));
 
             // Remove the object from Algolia
             indexPostMessage.deleteObjects(postMessageIdArray, function(err, content) {
@@ -30667,25 +31020,46 @@ cron.schedule('*/1 * * * *', () => {
         success: function(results) {
             async.each(results, function (result, callback) {
 
-                let notification_body = result.get("message");
+                let notification_body = result.get("messageDescription");
+                let notification_title = result.get("messageTitle");
                 //let p = '[@shawkat:QK5IjSVtwF] mentioned you in a message: Great #tip [@Sam:wW30jjrrjO] I also would add the following: /n 1. Talk to your customers and users to build deep understanding of what their un-met needs are and understand their drivers for success /n 2. Deep dive on your product’s metrics and understand how product decisions were made /n 3. Understand your company and product #OKR or goals';
 
-                const userMentionRegex = /(^|\s)(\[@[a-z\d]+:[a-z\d]+\])/gi;
-                const userNameMentionRegex = /(^|\s|)(\@[a-z\d]+)/gi;
-                let userMentions = notification_body.match(userMentionRegex);
+                const userMentionRegex = /(^|\s)(\[@[a-zA-Z\d]+:[a-zA-Z\d]+\]|\[@[a-zA-Z\d]+(\W)[a-zA-Z\d]+:[a-zA-Z\d]+\])/gi;
+                let userBodyMentions = notification_body.match(userMentionRegex);
                 //console.log(userMentions);
 
-                for (var j = 0; j < userMentions.length; j++) {
+                if (userBodyMentions.length > 0) {
 
-                    let userNameMention = userMentions[j].match(/(^|\s|)(\@[a-z\d]+)/gi);
-                    notification_body = notification_body.replace(userMentions[j], ' ' + userNameMention)
+                    for (var j = 0; j < userBodyMentions.length; j++) {
+
+                        let userBodyNameMention = userBodyMentions[j].match(/(^|\s|)(\@[a-zA-Z\d]+(\W)[a-zA-Z\d]+\:|\@[a-zA-Z\d]+\:)/gi);
+                        let userBodyNameMentionMatch = userBodyNameMention[0];
+                        let userBodyNameMentionFinal = userBodyNameMentionMatch.match(/(^|\s|)(\@[a-zA-Z\d]+(\W)[a-zA-Z\d]+[^:]|\@[a-zA-Z\d]+[^:])/gi);
+                        notification_body = notification_body.replace(userBodyMentions[j], ' ' + userBodyNameMentionFinal);
+                    }
 
                 }
+
+
+                let userTitleMentions = notification_title.match(userMentionRegex);
+
+                if (userTitleMentions.length > 0) {
+
+                    for (var k = 0; k < userTitleMentions.length; k++) {
+
+                        let userTitleNameMention = userTitleMentions[k].match(/(^|\s|)(\@[a-zA-Z\d]+(\W)[a-zA-Z\d]+\:|\@[a-zA-Z\d]+\:)/gi);
+                        let userTitleNameMentionFirstMatch = userTitleNameMention[0];
+                        let userTitleNameMentionFinal = userTitleNameMentionFirstMatch.match(/(^|\s|)(\@[a-zA-Z\d]+(\W)[a-zA-Z\d]+[^:]|\@[a-zA-Z\d]+[^:])/gi);
+                        notification_title = notification_title.replace(userTitleMentions[k], ' ' + userTitleNameMentionFinal);
+                    }
+
+                }
+
 
                 var note = new apn.Notification();
                 note.expiry = Math.floor(Date.now() / 1000) + 3600;
                 note.alert = "\uD83D\uDCE7 \u2709 You have a new message";
-                note.title = "Papr.ai",
+                note.title = notification_title,
                     note.body = notification_body,
                     note.payload = {
                         'workspace' : result.get("workspace"),

@@ -8,7 +8,7 @@ module.exports = {
             logLevel: 'VERBOSE',
             serverURL: 'ws://parseserverwest-development.azurewebsites.net/parse'
         },
-        maxUploadSize: '50mb',
+        maxUploadSize: "500mb",
         allowClientClassCreation: yn(process.env.CLIENT_CLASS_CREATION) || false
     },
     dashboard: {},
