@@ -23,6 +23,7 @@ var indexChannel ;
 var indexWorkspaces;
 var indexSkills ;
 var indexPostMessage;
+var indexConversations;
 
 if( isProduction === false ){
     fileForPushNotification = 'apns-prod-cert.pem';
@@ -34,6 +35,7 @@ if( isProduction === false ){
     indexWorkspaces = client.initIndex('prod_workspaces');
     indexSkills = client.initIndex('prod_skills');
     indexPostMessage = client.initIndex('prod_postMessages');
+    indexConversations = client.initIndex('prod_conversations');
 } else {
     fileForPushNotification = 'apns-dev-cert.pem';
     keyFileForPushNotification = 'Key-Development.pem';
@@ -44,6 +46,7 @@ if( isProduction === false ){
     indexWorkspaces = client.initIndex('dev_workspaces');
     indexSkills = client.initIndex('dev_skills');
     indexPostMessage = client.initIndex('dev_postMessages');
+    indexConversations = client.initIndex('dev_conversations');
 
 }
 
@@ -868,7 +871,6 @@ Parse.Cloud.define('getPostPosition', async request => {
 
 
 }, {useMasterKey: true});*/
-
 
 Parse.Cloud.define('getWorkspacePosition', async request => {
     const NS_PER_SEC = 1e9;
@@ -4387,7 +4389,6 @@ Parse.Cloud.define("QueryPostFeed2", function(request, response) {
 
 });
 
-
 // cloud API and function to test query performance of AlgoliaSearch versus Parse
 Parse.Cloud.define("testQueryPerformance", function(request, response) {
 
@@ -4789,8 +4790,6 @@ Parse.Cloud.define("indexAlgolia", function(request, response) {
 
 }, {useMasterKey: true});
 
-
-
 // cloud API and function to index and import all users from Parse to AlgoliaSearch indexUsers
 Parse.Cloud.define("indexCollection", function(request, response) {
 
@@ -5147,9 +5146,8 @@ Parse.Cloud.define("indexCollection", function(request, response) {
 
 }, {useMasterKey: true});
 
-
-// Run beforeSave functions for hashtags, mentions, URL and luis.ai intents
-Parse.Cloud.beforeSave('_User', function(req, response) {
+// Parse Server version < 3.0.0
+/* Parse.Cloud.beforeSave('_User', function(req, response) {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -5391,10 +5389,277 @@ Parse.Cloud.beforeSave('_User', function(req, response) {
 
 
 
+}, {useMasterKey: true}); */
+
+// Parse version 4.2.0
+Parse.Cloud.beforeSave('_User', async (req) => {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!req.master && (!currentUser || !sessionToken)) {
+
+        throw new Error('beforeSave-User.UNAUTHENTICATED_USER');
+    }
+
+    let user = req.object;
+    let userOriginal = req.original;
+    //console.log("req: " + JSON.stringify(req));
+
+    let socialProfilePicURL = user.get("socialProfilePicURL");
+    let profileImage = user.get("profileimage");
+
+
+    //console.log("_User req: " + JSON.stringify(req));
+
+    //let expiresAt = session.get("expiresAt");
+    let _tagPublic = '*';
+    let _tagUserId = user.id;
+    //console.log("_tagUserId: " + JSON.stringify(_tagUserId));
+
+    let defaultTagFilters = new Set();
+    if (_tagUserId) {
+
+        defaultTagFilters.add(_tagUserId);
+
+    }
+
+    defaultTagFilters.add(_tagPublic);
+    let defaultTagFiltersArray = Array.from(new Set(defaultTagFilters));
+
+    //console.log("defaultTagFilters: " + JSON.stringify((defaultTagFilters)) );
+
+    let userOriginalTagFilters = userOriginal? userOriginal.get("tagFilters") : defaultTagFiltersArray;
+    //console.log("userOriginalTagFilters: " + JSON.stringify(userOriginalTagFilters));
+    //console.log("userOriginalTagFilters.length: " + JSON.stringify(userOriginalTagFilters.length));
+
+
+    if (user.dirty("profileimage") === true || user.get("isWorkspaceUpdated") === true || user.get("isChannelUpdated") === true || user.dirty("title") || user.dirty("displayName") === true || user.dirty("fullname") === true || user.dirty("roles") === true || user.dirty("isOnline") === true || user.dirty("showAvailability") === true) {
+
+        user.set("isUpdateAlgoliaIndex", true);
+
+
+    } else {
+
+        user.set("isUpdateAlgoliaIndex", false);
+
+    }
+
+    if ( !user.get("isWorkspaceUpdated")  || !user.get("isChannelUpdated") ) {
+
+        user.set("isWorkspaceUpdated", false);
+        user.set("isChannelUpdated", false);
+
+
+    }
+
+
+
+    if (user.dirty("profileimage") === true && profileImage) {
+
+        user.set("isDirtyProfileimage", true);
+
+        // console.log("Profileimage url: " + JSON.stringify(profileImage.toJSON().url));
+
+
+    }
+    else if (user.dirty("profileimage") === false) {user.set("isDirtyProfileimage", false);}
+
+    if (user.dirty("isOnline") === true) {
+        user.set("isDirtyIsOnline", true);
+
+    }
+    else if (user.dirty("isOnline") === false) {user.set("isDirtyIsOnline", false);}
+
+    if (user.dirty("showAvailability") === true) {
+        user.set("isDirtyShowAvailability", true);
+
+    }
+    else if (user.dirty("showAvailability") === false) {user.set("isDirtyShowAvailability", false);}
+
+    if (user.dirty("isTyping") === true) {
+        user.set("isDirtyTyping", true);
+
+    }
+    else if (user.dirty("isTyping") === false) {user.set("isDirtyTyping", false);}
+
+    if (user.isNew()) {
+        user.set("isNew", true);
+        user.set("showAvailability", true);
+
+        if (user.get("isLogin") === true) {
+
+            user.set("isLogin", false);
+
+            // new session, create a new algoliaAPIKey for this user
+
+            // generate a public API key for user 42. Here, records are tagged with:
+            //  - 'user_XXXX' if they are visible by user XXXX
+            const user_public_key = await client.generateSecuredApiKey(
+                '4cbf716235b59cc21f2fa38eb29c4e39',
+                {
+                    //validUntil: expiresAt,
+                    tagFilters: [ defaultTagFiltersArray ],
+                    userToken: user.id
+                }
+            );
+
+            console.log("new algoliaPublic key generated for " + JSON.stringify(user.id));
+
+
+            user.set("algoliaSecureAPIKey", user_public_key);
+            user.set("tagFilters", defaultTagFiltersArray);
+
+
+        }
+
+        if (socialProfilePicURL!== null)  {
+
+            var displayName = user.get("displayName");
+            var fileName = user.id + displayName + '_profilePicture';
+
+            const contents = await Parse.Cloud.httpRequest({
+                url: socialProfilePicURL
+            });
+
+            //const data = Array.from(Buffer.from(response.body, 'binary'));
+            //const contentType = response.headers['content-type'];
+
+            const file = new Parse.File(fileName, { base64: contents.buffer.toString('base64') });
+            user.set("profileimage", file);
+            await file.save();
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+
+            /* const options = {
+
+                uri: socialProfilePicURL,
+                resolveWithFullResponse: true,
+                encoding: null, // <-- this is important for binary data like images.
+            };
+
+            requestPromise(options)
+                .then((response) => {
+                    const data = Array.from(Buffer.from(response.body, 'binary'));
+                    const contentType = response.headers['content-type'];
+                    const file = new Parse.File(fileName, data, contentType);
+                    return file.save();
+                })
+                .then((file) => {
+
+                    user.set("profileimage", file);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                    // response.success();
+                })
+                .catch(
+
+                    throw new Error('beforeSave-User.ImageDownloadError')
+                );
+                */
+
+
+        } else {
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            // response.success();
+        }
+
+    }
+
+    else if (!user.isNew()) {
+
+        user.set("isNew", false);
+
+        if (user.get("isLogin") === true) {
+
+            user.set("isLogin", false);
+
+            if (userOriginalTagFilters.length === 1) {
+                //console.log("userOriginalTagFilters 1: " + JSON.stringify(userOriginalTagFilters.length));
+                userOriginalTagFilters.push(_tagUserId);
+                user.set("tagFilters", userOriginalTagFilters);
+
+            }
+
+            // new session, create a new algoliaAPIKey for this user
+
+            // generate a public API key for user 42. Here, records are tagged with:
+            //  - 'user_XXXX' if they are visible by user XXXX
+            const user_public_key = await client.generateSecuredApiKey(
+                '4cbf716235b59cc21f2fa38eb29c4e39',
+                {
+                    //validUntil: expiresAt,
+                    tagFilters: [ userOriginalTagFilters ],
+                    userToken: user.id
+                }
+            );
+
+            console.log("new algoliaPublic key generated for " + JSON.stringify(user.id));
+
+
+            user.set("algoliaSecureAPIKey", user_public_key);
+
+            // response.success();
+
+
+        }
+
+        else {
+
+            if (userOriginalTagFilters.length === 1) {
+                //console.log("userOriginalTagFilters 1: " + JSON.stringify(userOriginalTagFilters.length));
+                userOriginalTagFilters.push(_tagUserId);
+                user.set("tagFilters", userOriginalTagFilters);
+
+            }
+
+            // new session, create a new algoliaAPIKey for this user
+
+            // generate a public API key for user 42. Here, records are tagged with:
+            //  - 'user_XXXX' if they are visible by user XXXX
+            const user_public_key = await client.generateSecuredApiKey(
+                '4cbf716235b59cc21f2fa38eb29c4e39',
+                {
+                    //validUntil: expiresAt,
+                    tagFilters: [ userOriginalTagFilters ],
+                    userToken: user.id
+                }
+            );
+
+            console.log("new algoliaPublic key generated for " + JSON.stringify(user.id));
+
+
+            user.set("algoliaSecureAPIKey", user_public_key);
+
+            //response.success();
+
+
+        }
+
+        //response.success();
+
+
+    }
+
+
+
+
 }, {useMasterKey: true});
 
-// Run beforeSave functions workspace
-Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
+
+// Run beforeSave functions workspace parse server version < 3.0.0
+/*Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -5756,12 +6021,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                                 //o[key] = expertOwner;
 
                                 workspace.addUnique("expertsArray", expertOwner);
-                                /*workspace.save(null, {
 
-                                 useMasterKey: true
-                                 //sessionToken: sessionToken
-
-                                 });*/
 
                                 object = expertOwner;
                                 //expertArray.push(expertOwner);
@@ -6121,12 +6381,7 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
                         //o[key] = expertOwner;
 
                         workspace.addUnique("expertsArray", expertOwner);
-                        /*workspace.save(null, {
 
-                         useMasterKey: true
-                         //sessionToken: sessionToken
-
-                         });*/
 
                         object = expertOwner;
                         //expertArray.push(expertOwner);
@@ -6437,6 +6692,803 @@ Parse.Cloud.beforeSave('WorkSpace', function(req, response) {
         console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
         response.success();
+
+    }
+
+}, {useMasterKey: true});*/
+
+// Run beforeSave functions workspace parse server version >= 3.0.0
+Parse.Cloud.beforeSave('WorkSpace', async (req) => {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let workspace = req.object;
+    let owner = new Parse.Object("_User");
+    owner = workspace.get("user");
+
+    //console.log("WorkSpace request.object: " + JSON.stringify(req.object));
+
+    //console.log("request: " + JSON.stringify(req));
+    //console.log("workspaceExperts__op: " + JSON.stringify(workspaceExpertObjects));
+
+    let expertRelation = workspace.relation("experts");
+    let expertArray = [];
+
+    let currentUser = req.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!req.master && (!currentUser || !sessionToken)) {
+
+        throw new Error('beforeSave-WorkSpace.UNAUTHENTICATED_USER');
+    }
+    //var WORKSPACE = Parse.Object.extend("WorkSpace");
+    let WORKspace = new Parse.Object("WorkSpace");
+
+    let queryWorkspace = new Parse.Query(WORKspace);
+
+    if (workspace.dirty("skills") === true) {
+        workspace.set("isDirtySkills", true);
+    } else if (!workspace.dirty("skills") || workspace.dirty("skills") === false) {
+        workspace.set("isDirtySkills", false);
+
+    }
+
+    async function archiveWorkspaceFollowers () {
+
+        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+
+        let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+        queryWorksapceFollower.equalTo("workspace", workspace);
+        queryWorksapceFollower.limit(10000);
+
+        const workspacefollowers = await queryWorksapceFollower.find({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            throw new Error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+        if (workspacefollowers) {
+
+            const finalWorkspaceFollowers = await async.map(workspacefollowers, async function (object) {
+
+                let workspaceFollower = new WORKSPACEFOLLOWER();
+                workspaceFollower.id = object.id;
+
+                workspaceFollower.set("archive", true);
+                workspaceFollower.set("user", object.get("user"));
+
+                object = workspaceFollower;
+
+                console.log("archive workspacefollowerobject: " + JSON.stringify(object));
+
+                return object;
+
+                //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+
+
+            });
+
+            return await Parse.Object.saveAll(finalWorkspaceFollowers, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+        }
+
+        else {
+
+            // no workspaceFollowers to delete return
+            return [];
+
+        }
+
+
+    }
+
+    async function unarchiveWorkspaceFollowers () {
+
+        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+
+        let queryWorksapceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+        queryWorksapceFollower.equalTo("workspace", workspace);
+        queryWorksapceFollower.limit(10000);
+
+        const workspacefollowers = await queryWorksapceFollower.find({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            throw new Error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+        if (workspacefollowers) {
+
+            const finalWorkspaceFollowers = await async.map(workspacefollowers, async function (object) {
+
+                let workspaceFollower = new WORKSPACEFOLLOWER();
+                workspaceFollower.id = object.id;
+
+                workspaceFollower.set("archive", false);
+                workspaceFollower.set("user", object.set("user"));
+                if (object.get("user").id === req.user.toJSON().objectId) {
+
+                    workspaceFollower.set("isSelected", true);
+
+                }
+
+                object = workspaceFollower;
+
+                // console.log("unarchive workspacefollowerobject: " + JSON.stringify(object));
+
+                return object;
+
+            });
+
+            return await Parse.Object.saveAll(finalWorkspaceFollowers, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+        }
+        else {
+
+            // no workspaceFollowers to delete return
+            return [];
+
+        }
+
+    }
+
+    console.log("workspace isNew: " + JSON.stringify(workspace.isNew()));
+
+    if (workspace.isNew() === true) {
+
+
+        queryWorkspace.equalTo("workspace_url", workspace.get("workspace_url"));
+
+        const resultWorkspaceFollower = await queryWorkspace.first({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            throw new Error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+        if (resultWorkspaceFollower) {
+
+            // workspace url is not unique return error
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            throw new Error ("workspace URL already exists, please try a different URL: " + resultWorkspaceFollower);
+
+        }
+        else {
+
+            // set the workspace owner as an expert
+            expertRelation.add(owner);
+
+            workspace.set("isNew", true);
+            workspace.set("followerCount", 0);
+            workspace.set("memberCount", 0);
+            workspace.set("channelCount", 0);
+            workspace.set("isDirtyExperts", false);
+            workspace.increment("followerCount");
+            workspace.increment("memberCount");
+            workspace.increment("channelCount");
+
+            workspace.set("isDirtySkills", false);
+
+            const expert = await owner.fetch(owner.id, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            let expertOwner = simplifyUser(expert);
+
+            //expertArray.push(expertOwner);
+            workspace.addUnique("expertsArray", expertOwner);
+
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+        }
+
+
+    }
+    else if (workspace.isNew() === false && workspace.dirty("workspace_url") === true) {
+
+        workspace.set("isNew", false);
+        console.log("set workspace isNew to false");
+
+        queryWorkspace.equalTo("workspace_url", workspace.get("workspace_url"));
+
+        const resultWorkspaceFollower = await queryWorkspace.first({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            throw new Error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+        if (resultWorkspaceFollower) {
+
+            // workspace url is not unique return error
+
+            throw new Error ("workspace URL already exists, please try a different URL: " + resultWorkspaceFollower);
+
+        }
+
+        else {
+
+            if (workspace.dirty("experts") || workspace.get("isDirtyExperts") === true) {
+
+                let workspaceExpertObjects = req.object.toJSON().experts.objects;
+                let exp__op = req.object.toJSON().experts.__op;
+
+                workspace.set("isDirtyExperts", true);
+
+                if (exp__op === "AddRelation") {
+
+                    // add expert to expertsArray
+
+                    return await async.map(workspaceExpertObjects, async function (object) {
+
+                        let workspaceExpertObject = new Parse.Object("_User");
+                        workspaceExpertObject.set("objectId", object.objectId);
+
+                        //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                        const expert = await workspaceExpertObject.fetch(workspaceExpertObject.id, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            throw new Error(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                        let expertOwner = simplifyUser(expert);
+
+                        //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                        //o[key] = expertOwner;
+
+                        workspace.addUnique("expertsArray", expertOwner);
+                        /*workspace.save(null, {
+
+                         useMasterKey: true
+                         //sessionToken: sessionToken
+
+                         });*/
+
+                        object = expertOwner;
+                        //expertArray.push(expertOwner);
+
+                        return object;
+
+                    });
+
+
+
+                }
+                else if (exp__op === "RemoveRelation") {
+
+                    // remove expert from expertsArray
+
+                    return await async.map(workspaceExpertObjects, async function (object) {
+
+                        let workspaceExpertObject = new Parse.Object("_User");
+                        workspaceExpertObject.set("objectId", object.objectId);
+
+                        //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                        const expert = await workspaceExpertObject.fetch(workspaceExpertObject.id, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            throw new Error(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+                        let expertOwner = simplifyUser(expert);
+
+                        //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                        //o[key] = expertOwner;
+
+                        workspace.remove("expertsArray", expertOwner);
+
+                        object = expertOwner;
+                        //expertArray.push(expertOwner);
+
+                        return object;
+
+                    });
+
+
+
+                }
+                else {
+
+                    if (workspace.get("isDirtyExperts") === true) {
+
+                        let expertRelationQuery = expertRelation.query();
+
+                        const experts = await expertRelationQuery.find({
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        }, (error) => {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            throw new Error(error);
+                        }, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+
+                        if (experts.length > 0) {
+
+                            let emptyArray = [];
+
+                            workspace.set("expertsArray", emptyArray);
+
+                            return await async.map(experts, async function (expert) {
+
+                                let expertUser = simplifyUser(expert);
+
+                                //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                                expert = expertUser;
+
+                                workspace.addUnique("expertsArray", expertUser);
+                                //expertArray.push(expertOwner);
+
+                                return expert;
+
+                            });
+
+
+                        }
+                        else {
+
+                            let finalTime = process.hrtime(time);
+                            console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                        }
+
+
+                    }
+
+                    else {
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                    }
+
+                }
+
+
+            }
+            else {
+
+                workspace.set("isDirtyExperts", false);
+
+                if (workspace.dirty("archive")) {
+
+                    const Workspace = await queryWorkspace.get(workspace.id, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    if (Workspace) {
+
+                        if (Workspace.get("archive") === false && workspace.get("archive") === true) {
+
+                            // user wants to archive a workspace then archive it
+                            let beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time beforeSave Workspace took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                            return await archiveWorkspaceFollowers();
+
+                        }
+                        else if (Workspace.get("archive") === true && workspace.get("archive") === false) {
+
+                            // user wants to un-archive a workspace then un-archive it
+                            let beforeSave_Time = process.hrtime(time);
+                            console.log(`beforeSave_Time beforeSave Workspace took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                            return await unarchiveWorkspaceFollowers();
+
+                        }
+
+
+                    }
+
+                    else {
+                        let beforeSave_Time = process.hrtime(time);
+                        console.log(`beforeSave_Time beforeSave Workspace Follower took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                        throw new Error ("No Workspace Found when user was trying to archive it.")
+
+                    }
+
+
+
+
+                }
+
+                else {
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                }
+            }
+
+        }
+
+
+    }
+    else if (workspace.isNew() === false  && workspace.dirty("workspace_url") === false) {
+
+
+        workspace.set("isNew", false);
+        // console.log("set workspace isNew to false 2");
+
+
+        //console.log("workspace Experts.dirty: " + workspace.dirty("experts"));
+
+        if (workspace.dirty("experts") || workspace.get("isDirtyExperts") === true) {
+
+            workspace.set("isDirtyExperts", true);
+
+            let workspaceExpertObjects = req.object.toJSON().experts.objects;
+            let exp__op = req.object.toJSON().experts.__op;
+            console.log("exp__op: " + JSON.stringify(exp__op));
+
+
+            if (exp__op === "AddRelation") {
+
+                // add expert to expertsArray
+                return await async.map(workspaceExpertObjects, async function (object) {
+
+                    let workspaceExpertObject = new Parse.Object("_User");
+                    workspaceExpertObject.set("objectId", object.objectId);
+
+                    //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                    const expert = await workspaceExpertObject.fetch(workspaceExpertObject.id, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    let expertOwner = simplifyUser(expert);
+
+                    //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                    //o[key] = expertOwner;
+
+                    workspace.addUnique("expertsArray", expertOwner);
+                    /*workspace.save(null, {
+
+                     useMasterKey: true
+                     //sessionToken: sessionToken
+
+                     });*/
+
+                    object = expertOwner;
+                    //expertArray.push(expertOwner);
+
+                    return object;
+
+                });
+
+            }
+            else if (exp__op === "RemoveRelation") {
+
+                return await async.map(workspaceExpertObjects, async function (object) {
+
+                    let workspaceExpertObject = new Parse.Object("_User");
+                    workspaceExpertObject.set("objectId", object.objectId);
+
+                    //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
+
+                    const expert = await workspaceExpertObject.fetch(workspaceExpertObject.id, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    let expertOwner = simplifyUser(expert);
+
+                    //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                    //o[key] = expertOwner;
+
+                    workspace.remove("expertsArray", expertOwner);
+
+                    object = expertOwner;
+                    //expertArray.push(expertOwner);
+
+                    return object;
+
+                });
+
+
+
+            }
+            else {
+
+                if (workspace.get("isDirtyExperts") === true) {
+
+                    let expertRelationQuery = expertRelation.query();
+
+                    const experts = await expertRelationQuery.find({
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    if (experts.length > 0) {
+
+                        let emptyArray = [];
+
+                        workspace.set("expertsArray", emptyArray);
+
+                        return await async.map(experts, async function (expert) {
+
+                            let expertUser = simplifyUser(expert);
+
+                            //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                            expert = expertUser;
+
+                            workspace.addUnique("expertsArray", expertUser);
+                            //expertArray.push(expertOwner);
+
+                            return expert;
+
+
+                        });
+
+
+                    }
+                    else {
+
+                        let finalTime = process.hrtime(time);
+                        console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+
+                    }
+
+
+                }
+
+                else {
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+                }
+
+            }
+
+
+
+        }
+        else {
+
+            workspace.set("isDirtyExperts", false);
+
+            if (workspace.dirty("archive")) {
+
+                const Workspace = await queryWorkspace.get(workspace.id, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    throw new Error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                if (Workspace) {
+
+                    if (Workspace.get("archive") === false && workspace.get("archive") === true) {
+
+                        // user wants to archive a workspace then archive it
+
+                        let beforeSave_Time = process.hrtime(time);
+                        console.log(`beforeSave_Time beforeSave Workspace took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                        return await archiveWorkspaceFollowers();
+
+                    }
+                    else if (Workspace.get("archive") === true && workspace.get("archive") === false) {
+
+                        // user wants to un-archive a workspace then un-archive it
+
+                        let beforeSave_Time = process.hrtime(time);
+                        console.log(`beforeSave_Time beforeSave Workspace took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                        return await unarchiveWorkspaceFollowers();
+
+                    }
+
+
+                }
+
+                else {
+
+                    let beforeSave_Time = process.hrtime(time);
+                    console.log(`beforeSave_Time beforeSave Workspace took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+
+                    throw new Error ("No Workspace Found when user was trying to archive it.")
+
+
+                }
+
+
+            }
+
+            else {
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+
+            }
+
+        }
+
+
+    }
+    else {
+        workspace.set("isNew", false);
+
+        let finalTime = process.hrtime(time);
+        console.log(`finalTime took beforeSave Workspace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
     }
 
@@ -20665,6 +21717,8 @@ function splitPostAndIndexFasterPrime (request, response) {
 
                         indexPosts.addObjects(finalPostIndexResultsMapped).catch(err => console.error(err));
 
+                        // indexConversations.addObjects(finalPostIndexResults).catch(err => console.error(err));
+
                         //}
 
                         console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
@@ -22077,7 +23131,9 @@ function splitWorkspaceAndIndex (request, response) {
 }
 
 
+/*
 function splitUserAndIndex (request, response) {
+
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -22472,7 +23528,326 @@ function splitUserAndIndex (request, response) {
 
 
 
+}*/
+
+
+// Parse Server version > 3.0.0
+async function splitUserAndIndex (request) {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let user = request['user'];
+    //console.log("user: " + JSON.stringify(user));
+
+    let object = request['object'];
+    //console.log("object: " + JSON.stringify(object));
+    // note object needs to be toJSON()
+
+    let className = request['className'];
+    //console.log("className: " + JSON.stringify(className));
+
+    var workspaceFollowers = request['workspaceFollowers'];
+    //console.log("workspaceFollowers length: " + JSON.stringify(workspaceFollowers.length));
+
+    let objectToSave = object;
+
+    let USER = Parse.Object.extend("_User");
+
+
+    const finalWorkspaces = await async.forEachSeries(workspaceFollowers, async function (workspaceFollower) {
+
+        let WORKSPACE = Parse.Object.extend("WorkSpace");
+        let workspace = new WORKSPACE();
+        workspace.id = workspaceFollower.get("workspace").id;
+        //console.log("workspace: " + JSON.stringify(workspace));
+
+        //console.log("indexOf async.map: " + JSON.stringify(workspaceFollowers.indexOf(workspaceFollower)));
+
+        let async_map_index = workspaceFollowers.indexOf(workspaceFollower);
+
+        var userObject = workspaceFollowers[async_map_index].get("user");
+        //console.log("userObject: " + JSON.stringify(userObject));
+        let UserObject = new USER();
+        UserObject.id = userObject.id;
+
+        let queryRole = new Parse.Query(Parse.Role);
+
+        let rolesArray;
+
+        async function getChannelFollow () {
+
+            let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
+            let queryChannelFollow = new Parse.Query(CHANNELFOLLOW);
+
+            queryChannelFollow.equalTo("workspace", workspace);
+            queryChannelFollow.equalTo("isFollower", true);
+            queryChannelFollow.equalTo("user", UserObject);
+
+            const channelFollowers = await queryChannelFollow.find({
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            return channelFollowers;
+
+        }
+
+        const results = await getChannelFollow();
+
+        if (results.length > 0) {
+
+            let ChannelFollows = results[0];
+
+            if (ChannelFollows) {
+
+                const finalChannelFollowers = await async.forEachSeries(ChannelFollows, async function (channelFollowObject) {
+
+                    //let newObjectToSave = objectToSave;
+
+                    let channelFollowWorkspaceId = channelFollowObject.get("workspace").id;
+                    let channelFollowChannelId = channelFollowObject.get("channel").id;
+                    let channelFollowWorkspace = channelFollowObject.get("workspace");
+                    let channelFollowClassName = channelFollowObject.get("className");
+                    let channelFollowObjectId = channelFollowObject.id;
+
+                    channelFollowObject = objectToSave;
+
+                    channelFollowObject.objectID = object.objectId + '-' + channelFollowWorkspaceId + '-' + channelFollowChannelId;
+
+                    //console.log("channelFollowObject.objectID: " + JSON.stringify(channelFollowObject.objectID));
+
+                    channelFollowObject.channel = channelFollowChannelId;
+                    channelFollowObject.workspace = channelFollowWorkspaceId;
+
+                    let tags = ["*"];
+                    tags.push(userObject.id);
+
+                    channelFollowObject._tags = tags;
+
+                    let userRoles = userObject.get("roles");
+
+                    //console.log('userRoles: ' + JSON.stringify(userRoles));
+
+                    queryRole = userRoles.query();
+
+                    queryRole.equalTo('workspace', channelFollowWorkspace);
+
+                    queryRole.limit(10);
+
+                    const roles = await queryRole.find({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    rolesArray = roles;
+
+                    if (roles.length > 0) {
+
+                        channelFollowObject.roles = rolesArray;
+                        //console.log("userObject.id: " + JSON.stringify(userObject.id));
+
+
+                        indexUsers.partialUpdateObject(channelFollowObject, {
+                            createIfNotExists: true
+                        }).then(({ objectID }) => {
+
+                            console.log("Parse<>Algolia object saved from _User afterSave function: " + JSON.stringify(objectID));
+
+                        });
+
+                        return channelFollowObject;
+
+
+                    }
+                    else {
+
+                        console.error("User doesn't have any roles, function splitUserAndIndex function.");
+
+                        // this case is when a user is following a workspace but for some reason there is no roles assigned to this user so return empty roles.
+                        let tags = ["*"];
+
+                        channelFollowObject.roles = [];
+                        //console.log("userObject.id: " + JSON.stringify(userObject.id));
+
+                        tags.push(userObject.id);
+                        // todo need to push unique items now we are doing duplicate item pushes.
+
+                        channelFollowObject._tags = tags;
+
+                        //console.log("channelFollowObject.objectId: " + JSON.stringify(channelFollowObject.objectId));
+                        indexUsers.partialUpdateObject(channelFollowObject, {
+                            createIfNotExists: true
+                        }).then(({ objectID }) => {
+
+                            console.log("Parse<>Algolia object saved from _User afterSave function: " + JSON.stringify(objectID));
+
+
+                        });
+
+                        return channelFollowObject;
+
+
+                    }
+
+
+                });
+
+                console.log("finalChannelFollowers: " + JSON.stringify(finalChannelFollowers));
+
+                return workspaceFollower;
+
+
+            }
+            else {
+
+                // ChannelFollow doesn't exist, user doesn't have any channels followed.
+
+                let newObjectToSave = objectToSave;
+
+
+                newObjectToSave.objectID = object.objectId + '-' + '0';
+
+                let tags = ["*"];
+                tags.push(userObject.id);
+
+                newObjectToSave._tags = tags;
+
+                let userRoles = userObject.get("roles");
+
+                //console.log('userRoles: ' + JSON.stringify(userRoles));
+
+                queryRole = userRoles.query();
+
+                queryRole.equalTo('workspace', workspace);
+
+                queryRole.limit(10);
+
+                const roles = await queryRole.find({
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    throw new Error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+                rolesArray = roles;
+
+                if (roles.length > 0) {
+
+                    newObjectToSave.roles = rolesArray;
+                    //console.log("userObject.id: " + JSON.stringify(userObject.id));
+
+
+                    //console.log("newObjectToSave.objectId: " + JSON.stringify(newObjectToSave.objectId));
+
+                    indexUsers.partialUpdateObject(newObjectToSave, {
+                        createIfNotExists: true
+                    }).then(({ objectID }) => {
+
+                        console.log("Parse<>Algolia object saved from _User afterSave function: " + JSON.stringify(objectID));
+
+
+                    });
+
+                    return workspaceFollower;
+
+
+
+
+                } else {
+
+                    console.error("User doesn't have any roles, function splitUserAndIndex function.");
+
+
+                    newObjectToSave.roles = [];
+                    //console.log("userObject.id: " + JSON.stringify(userObject.id));
+
+                    //console.log("newObjectToSave.objectId: " + JSON.stringify(newObjectToSave.objectId));
+
+                    indexUsers.partialUpdateObject(newObjectToSave, {
+                        createIfNotExists: true
+                    }).then(({ objectID }) => {
+
+                        console.log("Parse<>Algolia object saved from _User afterSave function: " + JSON.stringify(objectID));
+
+
+                    });
+
+                    return workspaceFollower;
+                }
+
+
+
+            }
+
+
+        }
+        else {
+
+            console.error("User doesn't have any roles assigned or no channel follows.");
+
+            let newObjectToSave = objectToSave;
+
+            newObjectToSave.objectID = object.objectId + '-' + '0';
+
+            let tags = ["*"];
+            tags.push(userObject.id);
+
+            newObjectToSave._tags = tags;
+
+            indexUsers.partialUpdateObject(newObjectToSave, {
+                createIfNotExists: true
+            }).then(({ objectID }) => {
+
+                console.log("Parse<>Algolia object saved from _User afterSave function: " + JSON.stringify(objectID));
+
+
+            });
+
+            return workspaceFollower;
+
+        }
+
+
+    });
+
+    let Final_Time = process.hrtime(time);
+    console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
 }
+
 
 // auto-add type when isBookmarked, isLiked or Comment is added
 Parse.Cloud.beforeSave('PostSocial', function(request, response) {
@@ -24086,6 +25461,16 @@ Parse.Cloud.afterSave('Post', function(request, response) {
     postSocialQuery.equalTo('post', post);
     postSocialQuery.limit(10000);
 
+    let channelFollowQuery = new Parse.Query("ChannelFollow");
+    channelFollowQuery.equalTo('workspace', workspace);
+    channelFollowQuery.equalTo('channel', channel);
+    channelFollowQuery.limit(10000);
+
+    let workspaceFollowerQuery = new Parse.Query("workspace_follower");
+    workspaceFollowerQuery.equalTo('workspace', workspace);
+    //workspaceFollowerQuery.matchesQuery("postMessage", queryPostMessageQuestion);
+    workspaceFollowerQuery.limit(10000);
+
     let postACL = null;
 
     function getPost (callback) {
@@ -24739,6 +26124,100 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
     }
 
+    function getChannelFollow (callback) {
+
+        channelFollowQuery.find({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }).then((channelFollows) => {
+            // The object was retrieved successfully.
+
+
+            if (channelFollows.length > 0) {
+
+                let arrUsers = lodash.map(channelFollows, function(channelFollow) {
+
+                    channelFollow = channelFollow.get('user');
+
+                    return channelFollow;
+
+                });
+
+
+
+                return callback (null, arrUsers);
+
+
+            } else {
+
+                let ChannelFollow = [];
+
+                //console.log("no postSocials");
+
+                return callback (null, ChannelFollow);
+
+            }
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            return callback (error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+
+
+
+    }
+
+    function getWorkspaceFollower (callback) {
+
+        workspaceFollowerQuery.find({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }).then((workspaceFollowers) => {
+            // The object was retrieved successfully.
+
+
+            if (workspaceFollowers.length > 0) {
+
+                return callback (null, workspaceFollowers);
+
+
+            } else {
+
+                let WorkspaceFollowers = [];
+
+                //console.log("no postSocials");
+
+                return callback (null, WorkspaceFollowers);
+
+            }
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            return callback (error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+
+
+    }
 
     async.parallel([
         async.apply(getPost),
@@ -24748,7 +26227,9 @@ Parse.Cloud.afterSave('Post', function(request, response) {
         async.apply(getPostSocials),
         async.apply(getPostMessageQuestionSocials),
         async.apply(getPostMessageAnswerSocials),
-        async.apply(createPostSocial)
+        async.apply(createPostSocial),
+        async.apply(getWorkspaceFollower),
+        async.apply(getChannelFollow)
 
     ], function (err, results) {
         if (err) {
@@ -24786,6 +26267,61 @@ Parse.Cloud.afterSave('Post', function(request, response) {
 
             let postMessageAnswerSocials = results[6];
             //console.log("postMessageAnswerSocials: " + JSON.stringify(postMessageAnswerSocials));
+
+            let workspaceFollowersResult = results[8];
+
+            let channelFollowUsers = results[9];
+
+            let finalWorkspaceFollowers = lodash.map(channelFollowUsers, function(channelFollower) {
+
+                let userId = channelFollower.get('user').id;
+
+                let matchResult = lodash.findIndex(finalWorkspaceFollowers , function (o) {
+
+                    //o = o.toJSON();
+
+                    //console.log(JSON.stringify(finalPostIndexResults.indexOf(finalPostIndexResult))+ " " + JSON.stringify(Questions.indexOf(question)) +  " o.user.objectId: " + JSON.stringify(o.user.objectId) + ":: userId: " + JSON.stringify(userId));
+                    return o.get('user').id === userId;
+
+
+                });
+
+                //console.log("matchResult: " + JSON.stringify(matchResult));
+
+                // match exists
+                let workspacefollowerMatch = finalWorkspaceFollowers[matchResult];
+
+                workspacefollowerMatch.set("post", post);
+
+                channelFollower = workspacefollowerMatch;
+
+                return  channelFollower;
+
+
+            });
+
+            Parse.Object.saveAll(finalWorkspaceFollowers, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }).then(function(result) {
+                // if we got 500 or more results then we know
+                // that we have more results
+                // otherwise we finish
+
+                return result;
+
+
+            }, function(err) {
+                // error
+                console.error(err);
+
+                return err;
+
+            });
+
+
 
             let postSocial;
 
@@ -25789,8 +27325,8 @@ Parse.Cloud.afterSave('Meeting', function(req, response) {
 });
 
 
-// Add and Update AlgoliaSearch user object if it's deleted from Parse
-Parse.Cloud.afterSave('_User', function(request, response) {
+// Parse Server version < 3.0.0 Add and Update AlgoliaSearch user object if it's deleted from Parse
+/* Parse.Cloud.afterSave('_User', function(request, response) {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -26129,23 +27665,6 @@ Parse.Cloud.afterSave('_User', function(request, response) {
 
                 }
 
-                /*
-                 else if (!postACL.getPublicReadAccess() && postACL.getReadAccess(user)) {
-
-
-                 // this means this user has read access
-                 Post._tags = [user.id];
-
-                 } else if (!postACL.getPublicReadAccess() && post.ACL.getReadAccess(roleChannel)) {
-
-                 // this means any user with this channel is private and channel-role will have access i.e. they are a member of this channel
-                 Post._tags = [roleChannel];
-
-                 }
-
-
-
-                 */
 
 
             } else if (!userACL || userACL === null) {
@@ -26529,8 +28048,7 @@ Parse.Cloud.afterSave('_User', function(request, response) {
         });
 
     }, (error) => {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
+
         response.error(error);
     }, {
 
@@ -26540,7 +28058,673 @@ Parse.Cloud.afterSave('_User', function(request, response) {
     });
 
 
+}, {useMasterKey: true}); */
+
+// Parse Server version >= 3.0.0 Add and Update AlgoliaSearch user object if it's deleted from Parse
+Parse.Cloud.afterSave('_User', async (request) => {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+
+        throw new Error('afterSave-User.UNAUTHENTICATED_USER');
+
+    }
+
+    let User = request.object;
+
+    let queryUser = new Parse.Query("_User");
+    queryUser.include( ["currentCompany"] );
+
+    //console.log("request User: " + JSON.stringify(User));
+
+    //queryUser.equalTo("objectId", userToSave.objectId);
+
+    const user = await queryUser.get(User.id , {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        throw new Error(error);
+    }, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+    let USER = Parse.Object.extend("_User");
+    let userObject = new USER();
+    userObject.id = user.objectId;
+
+    let userToSave = simplifyUserMentions(user);
+
+    let userACL = user.getACL();
+
+    async function updateAlgoliaWorkspaceExpertProfileImage () {
+
+        //console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
+
+        if ((user.get("isDirtyProfileimage") === false || !user.get("isDirtyProfileimage")) && (user.get("isDirtyIsOnline") === false || !user.get("isDirtyIsOnline")) && (user.get("isDirtyTyping") === false || !user.get("isDirtyTyping")) && (user.get("isDirtyShowAvailability") === false || !user.get("isDirtyShowAvailability"))) {
+
+            //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
+
+            return user;
+
+        } else if (user.get("isNew") === true) {
+
+            return user;
+        } else {
+
+            var WORKSPACE = Parse.Object.extend("WorkSpace");
+            var workspaceQuery = new Parse.Query(WORKSPACE);
+            var User = Parse.Object.extend("_User");
+            var userQuery = new Parse.Query(User);
+
+
+            userQuery.equalTo("objectId", User.id);
+            //console.log("username: " + JSON.stringify(userToSave.username));
+            workspaceQuery.matchesQuery("experts", userQuery);
+            workspaceQuery.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive", "workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description", "createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "image"]);
+
+            const workspaces = await workspaceQuery.find({
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            //console.log("workspaces length: " + JSON.stringify(workspaces.length));
+
+            let arrWorkspaces = lodash.map(workspaces, function (workspaceObject) {
+
+                let WorkSpaceObj = new WORKSPACE();
+                WorkSpaceObj.id = workspaceObject.id;
+                WorkSpaceObj.set("isDirtyExperts", true);
+                workspaceObject = WorkSpaceObj;
+
+                return workspaceObject;
+
+            });
+
+            //console.log("arrWorkspaces: " + JSON.stringify(arrWorkspaces));
+
+            const results = await Parse.Object.saveAll(arrWorkspaces, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            return results;
+
+
+        }
+
+
+    }
+
+    async function updateAlgoliaPostsProfileImage () {
+
+        //console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
+
+        if ((user.get("isDirtyProfileimage") === false || !user.get("isDirtyProfileimage")) && (user.get("isDirtyIsOnline") === false  || !user.get("isDirtyIsOnline")) && (user.get("isDirtyTyping") === false || user.get("isDirtyTyping") === true || !user.get("isDirtyTyping")) && ( user.get("isDirtyShowAvailability") === false || !user.get("isDirtyShowAvailability"))) {
+
+            //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
+
+            return user;
+
+        }
+
+        else if (user.get("isNew") === true) {
+
+            return user;
+        }
+
+        else {
+
+            var POST = Parse.Object.extend("Post");
+            var postQuery = new Parse.Query(POST);
+
+            var USER = Parse.Object.extend("_User");
+            var UserObject = new USER();
+            UserObject.id = user.id;
+
+            postQuery.equalTo("user", UserObject);
+
+            const posts = await postQuery.find({
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            const results = await Parse.Object.saveAll(posts, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            return results;
+        }
+
+    }
+
+    async function updateChannelExpertProfileImage () {
+
+        //console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
+
+        if ((user.get("isDirtyProfileimage") === false || !user.get("isDirtyProfileimage")) && (user.get("isDirtyIsOnline") === false || !user.get("isDirtyIsOnline")) && (user.get("isDirtyTyping") === false || !user.get("isDirtyTyping")) && ( user.get("isDirtyShowAvailability") === false || !user.get("isDirtyShowAvailability"))) {
+
+            //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
+
+            return user;
+
+        }
+
+        else if (user.get("isNew") === true) {
+
+            return user;
+        }
+
+        else {
+
+            var CHANNEL = Parse.Object.extend("Channel");
+            var channelQuery = new Parse.Query(CHANNEL);
+            var User = Parse.Object.extend("_User");
+            var userQuery = new Parse.Query(User);
+
+
+            userQuery.equalTo("objectId", User.id);
+            //console.log("username: " + JSON.stringify(userToSave.username));
+            channelQuery.matchesQuery("experts", userQuery);
+            //channelQuery.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "image"]);
+
+            const channels = await channelQuery.find({
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+            let arrChannels = lodash.map(channels, function(channelObject) {
+
+                let ChannelObj = new CHANNEL();
+                ChannelObj.id = channelObject.id;
+                ChannelObj.set("isDirtyExperts", true);
+                channelObject = ChannelObj;
+
+                return channelObject;
+
+            });
+
+            //console.log("arrChannels: " + JSON.stringify(arrChannels));
+
+            const results = await Parse.Object.saveAll(arrChannels, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            return results;
+
+
+        }
+
+
+    }
+
+    async function prepIndex( ) {
+
+        // set _tags depending on the post ACL
+
+        if (userACL) {
+
+            if (userACL.getPublicReadAccess()) {
+
+                // this means it's public read access is true
+                userToSave._tags = ['*'];
+
+            }
+
+            /*
+             else if (!postACL.getPublicReadAccess() && postACL.getReadAccess(user)) {
+
+
+             // this means this user has read access
+             Post._tags = [user.id];
+
+             } else if (!postACL.getPublicReadAccess() && post.ACL.getReadAccess(roleChannel)) {
+
+             // this means any user with this channel is private and channel-role will have access i.e. they are a member of this channel
+             Post._tags = [roleChannel];
+
+             }
+
+
+
+             */
+
+
+        } else if (!userACL) {
+
+            // this means it's public read write
+            console.log("no userACL for this post.");
+            userToSave._tags = ['*'];
+        }
+
+        //console.log("userToSave: " + JSON.stringify(userToSave));
+
+
+        return userToSave;
+
+    }
+
+    async function getSkills( ) {
+
+        //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
+        //console.log("Skill Length:" + skillObject);
+
+        //let skillObject = Parse.Object.extend("Skill");
+        //var skillsRelation = new skillObject.relation("skills");
+        let skillRelation= user.get("mySkills");
+
+        //console.log("user in getSkills: " + JSON.stringify(user));
+
+
+        let skillRelationQuery = skillRelation.query();
+
+        skillRelationQuery.ascending("level");
+
+        //console.log("skillObject Exists: " + JSON.stringify(skillRelation));
+
+        const skills = await skillRelationQuery.find({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            throw new Error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+        let skillObject = [];
+
+        if (skills.length > 0) {
+
+            // skills exist return then then
+            skillObject = skills;
+        } else {
+
+            // do nothing and return empty skill object no skills;
+
+        }
+
+        return skillObject;
+
+
+    }
+
+    async function getSkillsToLearn ( ) {
+
+        //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
+        //console.log("Skill Length:" + skillObject);
+
+        //let skillObject = Parse.Object.extend("Skill");
+        //var skillsRelation = new skillObject.relation("skills");
+        let skillRelation = user.get("skillsToLearn");
+
+        let skillObjectQuery = skillRelation.query();
+        skillObjectQuery.ascending("level");
+
+        const skills = await skillObjectQuery.find({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            throw new Error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+
+        let skillObject = [];
+
+        if (skills.length > 0) {
+
+            // skills exist return then then
+            skillObject = skills;
+        } else {
+
+            // do nothing and return empty skill object no skills;
+
+        }
+
+        return skillObject;
+
+
+    }
+
+    async function getWorkspaceFollowers ( ) {
+
+
+        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+        let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+
+        queryWorkspaceFollower.equalTo("user", user);
+
+        queryWorkspaceFollower.limit(10000);
+        queryWorkspaceFollower.include( ["user"] );
+        queryWorkspaceFollower.equalTo("isFollower", true);
+
+        const followers = await queryWorkspaceFollower.find({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            throw new Error(error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+        return followers;
+
+
+    }
+
+    async function checkIfInvited ( ) {
+
+        let workspaceFollowersUserInvites = [];
+
+        if (user.get("isNew") === true) {
+
+            let USERINVITES = Parse.Object.extend("UserInvites");
+            let queryUserInvites = new Parse.Query(USERINVITES);
+
+            queryUserInvites.equalTo("email", user.get("email"));
+
+            queryUserInvites.limit(500);
+
+            const userInvites = await queryUserInvites.find({
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+
+            console.log("user userInvites " + JSON.stringify(userInvites));
+
+
+            if (userInvites.length > 0) {
+
+                let workspaceFollowerSet = new Set();
+
+                let Users = [];
+                Users.push(user);
+
+                for (var i = 0; i < userInvites.length; i++) {
+
+                    let userInvite = userInvites[i];
+                    let userWhoInvited = userInvite.get("userWhoInvited");
+                    let workspaceObject = userInvite.get("workspace");
+                    console.log("workspaceObject: " + JSON.stringify(workspaceObject));
+
+                    let sessionTokenUserWhoInvited = userWhoInvited.getSessionToken();
+
+                    const workspaceFollowers = await Parse.Cloud.run("addPeopleToWorkspace", {
+                        //user: currentUser,
+                        workspace: workspaceObject,
+                        usersToAdd: Users
+
+                    },
+                        {sessionToken: sessionTokenUserWhoInvited}
+                        , (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        //useMasterKey: true
+                        sessionToken: sessionTokenUserWhoInvited
+
+                    });
+
+                    console.log("workspaceFollower: "+ JSON.stringify(workspaceFollowers));
+
+                    workspaceFollowerSet.add(workspaceFollowers[0]);
+
+                    if ( i === (userInvites.length - 1)) {
+
+                        console.log("workspaceFollowerSet 1: " + JSON.stringify(workspaceFollowerSet));
+                        console.log("workspaceFollowerSet Size: " + JSON.stringify(workspaceFollowerSet.size));
+
+                        //let dupeArray = [3,2,3,3,5,2];
+                        let workspaceFollowerArray = Array.from(new Set(workspaceFollowerSet));
+
+                        console.log("workspaceFollowerArray length: " + JSON.stringify(workspaceFollowerArray.length));
+
+                        return workspaceFollowerArray;
+
+
+                    }
+
+
+                }
+
+            }
+
+            else {
+
+                return workspaceFollowersUserInvites;
+
+
+            }
+
+
+        } else {
+
+            return workspaceFollowersUserInvites;
+        }
+
+
+    }
+
+
+    const finalResults = await async.parallel([
+        async.apply(updateAlgoliaWorkspaceExpertProfileImage),
+        async.apply(prepIndex),
+        async.apply(getSkills),
+        async.apply(getSkillsToLearn),
+        async.apply(getWorkspaceFollowers),
+        async.apply(checkIfInvited),
+        async.apply(updateAlgoliaPostsProfileImage),
+        async.apply(updateChannelExpertProfileImage)
+
+
+    ]);
+
+    console.log("starting show finalResults " + JSON.stringify(finalResults.length));
+
+
+    if (finalResults.length > 0) {
+
+        //console.log("afterSave _User results length: " + JSON.stringify(results.length));
+
+        let userToSaveFinal = finalResults[1];
+        let mySkills = finalResults[2];
+        let skillsToLearn = finalResults[3];
+        let workspaceFollowers = finalResults[4];
+        let checkIfInvited = finalResults[5];
+
+        workspaceFollowers = workspaceFollowers.concat(checkIfInvited);
+
+        //console.log("userToSaveFinal: " + JSON.stringify(userToSaveFinal));
+
+        //workspaceFollowers = simplifyWorkspaceFollowersUserIndex(workspaceFollowers[0]);
+        //console.log("workspaceFollowers simplified for _User index: " + JSON.stringify(workspaceFollowers));
+
+        //userToSaveFinal.mySkills = mySkills;
+        //userToSaveFinal.skillsToLearn = skillsToLearn;
+
+        //console.log("mySkills: " + JSON.stringify(mySkills));
+        //console.log("skillsToLearn: " + JSON.stringify(skillsToLearn));
+
+        if (!workspaceFollowers || workspaceFollowers.length === 0) {
+
+            userToSaveFinal.workspaceFollowers = [];
+            userToSaveFinal.roles = [];
+
+            userToSaveFinal.objectID = userToSaveFinal.objectId + '-' + '0';
+
+            //console.log("userToSaveFinal: " + JSON.stringify(userToSaveFinal));
+
+            indexUsers.partialUpdateObject(userToSaveFinal, true, function (err, content) {
+                if (err) throw new Error(err);
+
+                console.log("Parse<>Algolia object saved from _User afterSave function: " + JSON.stringify(content));
+
+            });
+
+
+        } else {
+
+
+            if (user.get("isUpdateAlgoliaIndex") === true) {
+
+                console.log("isUpdateAlgoliaIndex: " + JSON.stringify(user.get("isUpdateAlgoliaIndex")));
+
+                const count = await splitUserAndIndex({
+                    'user': user,
+                    'object': userToSaveFinal,
+                    'className': 'Role',
+                    'loop': true,
+                    'workspaceFollowers': workspaceFollowers
+                }, {
+                    success: function (count) {
+
+                        return count;
+                    },
+                    error: function (error) {
+                        throw new Error(error);
+                    }
+                });
+
+                let Final_Time = process.hrtime(time);
+                console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+
+            } else {
+
+                let Final_Time = process.hrtime(time);
+                console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
+
+            }
+
+
+        }
+
+
+    } else {
+
+        throw new Error("error in afterSave Post");
+    }
+
+
 }, {useMasterKey: true});
+
 
 
 Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
@@ -27243,6 +29427,8 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
         return;
     }
 
+    let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
+
 
     function addIsSelectedWorkspaceFollowPointerToUser (callback) {
 
@@ -27307,9 +29493,56 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
 
     }
 
+    function fetchWorkspace (callback) {
+
+        let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
+
+        queryWorkspaceFollower.equalTo("objectId", workspace_follower.id);
+        queryWorkspaceFollower.include( ["workspace"], ["post"], ["postSocial"], ["postMessage"], ["postMessageSocial"] );
+
+        queryWorkspaceFollower.find({
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        }).then((workspaceFollowers) => {
+            // The object was retrieved successfully.
+
+
+            if (workspaceFollowers.length > 0) {
+
+                return callback (null, workspaceFollowers);
+
+
+            } else {
+
+                let WorkspaceFollowers = [];
+
+                //console.log("no postSocials");
+
+                return callback (null, WorkspaceFollowers);
+
+            }
+
+
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            return callback (error);
+        }, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+    }
+
+
     async.parallel([
         async.apply(addIsSelectedWorkspaceFollowPointerToUser),
-        async.apply(createWorkspaceNotificationSettings)
+        async.apply(createWorkspaceNotificationSettings),
+        async.apply(fetchWorkspace)
 
     ], function (err, results) {
         if (err) {
@@ -27320,6 +29553,15 @@ Parse.Cloud.afterSave('workspace_follower', function(request, response) {
         }
 
         //console.log("results length: " + JSON.stringify(results));
+        let indexConversation = results[2];
+        indexConversation = indexConversation.toJSON();
+        indexConversation.objectID = indexConversation.objectId;
+        let tags = [];
+        tags.push(indexConversation.user.objectId);
+        indexConversation._tags = tags;
+
+        indexConversations.addObject(indexConversation).catch(err => console.error(err));
+
 
         let finalTime = process.hrtime(time);
         console.log(`finalTime took afterSave workspace_follower ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
@@ -28440,8 +30682,6 @@ Parse.Cloud.afterSave('WorkSpace', function(request, response) {
 
 
 }, {useMasterKey: true});
-
-
 
 
 // Delete AlgoliaSearch post object if it's deleted from Parse
@@ -29628,8 +31868,6 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
 
 }, {useMasterKey: true});
 
-
-
 // Delete AlgoliaSearch meetings object if it's deleted from Parse
 /*Parse.Cloud.afterDelete('Meeting', function(request, response) {
 
@@ -29900,7 +32138,6 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
 
 
 }, {useMasterKey: true});*/
-
 
 // Delete AlgoliaSearch workspace object if it's deleted from Parse
 Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
@@ -30792,9 +33029,6 @@ Parse.Cloud.afterDelete('Skill', function(request) {
         console.log('Parse<>Algolia object deleted');
     });
 });
-
-
-
 
 
 // Delete AlgoliaSearch user object if it's deleted from Parse

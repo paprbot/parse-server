@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="e8f91948-61e7-42ff-8065-e4fedfdb1b6f" name="Default Changelist" comment="" />
+    <list default="true" id="e8f91948-61e7-42ff-8065-e4fedfdb1b6f" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cloud/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/cloud/main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -107,7 +111,24 @@
       <workItem from="1587164339061" duration="325000" />
       <workItem from="1587168061721" duration="347000" />
       <workItem from="1587244115217" duration="336000" />
-      <workItem from="1587341572594" duration="492000" />
+      <workItem from="1587341572594" duration="697000" />
+      <workItem from="1587352819034" duration="1045000" />
+      <workItem from="1587354677416" duration="1583000" />
+      <workItem from="1587358217327" duration="1667000" />
+      <workItem from="1587360161606" duration="1550000" />
+      <workItem from="1587361988136" duration="1493000" />
+      <workItem from="1587432128871" duration="124000" />
+      <workItem from="1587432328025" duration="434000" />
+      <workItem from="1587577083141" duration="1904000" />
+      <workItem from="1587579316112" duration="1697000" />
+      <workItem from="1587581131461" duration="1757000" />
+      <workItem from="1587582946618" duration="1814000" />
+      <workItem from="1587584807470" duration="594000" />
+      <workItem from="1587587007391" duration="1412000" />
+      <workItem from="1587588855836" duration="1880000" />
+      <workItem from="1587593224594" duration="1590000" />
+      <workItem from="1587595035182" duration="1788000" />
+      <workItem from="1587596844795" duration="1774000" />
     </task>
     <servers />
   </component>
@@ -118,32 +139,23 @@
     <state x="198" y="45" width="1086" height="934" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584235105414">
       <screen x="0" y="23" width="1440" height="825" />
     </state>
-    <state x="206" y="26" width="1086" height="934" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1500.960@0.0.1500.960" timestamp="1578196744470" />
     <state x="198" y="45" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1440.825@0.23.1440.825" timestamp="1584235105414" />
-    <state x="479" y="285" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1578876504665">
-      <screen x="0" y="0" width="1500" height="960" />
+    <state width="1398" height="245" key="GridCell.Tab.0.bottom" timestamp="1587581185753">
+      <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="479" y="285" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1500.960@0.0.1500.960" timestamp="1578876504665" />
-    <state x="470" y="170" key="#com.intellij.ide.util.frameworkSupport.AddFrameworkSupportDialog" timestamp="1578195440470">
-      <screen x="0" y="0" width="1500" height="960" />
+    <state width="1398" height="245" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1587581185753" />
+    <state width="1398" height="245" key="GridCell.Tab.0.center" timestamp="1587581185750">
+      <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="470" y="170" key="#com.intellij.ide.util.frameworkSupport.AddFrameworkSupportDialog/0.0.1500.960@0.0.1500.960" timestamp="1578195440470" />
-    <state x="532" y="237" key="FileChooserDialogImpl" timestamp="1578196694006">
-      <screen x="0" y="0" width="1500" height="960" />
+    <state width="1398" height="245" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1587581185750" />
+    <state width="1398" height="245" key="GridCell.Tab.0.left" timestamp="1587581185749">
+      <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="532" y="237" key="FileChooserDialogImpl/0.0.1500.960@0.0.1500.960" timestamp="1578196694006" />
-    <state x="193" y="63" width="912" height="847" key="SettingsEditor" timestamp="1578196722804">
-      <screen x="0" y="0" width="1500" height="960" />
+    <state width="1398" height="245" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1587581185749" />
+    <state width="1398" height="245" key="GridCell.Tab.0.right" timestamp="1587581185752">
+      <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="193" y="63" width="912" height="847" key="SettingsEditor/0.0.1500.960@0.0.1500.960" timestamp="1578196722804" />
-    <state x="419" y="338" key="SignInWindow" timestamp="1578195026079">
-      <screen x="0" y="0" width="1500" height="960" />
-    </state>
-    <state x="419" y="338" key="SignInWindow/0.0.1500.960@0.0.1500.960" timestamp="1578195026079" />
-    <state x="493" y="223" key="SubscriptionsDialog" timestamp="1578195033548">
-      <screen x="0" y="0" width="1500" height="960" />
-    </state>
-    <state x="493" y="223" key="SubscriptionsDialog/0.0.1500.960@0.0.1500.960" timestamp="1578195033548" />
+    <state width="1398" height="245" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1587581185752" />
     <state x="446" y="306" key="com.intellij.ide.util.TipDialog" timestamp="1583032489406">
       <screen x="0" y="0" width="1500" height="960" />
     </state>
