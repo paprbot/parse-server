@@ -1,5 +1,7 @@
 var express = require('express');
-var ParseServer = require('parse-server').ParseServer;
+const { default: ParseServer, ParseGraphQLServer } = require('parse-server');
+
+//var ParseServer = require('parse-server').ParseServer;
 var ParseDashboard = require('parse-dashboard');
 var parseServerConfig = require('parse-server-azure-config');
 var url = require('url');
@@ -33,6 +35,15 @@ var api = new ParseServer(config.server);
 var app = express();
 
 
+const parseGraphQLServer = new ParseGraphQLServer(
+    api,
+    {
+        graphQLPath: '/graphql',
+        playgroundPath: '/playground'
+    }
+);
+
+
 
 // Serve static assets from the /public folder
 
@@ -43,6 +54,7 @@ app.use('/public', express.static(path.join(__dirname, '/public')));
 // Serve the Parse API on the /parse URL prefix
 
 var mountPath = process.env.PARSE_MOUNT || '/parse';
+
 
 app.use(function (req, res, next) {
 
@@ -60,7 +72,11 @@ app.use(function (req, res, next) {
     next();
 });
 
-app.use(mountPath, api);
+app.use(mountPath, api.app);
+// Mounts the GraphQL API using graphQLPath: '/graphql'
+parseGraphQLServer.applyGraphQL(app);
+// (Optional) Mounts the GraphQL Playground - do NOT use in Production
+parseGraphQLServer.applyPlayground(app);
 app.use('/parse-dashboard', ParseDashboard(config.dashboard, {allowInsecureHTTP: true}));
 
 
@@ -93,8 +109,12 @@ var httpServer = require('http').createServer(app);
 
 httpServer.listen(port, function() {
 
+    console.log(`master key ${process.env.REDIS_URL}`);
+
     console.log(`Parse Server running at ${config.server.serverURL}`);
     console.log(`Parse LiveQuery Server running at ${config.server.liveQuery.serverURL}`);
+    console.log(`GraphQL API running on ${config.server.graphQLServerURL}`);
+    console.log(`GraphQL Playground running on ${config.dashboard.apps[0].graphQLServerURL}`);
 
 });
 
@@ -103,7 +123,7 @@ httpServer.listen(port, function() {
 // This will enable the Live Query real-time server
 
 ParseServer.createLiveQueryServer(httpServer, {
-    redisURL: 'redis://user:YQU8q92fG6nMhU1GqWmVTE2ds1fin+th7At+ReO4myM=@parseserverwestRedis.redis.cache.windows.net:6379' // Redis URL from main app
+    redisURL: process.env.REDIS_URL // Redis URL from main app
 });
 
 
@@ -122,8 +142,8 @@ ParseServer.createLiveQueryServer(httpServer, {
  var api = new ParseServer({
  databaseURI: 'mongodb://paprvmdatabase.westus2.cloudapp.azure.com:27017/parse',
  cloud: __dirname + '/cloud/main.js',
- appId: '671e705a-f735-4ec0-8474-15899a475440',
- clientKey:'671e705a-f735-4ec0-8474-15899a475440',
+ appId: process.env.APP_ID,
+ clientKey:'',
  serverURL: 'https://parseserverwest.azurewebsites.net/parse',
  liveQuery: {
  classNames: ["PostQuestionMessage","User","PostQuestion"]
@@ -137,8 +157,8 @@ ParseServer.createLiveQueryServer(httpServer, {
  var api = new ParseServer(
  {
  databaseURI: 'mongodb://paprvmdatabase.westus2.cloudapp.azure.com:27017/parse',
- appId: "671e705a-f735-4ec0-8474-15899a475440",
- masterKey: "f24d6630-a35a-4db8-9fc7-6a851042bfd6",
+ appId: process.env.APP_ID,
+ masterKey: process.env.MASTER_KEY,
  //fileKey: "",
  serverURL: "https://parseserverwest.azurewebsites.net/parse",
  liveQuery: {

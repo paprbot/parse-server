@@ -1,6 +1,5 @@
 
 var algoliasearch = require('algoliasearch');
-var client = algoliasearch('K3ET7YKLTI', '67085f00b6dbdd989eddc47fd1975c9c');
 var async = require('async');
 var lodash = require('lodash');
 var fp = require('lodash/fp');
@@ -11,6 +10,8 @@ var querystring = require('querystring');
 var process = require('process');
 var mongoClient = require("mongodb").MongoClient;
 var Promise = require('promise');
+var client = algoliasearch(process.env.ALGOLIA_APP_ID, process.env.ALGOLIA_KEY);
+
 
 const isProduction = true;
 var fileForPushNotification;
@@ -54,7 +55,7 @@ if( isProduction === false ){
 
 const requestPromise = require('request-promise');
 var fs = require('fs');
-Parse.initialize('671e705a-f735-4ec0-8474-15899a475440', '', 'f24d6630-a35a-4db8-9fc7-6a851042bfd6');
+Parse.initialize(process.env.APP_ID, '', process.env.MASTER_KEY);
 
 let simplifyUser = require('./simplifyClass/_User/simplifyUser');
 let simplifyUserMentions = require('./simplifyClass/_User/simplifyUserMentions');
@@ -105,7 +106,6 @@ var nodemailer = require('nodemailer');
 var EmailTemplate = require('email-templates');
 var smtpTransport = require('nodemailer-smtp-transport');
 var handlebars = require('handlebars');
-var fs = require('fs');
 // Push Notification
 var apn = require('apn');
 const path = require('path');
@@ -493,7 +493,7 @@ Parse.Cloud.define("QueryPostFeed", function(request, response) {
 });
 
 // cloud API and function to addExperts to a workspace
-Parse.Cloud.define("setAsExpert", function(request, response) {
+Parse.Cloud.define("setAsExpert", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -503,11 +503,8 @@ Parse.Cloud.define("setAsExpert", function(request, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.setAsExpert.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+
+        throw new Error('define-setAsExpert.UNAUTHENTICATED_USER');
     }
 
     //get request params
@@ -518,7 +515,7 @@ Parse.Cloud.define("setAsExpert", function(request, response) {
     let workspace = new WORKSPACE();
     workspace.id = WorkspaceId;
 
-    async.map(UserIdArray, function (userId, cb) {
+    const userResult = await async.map(UserIdArray, async function (userId) {
 
         userId = userId.objectId;
 
@@ -528,127 +525,23 @@ Parse.Cloud.define("setAsExpert", function(request, response) {
         let user = new USER();
         user.id = userId;
 
-        return cb (null, user);
+        return user;
 
-
-    }, function (err, result) {
-
-        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-        if (err) {response.error(err);} else {
-
-            let expertRelation = workspace.relation("experts");
-            expertRelation.add(result);
-
-            workspace.save(null, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            }).then((result) => {
-
-                // save was successful
-                if(result) {
-
-                    console.log("expert added: " + JSON.stringify(result));
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime  setAsExpert  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                    response.success(result);
-
-
-                } else {
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime setAsExpert took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                    response.error(result);
-
-                }
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-
-
-        }
 
     });
 
+    let expertRelation = workspace.relation("experts");
+    expertRelation.add(userResult);
+
+    return workspace.save(null, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
 
 
 }, {useMasterKey: true});
-
-/*Parse.Cloud.define('getPostMessagePosition', function(request, response) {
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let currentUser = request.user;
-    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
-
-    if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.getPostMessagePosition.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
-    }
-
-    //get request params
-    let objectId = request.params.objectId;
-    let HitsPerPage = request.params.hitsPerPage;
-    HitsPerPage = HitsPerPage? HitsPerPage : 20;
-
-    let POSTMESSAGE = Parse.Object.extend("PostMessage");
-
-    //let WorkspaceId = request.params.workspaceId;
-
-    //console.log("currentUser: " + JSON.stringify(currentUser));
-
-    var clientUser = algoliasearch('K3ET7YKLTI', currentUser.get("algoliaSecureAPIKey"));
-
-    let indexPostMessageUser = clientUser.initIndex('prod_postMessages');
-
-    indexPostMessageUser.findObject(hit => hit.objectId === objectId, {
-        query: "",
-        hitsPerPage: HitsPerPage
-
-    }).then(obj => {
-        //console.log(obj);
-
-        let PostMessage = new POSTMESSAGE();
-        PostMessage.id = obj.object.objectId;
-        PostMessage = PostMessage.toJSON();
-        PostMessage.page = obj.page;
-        PostMessage.position = obj.position;
-        PostMessage.hitsPerPage = HitsPerPage;
-
-        console.log("PostMessage Position: " + JSON.stringify(PostMessage));
-
-        return response.success(PostMessage);
-
-        //return response.success(obj);
-    }).catch((error) => {
-        console.log(error);
-        return response.error(error);
-    });
-
-
-
-}, {useMasterKey: true});*/
 
 // cloud API and function to get position of postMessages in Algolia
 Parse.Cloud.define('getPostMessagePosition', async request => {
@@ -660,10 +553,7 @@ Parse.Cloud.define('getPostMessagePosition', async request => {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        return (JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.getPostMessagePosition.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
+       throw new Error('define-getPostMessagePosition.UNAUTHENTICATED_USER');
 
     }
 
@@ -707,63 +597,6 @@ Parse.Cloud.define('getPostMessagePosition', async request => {
     });
 });
 
-/*Parse.Cloud.define('getPostPosition', function(request, response) {
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let currentUser = request.user;
-    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
-
-    if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.getPostPosition.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
-    }
-
-    //get request params
-    let objectId = request.params.objectId;
-    let HitsPerPage = request.params.hitsPerPage;
-    HitsPerPage = HitsPerPage? HitsPerPage : 20;
-
-    //let WorkspaceId = request.params.workspaceId;
-    let POST = Parse.Object.extend("Post");
-
-    //console.log("currentUser: " + JSON.stringify(currentUser));
-
-    var clientUser = algoliasearch('K3ET7YKLTI', currentUser.get("algoliaSecureAPIKey"));
-
-    let indexPostUser = clientUser.initIndex('prod_posts');
-
-    indexPostUser.findObject(hit => hit.objectId === objectId, {
-        query: "",
-        hitsPerPage: HitsPerPage
-    }).then(obj => {
-        //console.log(obj);
-
-        let PostPosition = new POST();
-        PostPosition.id = obj.object.objectId;
-        PostPosition = PostPosition.toJSON();
-        PostPosition.page = obj.page;
-        PostPosition.position = obj.position;
-        PostPosition.hitsPerPage = HitsPerPage;
-
-        console.log("Post Position: " + JSON.stringify(PostPosition));
-
-        return response.success(PostPosition);
-
-        //return response.success(obj);
-    }).catch((error) => {
-        console.log(error);
-        return response.error(error);
-    });
-
-
-}, {useMasterKey: true});*/
-
-
 Parse.Cloud.define('getPostPosition', async request => {
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -773,10 +606,7 @@ Parse.Cloud.define('getPostPosition', async request => {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        return (JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.getPostPosition.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));;
+        throw new Error('define-getPostPosition.UNAUTHENTICATED_USER');
     }
 
     //get request params
@@ -817,61 +647,6 @@ Parse.Cloud.define('getPostPosition', async request => {
     });
 });
 
-/*Parse.Cloud.define('getWorkspacePosition', function(request, response) {
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let currentUser = request.user;
-    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
-
-    if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.getPostPosition.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
-    }
-
-    //get request params
-    let objectId = request.params.objectId;
-    let HitsPerPage = request.params.hitsPerPage;
-    HitsPerPage = HitsPerPage? HitsPerPage : 20;
-
-    let WORKSPACE = Parse.Object.extend("WorkSpace");
-
-
-    //console.log("currentUser: " + JSON.stringify(currentUser));
-
-    var clientUser = algoliasearch('K3ET7YKLTI', currentUser.get("algoliaSecureAPIKey"));
-
-    let indexWorkspaceUser = clientUser.initIndex('prod_workspaces');
-
-    indexWorkspaceUser.findObject(hit => hit.objectId === objectId, {
-        query: "",
-        hitsPerPage: HitsPerPage
-    }).then(obj => {
-
-        let Workspace = new WORKSPACE();
-        Workspace.id = obj.object.objectId;
-        Workspace = Workspace.toJSON();
-        Workspace.page = obj.page;
-        Workspace.position = obj.position;
-        Workspace.hitsPerPage = HitsPerPage;
-
-        console.log("Workspace Position: " + JSON.stringify(Workspace));
-
-        return response.success(Workspace);
-
-        //return response.success(obj);
-    }).catch((error) => {
-        console.log(error);
-        return response.error(error);
-    });
-
-
-}, {useMasterKey: true});*/
-
 Parse.Cloud.define('getWorkspacePosition', async request => {
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -881,10 +656,7 @@ Parse.Cloud.define('getWorkspacePosition', async request => {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        return (JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.getWorkspacePosition.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
+        throw new Error('define-getWorkspacePosition.UNAUTHENTICATED_USER');
     }
 
     //get request params
@@ -925,7 +697,7 @@ Parse.Cloud.define('getWorkspacePosition', async request => {
 });
 
 // cloud API and function to removeExpert to a workspace
-Parse.Cloud.define("removeExpert", function(request, response) {
+Parse.Cloud.define("removeExpert", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -935,11 +707,8 @@ Parse.Cloud.define("removeExpert", function(request, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.removeExpert.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('define-removeExpert.UNAUTHENTICATED_USER');
+
     }
 
     //get request params
@@ -950,7 +719,7 @@ Parse.Cloud.define("removeExpert", function(request, response) {
     let workspace = new WORKSPACE();
     workspace.id = WorkspaceId;
 
-    async.map(UserIdArray, function (userId, cb) {
+    const result = await async.map(UserIdArray, async function (userId) {
 
         userId = userId.objectId;
 
@@ -960,62 +729,249 @@ Parse.Cloud.define("removeExpert", function(request, response) {
         let user = new USER();
         user.id = userId;
 
-        return cb (null, user);
+        return user;
+
+    });
+
+    let expertRelation = workspace.relation("experts");
+    expertRelation.remove(result);
+
+    return workspace.save(null, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+}, {useMasterKey: true});
+
+// cloud API and function to setAsOwner to a workspace
+Parse.Cloud.define("setAsFounder", async request => {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        throw new Error('define-setAsFounder.UNAUTHENTICATED_USER');
+    }
+
+    //get request params
+    let UserIdArray = request.params.userIdArray;
+    let WorkspaceId = request.params.workspaceId;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = WorkspaceId;
+
+    let queryOwnerRole = new Parse.Query(Parse.Role);
+    let ownerName = 'owner-' + workspace.id;
+
+    queryOwnerRole.equalTo('name', ownerName);
+
+    const ownerRole = await queryOwnerRole.first({
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        throw new Error(error);
+    }, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+    const userResult = await async.map(UserIdArray, async function (userId) {
+
+        userId = userId.objectId;
+
+        console.log("userId: " + JSON.stringify(userId));
+
+        let USER = Parse.Object.extend("_User");
+        let user = new USER();
+        user.id = userId;
+
+        // set user role now then save
+        let roleRelation = user.relation("roles");
+        roleRelation.add(ownerRole);
+        return user.save(null, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+    });
+
+    // add user to this role and save it
+    await ownerRole.getUsers().add(userResult);
+
+    return ownerRole.save(null, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+}, {useMasterKey: true});
+
+// cloud API and function to setAsOwner to a workspace
+Parse.Cloud.define("removeFounder", async request => {
+
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
+
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
+
+    if (!request.master && (!currentUser || !sessionToken)) {
+        throw new Error('define-removeFounder.UNAUTHENTICATED_USER');
+    }
+
+    //get request params
+    let UserIdArray = request.params.userIdArray;
+    let WorkspaceId = request.params.workspaceId;
+
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = WorkspaceId;
+
+    let queryOwnerRole = new Parse.Query(Parse.Role);
+    let ownerName = 'owner-' + workspace.id;
+
+    queryOwnerRole.equalTo('name', ownerName);
+
+    const ownerRole = await queryOwnerRole.first({
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        throw new Error(error);
+    }, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+    const userResult = await async.map(UserIdArray, async function (userId) {
+
+        userId = userId.objectId;
+
+        console.log("userId: " + JSON.stringify(userId));
+
+        let USER = Parse.Object.extend("_User");
+        let user = new USER();
+        user.id = userId;
+
+        // set user role now then save
+        let roleRelation = user.relation("roles");
+        roleRelation.remove(ownerRole);
+        return user.save(null, {
+
+            useMasterKey: true
+            //sessionToken: sessionToken
+
+        });
+
+    });
+
+    // add user to this role and save it
+    await ownerRole.getUsers().remove(userResult);
+
+    return ownerRole.save(null, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
 
 
-    }, function (err, result) {
+}, {useMasterKey: true});
 
-        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+// cloud API and function to setAsAdmin to a workspace
+Parse.Cloud.define("setAsAdmin", async request => {
 
-        if (err) {response.error(err);} else {
+    const NS_PER_SEC = 1e9;
+    const MS_PER_NS = 1e-6;
+    let time = process.hrtime();
 
-            let expertRelation = workspace.relation("experts");
-            expertRelation.remove(result);
+    let currentUser = request.user;
+    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
-            workspace.save(null, {
+    if (!request.master && (!currentUser || !sessionToken)) {
+        throw new Error('define-setAsAdmin.UNAUTHENTICATED_USER');
+    }
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+    //get request params
+    let UserIdArray = request.params.userIdArray;
+    let WorkspaceId = request.params.workspaceId;
 
-            }).then((result) => {
+    let WORKSPACE = Parse.Object.extend("WorkSpace");
+    let workspace = new WORKSPACE();
+    workspace.id = WorkspaceId;
 
-                // save was successful
-                if(result) {
+    let queryAdminRole = new Parse.Query(Parse.Role);
+    let adminName = 'admin-' + workspace.id;
 
-                    console.log("expert added: " + JSON.stringify(result));
+    queryAdminRole.equalTo('name', adminName);
 
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime  removeExpert  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+    const adminRole = await queryAdminRole.first({
 
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-                    response.success(result);
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        throw new Error(error);
+    }, {
 
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-                } else {
+    });
 
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime removeExpert took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
+    const userResult = await async.map(UserIdArray, async function (userId) {
 
+        userId = userId.objectId;
 
-                    response.error(result);
+        console.log("userId: " + JSON.stringify(userId));
 
-                }
+        let USER = Parse.Object.extend("_User");
+        let user = new USER();
+        user.id = userId;
 
+        // set user role now then save
+        let roleRelation = user.relation("roles");
+        roleRelation.add(adminRole);
+        return user.save(null, {
 
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {
+            useMasterKey: true
+            //sessionToken: sessionToken
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+        });
 
-            });
+    });
 
+    // add user to this role and save it
+    await adminRole.getUsers().add(userResult);
 
+    return adminRole.save(null, {
 
-        }
+        useMasterKey: true
+        //sessionToken: sessionToken
 
     });
 
@@ -1023,261 +979,8 @@ Parse.Cloud.define("removeExpert", function(request, response) {
 
 }, {useMasterKey: true});
 
-// cloud API and function to setAsOwner to a workspace
-Parse.Cloud.define("setAsFounder", function(request, response) {
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let currentUser = request.user;
-    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
-
-    if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.setAsFounder.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
-    }
-
-    //get request params
-    let UserIdArray = request.params.userIdArray;
-    let WorkspaceId = request.params.workspaceId;
-
-    let WORKSPACE = Parse.Object.extend("WorkSpace");
-    let workspace = new WORKSPACE();
-    workspace.id = WorkspaceId;
-
-    let queryOwnerRole = new Parse.Query(Parse.Role);
-    let ownerName = 'owner-' + workspace.id;
-
-    queryOwnerRole.equalTo('name', ownerName);
-    queryOwnerRole.first({useMasterKey: true})
-        .then((ownerRole) => {
-            // The object was retrieved successfully.
-
-            //console.log("ownerRole" + JSON.stringify(ownerRole));
-
-            async.map(UserIdArray, function (userId, cb) {
-
-                userId = userId.objectId;
-
-                console.log("userId: " + JSON.stringify(userId));
-
-                let USER = Parse.Object.extend("_User");
-                let user = new USER();
-                user.id = userId;
-
-                // set user role now then save
-                let roleRelation = user.relation("roles");
-                roleRelation.add(ownerRole);
-                user.save(null, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-                return cb (null, user);
-
-
-            }, function (err, result) {
-
-                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-                if (err) {response.error(err);} else {
-
-                    // add user to this role and save it
-                    ownerRole.getUsers().add(result);
-
-                    ownerRole.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    }).then((final_result) => {
-
-                        // save was successful
-                        if(final_result) {
-
-                            //console.log("expert added: " + JSON.stringify(final_result));
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime  setAsFounder  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.success(final_result);
-
-
-                        } else {
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime setAsFounder took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.error(final_result);
-
-                        }
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-
-                }
-
-            });
-
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {useMasterKey: true});
-
-
-
-}, {useMasterKey: true});
-
-// cloud API and function to setAsOwner to a workspace
-Parse.Cloud.define("removeFounder", function(request, response) {
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let currentUser = request.user;
-    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
-
-    if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.removeFounder.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
-    }
-
-    //get request params
-    let UserIdArray = request.params.userIdArray;
-    let WorkspaceId = request.params.workspaceId;
-
-    let WORKSPACE = Parse.Object.extend("WorkSpace");
-    let workspace = new WORKSPACE();
-    workspace.id = WorkspaceId;
-
-    let queryOwnerRole = new Parse.Query(Parse.Role);
-    let ownerName = 'owner-' + workspace.id;
-
-    queryOwnerRole.equalTo('name', ownerName);
-    queryOwnerRole.first({useMasterKey: true})
-        .then((ownerRole) => {
-            // The object was retrieved successfully.
-
-            //console.log("ownerRole" + JSON.stringify(ownerRole));
-
-            async.map(UserIdArray, function (userId, cb) {
-
-                userId = userId.objectId;
-
-                console.log("userId: " + JSON.stringify(userId));
-
-                let USER = Parse.Object.extend("_User");
-                let user = new USER();
-                user.id = userId;
-
-                // set user role now then save
-                let roleRelation = user.relation("roles");
-                roleRelation.remove(ownerRole);
-                user.save(null, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-                return cb (null, user);
-
-
-            }, function (err, result) {
-
-                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-                if (err) {response.error(err);} else {
-
-                    // add user to this role and save it
-                    ownerRole.getUsers().remove(result);
-
-                    ownerRole.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    }).then((final_result) => {
-
-                        // save was successful
-                        if(final_result) {
-
-                            //console.log("expert added: " + JSON.stringify(final_result));
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime  removeFounder  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.success(final_result);
-
-
-                        } else {
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime removeFounder took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.error(final_result);
-
-                        }
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-
-                }
-
-            });
-
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {useMasterKey: true});
-
-
-}, {useMasterKey: true});
-
 // cloud API and function to setAsAdmin to a workspace
-Parse.Cloud.define("setAsAdmin", function(request, response) {
+Parse.Cloud.define("removeAdmin", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -1287,11 +990,7 @@ Parse.Cloud.define("setAsAdmin", function(request, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.setAsAdmin.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('define-removeAdmin.UNAUTHENTICATED_USER');
     }
 
     //get request params
@@ -1306,233 +1005,59 @@ Parse.Cloud.define("setAsAdmin", function(request, response) {
     let adminName = 'admin-' + workspace.id;
 
     queryAdminRole.equalTo('name', adminName);
-    queryAdminRole.first({useMasterKey: true})
-        .then((adminRole) => {
-            // The object was retrieved successfully.
+    const adminRole = await queryAdminRole.first({
 
-            //console.log("ownerRole" + JSON.stringify(ownerRole));
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-            async.map(UserIdArray, function (userId, cb) {
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        throw new Error(error);
+    }, {
 
-                userId = userId.objectId;
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-                console.log("userId: " + JSON.stringify(userId));
+    });
 
-                let USER = Parse.Object.extend("_User");
-                let user = new USER();
-                user.id = userId;
+    const userResult = await async.map(UserIdArray, async function (userId) {
 
-                // set user role now then save
-                let roleRelation = user.relation("roles");
-                roleRelation.add(adminRole);
-                user.save(null, {
+        userId = userId.objectId;
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+        console.log("userId: " + JSON.stringify(userId));
 
-                });
+        let USER = Parse.Object.extend("_User");
+        let user = new USER();
+        user.id = userId;
 
-                return cb (null, user);
+        // set user role now then save
+        let roleRelation = user.relation("roles");
+        roleRelation.remove(adminRole);
+        return user.save(null, {
 
+            useMasterKey: true
+            //sessionToken: sessionToken
 
-            }, function (err, result) {
+        });
 
-                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+    });
 
-                if (err) {response.error(err);} else {
+    // add user to this role and save it
+    await adminRole.getUsers().add(userResult);
 
-                    // add user to this role and save it
-                    adminRole.getUsers().add(result);
+    return adminRole.save(null, {
 
-                    adminRole.save(null, {
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    }).then((final_result) => {
-
-                        // save was successful
-                        if(final_result) {
-
-                            //console.log("expert added: " + JSON.stringify(final_result));
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime  setAsAdmin  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.success(final_result);
-
-
-                        } else {
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime setAsAdmin took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.error(final_result);
-
-                        }
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-
-                }
-
-            });
-
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {useMasterKey: true});
-
-
-
-}, {useMasterKey: true});
-
-// cloud API and function to setAsAdmin to a workspace
-Parse.Cloud.define("removeAdmin", function(request, response) {
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let currentUser = request.user;
-    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
-
-    if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.removeAdmin.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
-    }
-
-    //get request params
-    let UserIdArray = request.params.userIdArray;
-    let WorkspaceId = request.params.workspaceId;
-
-    let WORKSPACE = Parse.Object.extend("WorkSpace");
-    let workspace = new WORKSPACE();
-    workspace.id = WorkspaceId;
-
-    let queryAdminRole = new Parse.Query(Parse.Role);
-    let adminName = 'admin-' + workspace.id;
-
-    queryAdminRole.equalTo('name', adminName);
-    queryAdminRole.first({useMasterKey: true})
-        .then((adminRole) => {
-            // The object was retrieved successfully.
-
-            //console.log("ownerRole" + JSON.stringify(ownerRole));
-
-            async.map(UserIdArray, function (userId, cb) {
-
-                userId = userId.objectId;
-
-                console.log("userId: " + JSON.stringify(userId));
-
-                let USER = Parse.Object.extend("_User");
-                let user = new USER();
-                user.id = userId;
-
-                // set user role now then save
-                let roleRelation = user.relation("roles");
-                roleRelation.remove(adminRole);
-                user.save(null, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-                return cb (null, user);
-
-
-            }, function (err, result) {
-
-                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-                if (err) {response.error(err);} else {
-
-                    // add user to this role and save it
-                    adminRole.getUsers().remove(result);
-
-                    adminRole.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    }).then((final_result) => {
-
-                        // save was successful
-                        if(final_result) {
-
-                            //console.log("expert added: " + JSON.stringify(final_result));
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime  removeAdmin  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.success(final_result);
-
-
-                        } else {
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime removeAdmin took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.error(final_result);
-
-                        }
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-
-                }
-
-            });
-
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {useMasterKey: true});
-
-
+    });
 
 
 }, {useMasterKey: true});
 
 // cloud API and function to setAsModerator to a workspace
-Parse.Cloud.define("setAsModerator", function(request, response) {
+Parse.Cloud.define("setAsModerator", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -1542,11 +1067,7 @@ Parse.Cloud.define("setAsModerator", function(request, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.setAsModerator.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('define-setAsModerator.UNAUTHENTICATED_USER');
     }
 
     let UserIdArray = request.params.userIdArray;
@@ -1561,127 +1082,62 @@ Parse.Cloud.define("setAsModerator", function(request, response) {
 
     console.log("running queryModeratorRole");
 
-    console.log("UserIdArray" + JSON.stringify(UserIdArray));
-
+    // console.log("UserIdArray" + JSON.stringify(UserIdArray));
 
     queryModeratorRole.equalTo('name', moderatorName);
-    queryModeratorRole.first({useMasterKey: true})
-        .then((moderatorRole) => {
-            // The object was retrieved successfully.
+    const ModeratorRole = await queryModeratorRole.first({
 
-            console.log("moderatorRole" + JSON.stringify(moderatorRole));
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-            async.map(UserIdArray, function (userId, cb) {
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        throw new Error(error);
+    }, {
 
-                userId = userId.objectId;
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-                console.log("userId: " + JSON.stringify(userId));
+    });
 
-                let USER = Parse.Object.extend("_User");
-                let user = new USER();
-                user.id = userId;
+    const userResult = await async.map(UserIdArray, async function (userId) {
 
-                user.fetch(user.id , {
+        userId = userId.objectId;
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+        // console.log("userId: " + JSON.stringify(userId));
 
-                }).then((User) => {
+        let USER = Parse.Object.extend("_User");
+        let user = new USER();
+        user.id = userId;
 
+        // set user role now then save
+        let roleRelation = user.relation("roles");
+        roleRelation.add(ModeratorRole);
+        return user.save(null, {
 
-                    // set user role now then save
-                    let roleRelation = User.relation("roles");
-                    roleRelation.add(moderatorRole);
-                    User.save(null, {
+            useMasterKey: true
+            //sessionToken: sessionToken
 
-                        useMasterKey: true
-                        //sessionToken: sessionToken
+        });
 
-                    });
+    });
 
-                    return cb (null, User);
+    // add user to this role and save it
+    await ModeratorRole.getUsers().add(userResult);
 
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    response.error(error);
-                }, {
+    return ModeratorRole.save(null, {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-                });
+    });
 
-
-
-            }, function (err, result) {
-
-                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-                if (err) {response.error(err);} else {
-
-                    // add user to this role and save it
-                    moderatorRole.getUsers().add(result);
-
-                    moderatorRole.save(null, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    }).then((final_result) => {
-
-                        // save was successful
-                        if(final_result) {
-
-                            //console.log("expert added: " + JSON.stringify(final_result));
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime  setAsModerator  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.success(final_result);
-
-
-                        } else {
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime setAsModerator took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.error(final_result);
-
-                        }
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-
-                }
-
-            });
-
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {useMasterKey: true});
 
 }, {useMasterKey: true});
 
 // cloud API and function to setAsModerator to a workspace
-Parse.Cloud.define("removeModerator", function(request, response) {
+Parse.Cloud.define("removeModerator", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -1691,11 +1147,7 @@ Parse.Cloud.define("removeModerator", function(request, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.cloudFunction.removeModerator.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('define-removeModerator.UNAUTHENTICATED_USER');
     }
 
     let UserIdArray = request.params.userIdArray;
@@ -1709,99 +1161,53 @@ Parse.Cloud.define("removeModerator", function(request, response) {
     let moderatorName = 'moderator-' + workspace.id;
 
     queryModeratorRole.equalTo('name', moderatorName);
-    queryModeratorRole.first({useMasterKey: true})
-        .then((moderatorRole) => {
-            // The object was retrieved successfully.
+    const ModeratorRole = await queryModeratorRole.first({
 
-            //console.log("ownerRole" + JSON.stringify(ownerRole));
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-            async.map(UserIdArray, function (userId, cb) {
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        throw new Error(error);
+    }, {
 
-                userId = userId.objectId;
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-                console.log("userId: " + JSON.stringify(userId));
+    });
 
-                let USER = Parse.Object.extend("_User");
-                let user = new USER();
-                user.id = userId;
+    const userResult = await async.map(UserIdArray, async function (userId) {
 
-                // set user role now then save
-                let roleRelation = user.relation("roles");
-                roleRelation.remove(moderatorRole);
-                user.save(null, {
+        userId = userId.objectId;
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+        // console.log("userId: " + JSON.stringify(userId));
 
-                });
+        let USER = Parse.Object.extend("_User");
+        let user = new USER();
+        user.id = userId;
 
-                return cb (null, user);
+        // set user role now then save
+        let roleRelation = user.relation("roles");
+        roleRelation.add(ModeratorRole);
+        return user.save(null, {
 
+            useMasterKey: true
+            //sessionToken: sessionToken
 
-            }, function (err, result) {
+        });
 
-                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+    });
 
-                if (err) {response.error(err);} else {
+    // add user to this role and save it
+    await ModeratorRole.getUsers().remove(userResult);
 
-                    // add user to this role and save it
-                    moderatorRole.getUsers().remove(result);
+    return ModeratorRole.save(null, {
 
-                    moderatorRole.save(null, {
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    }).then((final_result) => {
-
-                        // save was successful
-                        if(final_result) {
-
-                            //console.log("expert added: " + JSON.stringify(final_result));
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime  removeModerator  took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.success(final_result);
-
-
-                        } else {
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime removeModerator took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-                            response.error(final_result);
-
-                        }
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-
-                }
-
-            });
-
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {useMasterKey: true});
-
+    });
 }, {useMasterKey: true});
 
 // cloud API and function to leave a workspace
@@ -5106,7 +4512,8 @@ Parse.Cloud.beforeSave('_User', async (req) => {
                 */
 
 
-        } else {
+        }
+        else {
             let finalTime = process.hrtime(time);
             console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
@@ -21184,406 +20591,6 @@ function splitWorkspaceAndIndex (request, response) {
 }
 
 
-/*
-function splitUserAndIndex (request, response) {
-
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let user = request['user'];
-    //console.log("user: " + JSON.stringify(user));
-
-    let object = request['object'];
-    //console.log("object: " + JSON.stringify(object));
-    // note object needs to be toJSON()
-
-    let className = request['className'];
-    //console.log("className: " + JSON.stringify(className));
-
-    var workspaceFollowers = request['workspaceFollowers'];
-    //console.log("workspaceFollowers length: " + JSON.stringify(workspaceFollowers.length));
-
-    let objectToSave = object;
-
-    let USER = Parse.Object.extend("_User");
-
-
-    async.forEachSeries(workspaceFollowers, function (workspaceFollower, cb1) {
-
-        let WORKSPACE = Parse.Object.extend("WorkSpace");
-        let workspace = new WORKSPACE();
-        workspace.id = workspaceFollower.get("workspace").id;
-        //console.log("workspace: " + JSON.stringify(workspace));
-
-        //console.log("indexOf async.map: " + JSON.stringify(workspaceFollowers.indexOf(workspaceFollower)));
-
-        let async_map_index = workspaceFollowers.indexOf(workspaceFollower);
-
-        var userObject = workspaceFollowers[async_map_index].get("user");
-        //console.log("userObject: " + JSON.stringify(userObject));
-        let UserObject = new USER();
-        UserObject.id = userObject.id;
-
-        let queryRole = new Parse.Query(Parse.Role);
-
-        let rolesArray;
-
-        function getChannelFollow (callback) {
-
-            let CHANNELFOLLOW = Parse.Object.extend("ChannelFollow");
-            let queryChannelFollow = new Parse.Query(CHANNELFOLLOW);
-
-            queryChannelFollow.equalTo("workspace", workspace);
-            queryChannelFollow.equalTo("isFollower", true);
-            queryChannelFollow.equalTo("user", UserObject);
-
-            queryChannelFollow.find({
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            }).then((channelFollow) => {
-                // The object was retrieved successfully.
-
-                //let finalChannelFollowers = [];
-
-                if (channelFollow.length > 0) {
-
-
-                    return callback (null, channelFollow);
-
-
-
-                } else {
-
-                    return callback (null, channelFollow);
-
-                }
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                return callback (error);
-            }, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-        }
-
-
-        async.parallel([
-            async.apply(getChannelFollow)
-
-
-        ], function (err, results) {
-            if (err) {
-                return cb1 (err);
-            }
-
-
-            if (results.length > 0) {
-
-                let ChannelFollows = results[0];
-
-                if (ChannelFollows) {
-
-                    async.forEachSeries(ChannelFollows, function (channelFollowObject, cb) {
-
-                        //let newObjectToSave = objectToSave;
-
-                        let channelFollowWorkspaceId = channelFollowObject.get("workspace").id;
-                        let channelFollowChannelId = channelFollowObject.get("channel").id;
-                        let channelFollowWorkspace = channelFollowObject.get("workspace");
-                        let channelFollowClassName = channelFollowObject.get("className");
-                        let channelFollowObjectId = channelFollowObject.id;
-
-                        channelFollowObject = objectToSave;
-
-                        channelFollowObject.objectID = object.objectId + '-' + channelFollowWorkspaceId + '-' + channelFollowChannelId;
-
-                        //console.log("channelFollowObject.objectID: " + JSON.stringify(channelFollowObject.objectID));
-
-                        channelFollowObject.channel = channelFollowChannelId;
-                        channelFollowObject.workspace = channelFollowWorkspaceId;
-
-                        let tags = ["*"];
-                        tags.push(userObject.id);
-
-                        channelFollowObject._tags = tags;
-
-                        let userRoles= userObject.get("roles");
-
-                        //console.log('userRoles: ' + JSON.stringify(userRoles));
-
-                        queryRole = userRoles.query();
-
-                        queryRole.equalTo('workspace', channelFollowWorkspace);
-
-                        queryRole.limit(10);
-                        queryRole.find({
-                            useMasterKey: true
-                            //sessionToken: sessionToken
-                        }).then((roles) => {
-
-                            //console.log("roles.length: " + JSON.stringify(roles.length));
-
-                            rolesArray = roles;
-
-                            if (roles.length > 0) {
-
-                                channelFollowObject.roles = rolesArray;
-                                //console.log("userObject.id: " + JSON.stringify(userObject.id));
-
-
-
-
-                                indexUsers.partialUpdateObject(channelFollowObject, true, function(err, content) {
-                                    if (err) {
-
-                                        return response.error(err);
-                                    }
-
-                                    console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
-
-
-                                    return cb (null, channelFollowObject);
-
-                                });
-
-
-
-
-
-                            } else {
-
-                                console.error("User doesn't have any roles, function splitUserAndIndex function.");
-
-                                // this case is when a user is following a workspace but for some reason there is no roles assigned to this user so return empty roles.
-                                let tags = ["*"];
-
-                                channelFollowObject.roles = [];
-                                //console.log("userObject.id: " + JSON.stringify(userObject.id));
-
-                                tags.push(userObject.id);
-                                // todo need to push unique items now we are doing duplicate item pushes.
-
-                                channelFollowObject._tags = tags;
-
-                                //console.log("channelFollowObject.objectId: " + JSON.stringify(channelFollowObject.objectId));
-
-                                indexUsers.partialUpdateObject(channelFollowObject, true, function(err, content) {
-                                    if (err) {
-
-                                        return response.error(err);
-                                    }
-
-                                    console.log("Parse<>Algolia User saved from splitUserAndIndex function role.length === 0");
-
-                                    return cb (null, channelFollowObject);
-                                });
-
-
-                            }
-
-
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            //console.log(error);
-                            return response.error(error);
-                        }, {
-
-                            useMasterKey: true
-                            //sessionToken: sessionToken
-
-                        });
-
-
-                    }, function (err) {
-
-                        //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
-
-                        if (err) {
-                            return response.error(err);
-                        } else {
-
-
-                            return cb1 (null, workspaceFollower);
-
-
-
-                        }
-
-                    });
-
-
-                }
-                else {
-
-                    // ChannelFollow doesn't exist, user doesn't have any channels followed.
-
-                    let newObjectToSave = objectToSave;
-
-
-                    newObjectToSave.objectID = object.objectId + '-' + '0';
-
-                    let tags = ["*"];
-                    tags.push(userObject.id);
-
-                    newObjectToSave._tags = tags;
-
-                    let userRoles= userObject.get("roles");
-
-                    //console.log('userRoles: ' + JSON.stringify(userRoles));
-
-                    queryRole = userRoles.query();
-
-                    queryRole.equalTo('workspace', workspace);
-
-                    queryRole.limit(10);
-                    queryRole.find({
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-                    }).then((roles) => {
-
-                        //console.log("roles.length: " + JSON.stringify(roles.length));
-
-                        rolesArray = roles;
-
-                        if (roles.length > 0) {
-
-                            newObjectToSave.roles = rolesArray;
-                            //console.log("userObject.id: " + JSON.stringify(userObject.id));
-
-
-                            //console.log("newObjectToSave.objectId: " + JSON.stringify(newObjectToSave.objectId));
-
-                            indexUsers.partialUpdateObject(newObjectToSave, true, function(err, content) {
-                                if (err) {
-
-                                    return response.error(err);
-                                }
-
-                                console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
-
-                                return cb1 (null, workspaceFollower);
-
-
-                            });
-
-
-
-                        }
-
-                        else {
-
-                            console.error("User doesn't have any roles, function splitUserAndIndex function.");
-
-
-                            newObjectToSave.roles = [];
-                            //console.log("userObject.id: " + JSON.stringify(userObject.id));
-
-                            //console.log("newObjectToSave.objectId: " + JSON.stringify(newObjectToSave.objectId));
-
-                            indexUsers.partialUpdateObject(newObjectToSave, true, function(err, content) {
-                                if (err) {
-
-                                    return response.error(err);
-                                }
-
-                                console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
-
-
-                                return cb1 (null, workspaceFollower);
-
-
-                            });
-                        }
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        //console.log(error);
-                        return response.error(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
-
-
-                }
-
-
-            }  else {
-
-                console.error("User doesn't have any roles assigned or no channel follows.");
-
-                let newObjectToSave = objectToSave;
-
-
-                newObjectToSave.objectID = object.objectId + '-' + '0';
-
-                let tags = ["*"];
-                tags.push(userObject.id);
-
-                newObjectToSave._tags = tags;
-
-                indexUsers.partialUpdateObject(newObjectToSave, true, function(err, content) {
-                    if (err) {
-
-                        return response.error(err);
-                    }
-
-                    console.log("Parse<>Algolia User saved from splitUserAndIndex function ");
-
-
-                    return cb1 (null, workspaceFollower);
-
-
-                });
-
-            }
-
-
-
-        });
-
-
-
-
-    }, function (err) {
-
-        //console.log("previousChannelFollowers length: " + JSON.stringify(previousChannelFollowers.length));
-
-        if (err) {
-            return response.error(err);
-        } else {
-
-
-            let Final_Time = process.hrtime(time);
-            console.log(`splitUserAndIndex took ${(Final_Time[0] * NS_PER_SEC + Final_Time[1]) * MS_PER_NS} milliseconds`);
-
-            return response.success();
-
-
-        }
-
-    });
-
-
-
-
-}*/
-
-
 // Parse Server version > 3.0.0
 async function splitUserAndIndex (request) {
 
@@ -25403,7 +24410,7 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
     //queryUser.equalTo("objectId", userToSave.objectId);
 
-    const user = await queryUser.get(User.id , {
+    let user = await queryUser.get(User.id , {
 
         useMasterKey: true
         //sessionToken: sessionToken
@@ -25419,21 +24426,24 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
     });
 
+    console.log("user: " + JSON.stringify(user));
+
     let USER = Parse.Object.extend("_User");
     let userObject = new USER();
     userObject.id = user.objectId;
 
     let userToSave = simplifyUserMentions(user);
+    console.log("userTosave: " + JSON.stringify(userToSave));
 
     let userACL = user.getACL();
 
     async function updateAlgoliaWorkspaceExpertProfileImage () {
 
-        //console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
+        console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
 
         if ((user.get("isDirtyProfileimage") === false || !user.get("isDirtyProfileimage")) && (user.get("isDirtyIsOnline") === false || !user.get("isDirtyIsOnline")) && (user.get("isDirtyTyping") === false || !user.get("isDirtyTyping")) && (user.get("isDirtyShowAvailability") === false || !user.get("isDirtyShowAvailability"))) {
 
-            //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
+            console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
 
             return user;
 
@@ -25469,7 +24479,7 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
             });
 
-            //console.log("workspaces length: " + JSON.stringify(workspaces.length));
+            console.log("workspaces length: " + JSON.stringify(workspaces.length));
 
             let arrWorkspaces = lodash.map(workspaces, function (workspaceObject) {
 
@@ -25482,23 +24492,33 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
             });
 
-            //console.log("arrWorkspaces: " + JSON.stringify(arrWorkspaces));
+            console.log("arrWorkspaces: " + JSON.stringify(arrWorkspaces));
 
-            return await Parse.Object.saveAll(arrWorkspaces, {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
 
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                throw new Error(error);
-            }, {
+            if (arrWorkspaces.length > 0 ) {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                return await Parse.Object.saveAll(arrWorkspaces, {
 
-            });
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    throw new Error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            } else {
+
+                return [];
+            }
 
 
         }
@@ -25508,11 +24528,11 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
     async function updateAlgoliaPostsProfileImage () {
 
-        //console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
+        console.log("updateAlgoliaPostsProfileImage displayName: " + JSON.stringify(user.toJSON().displayName));
 
         if ((user.get("isDirtyProfileimage") === false || !user.get("isDirtyProfileimage")) && (user.get("isDirtyIsOnline") === false  || !user.get("isDirtyIsOnline")) && (user.get("isDirtyTyping") === false || user.get("isDirtyTyping") === true || !user.get("isDirtyTyping")) && ( user.get("isDirtyShowAvailability") === false || !user.get("isDirtyShowAvailability"))) {
 
-            //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
+            console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
 
             return user;
 
@@ -25550,21 +24570,32 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
             });
 
-            return await Parse.Object.saveAll(posts, {
+            console.log("posts.length: " + JSON.stringify(posts.length));
 
-                useMasterKey: true
-                //sessionToken: sessionToken
 
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                throw new Error(error);
-            }, {
+            if (posts.length > 0 ) {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                return await Parse.Object.saveAll(posts, {
 
-            });
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    throw new Error(error);
+                }, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            } else {
+
+                return [];
+            }
 
         }
 
@@ -25572,11 +24603,11 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
     async function updateChannelExpertProfileImage () {
 
-        //console.log("displayName: " + JSON.stringify(user.toJSON().displayName));
+        console.log("updateChannelExpertProfileImage displayName: " + JSON.stringify(user.toJSON().displayName));
 
         if ((user.get("isDirtyProfileimage") === false || !user.get("isDirtyProfileimage")) && (user.get("isDirtyIsOnline") === false || !user.get("isDirtyIsOnline")) && (user.get("isDirtyTyping") === false || !user.get("isDirtyTyping")) && ( user.get("isDirtyShowAvailability") === false || !user.get("isDirtyShowAvailability"))) {
 
-            //console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
+            console.log("no update to workspaces in algolia: " + user.get("isDirtyProfileimage") + " " + user.get("isDirtyIsOnline"));
 
             return user;
 
@@ -25596,7 +24627,7 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
 
             userQuery.equalTo("objectId", User.id);
-            //console.log("username: " + JSON.stringify(userToSave.username));
+            //console.log("updateChannelExpertProfileImage username: " + JSON.stringify(user.username));
             channelQuery.matchesQuery("experts", userQuery);
             //channelQuery.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "image"]);
 
@@ -25628,23 +24659,33 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
             });
 
-            //console.log("arrChannels: " + JSON.stringify(arrChannels));
+            console.log("arrChannels: " + JSON.stringify(arrChannels));
 
-            return await Parse.Object.saveAll(arrChannels, {
+            if (arrChannels.length > 0 ) {
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                return await Parse.Object.saveAll(arrChannels, {
 
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                throw new Error(error);
-            }, {
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
-                useMasterKey: true
-                //sessionToken: sessionToken
+                }, (error) => {
+                    // The object was not retrieved successfully.
+                    // error is a Parse.Error with an error code and message.
+                    throw new Error(error);
+                }, {
 
-            });
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+
+            } else {
+
+                return [];
+            }
+
+
 
 
         }
@@ -25691,7 +24732,7 @@ Parse.Cloud.afterSave('_User', async (request) => {
             userToSave._tags = ['*'];
         }
 
-        //console.log("userToSave: " + JSON.stringify(userToSave));
+        console.log("prepIndex userToSave: " + JSON.stringify(userToSave));
 
 
         return userToSave;
@@ -25744,6 +24785,8 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
         }
 
+        console.log('skillObject: ' + JSON.stringify(skillObject));
+
         return skillObject;
 
 
@@ -25752,7 +24795,6 @@ Parse.Cloud.afterSave('_User', async (request) => {
     async function getSkillsToLearn ( ) {
 
         //console.log("workspace.get_isDirtySkills: " + JSON.stringify(workspace.get("isDirtySkills")));
-        //console.log("Skill Length:" + skillObject);
 
         //let skillObject = Parse.Object.extend("Skill");
         //var skillsRelation = new skillObject.relation("skills");
@@ -25790,6 +24832,8 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
         }
 
+        console.log("skillObject skillsToLearn: " + JSON.stringify(skillObject));
+
         return skillObject;
 
 
@@ -25807,6 +24851,8 @@ Parse.Cloud.afterSave('_User', async (request) => {
         queryWorkspaceFollower.include( ["user"] );
         queryWorkspaceFollower.equalTo("isFollower", true);
 
+        console.log("workspaceFollowers query: " + JSON.stringify(queryWorkspaceFollower));
+
         return await queryWorkspaceFollower.find({
 
             useMasterKey: true
@@ -25823,11 +24869,15 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
         });
 
+
+
     }
 
     async function checkIfInvited ( ) {
 
         let workspaceFollowersUserInvites = [];
+
+        console.log('checkIfInvited');
 
         if (user.get("isNew") === true) {
 
@@ -25875,22 +24925,22 @@ Parse.Cloud.afterSave('_User', async (request) => {
                     let sessionTokenUserWhoInvited = userWhoInvited.getSessionToken();
 
                     const workspaceFollowers = await Parse.Cloud.run("addPeopleToWorkspace", {
-                        //user: currentUser,
-                        workspace: workspaceObject,
-                        usersToAdd: Users
+                            //user: currentUser,
+                            workspace: workspaceObject,
+                            usersToAdd: Users
 
-                    },
+                        },
                         {sessionToken: sessionTokenUserWhoInvited}
                         , (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        throw new Error(error);
-                    }, {
+                            // The object was not retrieved successfully.
+                            // error is a Parse.Error with an error code and message.
+                            throw new Error(error);
+                        }, {
 
-                        //useMasterKey: true
-                        sessionToken: sessionTokenUserWhoInvited
+                            //useMasterKey: true
+                            sessionToken: sessionTokenUserWhoInvited
 
-                    });
+                        });
 
                     console.log("workspaceFollower: "+ JSON.stringify(workspaceFollowers));
 
@@ -25926,14 +24976,28 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
         } else {
 
+            console.log("nothing new checkifInvited false");
+
             return workspaceFollowersUserInvites;
         }
 
 
     }
 
+    let finalResults = await Promise.all([
+        updateAlgoliaWorkspaceExpertProfileImage(),
+        prepIndex(),
+        getSkills(),
+        getSkillsToLearn(),
+        getWorkspaceFollowers(),
+        checkIfInvited(),
+        updateAlgoliaPostsProfileImage(),
+        updateChannelExpertProfileImage()
 
-    const finalResults = await async.parallel([
+    ]);
+
+
+    /*const finalResults = await async.parallel([
         async.apply(updateAlgoliaWorkspaceExpertProfileImage),
         async.apply(prepIndex),
         async.apply(getSkills),
@@ -25944,14 +25008,12 @@ Parse.Cloud.afterSave('_User', async (request) => {
         async.apply(updateChannelExpertProfileImage)
 
 
-    ]);
+    ]);*/
 
     console.log("starting show finalResults " + JSON.stringify(finalResults.length));
 
 
     if (finalResults.length > 0) {
-
-        //console.log("afterSave _User results length: " + JSON.stringify(results.length));
 
         let userToSaveFinal = finalResults[1];
         let mySkills = finalResults[2];
@@ -25981,10 +25043,12 @@ Parse.Cloud.afterSave('_User', async (request) => {
 
             //console.log("userToSaveFinal: " + JSON.stringify(userToSaveFinal));
 
-            indexUsers.partialUpdateObject(userToSaveFinal, true, function (err, content) {
-                if (err) throw new Error(err);
+            indexUsers.partialUpdateObject(userToSaveFinal, {
+                createIfNotExists: true
+            }).then(({ objectID }) => {
 
-                console.log("Parse<>Algolia object saved from _User afterSave function: " + JSON.stringify(content));
+                console.log("Parse<>Algolia object saved from _User afterSave function: " + JSON.stringify(objectID));
+
 
             });
 
@@ -26702,7 +25766,7 @@ Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 }, {useMasterKey: true});
 
 
-Parse.Cloud.afterSave('workspace_follower', , async (request) => {
+Parse.Cloud.afterSave('workspace_follower',async (request) => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -27083,7 +26147,7 @@ Parse.Cloud.afterSave('Skill', function(request) {
 });
 
 // Parse Server version > 3.0.0 Add and Update AlgoliaSearch Workspace object if it's deleted from Parse & create Workspace roles
-Parse.Cloud.afterSave('WorkSpace', async (req) => {
+Parse.Cloud.afterSave('WorkSpace', async (request) => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -27092,7 +26156,7 @@ Parse.Cloud.afterSave('WorkSpace', async (req) => {
     let currentUser = request.user;
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
-    if (!req.master && (!currentUser || !sessionToken)) {
+    if (!request.master && (!currentUser || !sessionToken)) {
 
         throw new Error('afterSave-WorkSpace.UNAUTHENTICATED_USER');
     }
@@ -27367,7 +26431,7 @@ Parse.Cloud.afterSave('WorkSpace', async (req) => {
 
             var memberrole = savedRoles[4];
             //memberrole.getUsers().add(usersToAddToRole);
-            memberrole.getRoles().add(followerRole);
+            await memberrole.getRoles().add(followerRole);
             await memberrole.save(null, {
 
                 useMasterKey: true
@@ -27377,7 +26441,7 @@ Parse.Cloud.afterSave('WorkSpace', async (req) => {
 
             var moderatorrole = savedRoles[3];
             //memberrole.getUsers().add(usersToAddToRole);
-            moderatorrole.getRoles().add(memberRole);
+            await moderatorrole.getRoles().add(memberRole);
             await moderatorrole.save(null, {
 
                 useMasterKey: true
@@ -27387,7 +26451,7 @@ Parse.Cloud.afterSave('WorkSpace', async (req) => {
 
             var adminrole = savedRoles[2];
             //memberrole.getUsers().add(usersToAddToRole);
-            adminrole.getRoles().add(moderatorRole);
+            await adminrole.getRoles().add(moderatorRole);
             await adminrole.save(null, {
 
                 useMasterKey: true
@@ -27396,9 +26460,9 @@ Parse.Cloud.afterSave('WorkSpace', async (req) => {
             });
 
             var expertrole = savedRoles[1];
-            expertrole.getUsers().add(owner);
+            await expertrole.getUsers().add(owner);
             //expertrole.getUsers().add(usersToAddToRole);
-            expertrole.getRoles().add(moderatorRole);
+            await expertrole.getRoles().add(moderatorRole);
             await expertrole.save(null, {
 
                 useMasterKey: true
@@ -27407,9 +26471,9 @@ Parse.Cloud.afterSave('WorkSpace', async (req) => {
             });
 
             var ownerrole = savedRoles[0];
-            ownerrole.getUsers().add(owner);
-            ownerrole.getRoles().add(expertRole);
-            ownerrole.getRoles().add(adminRole);
+            await ownerrole.getUsers().add(owner);
+            await ownerrole.getRoles().add(expertRole);
+            await ownerrole.getRoles().add(adminRole);
             await ownerrole.save(null, {
 
                 useMasterKey: true
