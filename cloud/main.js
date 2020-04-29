@@ -10304,12 +10304,11 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
 
                 //console.log("workspace.isNew() user: " + JSON.stringify(user));
 
-
-                const results = await async.parallel([
-                    async.apply(addFollowerRole, followerName),
-                    async.apply(addMemberRole, memberName),
-                    async.apply(createDefaultChannelFollows, Workspace ),
-                    async.apply(removeAllPreviousSelectedWorkspaceFollowerJoin)
+                let results = await Promise.all([
+                    addFollowerRole(followerName),
+                    addMemberRole(memberName),
+                    createDefaultChannelFollows(Workspace),
+                    removeAllPreviousSelectedWorkspaceFollowerJoin()
 
                 ]);
 
@@ -10359,12 +10358,10 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
                 // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
                 workspace_follower.set("isSelected", true);
 
-                const results = await async.parallel([
-                    async.apply(addFollowerRole, followerName),
-                    async.apply(createDefaultChannelFollows, Workspace),
-                    async.apply(removeAllPreviousSelectedWorkspaceFollowerJoin)
-
-
+                let results = await Promise.all([
+                    addFollowerRole(followerName),
+                    createDefaultChannelFollows(Workspace),
+                    removeAllPreviousSelectedWorkspaceFollowerJoin()
                 ]);
 
                 let followerRole = results[0];
@@ -10402,12 +10399,11 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
                 // mark this workspace_follower as isSelected = true, set pointer to new workspace_follower then mark previous selected workspace to false in beforeSave user
                 workspace_follower.set("isSelected", true);
 
-                const results = await async.parallel([
-                    async.apply(addFollowerRole, followerName),
-                    async.apply(addMemberRole, memberName),
-                    async.apply(createDefaultChannelFollows, Workspace),
-                    async.apply(removeAllPreviousSelectedWorkspaceFollowerJoin)
-
+                let results = await Promise.all([
+                    addFollowerRole(followerName),
+                    addMemberRole(memberName),
+                    createDefaultChannelFollows(Workspace),
+                    removeAllPreviousSelectedWorkspaceFollowerJoin()
 
                 ]);
 
@@ -10528,10 +10524,10 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
 
         }
 
-        const results = await async.parallel([
-            async.apply(getCurrentWorkspaceFollower),
-            async.apply(getPreviousSelectedWorkspaceFollowerJoin),
-            async.apply(getPreviousSelectedWorkspaceFollowerLeave)
+        let results = await Promise.all([
+            getCurrentWorkspaceFollower(),
+            getPreviousSelectedWorkspaceFollowerJoin(),
+            getPreviousSelectedWorkspaceFollowerLeave()
 
         ]);
 
@@ -10741,12 +10737,11 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
 
                     // create channelFollows for default channel for this new user
 
-                    const secondResults = await async.parallel([
-                        async.apply(addFollowerRole, followerName),
-                        async.apply(addMemberRole, memberName),
-                        async.apply(createDefaultChannelFollows, Workspace),
-                        async.apply(removePreviousWorkspaceFollowSelected)
-
+                    const secondResults = await Promise.all([
+                        addFollowerRole(followerName),
+                        addMemberRole(memberName),
+                        createDefaultChannelFollows(Workspace),
+                        removePreviousWorkspaceFollowSelected()
                     ]);
 
 
@@ -10784,11 +10779,11 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
 
                     // user isFollow is true but user is not a member, make user only follower
 
-                    const secondResults = await async.parallel([
-                        async.apply(addFollowerRole, followerName),
-                        async.apply(createDefaultChannelFollows, Workspace),
-                        async.apply(removePreviousWorkspaceFollowSelected)
 
+                    const secondResults = await Promise.all([
+                        addFollowerRole(followerName),
+                        createDefaultChannelFollows(Workspace),
+                        removePreviousWorkspaceFollowSelected()
                     ]);
 
                     let followerRole = secondResults[0];
@@ -10820,12 +10815,11 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
                     // user can't be a follower and not a member, keep him a member, sand make him a follower
                     workspace_follower.set("isMember", true);
 
-                    const secondResults = await async.parallel([
-                        async.apply(addFollowerRole, followerName),
-                        async.apply(createDefaultChannelFollows, Workspace),
-                        async.apply(removePreviousWorkspaceFollowSelected)
 
-
+                    const secondResults = await Promise.all([
+                        addFollowerRole(followerName),
+                        createDefaultChannelFollows(Workspace),
+                        removePreviousWorkspaceFollowSelected()
                     ]);
 
                     let followerRole = secondResults[0];
@@ -10937,9 +10931,9 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
                     // user want's to be member but remove as follower, can't happen. remove him as member and follower
                     workspace_follower.set("isMember", false);
 
-                    const thirdResults = async.parallel([
-                        async.apply(removeFollowerRole),
-                        async.apply(removeMemberRole)
+                    const thirdResults = await Promise.all([
+                        removeFollowerRole(),
+                        removeMemberRole()
                     ]);
 
                     let followerRole = thirdResults[0];
@@ -11014,9 +11008,9 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
 
                     // now remove both member and follower roles since the user is leaving the workspace and un-following it.
 
-                    const thirdResults = await async.parallel([
-                        async.apply(removeFollowerRole),
-                        async.apply(removeMemberRole)
+                    const thirdResults = await Promise.all([
+                        removeFollowerRole(),
+                        removeMemberRole()
                     ]);
 
                     let followerRole = thirdResults[0];
@@ -11060,9 +11054,9 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
 
                     // now remove both member and follower roles since the user is leaving the workspace and un-following it.
 
-                    const thirdRestuls = await async.parallel([
-                        async.apply(removeFollowerRole),
-                        async.apply(removeMemberRole)
+                    const thirdResults = await Promise.all([
+                        removeFollowerRole(),
+                        removeMemberRole()
                     ]);
 
                     let followerRole = thirdRestuls[0];
@@ -11157,9 +11151,8 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
                     Workspace.increment("memberCount", -1);
                     console.log("decrement Member");
 
-                    const thirdResults = async.parallel([
-                        async.apply(removeMemberRole)
-
+                    const thirdResults = await Promise.all([
+                        removeMemberRole()
                     ]);
 
                     let memberRole = thirdResults[0];
@@ -11238,13 +11231,12 @@ Parse.Cloud.beforeSave('workspace_follower', async (req) => {
                     user.set("isSelectedWorkspaceFollower", workspace_follower);
 
                     // now add both member and follower roles
-                    const results = await async.parallel([
-                        async.apply(addFollowerRole, followerName),
-                        async.apply(addMemberRole, memberName),
-                        async.apply(createDefaultChannelFollows, Workspace),
-                        async.apply(removePreviousWorkspaceFollowSelected)
 
-
+                    const results = await Promise.all([
+                        addFollowerRole(followerName),
+                        addMemberRole(memberName),
+                        createDefaultChannelFollows(Workspace),
+                        removePreviousWorkspaceFollowSelected
                     ]);
 
                     let followerRole = results[0];
@@ -25887,12 +25879,10 @@ Parse.Cloud.afterSave('workspace_follower',async (request) => {
 
     }
 
-
-    const results = await async.parallel([
-        async.apply(addIsSelectedWorkspaceFollowPointerToUser),
-        async.apply(createWorkspaceNotificationSettings),
-        async.apply(fetchWorkspace)
-
+    const results = await Promise.all([
+        addIsSelectedWorkspaceFollowPointerToUser(),
+        createWorkspaceNotificationSettings(),
+        fetchWorkspace()
     ]);
 
     //console.log("results length: " + JSON.stringify(results));
