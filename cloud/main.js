@@ -58,6 +58,7 @@ var fs = require('fs');
 Parse.initialize(process.env.APP_ID, '', process.env.MASTER_KEY);
 Parse.serverURL = process.env.SERVER_URL + '/parse';
 
+
 let simplifyUser = require('./simplifyClass/_User/simplifyUser');
 let simplifyUserMentions = require('./simplifyClass/_User/simplifyUserMentions');
 let simplifyPost = require('./simplifyClass/Post/simplifyPost');
