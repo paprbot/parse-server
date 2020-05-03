@@ -56,6 +56,7 @@ if( isProduction === false ){
 const requestPromise = require('request-promise');
 var fs = require('fs');
 Parse.initialize(process.env.APP_ID, '', process.env.MASTER_KEY);
+Parse.serverURL = process.env.SERVER_URL + '/parse';
 
 let simplifyUser = require('./simplifyClass/_User/simplifyUser');
 let simplifyUserMentions = require('./simplifyClass/_User/simplifyUserMentions');
@@ -1211,7 +1212,7 @@ Parse.Cloud.define("removeModerator", async request => {
 }, {useMasterKey: true});
 
 // cloud API and function to leave a workspace
-Parse.Cloud.define("leaveWorkspace", function(request, response) {
+Parse.Cloud.define("leaveWorkspace", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -1221,11 +1222,8 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.013.leaveWorkspace.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('define-leaveWorkspace.UNAUTHENTICATED_USER');
+
     }
 
     //get request params
@@ -1244,76 +1242,23 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
     workspaceFollower.set("isFollower", false);
     workspaceFollower.set("isMember", false);
     workspaceFollower.set("user", user);
-    workspaceFollower.save(null, {
+    let workspaceFollowerResult = await workspaceFollower.save(null, {
 
         useMasterKey: true
         //sessionToken: sessionToken
 
-    }).then((result) => {
+    });
 
-        // save was successful
-        if(result) {
+    console.log("result leaveWorkspace query: " + JSON.stringify(workspaceFollowerResult));
 
-            console.log("result leaveWorkspace query: " + JSON.stringify(result));
+    let queryWorkspaceFollowerSelected = new Parse.Query(WORKSPACEFOLLOWER);
+    queryWorkspaceFollowerSelected.equalTo("isSelected", true);
+    queryWorkspaceFollowerSelected.equalTo("user", user);
+    queryWorkspaceFollowerSelected.equalTo("isFollower", true);
+    queryWorkspaceFollowerSelected.descending("updatedAt");
+    queryWorkspaceFollowerSelected.include("workspace");
 
-            let queryWorkspaceFollowerSelected = new Parse.Query(WORKSPACEFOLLOWER);
-            queryWorkspaceFollowerSelected.equalTo("isSelected", true);
-            queryWorkspaceFollowerSelected.equalTo("user", user);
-            queryWorkspaceFollowerSelected.equalTo("isFollower", true);
-            queryWorkspaceFollowerSelected.descending("updatedAt");
-            queryWorkspaceFollowerSelected.include("workspace");
-
-            queryWorkspaceFollowerSelected.first({
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            }).then((result_workspacefollower) => {
-                // The object was retrieved successfully.
-                console.log("result_workspacefollower" + JSON.stringify(result_workspacefollower));
-
-                if (result_workspacefollower) {
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took LeaveWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                    response.success(result_workspacefollower);
-
-                } else {
-
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took LeaveWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                    response.success();
-
-                }
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                response.error(error);
-            }, {
-
-                useMasterKey: true
-                //sessionToken: sessionToken
-
-            });
-
-
-        } else {
-
-            response.error(result);
-
-        }
-
-
-
-    }, (error) => {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
-        response.error(error);
-    }, {
+    return await queryWorkspaceFollowerSelected.first({
 
         useMasterKey: true
         //sessionToken: sessionToken
@@ -1324,7 +1269,7 @@ Parse.Cloud.define("leaveWorkspace", function(request, response) {
 }, {useMasterKey: true});
 
 // cloud API and function to leave a channel
-Parse.Cloud.define("leaveChannel", function(request, response) {
+Parse.Cloud.define("leaveChannel", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -1334,11 +1279,7 @@ Parse.Cloud.define("leaveChannel", function(request, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.013.leaveChannel.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('define-leaveChannel.UNAUTHENTICATED_USER');
     }
 
     //get request params
@@ -1357,79 +1298,24 @@ Parse.Cloud.define("leaveChannel", function(request, response) {
     channelFollow.set("isFollower", false);
     channelFollow.set("isMember", false);
     channelFollow.set("user", user);
-    channelFollow.save(null, {
+    await channelFollow.save(null, {
 
         useMasterKey: true
         //sessionToken: sessionToken
 
-    }).then((result) => {
+    });
 
-        // save was successful
-        if(result) {
+    let queryChannelFollowerSelected = new Parse.Query(CHANNELFOLLOW);
+    queryChannelFollowerSelected.equalTo("isSelected", true);
+    queryChannelFollowerSelected.equalTo("user", user);
+    queryChannelFollowerSelected.equalTo("isFollower", true);
+    queryChannelFollowerSelected.descending("updatedAt");
+    queryChannelFollowerSelected.include("channel");
 
-            console.log("result channelFollow query: " + JSON.stringify(result));
+    return await queryChannelFollowerSelected.first({
 
-            let queryChannelFollowerSelected = new Parse.Query(CHANNELFOLLOW);
-            queryChannelFollowerSelected.equalTo("isSelected", true);
-            queryChannelFollowerSelected.equalTo("user", user);
-            queryChannelFollowerSelected.equalTo("isFollower", true);
-            queryChannelFollowerSelected.descending("updatedAt");
-            queryChannelFollowerSelected.include("channel");
-
-            queryChannelFollowerSelected.first({
-
-                //useMasterKey: true
-                sessionToken: sessionToken
-
-            }).then((result_channelfollower) => {
-                // The object was retrieved successfully.
-                console.log("result_channelfollower" + JSON.stringify(result_channelfollower));
-
-                if (result_channelfollower) {
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took leaveChannel CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                    return response.success(result_channelfollower);
-
-                } else {
-
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took LeaveWorkspace CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                    return response.success();
-
-                }
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                return response.error(error);
-            }, {
-
-                //useMasterKey: true
-                sessionToken: sessionToken
-
-            });
-
-
-        } else {
-
-            return response.error(result);
-
-        }
-
-
-
-    }, (error) => {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
-        return response.error(error);
-    }, {
-
-        useMasterKey: true
-        //sessionToken: sessionToken
+        //useMasterKey: true
+        sessionToken: sessionToken
 
     });
 
@@ -1437,7 +1323,7 @@ Parse.Cloud.define("leaveChannel", function(request, response) {
 }, {useMasterKey: true});
 
 // cloud API and function to addPeopleToChannel
-Parse.Cloud.define("addPeopleToChannel", function(request, response) {
+Parse.Cloud.define("addPeopleToChannel", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -1447,11 +1333,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.013.addPeopleToChannel.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('define-addPeopleToChannel.UNAUTHENTICATED_USER');
     }
 
     //get request params
@@ -1496,7 +1378,7 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
     //console.log("userArray: " + JSON.stringify(userArray));
 
 
-    function updateAllChannelFollows(skip) {
+    async function updateAllChannelFollows(skip) {
 
         let queryChannelFollower = new Parse.Query(CHANNELFOLLOW);
         queryChannelFollower.containedIn("user", userArray);
@@ -1505,233 +1387,197 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
         queryChannelFollower.limit(500);
         queryChannelFollower.skip(skip);
 
-        queryChannelFollower.find({
+        let ChannelFollowers = await queryChannelFollower.find({
 
             //useMasterKey: true
             sessionToken: sessionToken
 
-        }).then((ChannelFollowers) => {
-            // The object was retrieved successfully.
-            //console.log("ChannelFollowers " + JSON.stringify(ChannelFollowers));
+        });
 
-            if (ChannelFollowers.length > 0) {
+        if (ChannelFollowers.length > 0) {
 
-                let userArrayChannelFollowersSet = new Set();
-                let ChannelFollowersSet = new Set();
+            let userArrayChannelFollowersSet = new Set();
+            let ChannelFollowersSet = new Set();
 
-                let ChannelObject = ChannelFollowers[0].get("channel");
+            let ChannelObject = ChannelFollowers[0].get("channel");
 
 
-                //console.log("ChannelFollowers.length: " + JSON.stringify(ChannelFollowers.length));
+            //console.log("ChannelFollowers.length: " + JSON.stringify(ChannelFollowers.length));
 
 
-                for (var i = 0; i < ChannelFollowers.length; i++) {
-                    let ChannelFollow = ChannelFollowers[i];
-                    ChannelFollow.set("isFollower", true);
-                    ChannelFollow.set("isMember", true);
+            for (var i = 0; i < ChannelFollowers.length; i++) {
+                let ChannelFollow = ChannelFollowers[i];
+                ChannelFollow.set("isFollower", true);
+                ChannelFollow.set("isMember", true);
 
-                    //console.log("ChannelFollow: " + JSON.stringify(ChannelFollow));
+                //console.log("ChannelFollow: " + JSON.stringify(ChannelFollow));
 
-                    userArrayChannelFollowersSet.add(ChannelFollow.get("user").id);
-                    ChannelFollowersSet.add(ChannelFollow);
+                userArrayChannelFollowersSet.add(ChannelFollow.get("user").id);
+                ChannelFollowersSet.add(ChannelFollow);
 
-                }
-
-
-                //console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowersSet.size));
-
-                let userArrayChannelFollowers = Array.from(userArrayChannelFollowersSet);
-                let arrayChannelFollowersSet = Array.from(ChannelFollowersSet);
-
-                //console.log("::userArrayChannelFollowers:: " + JSON.stringify(userArrayChannelFollowers.length));
-
-                Parse.Object.saveAll(arrayChannelFollowersSet, {
-
-                    //useMasterKey: true
-                    sessionToken: sessionToken
-
-                }).then(function(results) {
-                    // if we got 500 or more results then we know
-                    // that we have more results
-                    // otherwise we finish
-
-                    //console.log("saveAll results ChannelFollowers: " + JSON.stringify(results));
-
-                    if (ChannelFollowers.length >= 500) {
-
-                        updateAllChannelFollows(skip + 500); // make a recursion call with different skip value
-
-                    }
-                    else {
-
-                        //console.log("ChannelFollowers less than 500");
-
-                        let ChannelFollowSet = new Set();
+            }
 
 
-                        for (var i = 0; i < userArray.length; i++) {
+            //console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowersSet.size));
 
-                            let user = userArray[i];
-                            //console.log("user: " + JSON.stringify(user.id));
-                            //console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowers));
+            let userArrayChannelFollowers = Array.from(userArrayChannelFollowersSet);
+            let arrayChannelFollowersSet = Array.from(ChannelFollowersSet);
 
+            //console.log("::userArrayChannelFollowers:: " + JSON.stringify(userArrayChannelFollowers.length));
 
-                            let includesMatch = userArrayChannelFollowers.includes(user.id);
+            await Parse.Object.saveAll(arrayChannelFollowersSet, {
 
-                            console.log("includesMatch: " + JSON.stringify(includesMatch));
+                //useMasterKey: true
+                sessionToken: sessionToken
 
-                            if(includesMatch === false) {
-                                // this user doesn't have a channelFollow, create one!
+            });
 
-                                let newChannelFollow = new CHANNELFOLLOW();
-                                newChannelFollow.set("user", userArray[i]);
-                                newChannelFollow.set("workspace", Workspace);
-                                newChannelFollow.set("channel", Channel);
-                                newChannelFollow.set("isFollower", true);
-                                newChannelFollow.set("isMember", true);
+            if (ChannelFollowers.length >= 500) {
 
-                                ChannelFollowSet.add(newChannelFollow);
+                await updateAllChannelFollows(skip + 500); // make a recursion call with different skip value
 
-                                if ( i === (userArray.length - 1)) {
+            }
+            else {
 
-                                    console.log("ChannelFollowArray 1: " + JSON.stringify(ChannelFollowSet));
-                                    console.log("ChannelFollowSet Size: " + JSON.stringify(ChannelFollowSet.size));
+                //console.log("ChannelFollowers less than 500");
+
+                let ChannelFollowSet = new Set();
 
 
-                                    //let dupeArray = [3,2,3,3,5,2];
-                                    let ChannelFollowArray = Array.from(new Set(ChannelFollowSet));
+                for (var i = 0; i < userArray.length; i++) {
 
-                                    console.log("ChannelFollowArray length: " + JSON.stringify(ChannelFollowArray.length));
+                    let user = userArray[i];
+                    //console.log("user: " + JSON.stringify(user.id));
+                    //console.log("userArrayChannelFollowers: " + JSON.stringify(userArrayChannelFollowers));
+
+
+                    let includesMatch = userArrayChannelFollowers.includes(user.id);
+
+                    console.log("includesMatch: " + JSON.stringify(includesMatch));
+
+                    if(includesMatch === false) {
+                        // this user doesn't have a channelFollow, create one!
+
+                        let newChannelFollow = new CHANNELFOLLOW();
+                        newChannelFollow.set("user", userArray[i]);
+                        newChannelFollow.set("workspace", Workspace);
+                        newChannelFollow.set("channel", Channel);
+                        newChannelFollow.set("isFollower", true);
+                        newChannelFollow.set("isMember", true);
+
+                        ChannelFollowSet.add(newChannelFollow);
+
+                        if ( i === (userArray.length - 1)) {
+
+                            console.log("ChannelFollowArray 1: " + JSON.stringify(ChannelFollowSet));
+                            console.log("ChannelFollowSet Size: " + JSON.stringify(ChannelFollowSet.size));
+
+
+                            //let dupeArray = [3,2,3,3,5,2];
+                            let ChannelFollowArray = Array.from(new Set(ChannelFollowSet));
+
+                            console.log("ChannelFollowArray length: " + JSON.stringify(ChannelFollowArray.length));
+
+                            if (ChannelFollowArray.length > 0) {
+
+                                await Parse.Object.saveAll(ChannelFollowArray, {
+
+                                    //useMasterKey: true
+                                    sessionToken: sessionToken
+
+                                });
+
+                                async function SendNotifications () {
+
+                                    console.log("starting SendNotifications function: " + JSON.stringify(ChannelFollowArray.length) );
+
 
                                     if (ChannelFollowArray.length > 0) {
 
-                                        Parse.Object.saveAll(ChannelFollowArray, {
+                                        let notifications = new Set();
 
-                                            //useMasterKey: true
-                                            sessionToken: sessionToken
+                                        for (let i = 0; i < ChannelFollowArray.length; i++) {
 
-                                        }).then(function(results) {
-                                            // if we got 500 or more results then we know
-                                            // that we have more results
-                                            // otherwise we finish
+                                            let userId = ChannelFollowArray[i].get("user").id;
 
-                                            function SendNotifications () {
+                                            let userTo = new USER();
+                                            userTo.id = userId;
 
-                                                console.log("starting SendNotifications function: " + JSON.stringify(ChannelFollowArray.length) );
+                                            let NOTIFICATION = Parse.Object.extend("Notification");
+                                            let notification = new NOTIFICATION();
 
+                                            notification.set("isDelivered", false);
+                                            notification.set("hasSent", false);
+                                            notification.set("isRead", false);
+                                            notification.set("status", '0');
+                                            notification.set("userFrom", currentUser);
+                                            notification.set("userTo", userTo);
+                                            notification.set("workspace", Workspace);
+                                            notification.set("channel", Channel);
+                                            notification.set("type", 'addToChannel'); // mentions in post or postMessage
+                                            notification.set("userFromDisplayName", currentUser.get("displayName"));
+                                            notification.set("messageTitle", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'added you to this channel: ');
+                                            notification.set("messageDescription", ChannelObject.get("name"));
+                                            notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this channel: ' + ChannelObject.get("name"));
 
-                                                if (ChannelFollowArray.length > 0) {
+                                            notifications.add(notification);
 
-                                                    let notifications = new Set();
+                                            console.log("notification: " + JSON.stringify(notification));
 
-                                                    for (let i = 0; i < ChannelFollowArray.length; i++) {
-
-                                                        let userId = ChannelFollowArray[i].get("user").id;
-
-                                                        let userTo = new USER();
-                                                        userTo.id = userId;
-
-                                                        let NOTIFICATION = Parse.Object.extend("Notification");
-                                                        let notification = new NOTIFICATION();
-
-                                                        notification.set("isDelivered", false);
-                                                        notification.set("hasSent", false);
-                                                        notification.set("isRead", false);
-                                                        notification.set("status", '0');
-                                                        notification.set("userFrom", currentUser);
-                                                        notification.set("userTo", userTo);
-                                                        notification.set("workspace", Workspace);
-                                                        notification.set("channel", Channel);
-                                                        notification.set("type", 'addToChannel'); // mentions in post or postMessage
-                                                        notification.set("userFromDisplayName", currentUser.get("displayName"));
-                                                        notification.set("messageTitle", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'added you to this channel: ');
-                                                        notification.set("messageDescription", ChannelObject.get("name"));
-                                                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this channel: ' + ChannelObject.get("name"));
-
-                                                        notifications.add(notification);
-
-                                                        console.log("notification: " + JSON.stringify(notification));
-
-                                                        if (i === ChannelFollowArray.length - 1) {
+                                            if (i === ChannelFollowArray.length - 1) {
 
 
-                                                            //let dupeArray = [3,2,3,3,5,2];
-                                                            let notificationArray = Array.from(new Set(notifications));
+                                                //let dupeArray = [3,2,3,3,5,2];
+                                                let notificationArray = Array.from(new Set(notifications));
 
-                                                            console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
+                                                console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
 
-                                                            if (notificationArray.length > 0) {
+                                                if (notificationArray.length > 0) {
 
-                                                                Parse.Object.saveAll(notificationArray, {
+                                                    Parse.Object.saveAll(notificationArray, {
 
-                                                                    useMasterKey: true
-                                                                    //sessionToken: sessionToken
+                                                        useMasterKey: true
+                                                        //sessionToken: sessionToken
 
-                                                                }).then(function(result) {
-                                                                    // if we got 500 or more results then we know
-                                                                    // that we have more results
-                                                                    // otherwise we finish
+                                                    }).then(function(result) {
+                                                        // if we got 500 or more results then we know
+                                                        // that we have more results
+                                                        // otherwise we finish
 
-                                                                    return result;
-
-
-                                                                }, function(err) {
-                                                                    // error
-                                                                    console.error(err);
-
-                                                                    return err;
-
-                                                                });
+                                                        return result;
 
 
-                                                            }
+                                                    }, function(err) {
+                                                        // error
+                                                        console.error(err);
 
+                                                        return err;
 
-
-
-
-
-                                                        }
-
-                                                    }
-
-
+                                                    });
 
 
                                                 }
-                                                else {
-
-                                                    // no need to send notifications
 
 
 
-                                                    return ChannelFollowArray;
 
-
-                                                }
 
 
                                             }
 
-                                            SendNotifications ();
-
-                                            let finalTime = process.hrtime(time);
-                                            console.log(`finalTime took addPeopleToChannel CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                                            response.success();
+                                        }
 
 
 
-                                        }, function(err) {
-                                            // error
-                                            return response.error(err);
 
-                                        }, {
+                                    }
+                                    else {
 
-                                            //useMasterKey: true
-                                            sessionToken: sessionToken
+                                        // no need to send notifications
 
-                                        });
+
+
+                                        return ChannelFollowArray;
 
 
                                     }
@@ -1739,259 +1585,199 @@ Parse.Cloud.define("addPeopleToChannel", function(request, response) {
 
                                 }
 
+                                await SendNotifications ();
+
+                                let finalTime = process.hrtime(time);
+                                console.log(`finalTime took addPeopleToChannel CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+
+
                             }
-
-
-
 
 
                         }
 
-
-
-
-
-
-
                     }
 
-                }, function(err) {
-                    // error
-                    return response.error(err);
 
-                }, {
+
+
+
+                }
+
+
+
+
+
+
+
+            }
+
+
+
+        }
+
+        else {
+
+            let ChannelFollowSet = new Set();
+
+            for (var i = 0; i < userArray.length; i++) {
+
+                let newChannelFollow = new CHANNELFOLLOW();
+                newChannelFollow.set("user", userArray[i]);
+                newChannelFollow.set("workspace", Workspace);
+                newChannelFollow.set("channel", Channel);
+                newChannelFollow.set("isFollower", true);
+                newChannelFollow.set("isMember", true);
+
+                ChannelFollowSet.add(newChannelFollow);
+
+                //console.log("ChannelFollowArray: " + JSON.stringify(ChannelFollowSet));
+
+
+            }
+
+            let channelFollowArray= Array.from(new Set(ChannelFollowSet));
+
+            console.log("uniqueArray: " + JSON.stringify(channelFollowArray.length));
+
+
+
+            if (channelFollowArray.length > 0) {
+
+                await Parse.Object.saveAll(channelFollowArray, {
 
                     //useMasterKey: true
                     sessionToken: sessionToken
 
                 });
 
+                console.log("afterSave Channel: " + JSON.stringify(Channel));
 
+                let CHANNEL = Parse.Object.extend("Channel");
+                let queryChannel = new Parse.Query(CHANNEL);
 
-            }
+                let channelObject = await queryChannel.get(Channel.id, {
 
-            else {
+                    //useMasterKey: true
+                    sessionToken: sessionToken
 
-                let ChannelFollowSet = new Set();
+                });
 
-                for (var i = 0; i < userArray.length; i++) {
+                async function SendNotifications () {
 
-                    let newChannelFollow = new CHANNELFOLLOW();
-                    newChannelFollow.set("user", userArray[i]);
-                    newChannelFollow.set("workspace", Workspace);
-                    newChannelFollow.set("channel", Channel);
-                    newChannelFollow.set("isFollower", true);
-                    newChannelFollow.set("isMember", true);
+                    console.log("starting SendNotifications function: " + JSON.stringify(channelFollowArray.length) );
 
-                    ChannelFollowSet.add(newChannelFollow);
+                    console.log("afterSave channelObject: " + JSON.stringify(channelObject));
 
-                    //console.log("ChannelFollowArray: " + JSON.stringify(ChannelFollowSet));
 
 
-                }
+                    if (channelFollowArray.length > 0) {
 
-                let channelFollowArray= Array.from(new Set(ChannelFollowSet));
+                        let notifications = new Set();
 
-                console.log("uniqueArray: " + JSON.stringify(channelFollowArray.length));
+                        for (let i = 0; i < channelFollowArray.length; i++) {
 
+                            let userId = channelFollowArray[i].get("user").id;
+                            console.log("userId: " + JSON.stringify(userId));
 
+                            let userTo = new USER();
+                            userTo.id = userId;
 
-                if (channelFollowArray.length > 0) {
+                            let NOTIFICATION = Parse.Object.extend("Notification");
+                            let notification = new NOTIFICATION();
 
-                    Parse.Object.saveAll(channelFollowArray, {
+                            notification.set("isDelivered", false);
+                            notification.set("hasSent", false);
+                            notification.set("isRead", false);
+                            notification.set("status", '0');
+                            notification.set("userFrom", currentUser);
+                            notification.set("userTo", userTo);
+                            notification.set("workspace", Workspace);
+                            notification.set("channel", Channel);
+                            notification.set("type", 'addToChannel'); // mentions in post or postMessage
+                            notification.set("userFromDisplayName", currentUser.get("displayName"));
+                            notification.set("messageTitle", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'added you to this channel: ');
+                            notification.set("messageDescription", channelObject.get("name"));
+                            notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this channel: ' + channelObject.get("name"));
 
-                        //useMasterKey: true
-                        sessionToken: sessionToken
+                            notifications.add(notification);
 
-                    }).then(function(results) {
+                            console.log("notification: " + JSON.stringify(notification));
 
-                        console.log("afterSave Channel: " + JSON.stringify(Channel));
+                            if (i === channelFollowArray.length - 1) {
 
-                        let CHANNEL = Parse.Object.extend("Channel");
-                        let queryChannel = new Parse.Query(CHANNEL);
 
-                        queryChannel.get(Channel.id, {
+                                //let dupeArray = [3,2,3,3,5,2];
+                                let notificationArray = Array.from(new Set(notifications));
 
-                            //useMasterKey: true
-                            sessionToken: sessionToken
+                                console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
 
-                        }).then((channelObject) => {
+                                if (notificationArray.length > 0) {
 
-                            function SendNotifications () {
+                                    await Parse.Object.saveAll(notificationArray, {
 
-                                console.log("starting SendNotifications function: " + JSON.stringify(channelFollowArray.length) );
+                                        useMasterKey: true
+                                        //sessionToken: sessionToken
 
-                                console.log("afterSave channelObject: " + JSON.stringify(channelObject));
-
-
-
-                                if (channelFollowArray.length > 0) {
-
-                                    let notifications = new Set();
-
-                                    for (let i = 0; i < channelFollowArray.length; i++) {
-
-                                        let userId = channelFollowArray[i].get("user").id;
-                                        console.log("userId: " + JSON.stringify(userId));
-
-                                        let userTo = new USER();
-                                        userTo.id = userId;
-
-                                        let NOTIFICATION = Parse.Object.extend("Notification");
-                                        let notification = new NOTIFICATION();
-
-                                        notification.set("isDelivered", false);
-                                        notification.set("hasSent", false);
-                                        notification.set("isRead", false);
-                                        notification.set("status", '0');
-                                        notification.set("userFrom", currentUser);
-                                        notification.set("userTo", userTo);
-                                        notification.set("workspace", Workspace);
-                                        notification.set("channel", Channel);
-                                        notification.set("type", 'addToChannel'); // mentions in post or postMessage
-                                        notification.set("userFromDisplayName", currentUser.get("displayName"));
-                                        notification.set("messageTitle", '[@' + currentUser.get("displayName") + ':' + currentUser.id + '] ' + 'added you to this channel: ');
-                                        notification.set("messageDescription", channelObject.get("name"));
-                                        notification.set("message", '[@'+currentUser.get("displayName")+ ':' + currentUser.id + '] ' + 'added you to this channel: ' + channelObject.get("name"));
-
-                                        notifications.add(notification);
-
-                                        console.log("notification: " + JSON.stringify(notification));
-
-                                        if (i === channelFollowArray.length - 1) {
-
-
-                                            //let dupeArray = [3,2,3,3,5,2];
-                                            let notificationArray = Array.from(new Set(notifications));
-
-                                            console.log("notificationArray length: " + JSON.stringify(notificationArray.length));
-
-                                            if (notificationArray.length > 0) {
-
-                                                Parse.Object.saveAll(notificationArray, {
-
-                                                    useMasterKey: true
-                                                    //sessionToken: sessionToken
-
-                                                }).then(function(result) {
-                                                    // if we got 500 or more results then we know
-                                                    // that we have more results
-                                                    // otherwise we finish
-
-                                                    console.log("NotificationArray save result:"  + JSON.stringify(result));
-
-                                                    return result;
-
-
-                                                }, function(err) {
-                                                    // error
-                                                    console.error(err);
-
-                                                    return err;
-
-                                                }, {
-
-                                                    useMasterKey: true
-                                                    //sessionToken: sessionToken
-
-                                                });
-
-
-                                            }
-
-
-
-
-
-
-                                        }
-
-                                    }
-
-
+                                    });
 
 
                                 }
-                                else {
-
-                                    // no need to send notifications
 
 
 
-                                    return channelFollowArray;
 
-
-                                }
 
 
                             }
 
-                            SendNotifications ();
-
-                            let finalTime = process.hrtime(time);
-                            console.log(`finalTime took addPeopleToChannel CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                            response.success();
-
-
-
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-
-                            console.error("error queryChannel addPeopleToChannel");
-
-                            return response.error(error);
-                        }, {
-
-                            //useMasterKey: true
-                            sessionToken: sessionToken
-
-                        });
+                        }
 
 
 
 
+                    }
+                    else {
 
-                    }, function(err) {
-                        console.error("error save.all channelFollow addPeopleToChannel");
-                        // error
-                        return response.error(err);
+                        // no need to send notifications
 
-                    }, {
 
-                        //useMasterKey: true
-                        sessionToken: sessionToken
 
-                    });
+                        return channelFollowArray;
+
+
+                    }
 
 
                 }
+
+                await SendNotifications ();
+
+                let finalTime = process.hrtime(time);
+                console.log(`finalTime took addPeopleToChannel CloudFunction ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+
+
 
 
 
             }
 
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
 
-            return response.error(error);
-        }, {
 
-            //useMasterKey: true
-            sessionToken: sessionToken
+        }
 
-        });
+
     }
 
-    updateAllChannelFollows(0);
+    await updateAllChannelFollows(0);
 
 
 }, {useMasterKey: true});
 
 // cloud API and function to addPeopleToWorkspace
-Parse.Cloud.define("addPeopleToWorkspace", async (request) => {
+Parse.Cloud.define("addPeopleToWorkspace", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -2528,7 +2314,7 @@ Parse.Cloud.define("addPeopleToWorkspace", async (request) => {
 }, {useMasterKey: true});
 
 // cloud API and function to invitePeopleToWorkspace
-Parse.Cloud.define("invitePeopleToWorkspace", async (request) => {
+Parse.Cloud.define("invitePeopleToWorkspace", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -2801,7 +2587,7 @@ Parse.Cloud.define("invitePeopleToWorkspace", async (request) => {
 }, {useMasterKey: true});
 
 // cloud API and function to add one or multiple skills to skills table.
-Parse.Cloud.define("addSkills", function(request, response) {
+Parse.Cloud.define("addSkills", async request => {
 
     var NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -2812,172 +2598,52 @@ Parse.Cloud.define("addSkills", function(request, response) {
     //get request params
     skills = request.params.skills;
 
-    function addLevel (callback) {
+    for (var i = 0; i < skills.length; i++) {
 
-        async.forEach(skills, function (skill, cb){
+        var skill = skills[i];
+        // add starter level
+        var SKILL_1 = new Parse.Object("Skill");
+        SKILL_1.set('name', skill.name);
+        SKILL_1.set('level','starter');
+        SKILL_1.set('nameLevel', skill.name + ':' + 'starter');
+        skillObjects.push(SKILL_1);
 
-            // add starter level
-            var SKILL_1 = new Parse.Object("Skill");
-            SKILL_1.set('name', skill.name);
-            SKILL_1.set('level','starter');
-            SKILL_1.set('nameLevel', skill.name + ':' + 'starter');
-            skillObjects.push(SKILL_1);
-
-            // add Ninja level
-            var SKILL_2 = new Parse.Object("Skill");
-            SKILL_2.set('name', skill.name);
-            SKILL_2.set('level','ninja');
-            SKILL_2.set('nameLevel', skill.name + ':' + 'ninja');
-            skillObjects.push(SKILL_2);
-
-
-            // add Master level
-            var SKILL_3 = new Parse.Object("Skill");
-            SKILL_3.set('name', skill.name);
-            SKILL_3.set('level','master');
-            SKILL_3.set('nameLevel', skill.name + ':' + 'master');
-            skillObjects.push(SKILL_3);
-
-            //console.log("skill:s " + JSON.stringify(skillObjects));
-
-            // tell async that that particular element of the iterator is done
-            cb(null, skill);
-
-        }, function(err) {
-            //console.log('iterating done: ' + JSON.stringify(objectsToIndex));
-
-            //cb(err);
-
-        });
-
-        return callback(null, skills);
-
-    };
-
-    function addLevelFast (callback) {
-
-        _.each(skills, function (skill){
-
-            // add starter level
-            var SKILL_1 = new Parse.Object("Skill");
-            SKILL_1.set('name', skill.name);
-            SKILL_1.set('level','starter');
-            SKILL_1.set('nameLevel', skill.name + ':' + 'starter');
-            skillObjects.push(SKILL_1);
-
-            // add Ninja level
-            var SKILL_2 = new Parse.Object("Skill");
-            SKILL_2.set('name', skill.name);
-            SKILL_2.set('level','ninja');
-            SKILL_2.set('nameLevel', skill.name + ':' + 'ninja');
-            skillObjects.push(SKILL_2);
+        // add Ninja level
+        var SKILL_2 = new Parse.Object("Skill");
+        SKILL_2.set('name', skill.name);
+        SKILL_2.set('level','ninja');
+        SKILL_2.set('nameLevel', skill.name + ':' + 'ninja');
+        skillObjects.push(SKILL_2);
 
 
-            // add Master level
-            var SKILL_3 = new Parse.Object("Skill");
-            SKILL_3.set('name', skill.name);
-            SKILL_3.set('level','master');
-            SKILL_3.set('nameLevel', skill.name + ':' + 'master');
-            skillObjects.push(SKILL_3);
+        // add Master level
+        var SKILL_3 = new Parse.Object("Skill");
+        SKILL_3.set('name', skill.name);
+        SKILL_3.set('level','master');
+        SKILL_3.set('nameLevel', skill.name + ':' + 'master');
+        skillObjects.push(SKILL_3);
 
-            //console.log("skill:s " + JSON.stringify(skillObjects));
+        //console.log("skill:s " + JSON.stringify(skillObjects));
 
-            // tell async that that particular element of the iterator is done
-            //cb(null, skill);
-
-        }, function(err) {
-            //console.log('iterating done: ' + JSON.stringify(objectsToIndex));
-
-            //cb(err);
-
-        });
-
-        return callback(null, skills);
-
-    };
-
-    function addLevelFaster (callback) {
-
-        for (var i = 0; i < skills.length; i++) {
-
-            var skill = skills[i];
-            // add starter level
-            var SKILL_1 = new Parse.Object("Skill");
-            SKILL_1.set('name', skill.name);
-            SKILL_1.set('level','starter');
-            SKILL_1.set('nameLevel', skill.name + ':' + 'starter');
-            skillObjects.push(SKILL_1);
-
-            // add Ninja level
-            var SKILL_2 = new Parse.Object("Skill");
-            SKILL_2.set('name', skill.name);
-            SKILL_2.set('level','ninja');
-            SKILL_2.set('nameLevel', skill.name + ':' + 'ninja');
-            skillObjects.push(SKILL_2);
-
-
-            // add Master level
-            var SKILL_3 = new Parse.Object("Skill");
-            SKILL_3.set('name', skill.name);
-            SKILL_3.set('level','master');
-            SKILL_3.set('nameLevel', skill.name + ':' + 'master');
-            skillObjects.push(SKILL_3);
-
-            //console.log("skill:s " + JSON.stringify(skillObjects));
-
-            // tell async that that particular element of the iterator is done
-            //cb(null, skill);
-
-        };
-
-        return callback(null, skills);
-
-    };
-
-    function saveAllSkills (skills, callback) {
-
-        skills = skillObjects;
-
-        //console.log("skills: " + JSON.stringify(skills));
-
-        Parse.Object.saveAll(skills , {
-            success: function (result) {
-                return callback(null, result);
-
-                console.log('success');
-            },
-            error: function (err) {
-                return callback(err);
-                console.log('failed');
-            }
-        });
-
+        // tell async that that particular element of the iterator is done
+        //cb(null, skill);
 
     }
 
-    async.waterfall([
-        async.apply(addLevelFaster),
-        async.apply(saveAllSkills)
+    var finalTime = process.hrtime(time);
+    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
-    ], function (err, result) {
-        if (err) {
-            response.error(err);
-        }
+    return await Parse.Object.saveAll(skills ,  {
 
-        var finalTime = process.hrtime(time);
-        console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-
-        response.success(result);
+        useMasterKey: true
+        //sessionToken: sessionToken
 
     });
-
-
 
 });
 
 // cloud API and function to add one or multiple skills to skills table.
-Parse.Cloud.define("createWorkspace", async (request) => {
+Parse.Cloud.define("createWorkspace", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -3882,7 +3548,7 @@ Parse.Cloud.define("testQueryPerformance", function(request, response) {
 });
 
 // cloud API and function to index and import all posts from Parse to AlgoliaSearch indexUsers
-Parse.Cloud.define("indexAlgolia", function(request, response) {
+Parse.Cloud.define("indexAlgolia", async request => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -3923,414 +3589,51 @@ Parse.Cloud.define("indexAlgolia", function(request, response) {
             break;
 
         default:
-            return response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Channel, Meeting, PostChatMessage or PostQuestionMessage");
+            throw new Error ("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Channel, Meeting, PostChatMessage or PostQuestionMessage");
     }
 
-    query.find({useMasterKey: true})
-        .then((objectsToIndex) => {
-            // The object was retrieved successfully.
-            //console.log("Result from get " + JSON.stringify(Workspace));
+    let objects = await query.find({
 
-            let objects = objectsToIndex;
-            console.log("ObjectToSave length: " + JSON.stringify(objects.length));
+        useMasterKey: true
+        //sessionToken: sessionToken
 
-            async.forEach(objects, function (object, cb) {
+    }, (error) => {
+        // The object was not retrieved successfully.
+        // error is a Parse.Error with an error code and message.
+        throw new Error(error);
+    }, {
+
+        useMasterKey: true
+        //sessionToken: sessionToken
+
+    });
+
+    async function indexAlgoliaObjects (objects) {
+
+        await Promise.all( {
+
+            objects:forEach(async function (object) {
 
                 let PARSEOBJECT = Parse.Object.extend(collection);
                 let parseObject = new PARSEOBJECT();
                 parseObject.id = object.id;
 
-                parseObject.save(null, {
+                await parseObject.save(null, {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
 
                 });
 
-                return cb (null, object);
+                return object;
 
-            }, function (err) {
+            })
 
-                if (err) {
+        })
 
-                    return response.error(err);
-                } else {
-
-                    console.log("PrepIndex completed: " + JSON.stringify(objects.length));
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took indexAlgolia ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-                    return response.success();
-
-                }
-
-
-            });
-
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            return response.error(error);
-        }, {useMasterKey: true});
-
-
-}, {useMasterKey: true});
-
-// cloud API and function to index and import all users from Parse to AlgoliaSearch indexUsers
-Parse.Cloud.define("indexCollection", function(request, response) {
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let objectsToIndex = [];
-    //Create a new query for User collection in Parse
-
-    let collection = request.params.collection;
-    let index;
-    let skills;
-    let skillsToLearn;
-    let query = new Parse.Query(collection);
-    query.limit(1000); // todo limit to at most 1000 results need to change and iterate until done todo
-
-    console.log('collection: ' + request.params.collection);
-
-    switch (collection) {
-        case "Post":
-            index = indexPosts;
-            query.include( ["user", "workspace", "channel"] );
-            //query.select(["user", "ACL", "media_duration", "postImage", "post_File", "audioWave", "archive", "post_type", "privacy","text", "likesCount", "CommentCount", "updatedAt", "objectId", "topIntent", "hasURL","hashtags", "mentions",  "workspace.workspace_name", "workspace.workspace_url" , "channel.name", "channel.type", "channel.archive"]);
-
-            break;
-        case "_User":
-            index = indexUsers;
-            skills = "mySkills";
-            query.include( ["currentCompany"] );
-            skillsToLearn = "skillsToLearn";
-
-            break;
-        case "Channel":
-            index = indexChannel;
-            query.include( ["user", "workspace", "category"] );
-
-            break;
-        case "Meeting":
-            index = indexMeetings;
-
-            break;
-        case "WorkSpace":
-            query.include( ["user"] );
-            query.select(["user.fullname", "user.displayName", "user.isOnline", "user.showAvailability", "user.profileimage", "user.createdAt", "user.updatedAt", "user.objectId", "type", "archive","workspace_url", "workspace_name", "experts", "ACL", "objectId", "mission", "description","createdAt", "updatedAt", "followerCount", "memberCount", "isNew", "skills", "image", "channelCount", "expertsArray", "notificationCount"]);
-            index = indexWorkspaces;
-            skills = "skills";
-
-            break;
-        case "Skill":
-            index = indexSkills;
-
-            break;
-        default:
-            response.error("The collection entered does not exist. Please enter one of the following collections: _User, Post, WorkSpace, Channel, Meeting");
     }
 
-    query.find({useMasterKey: true})
-        .then((objectsToIndex) => {
-            // The object was retrieved successfully.
-            //console.log("Result from get " + JSON.stringify(Workspace));
-
-            let objects = objectsToIndex;
-            console.log("ObjectToSave length: " + JSON.stringify(objects.length));
-
-            async.map(objects, function (object, cb) {
-
-                let WORKSPACE = Parse.Object.extend("WorkSpace");
-                let workspace = new WORKSPACE();
-                workspace = object;
-                let workspaceToSave = workspace.toJSON();
-
-                let skillObject = Parse.Object.extend("Skill");
-                //var skillsRelation = new skillObject.relation("skills");
-                skillObject = workspace.get("skills");
-                console.log("skillObject: " + JSON.stringify(skillObject));
-
-                function getSkills(callback) {
-
-                    if (collection !== "WorkSpace") {
-
-                        return callback(null, object);
-
-                    }
-                    else {
-
-                        //console.log("Skill Length:" + skillObject);
-
-                        let skillObjectQuery = skillObject.query();
-                        skillObjectQuery.ascending("level");
-
-                        skillObjectQuery.find({
-
-                            useMasterKey: true
-                        }).then((skill) => {
-
-                            let skillObject = [];
-
-                            if (skill) {
-
-                                // skills exist return then then
-                                skillObject = skill;
-                            } else {
-
-                                // do nothing and return empty skill object no skills;
-
-                            }
-
-                            return callback (null, skillObject);
-
-
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            return callback (error);
-                        }, {
-
-                            useMasterKey: true
-                        });
-
-
-                    }
-
-                }
-
-                function getExperts(callback) {
-
-                    if (collection !== "WorkSpace") {
-
-                        return callback(null, object);
-
-                    }
-                    else {
-
-                        // todo check if expert is dirty, if no ignore and return callback
-
-                        //let expertObject = Parse.Object.extend("_User");
-
-                        let experts = workspace.get("expertsArray");
-
-                        if (experts) {
-
-                            console.log("experts getExperts: " + JSON.stringify(experts));
-
-                            return callback (null, experts);
-
-                        } else {
-
-                            experts = [];
-                            console.log("experts getExperts else: " + JSON.stringify(experts));
-
-                            return callback (null, experts);
-
-                        }
-
-                        //console.log("Experts: " + JSON.stringify(expertObject));
-
-                        /*expertObject.query().select(["fullname", "displayName", "isOnline", "showAvailability", "profileimage", "createdAt", "updatedAt", "objectId"]).find({
-
-                            useMasterKey: true
-                        }).then((experts) => {
-
-                            if (experts) {
-
-                                return callback(null, experts);
-
-                            } else {
-
-                                let expertsEmpty = [];
-                                return callback (null, expertsEmpty);
-
-                            }
-
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            return callback (null, error);
-                        }, {
-
-                            useMasterKey: true
-                        });*/
-
-
-                    }
-
-                }
-
-                function getWorkspaceFollowers(callback) {
-
-                    //todo check for when we should be updating workspace_follower in Algolia Index
-                    // get workspace_followers only in the following scenarios (1) user isFollower or isMember == true (2) workspace admin sent request for a user to join a workspace it's viewable to that user.
-
-                    if (collection !== "WorkSpace") {
-
-                        return callback(null, object);
-
-                    }
-                    else {
-
-                        let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-                        let queryWorkspaceFollower = new Parse.Query(WORKSPACEFOLLOWER);
-
-                        let viewableBy = [];
-
-                        queryWorkspaceFollower.equalTo("workspace", workspace);
-
-                        // todo if there is more than 10k people following workspace need to split algolia index into two objects and implement pagination here.
-                        queryWorkspaceFollower.limit(10000);
-                        // queryWorkspaceFollower.include( ["workspace"] );
-
-                        queryWorkspaceFollower.find({useMasterKey: true})
-                            .then((followers) => {
-                                // The object was retrieved successfully.
-
-                                //console.log("workspace.type: " + JSON.stringify(workspaceToSave.type));
-
-                                delete workspaceToSave.skills;
-                                delete workspaceToSave.experts;
-
-                                workspaceToSave.objectID = workspaceToSave.objectId;
-
-                                if (followers) {
-
-                                    workspaceToSave['followers'] = followers;
-
-                                    for (var i = 0; i < followers.length; i++) {
-
-                                        if (workspaceToSave.type === 'private') {
-                                            viewableBy.push(followers[i].toJSON().user.objectId);
-                                            console.log("user id viewableBy: " + followers[i].toJSON().user.objectId) ;
-                                        }
-
-
-                                    }
-
-                                    if (workspaceToSave.type === 'private') {
-
-                                        workspaceToSave._tags= viewableBy;
-                                        console.log("private _tags: " + JSON.stringify(workspaceToSave._tags));
-
-                                    } else if (workspaceToSave.type === 'public') {
-
-                                        workspaceToSave._tags = ['*'];
-
-                                    }
-
-                                } else {
-
-                                    // this case should never exist, we should always have a follower for a workspace (owner)
-
-                                    followers = [];
-                                    workspaceToSave['followers'] = followers;
-
-                                    workspaceToSave._tags = ['*'];
-
-
-                                }
-
-
-
-
-                                //console.log("followers: " + JSON.stringify(workspaceToSave.followers));
-
-                                return callback(null, workspaceToSave);
-
-
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                response.error(error);
-                            }, {useMasterKey: true});
-
-                    }
-
-
-                }
-
-
-                async.parallel([
-                    async.apply(getSkills),
-                    async.apply(getExperts),
-                    async.apply(getWorkspaceFollowers)
-
-                ], function (err, results) {
-                    if (err) {
-                        return cb(err);
-                    }
-
-                    //console.log("results length: " + JSON.stringify(results));
-
-                    if (collection === "WorkSpace") {
-
-                        workspaceToSave = results[2];
-                        let skillsToSave = results[0];
-                        let expertsToSave = results[1];
-
-                        //console.log("skillsToSave: " + JSON.stringify(skillsToSave));
-                        //console.log("expertsToSave: " + JSON.stringify(expertsToSave));
-                        //console.log("workspaceToSave: " + JSON.stringify(workspaceToSave));
-
-                        workspaceToSave["skills"] = skillsToSave;
-                        workspaceToSave["experts"] = expertsToSave;
-
-                        object = workspaceToSave;
-
-                        //console.log("object: " + JSON.stringify(object));
-
-                        return cb(null, object);
-
-
-                    }
-                    else {
-
-                        // convert to regular key/value JavaScript object
-                        object = results[2];
-                        object = object.toJSON();
-                        // Specify Algolia's objectID with the Parse.Object unique ID
-                        object.objectID = object.objectId;
-                        object._tags = ['*'];
-
-                        return cb(null, object);
-                    }
-
-                });
-
-
-            }, function (err, objects) {
-
-                console.log("PrepIndex completed: " + JSON.stringify(objects.length));
-
-                // Add or update new objects
-                index.partialUpdateObjects(objects, true, function (err, content) {
-                    if (err) response.error(err);
-
-                    console.log("Parse<>Algolia workspace saved from indexCollection function ");
-
-                    let finalTime = process.hrtime(time);
-                    console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                    response.success();
-
-                });
-
-            });
-
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {useMasterKey: true});
+    return await indexAlgoliaObjects();
 
 
 }, {useMasterKey: true});
@@ -4357,7 +3660,6 @@ Parse.Cloud.beforeSave('_User', async (req) => {
     let socialProfilePicURL = user.get("socialProfilePicURL");
     let profileImage = user.get("profileimage");
 
-
     //console.log("_User req: " + JSON.stringify(req));
 
     //let expiresAt = session.get("expiresAt");
@@ -4380,6 +3682,13 @@ Parse.Cloud.beforeSave('_User', async (req) => {
     let userOriginalTagFilters = userOriginal? userOriginal.get("tagFilters") : defaultTagFiltersArray;
     //console.log("userOriginalTagFilters: " + JSON.stringify(userOriginalTagFilters));
     //console.log("userOriginalTagFilters.length: " + JSON.stringify(userOriginalTagFilters.length));
+
+    if (!user.get("displayName")) {
+
+        let fullNameUser = user.get("fullname");
+
+        user.set("displayName", fullNameUser);
+    }
 
 
     if (user.dirty("profileimage") === true || user.get("isWorkspaceUpdated") === true || user.get("isChannelUpdated") === true || user.dirty("title") || user.dirty("displayName") === true || user.dirty("fullname") === true || user.dirty("roles") === true || user.dirty("isOnline") === true || user.dirty("showAvailability") === true) {
@@ -5401,7 +4710,7 @@ Parse.Cloud.beforeSave('WorkSpace', async (req) => {
 }, {useMasterKey: true});
 
 // Run beforeSave functions channel
-Parse.Cloud.beforeSave('Channel', function(req, response) {
+Parse.Cloud.beforeSave('Channel', async (req) => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -5414,11 +4723,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!req.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.003.beforeSave-Channel.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('beforeSave-Channel.UNAUTHENTICATED_USER');
     }
 
     //console.log("req.user SessionToken: " + JSON.stringify(req.user.getSessionToken()));
@@ -5439,16 +4744,16 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
         }
 
         if (!channel.get("name")) {
-            response.error("Channel name is required.");
+            throw new Error ("Channel name is required.");
         }
         if (!channel.get("user")) {
-            response.error("User who is the channel creator is required when creating a new channel");
+            throw new Error ("User who is the channel creator is required when creating a new channel");
         }
         if (!channel.get("workspace")) {
-            response.error("Workspace is required when creating a new channel");
+            throw new Error ("Workspace is required when creating a new channel");
         }
         if (!channel.get("type")) {
-            response.error("Channel type field is required.");
+            throw new Error ("Channel type field is required.");
         }
 
         //var owner = new Parse.Object("_User");
@@ -5470,550 +4775,152 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
         queryChannel.equalTo("nameWorkspaceID", nameWorkspaceID);
         //queryChannel.include("user");
 
-        queryChannel.first({
+        const channelResults = await queryChannel.first({
 
             useMasterKey: true
             //sessionToken: sessionToken
 
-        }).then((results) => {
-            // The object was retrieved successfully.
-            //console.log("results beforeSave Channel: " + JSON.stringify(results));
-            if (results) {
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            throw new Error(error);
+        }, {
 
-                // channel is not unique return error
-                let finalTime = process.hrtime(time);
-                console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                response.error("There is already a channel with this name: " + channel.get("name") + ' ' + "please use a channel name that isn't already taken.");
+            useMasterKey: true
+            //sessionToken: sessionToken
 
-            } else {
+        });
 
-                //console.log("nice no channel with this name, create it!");
+        if (channelResults) {
 
-                // set isNew to true so we can use this in afterSave Channel if needed.
-                channel.set("isNew", true);
+            let finalTime = process.hrtime(time);
+            console.log(`finalTime took ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+            throw new Error ("There is already a channel with this name: " + channel.get("name") + ' ' + "please use a channel name that isn't already taken.");
 
-                // set channel to not be default if user didn't specify it
-                if (!channel.get("default")) {
-                    channel.set("default", false);
+        }
+
+        else {
+
+            //console.log("nice no channel with this name, create it!");
+
+            // set isNew to true so we can use this in afterSave Channel if needed.
+            channel.set("isNew", true);
+
+            // set channel to not be default if user didn't specify it
+            if (!channel.get("default")) {
+                channel.set("default", false);
+            }
+
+            // set 0 for countPosts, countFollowers and countMembers
+            channel.set("postCount", 0);
+            channel.set("memberCount", 0);
+            channel.set("followerCount", 0);
+
+            // since this is a new channel then by default the channel creator is both a member and follower increment member/follower for this channel
+            channel.increment("memberCount");
+            channel.increment("followerCount");
+
+            const User = await owner.fetch(owner.id, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            //console.log("user object: " + JSON.stringify(User));
+            let userRoleRelation = User.relation("roles");
+            //let expertChannelRelation = channelObject.relation("experts");
+            //console.log("userRole: " + JSON.stringify(userRoleRelation));
+            //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
+
+            let expertRoleName = "expert-" + workspace.id;
+
+            let userRoleRelationQuery = userRoleRelation.query();
+            userRoleRelationQuery.equalTo("name", expertRoleName);
+
+            const userRoleRealtionResult = await userRoleRelationQuery.first({
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
+
+                useMasterKey: true
+                //sessionToken: sessionToken
+
+            });
+
+            if (userRoleRealtionResult) {
+
+                // expert role exists, add as channel expert
+                console.log("channelExpert: " + JSON.stringify(results));
+
+
+                let expertOwner = simplifyUser(User);
+                console.log("expertOnwer: " + JSON.stringify(expertOwner));
+
+
+                channel.addUnique("expertsArray", expertOwner);
+
+
+                console.log("addExpertsArrayToChannel channel: " + JSON.stringify(channel));
+
+                // by default archive needs to be set to false
+                channel.set("archive", false);
+
+                // By default allowMemberPostCreation is set to false
+                if (!channel.get("allowMemberPostCreation")) {
+                    channel.set("allowMemberPostCreation", false);
+
+                    // todo add role ACL to members to be able to create posts in this workspace
+
                 }
 
-                // set 0 for countPosts, countFollowers and countMembers
-                channel.set("postCount", 0);
-                channel.set("memberCount", 0);
-                channel.set("followerCount", 0);
+                //console.log("channel: " + JSON.stringify(channel));
 
-                // since this is a new channel then by default the channel creator is both a member and follower increment member/follower for this channel
-                channel.increment("memberCount");
-                channel.increment("followerCount");
+                // If this is a private channel, set ACL for owner to read and write
+                if (channel.get("type") === 'private') {
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(owner, true);
+                    channelACL.setWriteAccess(owner, true);
+                    channel.setACL(channelACL);
 
-                owner.fetch(owner.id, {
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
 
-                }).then((User) => {
-                    // The object was retrieved successfully.
+                }
+                else if (channel.get("type") === 'privateMembers') {
 
-                    //console.log("user object: " + JSON.stringify(User));
-                    let userRoleRelation = User.relation("roles");
-                    //let expertChannelRelation = channelObject.relation("experts");
-                    //console.log("userRole: " + JSON.stringify(userRoleRelation));
-                    //console.log("expertChannelRelation: " + JSON.stringify(expertChannelRelation));
+                    // get member role for this workspace
+                    let queryMemberRole = new Parse.Query(Parse.Role);
+                    let memberName = 'member-' + workspace.id;
 
-                    let expertRoleName = "expert-" + workspace.id;
+                    queryMemberRole.equalTo('name', memberName);
 
-                    let userRoleRelationQuery = userRoleRelation.query();
-                    userRoleRelationQuery.equalTo("name", expertRoleName);
-                    userRoleRelationQuery.first({
+                    const memberRole = await queryMemberRole.first({
 
                         useMasterKey: true
                         //sessionToken: sessionToken
 
-                    }).then((results) => {
-                        // The object was retrieved successfully.
-
-                        if (results) {
-
-                            // expert role exists, add as channel expert
-                            console.log("channelExpert: " + JSON.stringify(results));
-
-
-                            let expertOwner = simplifyUser(User);
-                            console.log("expertOnwer: " + JSON.stringify(expertOwner));
-
-
-                            channel.addUnique("expertsArray", expertOwner);
-
-
-                            console.log("addExpertsArrayToChannel channel: " + JSON.stringify(channel));
-
-                            // by default archive needs to be set to false
-                            channel.set("archive", false);
-
-                            // By default allowMemberPostCreation is set to false
-                            if (!channel.get("allowMemberPostCreation")) {
-                                channel.set("allowMemberPostCreation", false);
-
-                                // todo add role ACL to members to be able to create posts in this workspace
-
-                            }
-
-                            //console.log("channel: " + JSON.stringify(channel));
-
-                            // If this is a private channel, set ACL for owner to read and write
-                            if (channel.get("type") === 'private') {
-                                channelACL.setPublicReadAccess(false);
-                                channelACL.setPublicWriteAccess(false);
-                                channelACL.setReadAccess(owner, true);
-                                channelACL.setWriteAccess(owner, true);
-                                channel.setACL(channelACL);
-
-                                let finalTime = process.hrtime(time);
-                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                response.success();
-
-                            }
-                            else if (channel.get("type") === 'privateMembers') {
-
-                                // get member role for this workspace
-                                let queryMemberRole = new Parse.Query(Parse.Role);
-                                let memberName = 'member-' + workspace.id;
-
-                                queryMemberRole.equalTo('name', memberName);
-                                queryMemberRole.first({useMasterKey: true})
-                                    .then((memberRole) => {
-                                        // The object was retrieved successfully.
-
-                                        //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(memberRole, true);
-                                        channelACL.setWriteAccess(memberRole, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {useMasterKey: true});
-
-
-                            }
-                            else if (channel.get("type") === 'privateExperts') {
-
-                                // get member role for this workspace
-                                let queryRole = new Parse.Query(Parse.Role);
-                                let Name = 'expert-' + workspace.id;
-
-                                queryRole.equalTo('name', Name);
-                                queryRole.first({useMasterKey: true})
-                                    .then((Role) => {
-                                        // The object was retrieved successfully.
-
-                                        //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(Role, true);
-                                        channelACL.setWriteAccess(Role, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {useMasterKey: true});
-
-
-                            }
-                            else if (channel.get("type") === 'privateAdmins') {
-
-                                // get member role for this workspace
-                                let queryRole = new Parse.Query(Parse.Role);
-                                let Name = 'admin-' + workspace.id;
-
-                                queryRole.equalTo('name', Name);
-                                queryRole.first({useMasterKey: true})
-                                    .then((Role) => {
-                                        // The object was retrieved successfully.
-
-                                        //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(Role, true);
-                                        channelACL.setWriteAccess(Role, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {useMasterKey: true});
-
-
-                            }
-                            else if (channel.get("type") === 'privateModerators') {
-
-                                // get member role for this workspace
-                                let queryRole = new Parse.Query(Parse.Role);
-                                let Name = 'moderator-' + workspace.id;
-
-                                queryRole.equalTo('name', Name);
-                                queryRole.first({useMasterKey: true})
-                                    .then((Role) => {
-                                        // The object was retrieved successfully.
-
-                                        //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(Role, true);
-                                        channelACL.setWriteAccess(Role, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {useMasterKey: true});
-
-
-                            }
-                            else if (channel.get("type") === 'privateOwners') {
-
-                                // get member role for this workspace
-                                let queryRole = new Parse.Query(Parse.Role);
-                                let Name = 'owner-' + workspace.id;
-
-                                queryRole.equalTo('name', Name);
-                                queryRole.first({useMasterKey: true})
-                                    .then((Role) => {
-                                        // The object was retrieved successfully.
-
-                                        //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(Role, true);
-                                        channelACL.setWriteAccess(Role, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {useMasterKey: true});
-
-                            }
-                            else if (channel.get("type") === 'public') {
-
-                                //console.log("channel is: " + JSON.stringify(channel.get("type")));
-                                //console.log("channelACL: " + JSON.stringify(channelACL));
-                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                channelACL.setPublicReadAccess(true);
-                                channelACL.setPublicWriteAccess(true);
-                                channelACL.setReadAccess(owner, true);
-                                channelACL.setWriteAccess(owner, true);
-
-                                //console.log("channelACL: " + JSON.stringify(channelACL));
-                                channel.setACL(channelACL);
-
-                                let finalTime = process.hrtime(time);
-                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                                response.success();
-
-
-                            }
-                            else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
-
-                                let finalTime = process.hrtime(time);
-                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                                response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
-                            }
-                            else {
-
-                                let finalTime = process.hrtime(time);
-                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                                response.success();
-
-                            }
-
-
-
-
-
-                        }
-                        else {
-                            // no role exists don't add experts to channel
-
-                            // by default archive needs to be set to false
-                            channel.set("archive", false);
-
-                            // By default allowMemberPostCreation is set to false
-                            if (!channel.get("allowMemberPostCreation")) {
-                                channel.set("allowMemberPostCreation", false);
-
-                                // todo add role ACL to members to be able to create posts in this workspace
-
-                            }
-
-                            //console.log("channel: " + JSON.stringify(channel));
-
-                            // If this is a private channel, set ACL for owner to read and write
-                            if (channel.get("type") === 'private') {
-                                channelACL.setPublicReadAccess(false);
-                                channelACL.setPublicWriteAccess(false);
-                                channelACL.setReadAccess(owner, true);
-                                channelACL.setWriteAccess(owner, true);
-                                channel.setACL(channelACL);
-
-                                let finalTime = process.hrtime(time);
-                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                response.success();
-
-                            }
-                            else if (channel.get("type") === 'privateMembers') {
-
-                                // get member role for this workspace
-                                let queryMemberRole = new Parse.Query(Parse.Role);
-                                let memberName = 'member-' + workspace.id;
-
-                                queryMemberRole.equalTo('name', memberName);
-                                queryMemberRole.first({useMasterKey: true})
-                                    .then((memberRole) => {
-                                        // The object was retrieved successfully.
-
-                                        //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(memberRole, true);
-                                        channelACL.setWriteAccess(memberRole, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {useMasterKey: true});
-
-
-                            }
-                            else if (channel.get("type") === 'privateExperts') {
-
-                                // get member role for this workspace
-                                let queryRole = new Parse.Query(Parse.Role);
-                                let Name = 'expert-' + workspace.id;
-
-                                queryRole.equalTo('name', Name);
-                                queryRole.first({useMasterKey: true})
-                                    .then((Role) => {
-                                        // The object was retrieved successfully.
-
-                                        //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(Role, true);
-                                        channelACL.setWriteAccess(Role, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {useMasterKey: true});
-
-
-                            }
-                            else if (channel.get("type") === 'privateAdmins') {
-
-                                // get member role for this workspace
-                                let queryRole = new Parse.Query(Parse.Role);
-                                let Name = 'admin-' + workspace.id;
-
-                                queryRole.equalTo('name', Name);
-                                queryRole.first({useMasterKey: true})
-                                    .then((Role) => {
-                                        // The object was retrieved successfully.
-
-                                        //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(Role, true);
-                                        channelACL.setWriteAccess(Role, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {useMasterKey: true});
-
-
-                            }
-                            else if (channel.get("type") === 'privateModerators') {
-
-                                // get member role for this workspace
-                                let queryRole = new Parse.Query(Parse.Role);
-                                let Name = 'moderator-' + workspace.id;
-
-                                queryRole.equalTo('name', Name);
-                                queryRole.first({useMasterKey: true})
-                                    .then((Role) => {
-                                        // The object was retrieved successfully.
-
-                                        //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(Role, true);
-                                        channelACL.setWriteAccess(Role, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {useMasterKey: true});
-
-
-                            }
-                            else if (channel.get("type") === 'privateOwners') {
-
-                                // get member role for this workspace
-                                let queryRole = new Parse.Query(Parse.Role);
-                                let Name = 'owner-' + workspace.id;
-
-                                queryRole.equalTo('name', Name);
-                                queryRole.first({useMasterKey: true})
-                                    .then((Role) => {
-                                        // The object was retrieved successfully.
-
-                                        //console.log("memberRole" + JSON.stringify(memberRole));
-
-                                        // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                        channelACL.setPublicReadAccess(false);
-                                        channelACL.setPublicWriteAccess(false);
-                                        channelACL.setReadAccess(Role, true);
-                                        channelACL.setWriteAccess(Role, true);
-                                        channel.setACL(channelACL);
-
-                                        let finalTime = process.hrtime(time);
-                                        console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-                                        response.success();
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        response.error(error);
-                                    }, {useMasterKey: true});
-
-                            }
-                            else if (channel.get("type") === 'public') {
-
-                                //console.log("channel is: " + JSON.stringify(channel.get("type")));
-                                //console.log("channelACL: " + JSON.stringify(channelACL));
-                                // private workspace, but this is a channel that is accessible to all members of this private workspace
-                                channelACL.setPublicReadAccess(true);
-                                channelACL.setPublicWriteAccess(true);
-                                channelACL.setReadAccess(owner, true);
-                                channelACL.setWriteAccess(owner, true);
-
-                                //console.log("channelACL: " + JSON.stringify(channelACL));
-                                channel.setACL(channelACL);
-
-                                let finalTime = process.hrtime(time);
-                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                                response.success();
-
-
-                            }
-                            else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
-
-                                let finalTime = process.hrtime(time);
-                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                                response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
-                            }
-                            else {
-
-                                let finalTime = process.hrtime(time);
-                                console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-
-                                response.success();
-
-                            }
-
-
-                        }
                     }, (error) => {
                         // The object was not retrieved successfully.
                         // error is a Parse.Error with an error code and message.
-                        console.log("userRoleRelationQuery no result");
-                        return response.error(error);
+                        throw new Error(error);
                     }, {
 
                         useMasterKey: true
@@ -6021,32 +4928,431 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                     });
 
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    console.log("userRoleRelationQuery no result");
-                    return response.error(error);
-                }, {
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(memberRole, true);
+                    channelACL.setWriteAccess(memberRole, true);
+                    channel.setACL(channelACL);
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
-                });
+                }
+                else if (channel.get("type") === 'privateExperts') {
 
+                    // get member role for this workspace
+                    let queryRole = new Parse.Query(Parse.Role);
+                    let Name = 'expert-' + workspace.id;
+
+                    queryRole.equalTo('name', Name);
+
+                    const Role = await queryRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+
+                }
+                else if (channel.get("type") === 'privateAdmins') {
+
+                    // get member role for this workspace
+                    let queryRole = new Parse.Query(Parse.Role);
+                    let Name = 'admin-' + workspace.id;
+
+                    queryRole.equalTo('name', Name);
+
+                    const Role = await queryRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+
+                }
+                else if (channel.get("type") === 'privateModerators') {
+
+                    // get member role for this workspace
+                    let queryRole = new Parse.Query(Parse.Role);
+                    let Name = 'moderator-' + workspace.id;
+
+                    queryRole.equalTo('name', Name);
+
+                    const Role = await queryRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+
+                }
+                else if (channel.get("type") === 'privateOwners') {
+
+                    // get member role for this workspace
+                    let queryRole = new Parse.Query(Parse.Role);
+                    let Name = 'owner-' + workspace.id;
+
+                    queryRole.equalTo('name', Name);
+
+                    const Role = await queryRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                }
+                else if (channel.get("type") === 'public') {
+
+                    //console.log("channel is: " + JSON.stringify(channel.get("type")));
+                    //console.log("channelACL: " + JSON.stringify(channelACL));
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(true);
+                    channelACL.setPublicWriteAccess(true);
+                    channelACL.setReadAccess(owner, true);
+                    channelACL.setWriteAccess(owner, true);
+
+                    //console.log("channelACL: " + JSON.stringify(channelACL));
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+
+                }
+                else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                    throw new Error ("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+                }
+                else {
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                }
 
 
 
             }
+            else {
+                // no role exists don't add experts to channel
+
+                // by default archive needs to be set to false
+                channel.set("archive", false);
+
+                // By default allowMemberPostCreation is set to false
+                if (!channel.get("allowMemberPostCreation")) {
+                    channel.set("allowMemberPostCreation", false);
+
+                    // todo add role ACL to members to be able to create posts in this workspace
+
+                }
+
+                //console.log("channel: " + JSON.stringify(channel));
+
+                // If this is a private channel, set ACL for owner to read and write
+                if (channel.get("type") === 'private') {
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(owner, true);
+                    channelACL.setWriteAccess(owner, true);
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                }
+                else if (channel.get("type") === 'privateMembers') {
+
+                    // get member role for this workspace
+                    let queryMemberRole = new Parse.Query(Parse.Role);
+                    let memberName = 'member-' + workspace.id;
+
+                    queryMemberRole.equalTo('name', memberName);
+
+                    const memberRole = await queryRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(memberRole, true);
+                    channelACL.setWriteAccess(memberRole, true);
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
 
 
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {
-            useMasterKey: true
-            //sessionToken: sessionToken
-        });
+                }
+                else if (channel.get("type") === 'privateExperts') {
+
+                    // get member role for this workspace
+                    let queryRole = new Parse.Query(Parse.Role);
+                    let Name = 'expert-' + workspace.id;
+
+                    queryRole.equalTo('name', Name);
+
+                    const Role = await queryRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+
+                }
+                else if (channel.get("type") === 'privateAdmins') {
+
+                    // get member role for this workspace
+                    let queryRole = new Parse.Query(Parse.Role);
+                    let Name = 'admin-' + workspace.id;
+
+                    queryRole.equalTo('name', Name);
+
+                    const Role = await queryRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+
+                }
+                else if (channel.get("type") === 'privateModerators') {
+
+                    // get member role for this workspace
+                    let queryRole = new Parse.Query(Parse.Role);
+                    let Name = 'moderator-' + workspace.id;
+
+                    queryRole.equalTo('name', Name);
+
+                    const Role = await queryRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+
+                }
+                else if (channel.get("type") === 'privateOwners') {
+
+                    // get member role for this workspace
+                    let queryRole = new Parse.Query(Parse.Role);
+                    let Name = 'owner-' + workspace.id;
+
+                    queryRole.equalTo('name', Name);
+
+                    const Role = await queryRole.first({
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+
+
+                }
+                else if (channel.get("type") === 'public') {
+
+                    //console.log("channel is: " + JSON.stringify(channel.get("type")));
+                    //console.log("channelACL: " + JSON.stringify(channelACL));
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(true);
+                    channelACL.setPublicWriteAccess(true);
+                    channelACL.setReadAccess(owner, true);
+                    channelACL.setWriteAccess(owner, true);
+
+                    //console.log("channelACL: " + JSON.stringify(channelACL));
+                    channel.setACL(channelACL);
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+
+                }
+                else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                    throw new Error ("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+                }
+                else {
+
+                    let finalTime = process.hrtime(time);
+                    console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
+
+                }
+
+
+            }
+
+        }
+
+
 
 
     }
@@ -6068,7 +5374,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
         let expertRelation = workspace.relation("experts");
 
-        function archiveChannelFollowers (callback) {
+        async function archiveChannelFollowers () {
 
             if (channel.dirty("archive")) {
 
@@ -6079,93 +5385,74 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     let queryChannelFollow= new Parse.Query(CHANNELFOLLOW);
                     queryChannelFollow.equalTo("channel", channel);
                     queryChannelFollow.limit(10000);
-                    queryChannelFollow.find({
+
+                    const channelFollowers = await queryChannelFollow.find({
+
                         useMasterKey: true
-
-                    }).then((channelFollowers) => {
-
-
-                        if (channelFollowers) {
-
-                            async.map(channelFollowers, function (object, cb) {
-
-                                let channelFollow = new CHANNELFOLLOW();
-                                channelFollow.id = object.id;
-
-                                channelFollow.set("archive", true);
-                                //channelFollow.set("user", object.get("user"));
-
-                                object = channelFollow;
-
-                                console.log("channelFollowersObject: " + JSON.stringify(object));
-
-                                return cb (null, object);
-
-                                //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
-
-                            }, function (err, channelFollowers) {
-
-                                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-                                if (err) {response.error(err);} else {
-
-
-
-                                    Parse.Object.saveAll(channelFollowers, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-
-                                    }).then((savedChannelFollowers) => {
-
-                                        //console.log("savedChannelFollowers: " + JSON.stringify(savedChannelFollowers));
-
-
-                                        return callback (null, savedChannelFollowers);
-
-
-                                    });
-
-                                }
-
-                            });
-
-
-                        } else {
-
-                            channelFollowers = [];
-                            // no channelFollowers to delete return
-                            return callback(null, channelFollowers);
-
-                        }
-
+                        //sessionToken: sessionToken
 
                     }, (error) => {
                         // The object was not retrieved successfully.
                         // error is a Parse.Error with an error code and message.
-                        return callback(error);
+                        throw new Error(error);
                     }, {
 
                         useMasterKey: true
                         //sessionToken: sessionToken
+
                     });
+
+                    if (channelFollowers) {
+
+                        let mapChannelFollowers = lodash.map(channelFollowers, function (object) {
+
+                            let channelFollow = new CHANNELFOLLOW();
+                            channelFollow.id = object.id;
+
+                            channelFollow.set("archive", true);
+                            //channelFollow.set("user", object.get("user"));
+
+                            object = channelFollow;
+
+                            //console.log("channelFollowersObject: " + JSON.stringify(object));
+
+                            return object;
+
+
+                        });
+
+                        return await Parse.Object.saveAll(mapChannelFollowers, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+
+                    }
+
+                    else {
+
+                        return [];
+
+                    }
 
 
                 } else {
 
-                    return callback (null, channel);
+                    return channel;
 
                 }
 
             } else {
 
-                return callback (null, channel);
+                return channel;
             }
 
 
         }
 
-        function unarchiveChannelFollowers (callback) {
+        async function unarchiveChannelFollowers () {
 
             if (channel.dirty("archive")) {
 
@@ -6176,92 +5463,75 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     let queryChannelFollow= new Parse.Query(CHANNELFOLLOW);
                     queryChannelFollow.equalTo("channel", channel);
                     queryChannelFollow.limit(10000);
-                    queryChannelFollow.find({
+
+                    const channelFollowers = await queryChannelFollow.find({
+
                         useMasterKey: true
-
-                    }).then((channelFollowers) => {
-
-
-                        if (channelFollowers) {
-
-                            async.map(channelFollowers, function (object, cb) {
-
-                                let channelFollow = new CHANNELFOLLOW();
-                                channelFollow.id = object.id;
-
-                                channelFollow.set("archive", false);
-                                //channelFollow.set("user", object.get("user"));
-
-                                object = channelFollow;
-
-                                console.log("channelFollowersObject: " + JSON.stringify(object));
-
-                                return cb (null, object);
-
-                                //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
-
-                            }, function (err, channelFollowers) {
-
-                                //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-                                if (err) {response.error(err);} else {
-
-
-
-                                    Parse.Object.saveAll(channelFollowers, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-
-                                    }).then((savedChannelFollowers) => {
-
-                                        //console.log("savedChannelFollowers: " + JSON.stringify(savedChannelFollowers));
-
-
-                                        return callback (null, savedChannelFollowers);
-
-
-                                    });
-
-                                }
-
-                            });
-
-
-                        } else {
-
-                            channelFollowers = [];
-                            // no channelFollowers to delete return
-                            return callback(null, channelFollowers);
-
-                        }
-
+                        //sessionToken: sessionToken
 
                     }, (error) => {
                         // The object was not retrieved successfully.
                         // error is a Parse.Error with an error code and message.
-                        return callback(error);
+                        throw new Error(error);
                     }, {
 
                         useMasterKey: true
                         //sessionToken: sessionToken
+
                     });
+
+                    if (channelFollowers) {
+
+                        let mapChannelFollowers = lodash.map(channelFollowers, function (object) {
+
+                            let channelFollow = new CHANNELFOLLOW();
+                            channelFollow.id = object.id;
+
+                            channelFollow.set("archive", false);
+                            //channelFollow.set("user", object.get("user"));
+
+                            object = channelFollow;
+
+                            //console.log("channelFollowersObject: " + JSON.stringify(object));
+
+                            return object;
+
+
+                        });
+
+                        return await Parse.Object.saveAll(mapChannelFollowers, {
+
+                            useMasterKey: true
+                            //sessionToken: sessionToken
+
+                        });
+
+
+                    }
+
+                    else {
+
+                        return [];
+
+                    }
+
+
 
 
                 } else {
 
-                    return callback (null, channel);
+                    return channel;
 
                 }
 
             } else {
 
-                return callback (null, channel);
+                return channel;
             }
 
         }
 
-        function updateChannelName (callback) {
+        async function updateChannelName () {
 
             if (channel.dirty("name")) {
 
@@ -6278,40 +5548,41 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     queryChannel.equalTo("nameWorkspaceID", nameWorkspaceID);
                     queryChannel.equalTo("workspace", workspace);
 
-                    queryChannel.first({
+                    const matchedChannel = await queryChannel.first({
 
                         useMasterKey: true
                         //sessionToken: sessionToken
 
-                    }).then((matchedChannel) => {
-                        // The object was retrieved successfully.
-
-                        if (matchedChannel) {
-
-                            // there is a channel already with that name, return error
-
-                            return response.error("There is already a channel with this name, please enter a unique channel name: " + matchedChannel);
-
-
-                        } else {
-
-                            // no match which means no channel with this new name, we are good!
-
-
-                            channel.set("name", newChannelName);
-                            channel.set("nameWorkspaceID", nameWorkspaceID);
-                            //console.log("nameWorkspaceID: " + nameWorkspaceID);
-
-                            return callback(null, channel);
-
-                        }
-
-
                     }, (error) => {
                         // The object was not retrieved successfully.
                         // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {useMasterKey: true});
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    if (matchedChannel) {
+
+                        // there is a channel already with that name, return error
+
+                        throw new Error ("There is already a channel with this name, please enter a unique channel name: " + matchedChannel);
+
+
+                    } else {
+
+                        // no match which means no channel with this new name, we are good!
+
+
+                        channel.set("name", newChannelName);
+                        channel.set("nameWorkspaceID", nameWorkspaceID);
+                        //console.log("nameWorkspaceID: " + nameWorkspaceID);
+
+                        return channel;
+
+                    }
 
 
 
@@ -6321,7 +5592,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                     // channelName is the same and it's not getting modified
 
-                    return callback (null, channel);
+                    return channel;
                 }
 
 
@@ -6330,14 +5601,14 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                 // no channel name sent by user
 
-                return callback (null, channel);
+                return channel;
 
 
             }
 
         }
 
-        function updateChannelType (callback) {
+        async function updateChannelType () {
 
             if (channel.dirty("type")) {
 
@@ -6355,7 +5626,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                     // todo send a notification to members and followers that now this channel is private
 
-                    return callback (null, channel);
+                    return channel;
 
                 }
                 else if (channel.get("type") === 'privateMembers') {
@@ -6367,29 +5638,35 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     let memberName = 'member-' + workspace.id;
 
                     queryMemberRole.equalTo('name', memberName);
-                    queryMemberRole.first({useMasterKey: true})
-                        .then((memberRole) => {
-                            // The object was retrieved successfully.
 
-                            console.log("memberRole" + JSON.stringify(memberRole));
+                    const memberRole = await queryMemberRole.first({
 
-                            // private workspace, but this is a channel that is accessible to all members of this private workspace
-                            channelACL.setPublicReadAccess(false);
-                            channelACL.setPublicWriteAccess(false);
-                            channelACL.setReadAccess(memberRole, true);
-                            channelACL.setWriteAccess(memberRole, true);
-                            channelACL.setReadAccess(owner, true);
-                            channelACL.setWriteAccess(owner, true);
-                            channel.setACL(channelACL);
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
-                            return callback (null, channel);
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
 
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            return callback(error);
-                        }, {useMasterKey: true});
+                    });
+
+                    //console.log("memberRole" + JSON.stringify(memberRole));
+
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(memberRole, true);
+                    channelACL.setWriteAccess(memberRole, true);
+                    channelACL.setReadAccess(owner, true);
+                    channelACL.setWriteAccess(owner, true);
+                    channel.setACL(channelACL);
+
+                    return channel;
 
 
                 }
@@ -6403,29 +5680,35 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     let Name = 'expert-' + workspace.id;
 
                     queryRole.equalTo('name', Name);
-                    queryRole.first({useMasterKey: true})
-                        .then((Role) => {
-                            // The object was retrieved successfully.
 
-                            console.log("memberRole" + JSON.stringify(Role));
+                    const Role = await queryRole.first({
 
-                            // private workspace, but this is a channel that is accessible to all members of this private workspace
-                            channelACL.setPublicReadAccess(false);
-                            channelACL.setPublicWriteAccess(false);
-                            channelACL.setReadAccess(Role, true);
-                            channelACL.setWriteAccess(Role, true);
-                            channelACL.setReadAccess(owner, true);
-                            channelACL.setWriteAccess(owner, true);
-                            channel.setACL(channelACL);
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
-                            return callback (null, channel);
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
 
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            return callback(error);
-                        }, {useMasterKey: true});
+                    });
+
+                    //console.log("Role" + JSON.stringify(Role));
+
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channelACL.setReadAccess(owner, true);
+                    channelACL.setWriteAccess(owner, true);
+                    channel.setACL(channelACL);
+
+                    return channel;
 
 
                 }
@@ -6439,27 +5722,33 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     let Name = 'admin-' + workspace.id;
 
                     queryRole.equalTo('name', Name);
-                    queryRole.first({useMasterKey: true})
-                        .then((Role) => {
-                            // The object was retrieved successfully.
 
-                            console.log("memberRole" + JSON.stringify(Role));
+                    const Role = await queryRole.first({
 
-                            // private workspace, but this is a channel that is accessible to all members of this private workspace
-                            channelACL.setPublicReadAccess(false);
-                            channelACL.setPublicWriteAccess(false);
-                            channelACL.setReadAccess(Role, true);
-                            channelACL.setWriteAccess(Role, true);
-                            channel.setACL(channelACL);
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
-                            return callback (null, channel);
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
 
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            return callback(error);
-                        }, {useMasterKey: true});
+                    });
+
+                    //console.log("memberRole" + JSON.stringify(Role));
+
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    return channel;
 
                 }
                 else if (channel.get("type") === 'privateModerators') {
@@ -6471,27 +5760,35 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     let Name = 'moderator-' + workspace.id;
 
                     queryRole.equalTo('name', Name);
-                    queryRole.first({useMasterKey: true})
-                        .then((Role) => {
-                            // The object was retrieved successfully.
 
-                            console.log("memberRole" + JSON.stringify(Role));
+                    const Role = await queryRole.first({
 
-                            // private workspace, but this is a channel that is accessible to all members of this private workspace
-                            channelACL.setPublicReadAccess(false);
-                            channelACL.setPublicWriteAccess(false);
-                            channelACL.setReadAccess(Role, true);
-                            channelACL.setWriteAccess(Role, true);
-                            channel.setACL(channelACL);
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
-                            return callback (null, channel);
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
+
+                        useMasterKey: true
+                        //sessionToken: sessionToken
+
+                    });
+
+                    //console.log("memberRole" + JSON.stringify(Role));
+
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    return channel;
 
 
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            return callback(error);
-                        }, {useMasterKey: true});
 
                 }
                 else if (channel.get("type") === 'privateOwners') {
@@ -6504,27 +5801,33 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     let Name = 'owner-' + workspace.id;
 
                     queryRole.equalTo('name', Name);
-                    queryRole.first({useMasterKey: true})
-                        .then((Role) => {
-                            // The object was retrieved successfully.
 
-                            console.log("memberRole" + JSON.stringify(Role));
+                    const Role = await queryRole.first({
 
-                            // private workspace, but this is a channel that is accessible to all members of this private workspace
-                            channelACL.setPublicReadAccess(false);
-                            channelACL.setPublicWriteAccess(false);
-                            channelACL.setReadAccess(Role, true);
-                            channelACL.setWriteAccess(Role, true);
-                            channel.setACL(channelACL);
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
-                            return callback (null, channel);
+                    }, (error) => {
+                        // The object was not retrieved successfully.
+                        // error is a Parse.Error with an error code and message.
+                        throw new Error(error);
+                    }, {
 
+                        useMasterKey: true
+                        //sessionToken: sessionToken
 
-                        }, (error) => {
-                            // The object was not retrieved successfully.
-                            // error is a Parse.Error with an error code and message.
-                            return callback(error);
-                        }, {useMasterKey: true});
+                    });
+
+                    //console.log("memberRole" + JSON.stringify(Role));
+
+                    // private workspace, but this is a channel that is accessible to all members of this private workspace
+                    channelACL.setPublicReadAccess(false);
+                    channelACL.setPublicWriteAccess(false);
+                    channelACL.setReadAccess(Role, true);
+                    channelACL.setWriteAccess(Role, true);
+                    channel.setACL(channelACL);
+
+                    return channel;
 
                 }
                 else if (channel.get("type") === 'public') {
@@ -6536,17 +5839,17 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     channelACL.setWriteAccess(owner, true);
                     channel.setACL(channelACL);
 
-                    return callback (null, channel);
+                    return channel;
 
 
                 }
                 else if (channel.get("type") !== 'private' || channel.get("type") !== 'public' || channel.get("type") !== 'privateOwners' || channel.get("type") !== 'privateModerators' || channel.get("type") !== 'privateAdmins' || channel.get("type") !== 'privateExperts' || channel.get("type") !== 'privateMembers') {
 
-                    return response.error("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
+                    throw new Error ("Channel type field is needs to be one of the following: private, public, privateOwners, privateModerators,  privateAdmins, privateExperts, privateMembers");
                 }
                 else {
 
-                    return callback (null, channel);
+                    return channel;
 
                 }
 
@@ -6555,29 +5858,29 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
             else {
                 //console.log("channel change, type is not updated.");
 
-                return callback (null, channel);
+                return channel;
             }
 
         }
 
-        function allowMemberPostCreate (callback) {
+        async function allowMemberPostCreate () {
 
             // By default allowMemberPostCreation is set to false
             if (channel.dirty("allowMemberPostCreation")) {
 
                 // todo add role ACL to members to be able to create posts in this workspace
 
-                return callback (null, channel);
+                return channel;
 
             } else {
 
-                return callback (null, channel);
+                return channel;
 
             }
 
         }
 
-        function updateExpertsArray (callback) {
+        async function updateExpertsArray () {
 
 
             if (channel.dirty("experts") || channel.get("isDirtyExperts") === true) {
@@ -6593,7 +5896,7 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                     // add expert to expertsArray
 
-                    async.map(channelExpertObjects, function (object, cb) {
+                    let channelExpertObjects = await lodash.map(channelExpertObjects, async function (object) {
 
 
                         let channelExpertObject = new Parse.Object("_User");
@@ -6601,36 +5904,15 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                         //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
-                        channelExpertObject.fetch(channelExpertObject.id, {
+                        const expert = await channelExpertObject.fetch(channelExpertObject.id, {
 
                             useMasterKey: true
                             //sessionToken: sessionToken
 
-                        }).then((expert) => {
-
-                            let expertOwner = simplifyUser(expert);
-
-                            //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
-
-                            //o[key] = expertOwner;
-
-                            channel.addUnique("expertsArray", expertOwner);
-                            /*workspace.save(null, {
-
-                             useMasterKey: true
-                             //sessionToken: sessionToken
-
-                             });*/
-
-                            object = expertOwner;
-                            //expertArray.push(expertOwner);
-
-                            return cb (null, object);
-
                         }, (error) => {
                             // The object was not retrieved successfully.
                             // error is a Parse.Error with an error code and message.
-                            return callback (error);
+                            throw new Error(error);
                         }, {
 
                             useMasterKey: true
@@ -6638,67 +5920,45 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                         });
 
-                    }, function (err, channelExpertObjects) {
+                        let expertOwner = simplifyUser(expert);
 
-                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+                        //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
 
-                        if (err) {return callback (err);} else {
+                        //o[key] = expertOwner;
 
-
-
-                            //expertArray = result.get("expertsArray");
-                            //console.log("result: " + JSON.stringify(result));
-
-                            //result.Add("expertsArray", JSON.stringify(workspaceExpertObjects[0]));
-                            //console.log("expertsArray: " + JSON.stringify(result.get("expertsArray")));
-
-                            //workspace.addUnique("expertsArray", workspaceExpertObjects[0]);
-                            //console.log("expertsArray Result: " + JSON.stringify(workspace.get("expertsArray")));
-
-                            //workspace.set("expertsArray", workspaceExpertObjects);
-                            //console.log("workspace 2: " + JSON.stringify(workspace));
-
-                            channel.set("isDirtyExperts", false);
-
-                            return callback  (null, channelExpertObjects);
+                        channel.addUnique("expertsArray", expertOwner);
 
 
-                        }
+                        object = expertOwner;
+                        //expertArray.push(expertOwner);
+
+                        return object;
 
                     });
+
+                    channel.set("isDirtyExperts", false);
+
+                    return channelExpertObjects;
 
                 }
                 else if (exp__op === "RemoveRelation") {
 
-                    async.map(channelExpertObjects, function (object, cb) {
+                    let channelExpertObjects = await lodash.map(channelExpertObjects, async function (object) {
 
                         let channelExpertObject = new Parse.Object("_User");
                         channelExpertObject.set("objectId", object.objectId);
 
                         //console.log("workspaceExpertObject: " + JSON.stringify(workspaceExpertObject));
 
-                        channelExpertObject.fetch(channelExpertObject.id, {
+                        const expert = await channelExpertObject.fetch(channelExpertObject.id, {
 
                             useMasterKey: true
                             //sessionToken: sessionToken
 
-                        }).then((expert) => {
-
-                            let expertOwner = simplifyUser(expert);
-
-                            //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
-
-                            object = expertOwner;
-                            channel.remove("expertsArray", expertOwner);
-                            //expertArray.push(expertOwner);
-
-                            return cb (null, object);
-
                         }, (error) => {
                             // The object was not retrieved successfully.
                             // error is a Parse.Error with an error code and message.
-                            return callback (error);
-
+                            throw new Error(error);
                         }, {
 
                             useMasterKey: true
@@ -6706,23 +5966,21 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                         });
 
-                    }, function (err, channelExpertObjects) {
+                        let expertOwner = simplifyUser(expert);
 
-                        //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
+                        //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
 
-                        if (err) {return callback (err);} else {
+                        object = expertOwner;
+                        channel.remove("expertsArray", expertOwner);
+                        //expertArray.push(expertOwner);
 
-                            //workspace.set("expertsArray", workspaceExpertObjects);
-                            //workspace.remove("expertsArray", workspaceExpertObjects);
-                            //console.log("workspace 2: " + JSON.stringify(workspace));
-
-                            channel.set("isDirtyExperts", false);
-
-                            return callback (null, channelExpertObjects);
-
-                        }
+                        return object;
 
                     });
+
+                    channel.set("isDirtyExperts", false);
+
+                    return channelExpertObjects;
 
 
                 }
@@ -6731,68 +5989,16 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                     if (channel.get("isDirtyExperts") === true) {
 
                         let expertRelationQuery = expertRelation.query();
-                        expertRelationQuery.find({
+
+                        const experts = await expertRelationQuery.find({
 
                             useMasterKey: true
                             //sessionToken: sessionToken
 
-                        }).then((experts) => {
-                            // The object was retrieved successfully.
-
-                            if (experts.length > 0) {
-
-                                let emptyArray = [];
-
-                                channel.set("expertsArray", emptyArray);
-
-                                async.map(experts, function (expert, cb) {
-
-                                    let expertUser = simplifyUser(expert);
-
-                                    //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
-
-                                    expert = expertUser;
-
-                                    channel.addUnique("expertsArray", expertUser);
-                                    //expertArray.push(expertOwner);
-
-                                    return cb (null, expert);
-
-
-                                }, function (err, experts) {
-
-                                    //console.log("PrepIndex completed: " + JSON.stringify(objectsToIndex.length));
-
-                                    if (err) {response.error(err);}
-
-                                    else {
-
-                                        //workspace.set("expertsArray", workspaceExpertObjects);
-                                        //workspace.remove("expertsArray", workspaceExpertObjects);
-                                        //console.log("workspace 2: " + JSON.stringify(workspace));
-
-                                        channel.set("isDirtyExperts", false);
-
-                                        return callback (null, experts);
-
-                                    }
-
-                                });
-
-
-
-                            }
-                            else {
-
-                                let emptyExperts = [];
-                                return callback (null, emptyExperts);
-
-
-                            }
                         }, (error) => {
                             // The object was not retrieved successfully.
                             // error is a Parse.Error with an error code and message.
-                            return callback (error);
+                            throw new Error(error);
                         }, {
 
                             useMasterKey: true
@@ -6801,13 +6007,48 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
                         });
 
 
+                        if (experts.length > 0) {
+
+                            let emptyArray = [];
+
+                            channel.set("expertsArray", emptyArray);
+
+                            let expertsResults = await lodash.map(experts, async function (expert) {
+
+                                let expertUser = simplifyUser(expert);
+
+                                //console.log("expertOwner 2: " + JSON.stringify(expertOwner));
+
+                                expert = expertUser;
+
+                                channel.addUnique("expertsArray", expertUser);
+                                //expertArray.push(expertOwner);
+
+                                return expert;
+
+                            });
+
+                            channel.set("isDirtyExperts", false);
+
+                            return expertsResults;
+
+
+
+                        }
+                        else {
+
+                            return [];
+
+
+                        }
+
 
 
                     }
 
                     else {
 
-                        return callback (null, channel.get("expertsArray"));
+                        return channel.get("expertsArray");
 
                     }
 
@@ -6818,39 +6059,28 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
                 channel.set("isDirtyExperts", false);
 
-                return callback (null, channel.get("expertsArray"));
+                let expertsArrayInChannel = channel.get("expertsArray");
+
+                return expertsArrayInChannel;
 
             }
 
 
         }
 
-        async.parallel([
-            async.apply(archiveChannelFollowers),
-            async.apply(unarchiveChannelFollowers),
-            async.apply(updateChannelName),
-            async.apply(updateChannelType),
-            async.apply(allowMemberPostCreate),
-            async.apply(updateExpertsArray)
+        const results = await Promise.all([
+            archiveChannelFollowers(),
+            unarchiveChannelFollowers(),
+            updateChannelName(),
+            updateChannelType(),
+            allowMemberPostCreate(),
+            updateExpertsArray()
+        ]);
 
-        ], function (err, results) {
-            if (err) {
-                response.error(err);
-            }
+        channel.set("isNew", false);
 
-            channel.set("isNew", false);
-            //console.log("Channel is not New: " + JSON.stringify(channel.get("isNew")));
-
-
-            //console.log("final results beforeSave channel update: " + JSON.stringify(results));
-
-            let beforeSave_Time = process.hrtime(time);
-            console.log(`final time took for beforeSave Channel ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-            return response.success();
-        });
-
-
+        let beforeSave_Time = process.hrtime(time);
+        console.log(`final time took for beforeSave Channel ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
 
     }
 
@@ -6861,14 +6091,14 @@ Parse.Cloud.beforeSave('Channel', function(req, response) {
 
         let finalTime = process.hrtime(time);
         console.log(`finalTime took beforeSave Channel ${(finalTime[0] * NS_PER_SEC + finalTime[1]) * MS_PER_NS} milliseconds`);
-        return response.success();
+
     }
 
 
 }, {useMasterKey: true});
 
 // Run beforeSave functions for Skills to validate data and prevent duplicate entries.
-Parse.Cloud.beforeSave('Skill', function(req, response) {
+Parse.Cloud.beforeSave('Skill', async (req) => {
 
     /*var NS_PER_SEC = 1e9;
      const MS_PER_NS = 1e-6;
@@ -6878,8 +6108,8 @@ Parse.Cloud.beforeSave('Skill', function(req, response) {
     console.log("Levels: " + skill.get('level'));
     var level = skill.get("level");
     var name = skill.get("name");
-    if (level) {level = level.trim();};
-    if (name) {name = name.trim();};
+    if (level) {level = level.trim();}
+    if (name) {name = name.trim();}
     var verifyNameLevel = name + ':' + level;
     var nameLevel;
 
@@ -6897,110 +6127,110 @@ Parse.Cloud.beforeSave('Skill', function(req, response) {
 
     if (skill.isNew()) {
 
-        querySKILL.first({
-            success: function(results) {
+        const skillResults = await querySKILL.first({
 
-                if (results) {
+            useMasterKey: true
+            //sessionToken: sessionToken
 
-                    //Skill already exists in DB in Skill table, return an error because it needs to be unique
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            throw new Error(error);
+        }, {
 
-                    response.error(results);
+            useMasterKey: true
+            //sessionToken: sessionToken
 
-                } else {
+        });
 
-                    //Skill doesn't exist, let's add it but before check if level is valid
+        if (skillResults) {
 
-                    if (nameLevel && name && level) {
+            //Skill already exists in DB in Skill table, return an error because it needs to be unique
 
-                        //console.log("skill.dirty level: " + skill.dirty("level"));
+            throw new Error (skillResults);
 
-                        if (nameLevel !== verifyNameLevel) { response.error("Error 1: NameLevel: " + nameLevel + " Should include the same name: " + name + "and level: " + level + "seperated by : just like this: " + name + ':' + level);}
+        }
 
-                        level = level.toLowerCase();
-                        //console.log("skill: " + JSON.stringify(skill));
+        else {
 
-                        switch (level) {
-                            case "starter":
-                                skill.set('level', level);
-                                //skill.set('nameLevel', name + ':' + level);
-                                response.success();
+            //Skill doesn't exist, let's add it but before check if level is valid
 
-                                break;
-                            case "ninja":
-                                skill.set('level', level);
-                                //skill.set('nameLevel', name + ':' + level);
-                                response.success();
+            if (nameLevel && name && level) {
 
-                                break;
-                            case "master":
-                                skill.set('level', level);
-                                //skill.set('nameLevel', name + ':' + level);
-                                response.success();
+                //console.log("skill.dirty level: " + skill.dirty("level"));
 
-                                break;
-                            default:
-                                response.error("Please enter one of the following valid levels: starter, ninja or master");
-                        };
+                if (nameLevel !== verifyNameLevel) { throw new Error ("Error 1: NameLevel: " + nameLevel + " Should include the same name: " + name + "and level: " + level + "seperated by : just like this: " + name + ':' + level);}
 
+                level = level.toLowerCase();
+                //console.log("skill: " + JSON.stringify(skill));
 
-                    } else { response.error("nameLevel, name and level fields are all required to add a skill."); }
+                switch (level) {
+                    case "starter":
+                        skill.set('level', level);
+                        //skill.set('nameLevel', name + ':' + level);
 
+                        break;
+                    case "ninja":
+                        skill.set('level', level);
+                        //skill.set('nameLevel', name + ':' + level);
 
+                        break;
+                    case "master":
+                        skill.set('level', level);
+                        //skill.set('nameLevel', name + ':' + level);
+
+                        break;
+                    default:
+                        throw new Error ("Please enter one of the following valid levels: starter, ninja or master");
                 }
 
+            } else { throw new Error ("nameLevel, name and level fields are all required to add a skill."); }
 
-            },
-            error: function(err) {
-                response.error("An error occured: " + err);
 
-            }
-        });
+        }
 
 
     } else if (!skill.isNew() && skill.dirty("level")) {
 
         // can't allow updates to nameLevel, name or level to make sure data is consistent, we can allow delete then add instead
-        response.error("We currently don't allow modifications of level.");
+        throw new Error ("We currently don't allow modifications of level.");
 
     } else if (!skill.isNew() && skill.dirty("name") && skill.dirty("nameLevel")) {
 
         // verify first that nameLevel is correct with name and level.
-        if (nameLevel !== verifyNameLevel) { response.error("NameLevel: " + nameLevel + "Should include the same name: " + name + "and level: " + level + "seperated by : just like this: " + name + ':' + level);}
+        if (nameLevel !== verifyNameLevel) { throw new Error ("NameLevel: " + nameLevel + "Should include the same name: " + name + "and level: " + level + "seperated by : just like this: " + name + ':' + level);}
 
         // now let's check to make sure this nameLevel doesn't already exist
-        querySKILL.first({
-            success: function(results) {
+        const skillResults = await querySKILL.first({
 
-                if (results) {
+            useMasterKey: true
+            //sessionToken: sessionToken
 
-                    //Skill already exists in DB in Skill table, return an error because it needs to be unique
+        }, (error) => {
+            // The object was not retrieved successfully.
+            // error is a Parse.Error with an error code and message.
+            throw new Error(error);
+        }, {
 
-                    response.error(results);
+            useMasterKey: true
+            //sessionToken: sessionToken
 
-                } else {
-
-                    //Skill doesn't exist, let's add it
-                    response.success();
-
-                }
-
-            },
-            error: function(err) {
-                response.error("An error occured: " + err);
-
-            }
         });
+
+        if (skillResults) {
+            throw new Error (skillResults);
+        }
 
         //response.success();
 
-    } else { response.error("Please update both name and nameLevel fields."); }
+    } else { throw new Error ("Please update both name and nameLevel fields."); }
 
 
 });
 
 
 // Run beforeSave functions for Post
-Parse.Cloud.beforeSave('Post', function(req, response) {
+Parse.Cloud.beforeSave('Post', async (req) => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -7010,11 +6240,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!req.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.beforeSave.Post.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('beforeSave-Post.UNAUTHENTICATED_USER');
     }
 
     var post = req.object;
@@ -7027,7 +6253,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     var toLowerCase = function(w) { return w.toLowerCase(); };
     //console.log("post: " + JSON.stringify(post));
 
-    function setDefaultValues (callback) {
+    async function setDefaultValues () {
 
         if (post.isNew()) {
 
@@ -7052,7 +6278,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             if (!post.get("postMessageCommentCount")) { post.set("postMessageCommentCount", 0); }
             if (!post.get("postMessageCommentUnReadCount")) { post.set("postMessageCommentUnReadCount", 0); }
 
-            return callback (null, post);
+            return post;
 
         } else {
 
@@ -7063,14 +6289,14 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
             }
 
-            return callback (null, post);
+            return post;
         }
 
 
     }
 
     // Function to count number of posts
-    function countPosts (callback) {
+    async function countPosts () {
 
         var NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
@@ -7117,7 +6343,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
                 });
 
-                return callback(null, post);
+                return post;
 
 
 
@@ -7127,7 +6353,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
                 countPosts_Time = process.hrtime(timeCountPosts);
                 //console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
 
-                return callback(null, post);
+                return post;
 
             }
 
@@ -7140,7 +6366,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             countPosts_Time = process.hrtime(timeCountPosts);
             //console.log(`countPosts_Time took ${(countPosts_Time[0] * NS_PER_SEC + countPosts_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, post);
+            return post;
 
         }
 
@@ -7149,7 +6375,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     }
 
     // Function to capture hashtags from text posts
-    function getHashtags (callback) {
+    async function getHashtags () {
         var NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
         var timeCountPosts = process.hrtime();
@@ -7172,7 +6398,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             //console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
 
 
-            return callback(null, post);
+            return post;
         }
 
         // if an updated for text field (only) in a post occured, and there was no hashtags from client then get hashtags
@@ -7189,7 +6415,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             getHashtags_Time = process.hrtime(timeCountPosts);
             //console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, post);
+            return post;
 
         }
         else {
@@ -7198,7 +6424,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             //console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
 
 
-            return callback(null, post);
+            return post;
 
         }
 
@@ -7206,7 +6432,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
     }
 
     // Function to capture mentions from text posts
-    function getMentions (callback) {
+    async function getMentions () {
 
         var NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
@@ -7248,7 +6474,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             //console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
 
 
-            return callback(null, post);
+            return post;
         }
 
         // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
@@ -7283,7 +6509,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             getMentions_Time = process.hrtime(timeCountPosts);
             //console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, post);
+            return post;
 
         }
         else {
@@ -7292,14 +6518,14 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             //console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
 
 
-            return callback(null, post);
+            return post;
 
         }
 
     }
 
     // function to archive/unarchive postSocial relatio if a post is archived/unarchived
-    function archivePostSocial (callback) {
+    async function archivePostSocial () {
         var NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
         var timeArchive = process.hrtime();
@@ -7310,41 +6536,47 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
             var postSocialRelation = post.relation("postSocial");
             var postSocialRelationQuery = postSocialRelation.query();
-            postSocialRelationQuery.find({
-                success: function(postSocialResults) {
 
-                    for (var i = 0; i < postSocialResults.length; i++) {
+            const postSocialResults = await  postSocialRelationQuery.find({
 
-                        postSocialResults[i].set("archive", post.get("archive"));
-                        postSocialResults[i].save(null, {
+                useMasterKey: true
+                //sessionToken: sessionToken
 
-                            useMasterKey: true
-                            //sessionToken: sessionToken
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
 
-                        });
-
-                    }
-
-                    archive_Time = process.hrtime(timeArchive);
-                    //console.log(`archive_Time took ${(archive_Time[0] * NS_PER_SEC + archive_Time[1]) * MS_PER_NS} milliseconds`);
-
-                    return callback(null, post);
-
-                },
-                error: function(err) {
-                    // if there is no postSocial results, then just ignore
-                    return callback(null, post);
-                }
+                useMasterKey: true
+                //sessionToken: sessionToken
 
             });
 
+            for (var i = 0; i < postSocialResults.length; i++) {
 
-        } else { return callback(null, post);}
+                postSocialResults[i].set("archive", post.get("archive"));
+                postSocialResults[i].save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+            }
+
+            archive_Time = process.hrtime(timeArchive);
+            //console.log(`archive_Time took ${(archive_Time[0] * NS_PER_SEC + archive_Time[1]) * MS_PER_NS} milliseconds`);
+
+            return post;
+
+
+        } else { return post;}
 
     }
 
     // Function to identify if a text post hasURL
-    function getURL (callback) {
+    async function getURL () {
 
         var NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
@@ -7364,7 +6596,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             getURL_Time = process.hrtime(timeCountPosts);
             //console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, post);
+            return post;
         }
 
         // if an updated for text field (only) in a post occured, and there was no hasURL from client then get hashtags
@@ -7378,7 +6610,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             getURL_Time = process.hrtime(timeCountPosts);
             //console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, post);
+            return post;
 
         }
         else {
@@ -7386,14 +6618,14 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             getURL_Time = process.hrtime(timeCountPosts);
             //console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, post);
+            return post;
 
         }
 
     }
 
     // Function to get luis.ai topIntent from text post
-    function getIntents (callback) {
+    async function getIntents () {
 
         var NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
@@ -7451,7 +6683,7 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
                         getIntents_Time = process.hrtime(timegetIntents);
                         console.log(`getIntents_Time took ${(getIntents_Time[0] * NS_PER_SEC + getIntents_Time[1])  * MS_PER_NS} milliseconds`);
 
-                        return callback(null, post);
+                        return post;
 
                     }
                 });
@@ -7499,14 +6731,14 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
             getIntents_Time = process.hrtime(timegetIntents);
             console.log(`getIntents_Time took ${(getIntents_Time[0] * NS_PER_SEC + getIntents_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, post);
+            return post;
 
         }
 
 
     }
 
-    function getChannelACL (callback) {
+    async function getChannelACL () {
 
         // get channel ACL and assign it to Post ACL
         console.log('entering getChannelACL...');
@@ -7522,38 +6754,15 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
             let queryChannel = new Parse.Query(CHANNEL);
 
-            queryChannel.get(Channel.id, {
+            const channelObject = await  queryChannel.get(Channel.id, {
 
                 useMasterKey: true
                 //sessionToken: sessionToken
 
-            }).then((channelObject) => {
-                // The object was retrieved successfully.
-
-                if (channelObject) {
-
-                    let channelACL = channelObject.getACL();
-                    console.log("beforeSave Post channelACL: " + JSON.stringify(channelACL));
-
-                    post.setACL(channelACL);
-                    console.log("beforeSave Post post ACL: " + JSON.stringify(post.getACL()));
-
-                    return callback (null, post);
-
-
-                } else {
-
-                    return callback (null, post);
-                }
-
-
-
             }, (error) => {
-                // No Channel, maybe was delete so ignore removing the channel experts and updating follower/member count for channel
-                //console.log("no channel found in afterDelete channelFollow maybe we are deleting a channel or workspace");
-
-                return callback (error);
-
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
             }, {
 
                 useMasterKey: true
@@ -7561,47 +6770,55 @@ Parse.Cloud.beforeSave('Post', function(req, response) {
 
             });
 
+            if (channelObject) {
+
+                let channelACL = channelObject.getACL();
+                //console.log("beforeSave Post channelACL: " + JSON.stringify(channelACL));
+
+                post.setACL(channelACL);
+                //console.log("beforeSave Post post ACL: " + JSON.stringify(post.getACL()));
+
+                return post;
+
+
+            } else {
+
+                return post;
+            }
+
 
         }
 
         else {
 
 
-            return callback(null, post);
+            return post;
 
         }
 
     }
 
-    async.parallel([
-        async.apply(countPosts),
-        async.apply(getHashtags),
-        async.apply(getMentions),
-        async.apply(getURL),
-        async.apply(archivePostSocial),
-        async.apply(setDefaultValues),
-        async.apply(getChannelACL)
-        //async.apply(createPostSocial)
-        //async.apply(getIntents)
+    const promiseDone =  await Promise.all([
+        countPosts(),
+        getHashtags(),
+        getMentions(),
+        getURL(),
+        archivePostSocial(),
+        setDefaultValues(),
+        getChannelACL()
+        //getIntents()
+    ]);
 
-    ], function (err, post) {
-        if (err) {
-            response.error(err);
-        }
-
-        //console.log("final post: " + JSON.stringify(post));
+    if (promiseDone) {
 
         let beforeSave_Time = process.hrtime(time);
         console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-        response.success();
-    });
-
+    }
 
 }, {useMasterKey: true});
 
 // Run beforeSave functions for PostQuestionMessage
-Parse.Cloud.beforeSave('PostMessage', function(req, response) {
+Parse.Cloud.beforeSave('PostMessage', async (req) => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -7611,11 +6828,8 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!req.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.beforeSave.PostMessage.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('beforeSave-PostMessage.UNAUTHENTICATED_USER');
+
     }
 
     let postMessage = req.object;
@@ -7630,7 +6844,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
     var toLowerCase = function(w) { return w.toLowerCase(); };
     //console.log("post: " + JSON.stringify(post));
 
-    function setDefaultValues (callback) {
+    async function setDefaultValues () {
 
         if (postMessage.isNew()) {
 
@@ -7647,18 +6861,18 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             if (!postMessage.get("childPostMessageCount")) { postMessage.set("childPostMessageCount", 0); }
             if (!postMessage.get("isIncognito")) { postMessage.set("isIncognito", false); }
 
-            return callback (null, postMessage);
+            return postMessage;
 
         } else {
 
-            return callback (null, postMessage);
+            return postMessage;
         }
 
 
     }
 
     // Function to count number of postMessage of question type
-    function countPostMessageQuestions (callback) {
+    async function countPostMessageQuestions () {
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
@@ -7675,14 +6889,14 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             });
 
 
-            return callback(null, Post);
+            return Post;
 
         }
 
         else {
             // not counting either this is a new postMessageQuestion child or another type (i.e. not question, but answer or comment)
 
-            return callback(null, Post);
+            return Post;
 
         }
 
@@ -7691,7 +6905,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
     }
 
     // Function to count number of postMessage of answer type
-    function countPostMessageAnswers (callback) {
+    async function countPostMessageAnswers () {
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
@@ -7708,14 +6922,14 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             });
 
 
-            return callback(null, Post);
+            return Post;
 
         }
 
         else {
             // not counting either this is a new postMessageQuestion child or another type (i.e. not question, but answer or comment)
 
-            return callback(null, Post);
+            return Post;
 
         }
 
@@ -7724,7 +6938,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
     }
 
     // Function to count number of postMessage of comment type
-    function countPostMessageComments (callback) {
+    async function countPostMessageComments () {
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
@@ -7741,14 +6955,14 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             });
 
 
-            return callback(null, Post);
+            return Post;
 
         }
 
         else {
             // not counting either this is a new postMessageQuestion child or another type (i.e. not question, but answer or comment)
 
-            return callback(null, Post);
+            return Post;
 
         }
 
@@ -7757,7 +6971,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
     }
 
     // Function to count number of postMessage of all types
-    function countPostMessages(callback) {
+    async function countPostMessages() {
 
         let POST = Parse.Object.extend("Post");
         let Post = new POST();
@@ -7774,14 +6988,14 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             });
 
 
-            return callback(null, Post);
+            return Post;
 
         }
 
         else {
             // not counting either this is a new postMessageQuestion child or another type (i.e. not question, but answer or comment)
 
-            return callback(null, Post);
+            return Post;
 
         }
 
@@ -7790,7 +7004,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
     }
 
     // Function to capture hashtags from text posts
-    function getHashtags (callback) {
+    async function getHashtags () {
         const NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
         let timeCountPosts = process.hrtime();
@@ -7813,7 +7027,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
 
 
-            return callback(null, postMessage);
+            return postMessage;
         }
 
         // if an updated for text field (only) in a post occured, and there was no hashtags from client then get hashtags
@@ -7830,7 +7044,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             getHashtags_Time = process.hrtime(timeCountPosts);
             console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, postMessage);
+            return postMessage;
 
         }
         else {
@@ -7839,7 +7053,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             console.log(`getHashtags_Time took ${(getHashtags_Time[0] * NS_PER_SEC + getHashtags_Time[1])  * MS_PER_NS} milliseconds`);
 
 
-            return callback(null, postMessage);
+            return postMessage;
 
         }
 
@@ -7847,7 +7061,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
     }
 
     // Function to capture mentions from text posts
-    function getMentions (callback) {
+    async function getMentions () {
 
         const NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
@@ -7889,7 +7103,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
 
 
-            return callback(null, postMessage);
+            return postMessage;
         }
 
         // if an updated for text field (only) in a post occured, and there was no mentions from client then get hashtags
@@ -7924,7 +7138,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             getMentions_Time = process.hrtime(timeCountPosts);
             console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, postMessage);
+            return postMessage;
 
         }
         else {
@@ -7933,14 +7147,14 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             console.log(`getMentions_Time took ${(getMentions_Time[0] * NS_PER_SEC + getMentions_Time[1])  * MS_PER_NS} milliseconds`);
 
 
-            return callback(null, postMessage);
+            return postMessage;
 
         }
 
     }
 
     // function to archive/unarchive postMessageSocial relation if a post is archived/unarchived
-    function archivePostMessageSocial (callback) {
+    async function archivePostMessageSocial () {
         const NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
         let timeArchive = process.hrtime();
@@ -7951,41 +7165,47 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
 
             let postQuestionMessageSocialRelation = postMessage.relation("postMessageSocial");
             let postQuestionMessageSocialRelationQuery = postQuestionMessageSocialRelation.query();
-            postQuestionMessageSocialRelationQuery.find({
-                success: function(postQuestionMessageSocialResults) {
 
-                    for (var i = 0; i < postQuestionMessageSocialResults.length; i++) {
+            const postQuestionMessageSocialResults = await postQuestionMessageSocialRelationQuery.find({
 
-                        postQuestionMessageSocialResults[i].set("archive", postMessage.get("archive"));
-                        postQuestionMessageSocialResults[i].save(null, {
+                useMasterKey: true
+                //sessionToken: sessionToken
 
-                            useMasterKey: true
-                            //sessionToken: sessionToken
+            }, (error) => {
+                // The object was not retrieved successfully.
+                // error is a Parse.Error with an error code and message.
+                throw new Error(error);
+            }, {
 
-                        });
-
-                    }
-
-                    archive_Time = process.hrtime(timeArchive);
-                    console.log(`archive_Time took ${(archive_Time[0] * NS_PER_SEC + archive_Time[1]) * MS_PER_NS} milliseconds`);
-
-                    return callback(null, postMessage);
-
-                },
-                error: function(err) {
-                    // if there is no postSocial results, then just ignore
-                    return callback(null, postMessage);
-                }
+                useMasterKey: true
+                //sessionToken: sessionToken
 
             });
 
+            for (var i = 0; i < postQuestionMessageSocialResults.length; i++) {
 
-        } else { return callback(null, postMessage);}
+                postQuestionMessageSocialResults[i].set("archive", postMessage.get("archive"));
+                postQuestionMessageSocialResults[i].save(null, {
+
+                    useMasterKey: true
+                    //sessionToken: sessionToken
+
+                });
+
+            }
+
+            archive_Time = process.hrtime(timeArchive);
+            console.log(`archive_Time took ${(archive_Time[0] * NS_PER_SEC + archive_Time[1]) * MS_PER_NS} milliseconds`);
+
+            return postMessage;
+
+
+        } else { return postMessage;}
 
     }
 
     // Function to identify if a text post hasURL
-    function getURL (callback) {
+    async function getURL () {
 
         const NS_PER_SEC = 1e9;
         const MS_PER_NS = 1e-6;
@@ -8005,7 +7225,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             getURL_Time = process.hrtime(timeCountPosts);
             console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, postMessage);
+            return postMessage;
         }
 
         // if an updated for text field (only) in a post occured, and there was no hasURL from client then get hashtags
@@ -8019,7 +7239,7 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             getURL_Time = process.hrtime(timeCountPosts);
             console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, postMessage);
+            return postMessage;
 
         }
         else {
@@ -8027,13 +7247,13 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
             getURL_Time = process.hrtime(timeCountPosts);
             console.log(`getURL_Time took ${(getURL_Time[0] * NS_PER_SEC + getURL_Time[1])  * MS_PER_NS} milliseconds`);
 
-            return callback(null, postMessage);
+            return postMessage;
 
         }
 
     }
 
-    function markUpVotedByExpertTrue (callback) {
+    async function markUpVotedByExpertTrue () {
 
         // check if creator of this postMesage is already an expert in this Workspace, then mark this as true
 
@@ -8042,40 +7262,32 @@ Parse.Cloud.beforeSave('PostMessage', function(req, response) {
 
     }
 
+    const promiseDone =  await Promise.all([
+        getHashtags(),
+        getMentions(),
+        getMentions(),
+        getURL(),
+        archivePostMessageSocial(),
+        setDefaultValues(),
+        countPostMessageQuestions(),
+        countPostMessageAnswers(),
+        countPostMessageComments(),
+        countPostMessages(),
+        //getPostMessageTypeIntents()
+    ]);
 
-
-    async.parallel([
-        async.apply(getHashtags),
-        async.apply(getMentions),
-        async.apply(getURL),
-        async.apply(archivePostMessageSocial),
-        async.apply(setDefaultValues),
-        async.apply(countPostMessageQuestions),
-        async.apply(countPostMessageAnswers),
-        async.apply(countPostMessageComments),
-        async.apply(countPostMessages)
-
-    ], function (err, results_Final) {
-        if (err) {
-            return response.error(err);
-        }
-
-        //console.log("final post: " + JSON.stringify(post));
-
-        //
+    if (promiseDone) {
 
         let beforeSave_Time = process.hrtime(time);
-        console.log(`beforeSave_Time PostMessage took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
-
-        return response.success();
-    });
+        console.log(`beforeSave_Time Posts took ${(beforeSave_Time[0] * NS_PER_SEC + beforeSave_Time[1])  * MS_PER_NS} milliseconds`);
+    }
 
 
 }, {useMasterKey: true});
 
 
 // Run beforeSave functions PostChatMessageSocial
-Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
+Parse.Cloud.beforeSave('PostMessageSocial', async (req) => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -8085,11 +7297,7 @@ Parse.Cloud.beforeSave('PostMessageSocial', function(req, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!req.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.beforeSave.PostMessageSocial.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('beforeSave-PostMessageSocial.UNAUTHENTICATED_USER');
     }
 
     let postMessageSocial = req.object;
@@ -14947,2467 +14155,6 @@ function splitObjectAndIndex (request, response) {
         //sessionToken: sessionToken
 
     });
-
-}
-
-function splitPostAndIndex (request, response) {
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    var loop = request['loop'];
-    console.log("loop: " + JSON.stringify(loop));
-
-    let user = request['user'];
-    //console.log("splitPostAndIndex user: " + JSON.stringify(user));
-    console.log("::Starting splitPostAndIndex:: " + JSON.stringify(request));
-
-    let post = request['object'];
-    console.log("post: " + JSON.stringify(post));
-
-    let POST = Parse.Object.extend("Post");
-    let Post = new POST();
-    Post.id = post.objectId;
-    // note object needs to be toJSON()
-    console.log("Post: " + JSON.stringify(Post));
-
-    let count = (request['count'])? request['count'] : 0;
-    console.log("count: " + JSON.stringify(count));
-
-    let postSocialQuery = new Parse.Query("PostSocial");
-
-    postSocialQuery.equalTo('post', Post);
-
-    postSocialQuery.limit(10000);
-
-    postSocialQuery.skip(count);
-
-    postSocialQuery.find({
-        useMasterKey: true
-        //sessionToken: sessionToken
-    }).then((postSocialResults) => {
-
-        console.log("postSocialResults.length: " + JSON.stringify(postSocialResults));
-
-        if (postSocialResults.length > 0) {
-
-            let tags = ['*'];
-
-            console.log("starting postSocialQuery");
-
-            let post_zero = post;
-
-
-            if (count === 0 ) {
-
-                // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
-
-                //console.log("className: " + JSON.stringify(className));
-                let POSTSTAR = Parse.Object.extend("Post");
-                var PostStar = new POSTSTAR();
-                PostStar.id = post.objectId;
-
-                PostStar = PostStar.toJSON();
-
-                if (post.workspace) {
-                    PostStar.workspace = post.workspace;
-                    console.log("setting workspace PostStar: " + JSON.stringify(PostStar.workspace));
-
-                }
-
-                if (post.channel) {
-                    PostStar.channel = post.channel;
-                    console.log("setting channel PostStar: " + JSON.stringify(PostStar.channel));
-
-                }
-
-                if (post.user) {
-                    PostStar.user = post.user;
-                    console.log("setting user PostStar: " + JSON.stringify(PostStar.user));
-
-                }
-
-                if (post.archive === true || post.archive === false) {
-                    PostStar.archive = post.archive;
-                    console.log("setting archive PostStar: " + JSON.stringify(PostStar.archive));
-
-                }
-
-                if (post.hashtags) {
-                    PostStar.hashtags = post.hashtags;
-                    console.log("setting hashtags PostStar: " + JSON.stringify(PostStar.hashtags));
-
-                }
-
-                if (post.mentions) {
-                    PostStar.mentions = post.mentions;
-                    console.log("setting mentions PostStar: " + JSON.stringify(PostStar.mentions));
-
-                }
-
-
-                if (post.type) {
-                    PostStar.type = post.type;
-                    console.log("setting type PostStar: " + JSON.stringify(PostStar.type));
-
-                }
-
-                if (post.mediaType) {
-                    PostStar.mediaType = post.mediaType;
-                    console.log("setting mediaType PostStar: " + JSON.stringify(PostStar.mediaType));
-
-                }
-
-                if (post.ACL) {
-                    PostStar.ACL = post.ACL;
-                    console.log("setting ACL PostStar: " + JSON.stringify(PostStar.ACL));
-
-                }
-
-                if (post.hasURL === true || post.hasURL === false) {
-
-                    PostStar.hasURL = post.hasURL;
-                    console.log("setting hasURL PostStar: " + JSON.stringify(PostStar.hasURL));
-
-                }
-
-                if (post.isIncognito === true || post.isIncognito === false) {
-                    PostStar.isIncognito = post.isIncognito;
-                    console.log("setting isIncognito PostStar: " + JSON.stringify(PostStar.isIncognito));
-
-                }
-                if (post.chatEnabled === true || post.chatEnabled === false) {
-
-                    PostStar.chatEnabled = post.chatEnabled;
-                    console.log("setting chatEnabled PostStar: " + JSON.stringify(PostStar.chatEnabled));
-
-                }
-
-                if (post.text) {
-                    PostStar.text = post.text;
-                    console.log("setting text PostStar: " + JSON.stringify(PostStar.text));
-
-                }
-                if (post.updatedAt) {
-                    PostStar.updatedAt = post.updatedAt;
-                    console.log("setting updatedAt PostStar: " + JSON.stringify(PostStar.updatedAt));
-                }
-                if (post.createdAt) {
-
-                    PostStar.createdAt = post.createdAt;
-                    console.log("setting createdAt PostStar: " + JSON.stringify(PostStar.createdAt));
-                }
-
-
-                if (post.transcript) {
-                    PostStar.transcript = post.transcript;
-                    console.log("setting transcript PostStar: " + JSON.stringify(PostStar.transcript));
-
-                }
-                if (post.post_title) {
-
-                    PostStar.post_title = post.post_title;
-                    console.log("setting post_title PostStar: " + JSON.stringify(PostStar.post_title));
-
-                }
-                if (post.video) {
-
-                    PostStar.video = post.video;
-                    console.log("setting video PostStar: " + JSON.stringify(PostStar.video));
-
-                }
-                if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) {
-
-                    PostStar.questionAnswerEnabled = post.questionAnswerEnabled;
-                    console.log("setting questionAnswerEnabled PostStar: " + JSON.stringify(PostStar.questionAnswerEnabled));
-                }
-                if (post.thumbnailRatio) {
-
-                    PostStar.thumbnailRatio = post.thumbnailRatio;
-                    console.log("setting thumbnailRatio PostStar: " + JSON.stringify(PostStar.thumbnailRatio));
-                }
-
-                if (post.file) {
-
-                    PostStar.file = post.file;
-                    console.log("setting file PostStar: " + JSON.stringify(PostStar.file));
-                }
-                if (post.image) {
-                    PostStar.image = post.image;
-                    console.log("setting image PostStar: " + JSON.stringify(PostStar.image));
-                }
-                if (post.audio) {
-                    PostStar.audio = post.audio;
-                    console.log("setting audio PostStar: " + JSON.stringify(PostStar.audio));
-                }
-
-                if (post.audioWave) {
-                    PostStar.audioWave = post.audioWave;
-                    console.log("setting audioWave PostStar: " + JSON.stringify(PostStar.audioWave));
-                }
-
-                if (post.imageRatio) {
-                    PostStar.imageRatio = post.imageRatio;
-                    console.log("setting imageRatio PostStar: " + JSON.stringify(PostStar.imageRatio));
-                }
-
-                if (post.mediaDuration) {
-                    PostStar.mediaDuration = post.mediaDuration;
-                    console.log("setting mediaDuration PostStar: " + JSON.stringify(PostStar.mediaDuration));
-                }
-                if (post.likesCount) {
-
-                    PostStar.likesCount = post.likesCount;
-                    console.log("setting lkesCount PostStar: i" + JSON.stringify(PostStar.likesCount));
-                }
-                if (post.video_thumbnail) {
-                    PostStar.video_thumbnail = post.video_thumbnail;
-                    console.log("setting video_thumbnail PostStar: " + JSON.stringify(PostStar.video_thumbnail));
-                }
-
-                if (post.chatMessages) {
-
-                    PostStar.chatMessages = post.chatMessages;
-                    console.log("setting chatMessages PostStar: " + JSON.stringify(PostStar.chatMessages));
-                }
-
-                if (post.type === 'post') {
-
-                    if (post.postMessageCount) {
-                        PostStar.postMessageCount = post.postMessageCount;
-                        console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-                    }
-                    if (post.postMessageUnReadCount) {
-                        PostStar.postMessageUnReadCount = post.postMessageUnReadCount;
-                        console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-                    }
-                    if (post.postMessageQuestionCount) {
-                        PostStar.postMessageQuestionCount = post.postMessageQuestionCount;
-                        console.log("setting postMessageQuestionCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionCount));
-                    }
-                    if (post.postMessageQuestionUnReadCount) {
-
-                        PostStar.postMessageQuestionUnReadCount = post.postMessageQuestionUnReadCount;
-                        console.log("setting postMessageQuestionUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionUnReadCount));
-                    }
-                    if (post.postQuestions) {
-                        PostStar.postQuestions = post.postQuestions;
-                        console.log("setting postQuestions PostStar: " + JSON.stringify(PostStar.postQuestions));
-
-                    }
-
-
-                } else if (post.type === 'question') {
-
-                    console.log("it's a question!: " + JSON.stringify(post.type));
-
-                    if (post.postMessageCount) {
-
-                        PostStar.postMessageCount = post.postMessageCount;
-                        console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-                    }
-                    if (post.postMessageUnReadCount) {
-
-                        PostStar.postMessageUnReadCount = post.postMessageUnReadCount;
-                        console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-                    }
-                    if (post.postMessageAnswerCount) {
-                        PostStar.postMessageAnswerCount = post.postMessageAnswerCount;
-                        console.log("setting postMessageAnswerCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerCount));
-                    }
-                    if (post.postMessageAnswerUnReadCount) {
-
-                        PostStar.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount;
-                        console.log("setting postMessageAnswerUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerUnReadCount));
-                    }
-                    if (post.topAnswer) {
-                        PostStar.topAnswer = post.topAnswer;
-                        console.log("setting topAnswer PostStar: " + JSON.stringify(PostStar.topAnswer));
-
-                    }
-
-                }
-
-                let postObjectID = post.objectId + '-0';
-
-                PostStar.objectID = postObjectID;
-                PostStar._tags = tags;
-                PostStar.PostSocial = null;
-
-                console.log("post_zero with * tag: " + JSON.stringify(PostStar));
-
-
-
-            }
-
-            console.log("starting async.map");
-
-
-            async.mapSeries(postSocialResults, function (postSocialResult, cb) {
-
-                //console.log("postSocialResults.length: " + JSON.stringify(postSocialResults.length));
-                let POSTUSER = Parse.Object.extend("Post");
-                let PostUser = new POSTUSER();
-                PostUser.id = post.objectId;
-
-                PostUser = PostUser.toJSON();
-
-                if (post.workspace) {
-                    PostUser.workspace = post.workspace;
-                    console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
-
-                }
-
-                if (post.channel) {
-                    PostUser.channel = post.channel;
-                    console.log("setting channel PostUser: " + JSON.stringify(PostUser.channel));
-
-                }
-
-                if (post.user) {
-                    PostUser.user = post.user;
-                    console.log("setting user PostUser: " + JSON.stringify(PostUser.user));
-
-                }
-
-                if (post.archive === true || post.archive === false) {
-                    PostUser.archive = post.archive;
-                    console.log("setting archive PostUser: " + JSON.stringify(PostUser.archive));
-
-                }
-
-                if (post.hashtags) {
-                    PostUser.hashtags = post.hashtags;
-                    console.log("setting hashtags PostUser: " + JSON.stringify(PostUser.hashtags));
-
-                }
-
-                if (post.mentions) {
-                    PostUser.mentions = post.mentions;
-                    console.log("setting mentions PostUser: " + JSON.stringify(PostUser.mentions));
-
-                }
-
-
-                if (post.type) {
-                    PostUser.type = post.type;
-                    console.log("setting type PostUser: " + JSON.stringify(PostUser.type));
-
-                }
-
-                if (post.mediaType) {
-                    PostUser.mediaType = post.mediaType;
-                    console.log("setting mediaType PostUser: " + JSON.stringify(PostUser.mediaType));
-
-                }
-
-                if (post.ACL) {
-                    PostUser.ACL = post.ACL;
-                    console.log("setting ACL PostUser: " + JSON.stringify(PostUser.ACL));
-
-                }
-
-                if (post.hasURL === true || post.hasURL === false) {
-
-                    PostUser.hasURL = post.hasURL;
-                    console.log("setting hasURL PostUser: " + JSON.stringify(PostUser.hasURL));
-
-                }
-
-                if (post.isIncognito === true || post.isIncognito === false) {
-                    PostUser.isIncognito = post.isIncognito;
-                    console.log("setting isIncognito PostUser: " + JSON.stringify(PostUser.isIncognito));
-
-                }
-                if (post.chatEnabled === true || post.chatEnabled === false) {
-
-                    PostUser.chatEnabled = post.chatEnabled;
-                    console.log("setting chatEnabled PostUser: " + JSON.stringify(PostUser.chatEnabled));
-
-                }
-
-                if (post.text) {
-                    PostUser.text = post.text;
-                    console.log("setting text PostUser: " + JSON.stringify(PostUser.text));
-
-                }
-                if (post.updatedAt) {
-                    PostUser.updatedAt = post.updatedAt;
-                    console.log("setting updatedAt PostUser: " + JSON.stringify(PostUser.updatedAt));
-                }
-                if (post.createdAt) {
-
-                    PostUser.createdAt = post.createdAt;
-                    console.log("setting createdAt PostUser: " + JSON.stringify(PostUser.createdAt));
-                }
-
-
-                if (post.transcript) {
-                    PostUser.transcript = post.transcript;
-                    console.log("setting transcript PostUser: " + JSON.stringify(PostUser.transcript));
-
-                }
-                if (post.post_title) {
-
-                    PostUser.post_title = post.post_title;
-                    console.log("setting post_title PostUser: " + JSON.stringify(PostUser.post_title));
-
-                }
-                if (post.video) {
-
-                    PostUser.video = post.video;
-                    console.log("setting video PostUser: " + JSON.stringify(PostUser.video));
-
-                }
-                if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) {
-
-                    PostUser.questionAnswerEnabled = post.questionAnswerEnabled;
-                    console.log("setting questionAnswerEnabled PostUser: " + JSON.stringify(PostUser.questionAnswerEnabled));
-                }
-                if (post.thumbnailRatio) {
-
-                    PostUser.thumbnailRatio = post.thumbnailRatio;
-                    console.log("setting thumbnailRatio PostUser: " + JSON.stringify(PostUser.thumbnailRatio));
-                }
-
-                if (post.file) {
-
-                    PostUser.file = post.file;
-                    console.log("setting file PostUser: " + JSON.stringify(PostUser.file));
-                }
-                if (post.image) {
-                    PostUser.image = post.image;
-                    console.log("setting image PostUser: " + JSON.stringify(PostUser.image));
-                }
-                if (post.audio) {
-                    PostUser.audio = post.audio;
-                    console.log("setting audio PostUser: " + JSON.stringify(PostUser.audio));
-                }
-
-                if (post.audioWave) {
-                    PostUser.audioWave = post.audioWave;
-                    console.log("setting audioWave PostUser: " + JSON.stringify(PostUser.audioWave));
-                }
-
-                if (post.imageRatio) {
-                    PostUser.imageRatio = post.imageRatio;
-                    console.log("setting imageRatio PostUser: " + JSON.stringify(PostUser.imageRatio));
-                }
-
-                if (post.mediaDuration) {
-                    PostUser.mediaDuration = post.mediaDuration;
-                    console.log("setting mediaDuration PostUser: " + JSON.stringify(PostUser.mediaDuration));
-                }
-                if (post.likesCount) {
-
-                    PostUser.likesCount = post.likesCount;
-                    console.log("setting lkesCount PostUser: i" + JSON.stringify(PostUser.likesCount));
-                }
-                if (post.video_thumbnail) {
-                    PostUser.video_thumbnail = post.video_thumbnail;
-                    console.log("setting video_thumbnail PostUser: " + JSON.stringify(PostUser.video_thumbnail));
-                }
-
-                if (post.chatMessages) {
-
-                    PostUser.chatMessages = post.chatMessages;
-                    console.log("setting chatMessages PostUser: " + JSON.stringify(PostUser.chatMessages));
-                }
-
-                if (post.type === 'post') {
-
-                    if (post.postMessageCount) {
-                        PostUser.postMessageCount = post.postMessageCount;
-                        console.log("setting postMessageCount PostUser: " + JSON.stringify(PostUser.postMessageCount));
-                    }
-                    if (post.postMessageUnReadCount) {
-                        PostUser.postMessageUnReadCount = post.postMessageUnReadCount;
-                        console.log("setting postMessageUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageUnReadCount));
-                    }
-                    if (post.postMessageQuestionCount) {
-                        PostUser.postMessageQuestionCount = post.postMessageQuestionCount;
-                        console.log("setting postMessageQuestionCount PostUser: " + JSON.stringify(PostUser.postMessageQuestionCount));
-                    }
-                    if (post.postMessageQuestionUnReadCount) {
-
-                        PostUser.postMessageQuestionUnReadCount = post.postMessageQuestionUnReadCount;
-                        console.log("setting postMessageQuestionUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageQuestionUnReadCount));
-                    }
-                    if (post.postQuestions) {
-                        PostUser.postQuestions = post.postQuestions;
-                        console.log("setting postQuestions PostUser: " + JSON.stringify(PostUser.postQuestions));
-
-                    }
-
-
-                } else if (post.type === 'question') {
-
-                    console.log("it's a question!: " + JSON.stringify(post.type));
-
-                    if (post.postMessageCount) {
-
-                        PostUser.postMessageCount = post.postMessageCount;
-                        console.log("setting postMessageCount PostUser: " + JSON.stringify(PostUser.postMessageCount));
-                    }
-                    if (post.postMessageUnReadCount) {
-
-                        PostUser.postMessageUnReadCount = post.postMessageUnReadCount;
-                        console.log("setting postMessageUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageUnReadCount));
-                    }
-                    if (post.postMessageAnswerCount) {
-                        PostUser.postMessageAnswerCount = post.postMessageAnswerCount;
-                        console.log("setting postMessageAnswerCount PostUser: " + JSON.stringify(PostUser.postMessageAnswerCount));
-                    }
-                    if (post.postMessageAnswerUnReadCount) {
-
-                        PostUser.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount;
-                        console.log("setting postMessageAnswerUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageAnswerUnReadCount));
-                    }
-                    if (post.topAnswer) {
-                        PostUser.topAnswer = post.topAnswer;
-                        console.log("setting topAnswer PostUser: " + JSON.stringify(PostUser.topAnswer));
-
-                    }
-
-                }
-
-
-                let USER = Parse.Object.extend("_User");
-                let UserResult = new USER();
-                UserResult.id = postSocialResult.get("user").id;
-
-                console.log("UserResult: " + JSON.stringify(UserResult));
-
-
-                let tagUser = [];
-
-                tagUser.push(UserResult.id);
-
-                //console.log("tagUser: " + JSON.stringify(tagUser));
-
-
-
-                //console.log("simplifyPostSocial 1: " + JSON.stringify(postSocialResult));
-
-                postSocialResult = simplifyPostSocial(postSocialResult);
-                //console.log("simplifyPostSocial 2: " + JSON.stringify(postSocialResult));
-
-                let postObjectID = post.objectId + '-' + UserResult.id;
-
-
-                PostUser.objectID = postObjectID;
-                PostUser._tags = tagUser;
-                PostUser.PostSocial = postSocialResult;
-
-
-                console.log("post splitObjectAndIndex object: " + JSON.stringify(PostUser));
-
-
-                if (post.type === 'post') {
-
-                    console.log("Starting post section in PostSocial in splitPostAndIndex");
-
-                    let postQuestionMessages = post.postQuestions;
-                    console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
-
-                    let postQuestionMessages1 = post['postQuestions'];
-                    console.log("postQuestionMessages1: " + JSON.stringify(postQuestionMessages1));
-
-                    //let postQuestionMessages = JSON.parse(object).get("postQuestions");
-                    //console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
-
-                    if (postQuestionMessages.length > 0 ) {
-
-                        async.map(postQuestionMessages, function (postQuestionMessage, cb1) {
-
-                                console.log("starting async.map postQuestionMessages ");
-
-                                console.log("postQuestionMessage: " + JSON.stringify(postQuestionMessage));
-
-                                let POSTMESSAGE = Parse.Object.extend("PostMessage");
-                                let postMessage = new POSTMESSAGE();
-                                postMessage.id = postQuestionMessage.objectId;
-                                console.log("postMessage n: " + JSON.stringify(postMessage));
-
-                                console.log("indexOf async.map: " + JSON.stringify(postQuestionMessages.indexOf(postQuestionMessage)));
-
-                                let async_map_index = postQuestionMessages.indexOf(postQuestionMessage);
-
-
-                                function getPostMessageSocial (callback) {
-
-                                    let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
-                                    let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
-
-                                    console.log("PostMessage: " + JSON.stringify(postMessage.id));
-                                    console.log("user: " + JSON.stringify(UserResult.id));
-
-
-                                    queryPostMessageSocial.equalTo("postMessage", postMessage);
-                                    queryPostMessageSocial.equalTo("user", UserResult);
-
-                                    queryPostMessageSocial.first({
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-
-                                    }).then((postMessageSocial) => {
-                                        // The object was retrieved successfully.
-
-                                        //let finalChannelFollowers = [];
-                                        console.log("postMessageSocial: " + JSON.stringify(postMessageSocial));
-
-                                        if (postMessageSocial) {
-
-                                            postMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocial);
-                                            console.log("postMessageSocial: " + JSON.stringify(postMessageSocial));
-
-                                            return callback (null, postMessageSocial);
-
-
-                                        } else {
-
-                                            let postMessageSocial = null;
-
-                                            return callback (null, postMessageSocial);
-
-                                        }
-
-
-                                    }, (error) => {
-                                        // The object was not retrieved successfully.
-                                        // error is a Parse.Error with an error code and message.
-                                        return callback (error);
-                                    }, {
-
-                                        useMasterKey: true
-                                        //sessionToken: sessionToken
-
-                                    });
-                                }
-
-
-                                async.parallel([
-                                    async.apply(getPostMessageSocial)
-
-
-                                ], function (err, results) {
-                                    if (err) {
-                                        return cb1(err);
-                                    }
-
-
-                                    if (results.length > 0) {
-
-                                        let PostMessageSocial = results[0];
-                                        console.log("done postMessageSocial results: " + JSON.stringify(results));
-
-                                        console.log("done PostMessageSocial: " + JSON.stringify(PostMessageSocial));
-
-
-
-                                        if (PostMessageSocial) {
-
-                                            console.log("enter into PostMessageSocial...");
-
-
-                                            //let postMessageSocialQuestion = simplifyPostMessageSocialQuestion(PostMessageSocial);
-
-                                            console.log("finish simplify into PostMessageSocial: " + JSON.stringify(PostMessageSocial));
-
-
-                                            postQuestionMessage.PostMessageSocial = PostMessageSocial;
-                                            console.log("done postMessageSocial: " + JSON.stringify(PostMessageSocial));
-
-                                            console.log("done postQuestionMessage: " + JSON.stringify(postQuestionMessage));
-
-
-                                            return cb1(null, postQuestionMessage);
-
-
-                                        }
-                                        else {
-
-                                            // postMessageSocial doesn't exist, user doesn't have any reactions on postMessage.
-                                            console.log("postMessageSocial doesn't exist, user doesn't have any reactions on postMessage");
-
-                                            console.log("postMessageSocial doesn't exist, postQuestionMessage: " + JSON.stringify(postQuestionMessage));
-
-                                            postQuestionMessage.PostMessageSocial = null;
-
-                                            return cb1(null, postQuestionMessage);
-
-
-                                        }
-
-
-                                    }
-                                    else {
-
-                                        postQuestionMessage.PostMessageSocial = null;
-
-
-                                        return cb1(null, postQuestionMessage);
-
-                                    }
-
-                                });
-
-
-                            },
-                            function (err, postQuestionMessagesSocialResult) {
-
-                                console.log("postQuestionMessagesSocialResult length: " + JSON.stringify(postQuestionMessagesSocialResult.length));
-
-                                if (err) {
-                                    return response.error(err);
-                                } else {
-
-                                    console.log("postQuestionMessagesSocialResult.postQuestions: " + JSON.stringify(postQuestionMessagesSocialResult));
-
-                                    PostUser.postQuestions = postQuestionMessagesSocialResult;
-
-                                    postSocialResult = PostUser;
-
-                                    return cb(null, postSocialResult);
-
-                                }
-
-                            });
-
-
-                    }
-                    else {
-
-                        let postQuestionResult = [];
-
-                        PostUser.postQuestions = postQuestionResult;
-
-                        postSocialResult = PostUser;
-
-                        return cb(null, postSocialResult);
-
-
-                    }
-
-
-                }
-                else if (post.type === 'question') {
-
-                    console.log("Starting post section in PostSocial - question - in SplitObjectAndIndex");
-
-                    let topAnswer = post.topAnswer;
-                    console.log("topAnswer: " + JSON.stringify(topAnswer));
-
-                    //let postQuestionMessages = JSON.parse(object).get("postQuestions");
-                    //console.log("postQuestionMessages: " + JSON.stringify(postQuestionMessages));
-
-                    if (topAnswer) {
-
-                        console.log("starting async.map postChatMessage ");
-
-                        let POSTMESSAGE = Parse.Object.extend("PostMessage");
-                        let postMessage = new POSTMESSAGE();
-                        postMessage.id = topAnswer.objectId;
-                        console.log("postMessage n: " + JSON.stringify(postMessage));
-
-
-                        function getPostMessageSocial (callback1) {
-
-                            let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
-                            let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
-
-                            console.log("PostMessage: " + JSON.stringify(postMessage.id));
-                            console.log("user: " + JSON.stringify(UserResult.id));
-
-                            queryPostMessageSocial.equalTo("postMessage", postMessage.id);
-                            queryPostMessageSocial.equalTo("user", UserResult.id);
-
-                            queryPostMessageSocial.first({
-
-                                useMasterKey: true
-                                //sessionToken: sessionToken
-
-                            }).then((postMessageSocial) => {
-                                // The object was retrieved successfully.
-
-                                //let finalChannelFollowers = [];
-                                console.log("postMessageSocial: " + JSON.stringify(postMessageSocial));
-
-                                if (postMessageSocial) {
-
-                                    let postMessageSocialAnswer = simplifyPostMessageSocialAnswer(postMessageSocial);
-
-
-                                    return callback1 (null, postMessageSocialAnswer);
-
-
-
-
-                                } else {
-
-                                    let postMessageSocial = null;
-
-                                    return callback1 (null, postMessageSocial);
-
-                                }
-
-
-                            }, (error) => {
-                                // The object was not retrieved successfully.
-                                // error is a Parse.Error with an error code and message.
-                                return callback1 (error);
-                            }, {
-
-                                useMasterKey: true
-                                //sessionToken: sessionToken
-
-                            });
-                        }
-
-
-                        async.parallel([
-                            async.apply(getPostMessageSocial)
-
-
-                        ], function (err, results) {
-                            if (err) {
-                                return response.error(err);
-                            }
-
-
-                            if (results.length > 0) {
-
-                                let PostMessageSocial = results[0];
-                                console.log("done postMessageSocial results: " + JSON.stringify(results));
-
-
-                                if (PostMessageSocial) {
-
-                                    topAnswer.PostMessageSocial = PostMessageSocial;
-                                    console.log("done topAnswer postMessageSocial: " + JSON.stringify(PostMessageSocial));
-
-                                    console.log("done topAnswer: " + JSON.stringify(topAnswer));
-
-                                    PostUser.topAnswer = topAnswer;
-
-                                    postSocialResult = PostUser;
-
-                                    return cb(null, postSocialResult);
-
-
-                                }
-                                else {
-
-                                    // postMessageSocial doesn't exist, user doesn't have any reactions on postMessage.
-                                    console.log("postMessageSocial doesn't exist, user doesn't have any reactions on postMessage");
-
-                                    console.log("postMessageSocial doesn't exist, topAnswer: " + JSON.stringify(PostMessageSocial));
-
-                                    topAnswer.PostMessageSocial = null;
-
-                                    PostUser.topAnswer = topAnswer;
-
-                                    postSocialResult = PostUser;
-
-
-
-                                    return cb(null, postSocialResult);
-
-
-                                }
-
-
-                            }
-                            else {
-
-                                topAnswer.PostMessageSocial = null;
-
-                                PostUser.topAnswer = topAnswer;
-
-                                postSocialResult = PostUser;
-
-                                return cb(null, postSocialResult);
-
-                            }
-                        });
-
-                    }
-                    else {
-
-
-                        PostUser.topAnswer = null;
-
-                        postSocialResult = PostUser;
-
-                        return cb(null, postSocialResult);
-
-
-                    }
-
-
-                }
-                else {
-
-                    return response.error("invalid post.type, please include a question or post type only.");
-                }
-
-
-            }, function (err, postQuestionMessagesSocialResult) {
-
-                console.log("postQuestionMessagesSocialResult length: " + JSON.stringify(postQuestionMessagesSocialResult.length));
-
-                if (err) {
-                    return response.error(err);
-                } else {
-
-                    if (count === 0 ) {
-
-                        console.log("postQuestionMessagesSocialResult: " + JSON.stringify(postQuestionMessagesSocialResult));
-
-
-                        //postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(JSON.parse(post_zero));
-
-                        postQuestionMessagesSocialResult.push(PostStar);
-
-
-                        //console.log("postQuestionMessagesSocialResult add: asd " + JSON.stringify(postQuestionMessagesSocialResult));
-
-                    }
-
-                    if (postQuestionMessagesSocialResult.length > 0) {
-
-                        //console.log("postQuestionMessagesSocialResult.length adsf: " + JSON.stringify(postQuestionMessagesSocialResult.length));
-
-                        indexPosts.saveObjects(postQuestionMessagesSocialResult, true, function(err, content) {
-                            if (err) {
-                                return response.error(err);
-                            }
-
-                            console.log("content: " + JSON.stringify(content));
-
-
-                        });
-
-                        console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
-
-                        let beforeSaveElse_Time = process.hrtime(time);
-                        console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                        response.success();
-
-
-                    }
-
-                    else {
-
-                        let beforeSaveElse_Time = process.hrtime(time);
-                        console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-
-                        return response.error(err);
-
-                    }
-
-                }
-
-            });
-
-        }
-        else {
-
-            if (count === 0) {
-
-                let tags = ['*'];
-
-                console.log("::starting postSocialQuery no result on postSocial::");
-
-                // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
-
-                //console.log("className: " + JSON.stringify(className));
-
-
-                let postObjectID = post.objectId + '-0';
-
-                post.objectID = postObjectID;
-                post._tags = tags;
-                post.PostSocial = null;
-
-                console.log("post with * tag: " + JSON.stringify(post));
-
-
-                indexPosts.saveObject(post, true, function(err, content) {
-                    if (err) {
-                        return response.error(err);
-                    }
-
-                    console.log("content: " + JSON.stringify(content));
-
-
-                });
-
-                console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
-
-                let beforeSaveElse_Time = process.hrtime(time);
-                console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                response.success();
-
-
-
-            } else {
-
-                let beforeSaveElse_Time = process.hrtime(time);
-                console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-                return response.success();
-            }
-
-
-        }
-
-
-
-    }, (error) => {
-        // The object was not retrieved successfully.
-        // error is a Parse.Error with an error code and message.
-        //console.log(error);
-        return response.error(error);
-    }, {
-
-        useMasterKey: true
-        //sessionToken: sessionToken
-
-    });
-
-}
-
-function splitPostAndIndexFaster (request, response) {
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    var loop = request['loop'];
-    //console.log("loop: " + JSON.stringify(loop));
-
-    let user = request['user'];
-    console.log("splitPostAndIndexFaster user: " + JSON.stringify(user));
-    //console.log("::Starting splitPostAndIndex:: " + JSON.stringify(request));
-
-    let post = request['object'];
-    console.log("splitPostAndIndexFaster post: " + JSON.stringify(post));
-
-    let POST = Parse.Object.extend("Post");
-    let Post = new POST();
-    Post.id = post.objectId;
-    // note object needs to be toJSON()
-    //console.log("Post: " + JSON.stringify(Post));
-
-    let count = (request['count'])? request['count'] : 0;
-    //console.log("count: " + JSON.stringify(count));
-
-    let postSocialQuery = new Parse.Query("PostSocial");
-
-    postSocialQuery.equalTo('post', Post);
-
-    postSocialQuery.limit(10000);
-
-    postSocialQuery.skip(count);
-
-    function indexPostSocial (callback2) {
-
-        postSocialQuery.find({
-            useMasterKey: true
-            //sessionToken: sessionToken
-        }).then((postSocialResults) => {
-
-            console.log("splitPostAndIndexFaster postSocialResults.length: " + JSON.stringify(postSocialResults.length));
-
-            if (postSocialResults.length > 0) {
-
-                let tags = ['*'];
-
-                console.log("starting postSocialQuery");
-
-                let post_zero = post;
-
-
-                if (count === 0 ) {
-
-                    // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
-
-                    //console.log("className: " + JSON.stringify(className));
-                    let POSTSTAR = Parse.Object.extend("Post");
-                    var PostStar = new POSTSTAR();
-                    PostStar.id = post.objectId;
-
-                    PostStar = PostStar.toJSON();
-
-                    if (post.workspace) {
-                        PostStar.workspace = post.workspace;
-                        //console.log("setting workspace PostStar: " + JSON.stringify(PostStar.workspace));
-
-                    }
-
-                    if (post.isExpanded) {
-                        PostStar.isExpanded = post.isExpanded;
-                        //console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
-
-                    }
-
-                    if (post.channel) {
-                        PostStar.channel = post.channel;
-                        //console.log("setting channel PostStar: " + JSON.stringify(PostStar.channel));
-
-                    }
-
-                    if (post.user) {
-                        PostStar.user = post.user;
-                        //console.log("setting user PostStar: " + JSON.stringify(PostStar.user));
-
-                    }
-
-                    if (post.archive === true || post.archive === false) {
-                        PostStar.archive = post.archive;
-                        //console.log("setting archive PostStar: " + JSON.stringify(PostStar.archive));
-
-                    }
-
-                    if (post.hashtags) {
-                        PostStar.hashtags = post.hashtags;
-                        //console.log("setting hashtags PostStar: " + JSON.stringify(PostStar.hashtags));
-
-                    }
-
-                    if (post.mentions) {
-                        PostStar.mentions = post.mentions;
-                        //console.log("setting mentions PostStar: " + JSON.stringify(PostStar.mentions));
-
-                    }
-
-
-                    if (post.type) {
-                        PostStar.type = post.type;
-                        //console.log("setting type PostStar: " + JSON.stringify(PostStar.type));
-
-                    }
-
-                    if (post.mediaType) {
-                        PostStar.mediaType = post.mediaType;
-                        //console.log("setting mediaType PostStar: " + JSON.stringify(PostStar.mediaType));
-
-                    }
-
-                    if (post.ACL) {
-                        PostStar.ACL = post.ACL;
-                        //console.log("setting ACL PostStar: " + JSON.stringify(PostStar.ACL));
-
-                    }
-
-                    if (post.hasURL === true || post.hasURL === false) {
-
-                        PostStar.hasURL = post.hasURL;
-                        //console.log("setting hasURL PostStar: " + JSON.stringify(PostStar.hasURL));
-
-                    }
-
-                    if (post.isIncognito === true || post.isIncognito === false) {
-                        PostStar.isIncognito = post.isIncognito;
-                        //console.log("setting isIncognito PostStar: " + JSON.stringify(PostStar.isIncognito));
-
-                    }
-                    if (post.chatEnabled === true || post.chatEnabled === false) {
-
-                        PostStar.chatEnabled = post.chatEnabled;
-                        //console.log("setting chatEnabled PostStar: " + JSON.stringify(PostStar.chatEnabled));
-
-                    }
-
-                    if (post.text) {
-                        PostStar.text = post.text;
-                        //console.log("setting text PostStar: " + JSON.stringify(PostStar.text));
-
-                    }
-                    if (post.updatedAt) {
-                        PostStar.updatedAt = post.updatedAt;
-                        //console.log("setting updatedAt PostStar: " + JSON.stringify(PostStar.updatedAt));
-                    }
-                    if (post.createdAt) {
-
-                        PostStar.createdAt = post.createdAt;
-                        //console.log("setting createdAt PostStar: " + JSON.stringify(PostStar.createdAt));
-                    }
-
-
-                    if (post.transcript) {
-                        PostStar.transcript = post.transcript;
-                        //console.log("setting transcript PostStar: " + JSON.stringify(PostStar.transcript));
-
-                    }
-                    if (post.post_title) {
-
-                        PostStar.post_title = post.post_title;
-                        //console.log("setting post_title PostStar: " + JSON.stringify(PostStar.post_title));
-
-                    }
-                    if (post.video) {
-
-                        PostStar.video = post.video;
-                        //console.log("setting video PostStar: " + JSON.stringify(PostStar.video));
-
-                    }
-                    if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) {
-
-                        PostStar.questionAnswerEnabled = post.questionAnswerEnabled;
-                        //console.log("setting questionAnswerEnabled PostStar: " + JSON.stringify(PostStar.questionAnswerEnabled));
-                    }
-                    if (post.thumbnailRatio) {
-
-                        PostStar.thumbnailRatio = post.thumbnailRatio;
-                        //console.log("setting thumbnailRatio PostStar: " + JSON.stringify(PostStar.thumbnailRatio));
-                    }
-
-                    if (post.file) {
-
-                        PostStar.file = post.file;
-                        //console.log("setting file PostStar: " + JSON.stringify(PostStar.file));
-                    }
-                    if (post.image) {
-                        PostStar.image = post.image;
-                        //console.log("setting image PostStar: " + JSON.stringify(PostStar.image));
-                    }
-                    if (post.audio) {
-                        PostStar.audio = post.audio;
-                        //console.log("setting audio PostStar: " + JSON.stringify(PostStar.audio));
-                    }
-
-                    if (post.audioWave) {
-                        PostStar.audioWave = post.audioWave;
-                        //console.log("setting audioWave PostStar: " + JSON.stringify(PostStar.audioWave));
-                    }
-
-                    if (post.imageRatio) {
-                        PostStar.imageRatio = post.imageRatio;
-                        //console.log("setting imageRatio PostStar: " + JSON.stringify(PostStar.imageRatio));
-                    }
-
-                    if (post.mediaDuration) {
-                        PostStar.mediaDuration = post.mediaDuration;
-                        //console.log("setting mediaDuration PostStar: " + JSON.stringify(PostStar.mediaDuration));
-                    }
-                    if (post.likesCount) {
-
-                        PostStar.likesCount = post.likesCount;
-                        //console.log("setting lkesCount PostStar: i" + JSON.stringify(PostStar.likesCount));
-                    }
-                    if (post.video_thumbnail) {
-                        PostStar.video_thumbnail = post.video_thumbnail;
-                        //console.log("setting video_thumbnail PostStar: " + JSON.stringify(PostStar.video_thumbnail));
-                    }
-
-                    if (post.chatMessages) {
-
-                        PostStar.chatMessages = post.chatMessages;
-                        //console.log("setting chatMessages PostStar: " + JSON.stringify(PostStar.chatMessages));
-                    }
-
-                    if (post.type === 'post') {
-
-                        if (post.postMessageCount) {
-                            PostStar.postMessageCount = post.postMessageCount;
-                            //console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-                        }
-                        if (post.postMessageUnReadCount) {
-                            PostStar.postMessageUnReadCount = post.postMessageUnReadCount;
-                            //console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-                        }
-                        if (post.postMessageQuestionCount) {
-                            PostStar.postMessageQuestionCount = post.postMessageQuestionCount;
-                            //console.log("setting postMessageQuestionCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionCount));
-                        }
-                        if (post.postMessageQuestionUnReadCount) {
-
-                            PostStar.postMessageQuestionUnReadCount = post.postMessageQuestionUnReadCount;
-                            //console.log("setting postMessageQuestionUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionUnReadCount));
-                        }
-                        if (post.postQuestions) {
-                            PostStar.postQuestions = post.postQuestions;
-                            delete PostStar.postQuestions;
-                            //console.log("setting postQuestions PostStar: " + JSON.stringify(PostStar.postQuestions));
-
-                        }
-
-
-                    } else if (post.type === 'question') {
-
-                        console.log("it's a question!: " + JSON.stringify(post.type));
-
-                        if (post.postMessageCount) {
-
-                            PostStar.postMessageCount = post.postMessageCount;
-                            //console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-                        }
-                        if (post.postMessageUnReadCount) {
-
-                            PostStar.postMessageUnReadCount = post.postMessageUnReadCount;
-                            //console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-                        }
-                        if (post.postMessageAnswerCount) {
-                            PostStar.postMessageAnswerCount = post.postMessageAnswerCount;
-                            //console.log("setting postMessageAnswerCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerCount));
-                        }
-                        if (post.postMessageAnswerUnReadCount) {
-
-                            PostStar.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount;
-                            //console.log("setting postMessageAnswerUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerUnReadCount));
-                        }
-                        if (post.topAnswer) {
-                            PostStar.topAnswer = post.topAnswer;
-                            //console.log("setting topAnswer PostStar: " + JSON.stringify(PostStar.topAnswer));
-
-                        }
-
-                    }
-
-                    let postObjectID = post.objectId + '-0';
-
-                    PostStar.objectID = postObjectID;
-                    PostStar._tags = tags;
-                    PostStar.PostSocial = null;
-
-                    //console.log("post_zero with * tag: " + JSON.stringify(PostStar));
-
-
-
-                }
-
-                console.log("starting async.map");
-
-
-                async.mapSeries(postSocialResults, function (postSocialResult, cb) {
-
-                    console.log("postSocialResults.length: " + JSON.stringify(postSocialResults.length));
-                    let POSTUSER = Parse.Object.extend("Post");
-                    let PostUser = new POSTUSER();
-                    PostUser.id = post.objectId;
-
-                    PostUser = PostUser.toJSON();
-
-                    if (post.workspace) {
-                        PostUser.workspace = post.workspace;
-                        //console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
-
-                    }
-
-                    if (post.isExpanded) {
-                        PostUser.isExpanded = post.isExpanded;
-                        //console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
-
-                    }
-
-                    if (post.channel) {
-                        PostUser.channel = post.channel;
-                        //console.log("setting channel PostUser: " + JSON.stringify(PostUser.channel));
-
-                    }
-
-                    if (post.user) {
-                        PostUser.user = post.user;
-                        //console.log("setting user PostUser: " + JSON.stringify(PostUser.user));
-
-                    }
-
-                    if (post.archive === true || post.archive === false) {
-                        PostUser.archive = post.archive;
-                        //console.log("setting archive PostUser: " + JSON.stringify(PostUser.archive));
-
-                    }
-
-                    if (post.hashtags) {
-                        PostUser.hashtags = post.hashtags;
-                        //console.log("setting hashtags PostUser: " + JSON.stringify(PostUser.hashtags));
-
-                    }
-
-                    if (post.mentions) {
-                        PostUser.mentions = post.mentions;
-                        //console.log("setting mentions PostUser: " + JSON.stringify(PostUser.mentions));
-
-                    }
-
-
-                    if (post.type) {
-                        PostUser.type = post.type;
-                        //console.log("setting type PostUser: " + JSON.stringify(PostUser.type));
-
-                    }
-
-                    if (post.mediaType) {
-                        PostUser.mediaType = post.mediaType;
-                        //console.log("setting mediaType PostUser: " + JSON.stringify(PostUser.mediaType));
-
-                    }
-
-                    if (post.ACL) {
-                        PostUser.ACL = post.ACL;
-                        //console.log("setting ACL PostUser: " + JSON.stringify(PostUser.ACL));
-
-                    }
-
-                    if (post.hasURL === true || post.hasURL === false) {
-
-                        PostUser.hasURL = post.hasURL;
-                        //console.log("setting hasURL PostUser: " + JSON.stringify(PostUser.hasURL));
-
-                    }
-
-                    if (post.isIncognito === true || post.isIncognito === false) {
-                        PostUser.isIncognito = post.isIncognito;
-                        //console.log("setting isIncognito PostUser: " + JSON.stringify(PostUser.isIncognito));
-
-                    }
-                    if (post.chatEnabled === true || post.chatEnabled === false) {
-
-                        PostUser.chatEnabled = post.chatEnabled;
-                        //console.log("setting chatEnabled PostUser: " + JSON.stringify(PostUser.chatEnabled));
-
-                    }
-
-                    if (post.text) {
-                        PostUser.text = post.text;
-                        //console.log("setting text PostUser: " + JSON.stringify(PostUser.text));
-
-                    }
-                    if (post.updatedAt) {
-                        PostUser.updatedAt = post.updatedAt;
-                        //console.log("setting updatedAt PostUser: " + JSON.stringify(PostUser.updatedAt));
-                    }
-                    if (post.createdAt) {
-
-                        PostUser.createdAt = post.createdAt;
-                        //console.log("setting createdAt PostUser: " + JSON.stringify(PostUser.createdAt));
-                    }
-
-
-                    if (post.transcript) {
-                        PostUser.transcript = post.transcript;
-                        //console.log("setting transcript PostUser: " + JSON.stringify(PostUser.transcript));
-
-                    }
-                    if (post.post_title) {
-
-                        PostUser.post_title = post.post_title;
-                        //console.log("setting post_title PostUser: " + JSON.stringify(PostUser.post_title));
-
-                    }
-                    if (post.video) {
-
-                        PostUser.video = post.video;
-                        //console.log("setting video PostUser: " + JSON.stringify(PostUser.video));
-
-                    }
-                    if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) {
-
-                        PostUser.questionAnswerEnabled = post.questionAnswerEnabled;
-                        //console.log("setting questionAnswerEnabled PostUser: " + JSON.stringify(PostUser.questionAnswerEnabled));
-                    }
-                    if (post.thumbnailRatio) {
-
-                        PostUser.thumbnailRatio = post.thumbnailRatio;
-                        //console.log("setting thumbnailRatio PostUser: " + JSON.stringify(PostUser.thumbnailRatio));
-                    }
-
-                    if (post.file) {
-
-                        PostUser.file = post.file;
-                        //console.log("setting file PostUser: " + JSON.stringify(PostUser.file));
-                    }
-                    if (post.image) {
-                        PostUser.image = post.image;
-                        //console.log("setting image PostUser: " + JSON.stringify(PostUser.image));
-                    }
-                    if (post.audio) {
-                        PostUser.audio = post.audio;
-                        //console.log("setting audio PostUser: " + JSON.stringify(PostUser.audio));
-                    }
-
-                    if (post.audioWave) {
-                        PostUser.audioWave = post.audioWave;
-                        //console.log("setting audioWave PostUser: " + JSON.stringify(PostUser.audioWave));
-                    }
-
-                    if (post.imageRatio) {
-                        PostUser.imageRatio = post.imageRatio;
-                        //console.log("setting imageRatio PostUser: " + JSON.stringify(PostUser.imageRatio));
-                    }
-
-                    if (post.mediaDuration) {
-                        PostUser.mediaDuration = post.mediaDuration;
-                        //console.log("setting mediaDuration PostUser: " + JSON.stringify(PostUser.mediaDuration));
-                    }
-                    if (post.likesCount) {
-
-                        PostUser.likesCount = post.likesCount;
-                        //console.log("setting likesCount PostUser: i" + JSON.stringify(PostUser.likesCount));
-                    }
-                    if (post.video_thumbnail) {
-                        PostUser.video_thumbnail = post.video_thumbnail;
-                        //console.log("setting video_thumbnail PostUser: " + JSON.stringify(PostUser.video_thumbnail));
-                    }
-
-                    if (post.chatMessages) {
-
-                        PostUser.chatMessages = post.chatMessages;
-                        //console.log("setting chatMessages PostUser: " + JSON.stringify(PostUser.chatMessages));
-                    }
-
-                    if (post.type === 'post') {
-
-                        if (post.postMessageCount) {
-                            PostUser.postMessageCount = post.postMessageCount;
-                            //console.log("setting postMessageCount PostUser: " + JSON.stringify(PostUser.postMessageCount));
-                        }
-                        if (post.postMessageUnReadCount) {
-                            PostUser.postMessageUnReadCount = post.postMessageUnReadCount;
-                            //console.log("setting postMessageUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageUnReadCount));
-                        }
-                        if (post.postMessageQuestionCount) {
-                            PostUser.postMessageQuestionCount = post.postMessageQuestionCount;
-                            //console.log("setting postMessageQuestionCount PostUser: " + JSON.stringify(PostUser.postMessageQuestionCount));
-                        }
-                        if (post.postMessageQuestionUnReadCount) {
-
-                            PostUser.postMessageQuestionUnReadCount = post.postMessageQuestionUnReadCount;
-                            //console.log("setting postMessageQuestionUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageQuestionUnReadCount));
-                        }
-                        if (post.postQuestions) {
-                            PostUser.postQuestions = post.postQuestions;
-                            delete PostStar.postQuestions;
-                            //console.log("setting postQuestions PostUser: " + JSON.stringify(PostUser.postQuestions));
-
-                        }
-
-
-                    } else if (post.type === 'question') {
-
-                        console.log("it's a question!: " + JSON.stringify(post.type));
-
-                        if (post.postMessageCount) {
-
-                            PostUser.postMessageCount = post.postMessageCount;
-                            //console.log("setting postMessageCount PostUser: " + JSON.stringify(PostUser.postMessageCount));
-                        }
-                        if (post.postMessageUnReadCount) {
-
-                            PostUser.postMessageUnReadCount = post.postMessageUnReadCount;
-                            //console.log("setting postMessageUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageUnReadCount));
-                        }
-                        if (post.postMessageAnswerCount) {
-                            PostUser.postMessageAnswerCount = post.postMessageAnswerCount;
-                            //console.log("setting postMessageAnswerCount PostUser: " + JSON.stringify(PostUser.postMessageAnswerCount));
-                        }
-                        if (post.postMessageAnswerUnReadCount) {
-
-                            PostUser.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount;
-                            //console.log("setting postMessageAnswerUnReadCount PostUser: " + JSON.stringify(PostUser.postMessageAnswerUnReadCount));
-                        }
-                        if (post.topAnswer) {
-                            PostUser.topAnswer = post.topAnswer;
-                            //console.log("setting topAnswer PostUser: " + JSON.stringify(PostUser.topAnswer));
-
-                        }
-
-                    }
-
-
-                    let USER = Parse.Object.extend("_User");
-                    let UserResult = new USER();
-                    UserResult.id = postSocialResult.get("user").id;
-
-                    //console.log("UserResult: " + JSON.stringify(UserResult));
-
-
-                    let tagUser = [];
-
-                    tagUser.push(UserResult.id);
-
-                    //console.log("tagUser: " + JSON.stringify(tagUser));
-
-
-
-                    //console.log("simplifyPostSocial 1: " + JSON.stringify(postSocialResult));
-
-                    postSocialResult = simplifyPostSocial(postSocialResult);
-                    console.log("simplifyPostSocial 2: " + JSON.stringify(postSocialResult));
-
-                    let postObjectID = post.objectId + '-' + UserResult.id;
-
-
-                    PostUser.objectID = postObjectID;
-                    PostUser._tags = tagUser;
-                    PostUser.PostSocial = postSocialResult;
-
-
-                    console.log("post splitObjectAndIndex PostUser.PostSocial: " + JSON.stringify(PostUser.PostSocial));
-
-
-                    postSocialResult = PostUser;
-
-                    return cb(null, postSocialResult);
-
-
-                }, function (err, PostSocialResults) {
-
-                    console.log("PostSocialResults length: " + JSON.stringify(PostSocialResults.length));
-
-                    if (err) {
-                        return callback2(err);
-                    } else {
-
-                        if (count === 0 ) {
-
-                            // console.log("postQuestionMessagesSocialResult: " + JSON.stringify(postQuestionMessagesSocialResult));
-
-
-                            //postQuestionMessagesSocialResult = postQuestionMessagesSocialResult.push(JSON.parse(post_zero));
-
-                            PostSocialResults.push(PostStar);
-
-
-                            // console.log("postQuestionMessagesSocialResult add: asd " + JSON.stringify(postQuestionMessagesSocialResult));
-
-                        }
-
-                        if (PostSocialResults.length > 0) {
-
-                            console.log("PostSocialResults: " + JSON.stringify(PostSocialResults));
-
-                            return callback2 (null, PostSocialResults);
-
-
-
-                        }
-
-                        else {
-
-
-                            return callback2 (err);
-
-                        }
-
-                    }
-
-                });
-
-            }
-            else {
-
-
-
-                let tags = ['*'];
-
-                console.log("::starting postSocialQuery no result on postSocial::");
-
-                // let's create a post in algolia with tags = * for any user who doesn't already have postSocial to view it
-
-                //console.log("className: " + JSON.stringify(className));
-                let POSTSTAR = Parse.Object.extend("Post");
-                let PostStar1 = new POSTSTAR();
-                PostStar1.id = post.objectId;
-
-                PostStar1 = PostStar1.toJSON();
-
-                if (post.workspace) {
-                    PostStar1.workspace = post.workspace;
-                    //console.log("setting workspace PostStar: " + JSON.stringify(PostStar.workspace));
-
-                }
-
-                if (post.isExpanded) {
-                    PostStar1.isExpanded = post.isExpanded;
-                    //console.log("setting workspace PostUser: " + JSON.stringify(PostUser.workspace));
-
-                }
-
-                if (post.channel) {
-                    PostStar1.channel = post.channel;
-                    //console.log("setting channel PostStar: " + JSON.stringify(PostStar.channel));
-
-                }
-
-                if (post.user) {
-                    PostStar1.user = post.user;
-                    //console.log("setting user PostStar: " + JSON.stringify(PostStar.user));
-
-                }
-
-                if (post.archive === true || post.archive === false) {
-                    PostStar1.archive = post.archive;
-                    //console.log("setting archive PostStar: " + JSON.stringify(PostStar.archive));
-
-                }
-
-                if (post.hashtags) {
-                    PostStar1.hashtags = post.hashtags;
-                    //console.log("setting hashtags PostStar: " + JSON.stringify(PostStar.hashtags));
-
-                }
-
-                if (post.mentions) {
-                    PostStar1.mentions = post.mentions;
-                    //console.log("setting mentions PostStar: " + JSON.stringify(PostStar.mentions));
-
-                }
-
-
-                if (post.type) {
-                    PostStar1.type = post.type;
-                    //console.log("setting type PostStar: " + JSON.stringify(PostStar.type));
-
-                }
-
-                if (post.mediaType) {
-                    PostStar1.mediaType = post.mediaType;
-                    //console.log("setting mediaType PostStar: " + JSON.stringify(PostStar.mediaType));
-
-                }
-
-                if (post.ACL) {
-                    PostStar1.ACL = post.ACL;
-                    //console.log("setting ACL PostStar: " + JSON.stringify(PostStar.ACL));
-
-                }
-
-                if (post.hasURL === true || post.hasURL === false) {
-
-                    PostStar1.hasURL = post.hasURL;
-                    //console.log("setting hasURL PostStar: " + JSON.stringify(PostStar.hasURL));
-
-                }
-
-                if (post.isIncognito === true || post.isIncognito === false) {
-                    PostStar1.isIncognito = post.isIncognito;
-                    //console.log("setting isIncognito PostStar: " + JSON.stringify(PostStar.isIncognito));
-
-                }
-                if (post.chatEnabled === true || post.chatEnabled === false) {
-
-                    PostStar1.chatEnabled = post.chatEnabled;
-                    //console.log("setting chatEnabled PostStar: " + JSON.stringify(PostStar.chatEnabled));
-
-                }
-
-                if (post.text) {
-                    PostStar1.text = post.text;
-                    //console.log("setting text PostStar: " + JSON.stringify(PostStar.text));
-
-                }
-                if (post.updatedAt) {
-                    PostStar1.updatedAt = post.updatedAt;
-                    //console.log("setting updatedAt PostStar: " + JSON.stringify(PostStar.updatedAt));
-                }
-                if (post.createdAt) {
-
-                    PostStar1.createdAt = post.createdAt;
-                    //console.log("setting createdAt PostStar: " + JSON.stringify(PostStar.createdAt));
-                }
-
-
-                if (post.transcript) {
-                    PostStar1.transcript = post.transcript;
-                    //console.log("setting transcript PostStar: " + JSON.stringify(PostStar.transcript));
-
-                }
-                if (post.post_title) {
-
-                    PostStar1.post_title = post.post_title;
-                    //console.log("setting post_title PostStar: " + JSON.stringify(PostStar.post_title));
-
-                }
-                if (post.video) {
-
-                    PostStar1.video = post.video;
-                    //console.log("setting video PostStar: " + JSON.stringify(PostStar.video));
-
-                }
-                if (post.questionAnswerEnabled === true || post.questionAnswerEnabled === false) {
-
-                    PostStar1.questionAnswerEnabled = post.questionAnswerEnabled;
-                    //console.log("setting questionAnswerEnabled PostStar: " + JSON.stringify(PostStar.questionAnswerEnabled));
-                }
-                if (post.thumbnailRatio) {
-
-                    PostStar1.thumbnailRatio = post.thumbnailRatio;
-                    //console.log("setting thumbnailRatio PostStar: " + JSON.stringify(PostStar.thumbnailRatio));
-                }
-
-                if (post.file) {
-
-                    PostStar1.file = post.file;
-                    //console.log("setting file PostStar: " + JSON.stringify(PostStar.file));
-                }
-                if (post.image) {
-                    PostStar1.image = post.image;
-                    //console.log("setting image PostStar: " + JSON.stringify(PostStar.image));
-                }
-                if (post.audio) {
-                    PostStar1.audio = post.audio;
-                    //console.log("setting audio PostStar: " + JSON.stringify(PostStar.audio));
-                }
-
-                if (post.audioWave) {
-                    PostStar1.audioWave = post.audioWave;
-                    //console.log("setting audioWave PostStar: " + JSON.stringify(PostStar.audioWave));
-                }
-
-                if (post.imageRatio) {
-                    PostStar1.imageRatio = post.imageRatio;
-                    //console.log("setting imageRatio PostStar: " + JSON.stringify(PostStar.imageRatio));
-                }
-
-                if (post.mediaDuration) {
-                    PostStar1.mediaDuration = post.mediaDuration;
-                    //console.log("setting mediaDuration PostStar: " + JSON.stringify(PostStar.mediaDuration));
-                }
-                if (post.likesCount) {
-
-                    PostStar1.likesCount = post.likesCount;
-                    //console.log("setting lkesCount PostStar: i" + JSON.stringify(PostStar.likesCount));
-                }
-                if (post.video_thumbnail) {
-                    PostStar1.video_thumbnail = post.video_thumbnail;
-                    //console.log("setting video_thumbnail PostStar: " + JSON.stringify(PostStar.video_thumbnail));
-                }
-
-                if (post.chatMessages) {
-
-                    PostStar1.chatMessages = post.chatMessages;
-                    //console.log("setting chatMessages PostStar: " + JSON.stringify(PostStar.chatMessages));
-                }
-
-                if (post.type === 'post') {
-
-                    if (post.postMessageCount) {
-                        PostStar1.postMessageCount = post.postMessageCount;
-                        //console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-                    }
-                    if (post.postMessageUnReadCount) {
-                        PostStar1.postMessageUnReadCount = post.postMessageUnReadCount;
-                        //console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-                    }
-                    if (post.postMessageQuestionCount) {
-                        PostStar1.postMessageQuestionCount = post.postMessageQuestionCount;
-                        //console.log("setting postMessageQuestionCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionCount));
-                    }
-                    if (post.postMessageQuestionUnReadCount) {
-
-                        PostStar1.postMessageQuestionUnReadCount = post.postMessageQuestionUnReadCount;
-                        //console.log("setting postMessageQuestionUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageQuestionUnReadCount));
-                    }
-                    if (post.postQuestions) {
-                        PostStar1.postQuestions = post.postQuestions;
-                        delete PostStar.postQuestions;
-                        //console.log("setting postQuestions PostStar: " + JSON.stringify(PostStar.postQuestions));
-
-                    }
-
-
-                } else if (post.type === 'question') {
-
-                    console.log("it's a question!: " + JSON.stringify(post.type));
-
-                    if (post.postMessageCount) {
-
-                        PostStar1.postMessageCount = post.postMessageCount;
-                        //console.log("setting postMessageCount PostStar: " + JSON.stringify(PostStar.postMessageCount));
-                    }
-                    if (post.postMessageUnReadCount) {
-
-                        PostStar1.postMessageUnReadCount = post.postMessageUnReadCount;
-                        //console.log("setting postMessageUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageUnReadCount));
-                    }
-                    if (post.postMessageAnswerCount) {
-                        PostStar1.postMessageAnswerCount = post.postMessageAnswerCount;
-                        //console.log("setting postMessageAnswerCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerCount));
-                    }
-                    if (post.postMessageAnswerUnReadCount) {
-
-                        PostStar1.postMessageAnswerUnReadCount = post.postMessageAnswerUnReadCount;
-                        //console.log("setting postMessageAnswerUnReadCount PostStar: " + JSON.stringify(PostStar.postMessageAnswerUnReadCount));
-                    }
-                    if (post.topAnswer) {
-                        PostStar1.topAnswer = post.topAnswer;
-                        //console.log("setting topAnswer PostStar: " + JSON.stringify(PostStar.topAnswer));
-
-                    }
-
-                }
-
-                let postObjectID = post.objectId + '-0';
-
-                PostStar1.objectID = postObjectID;
-                PostStar1._tags = tags;
-                PostStar1.PostSocial = null;
-
-                //console.log("post_zero with * tag: " + JSON.stringify(PostStar));
-
-                console.log("::starting postSocialQuery no result on PostStar1::post " + JSON.stringify(PostStar1));
-
-                let PostSocialArrayNone = [];
-                PostSocialArrayNone.push(PostStar1);
-
-
-                return callback2 (null, PostSocialArrayNone);
-
-
-
-
-
-
-            }
-
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            //console.log(error);
-            return callback2(error);
-        }, {
-
-            useMasterKey: true
-            //sessionToken: sessionToken
-
-        });
-
-
-    }
-
-    function indexPostMessageQuestionSocial (callback2) {
-
-
-        if (post.type === 'post') {
-
-            console.log("Starting post section in PostSocial in splitPostAndIndexFaster");
-
-            let POSTMESSAGEQUESTION = Parse.Object.extend("PostMessage");
-            let queryPostMessageQuestion = new Parse.Query(POSTMESSAGEQUESTION);
-            //queryPostChatMessage.equalTo("workspace", workspace);
-            //queryPostChatMessage.equalTo("channel", channel);
-            queryPostMessageQuestion.equalTo("post", Post);
-            queryPostMessageQuestion.equalTo("type", "question");
-            queryPostMessageQuestion.include(["user"]);
-            queryPostMessageQuestion.select(PostMessageQuestionArray);
-            queryPostMessageQuestion.limit(10);
-            queryPostMessageQuestion.doesNotExist("parentPostMessage");
-            queryPostMessageQuestion.descending("likedCount");
-
-            function getPostMessageQuestions(callback3) {
-
-                console.log("starting getPostMessageQuestions function.");
-
-
-                queryPostMessageQuestion.find({
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-                }).then((PostChatMessages) => {
-
-                    //console.log("PostChatMessages: " + JSON.stringify(PostChatMessages));
-
-
-                    if (PostChatMessages.length > 0) {
-
-                        let simplifiedPostChatMessages = [];
-
-                        for (var i = 0; i < PostChatMessages.length; i++) {
-
-                            simplifiedPostChatMessages.push(simplifyPostChatMessage(PostChatMessages[i]));
-                            //console.log("simplifyPostChatMessage: " + JSON.stringify(PostChatMessages[i]));
-
-                            if (i === (PostChatMessages.length - 1)) {
-
-                                // finished iterating through all items
-
-                                return callback3(null, simplifiedPostChatMessages);
-
-                            }
-
-                        }
-
-
-                    } else {
-
-                        console.log("no PostMessageQuestions");
-
-                        let PostChatMessages = [];
-                        // no workspaceFollowers to delete return
-                        return callback3(null, PostChatMessages);
-
-                    }
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    console.log(error);
-                    let PostChatMessages = [];
-                    // no workspaceFollowers to delete return
-                    return callback3(null, PostChatMessages);
-                }, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-
-            }
-
-            function getPostMessageSocials (callback3) {
-
-
-                let POSTMESSAGESOCIAL = Parse.Object.extend("PostMessageSocial");
-                let queryPostMessageSocial = new Parse.Query(POSTMESSAGESOCIAL);
-
-                //console.log("user: " + JSON.stringify(UserResult.id));
-
-                // queryPostMessageSocial.equalTo("user", UserResult);
-                queryPostMessageSocial.matchesQuery("postMessage", queryPostMessageQuestion);
-                queryPostMessageSocial.matchesQuery("postSocial", postSocialQuery);
-
-
-                queryPostMessageSocial.find({
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                }).then((postMessageSocials) => {
-                    // The object was retrieved successfully.
-
-                    //let finalChannelFollowers = [];
-                    //console.log("postMessageSocials: " + JSON.stringify(postMessageSocials));
-
-                    if (postMessageSocials.length > 0) {
-
-                        return callback3 (null, postMessageSocials);
-
-
-                    } else {
-
-                        let postMessageSocials = [];
-
-                        console.log("no postMessageSocials");
-
-                        return callback3 (null, postMessageSocials);
-
-                    }
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    return callback3 (error);
-                }, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-            }
-
-            async.parallel([
-                async.apply(getPostMessageQuestions),
-                async.apply(getPostMessageSocials)
-
-            ], function (err, results) {
-                if (err) {
-                    response.error(err);
-                }
-
-                console.log("starting show results indexPostMessageQuestionSocial: " + JSON.stringify(results.length));
-
-                if (results.length > 0) {
-
-                    let postQuestionMessages = results[0];
-                    let postMessageSocials = results[1];
-
-                    if (postQuestionMessages.length > 0 ) {
-
-                        async.map(postQuestionMessages, function (postQuestionMessage, cb1) {
-
-                                console.log("starting async.map postQuestionMessages ");
-
-                                //console.log("postQuestionMessage: " + JSON.stringify(postQuestionMessage));
-
-                                let POSTMESSAGE = Parse.Object.extend("PostMessage");
-                                let postMessage = new POSTMESSAGE();
-                                postMessage.id = postQuestionMessage.objectId;
-                                //console.log("postMessage n: " + JSON.stringify(postMessage));
-
-                                //console.log("indexOf async.map: " + JSON.stringify(postQuestionMessages.indexOf(postQuestionMessage)));
-
-                                let async_map_index = postQuestionMessages.indexOf(postQuestionMessage);
-
-                                //console.log(" postMessageSocials: " + JSON.stringify(postMessageSocials));
-
-
-                                if (postMessageSocials.length > 0) {
-
-                                    console.log("enter into PostMessageSocial...");
-
-                                    let filteredPostMessageSocials = lodash.filter(postMessageSocials, function (postMessageSocial) {
-
-                                            //console.log(".....postMessageSocial.....: " + JSON.stringify(postMessageSocial));
-
-                                            if (postMessageSocial.get("postMessage").id === postQuestionMessage.objectId) {
-
-                                                console.log("yay got a match! there is a postMessageSocial for this user for this postMessage of question type");
-
-                                                return postMessageSocial;
-                                            } else {
-
-                                                // no postMessageSocial for this user, should we create one?
-
-                                                return ;
-
-                                            }
-
-                                        }
-
-
-                                    );
-                                    //console.log("filteredPostMessageSocials: " + JSON.stringify(filteredPostMessageSocials));
-
-
-                                    postQuestionMessage.PostMessageSocial = filteredPostMessageSocials;
-                                    //console.log("done postMessageSocial: " + JSON.stringify(postQuestionMessage.PostMessageSocial));
-
-                                    return cb1(null, postQuestionMessage);
-
-                                }
-                                else {
-
-                                    // postMessageSocial doesn't exist, user doesn't have any reactions on postMessage.
-                                    console.log("postMessageSocial doesn't exist, user doesn't have any reactions on postMessage");
-
-                                    //console.log("postMessageSocial doesn't exist, postQuestionMessage: " + JSON.stringify(postQuestionMessage));
-
-                                    postQuestionMessage.PostMessageSocial = [];
-
-                                    return cb1(null, postQuestionMessage);
-
-
-                                }
-
-
-
-
-                            },
-                            function (err, postQuestionMessagesSocialResult) {
-
-                                //console.log("postQuestionMessagesSocialResult length: " + JSON.stringify(postQuestionMessagesSocialResult.length));
-
-                                if (err) {
-                                    return response.error(err);
-                                } else {
-
-                                    //console.log("postQuestionMessagesSocialResult.postQuestions: " + JSON.stringify(postQuestionMessagesSocialResult));
-
-                                    return callback2(null, postQuestionMessagesSocialResult);
-
-                                }
-
-                            });
-
-
-                    }
-                    else {
-
-                        console.log(":::no postQuestionResults 1:::");
-
-                        let postQuestionResult = [];
-
-
-                        return callback2(null, postQuestionResult);
-
-
-                    }
-
-
-
-                }
-
-                else {
-
-                    console.log(":::no postQuestionResults:::");
-
-                    let postQuestionResult = [];
-
-
-                    return callback2(null, postQuestionResult);
-
-
-                }
-
-            });
-
-
-
-        }
-        else {
-
-            console.log(":::no postQuestionResults 3:::");
-
-
-            let postQuestions = [];
-
-            return callback2 (null, postQuestions)
-        }
-
-
-    }
-
-
-    async.parallel([
-        async.apply(indexPostSocial),
-        async.apply(indexPostMessageQuestionSocial)
-
-    ], function (err, results) {
-        if (err) {
-            response.error(err);
-        }
-
-        console.log("starting show results splitPostAndIndexFaster: " + JSON.stringify(results.length));
-
-        if (results.length > 0) {
-
-            //console.log("afterSave PostSocial Post algolia index results length: " + JSON.stringify(results.length));
-
-            let finalPostIndexResults = results[0];
-            let finalPostMessageQuestionResults = results[1];
-
-            console.log("finalPostMessageQuestionResults: " + JSON.stringify(finalPostMessageQuestionResults));
-
-            let nullFInalPostMessageQuestionResults = finalPostMessageQuestionResults;
-
-
-            //let finalPostMessageAnswerResults = results[2];
-            //let finalPostMessageCommentResults = results[3];
-
-            let Posts = lodash.map(finalPostIndexResults, function(finalPostIndexResult){
-
-                console.log("starting async.map finalPostIndexResults: ");
-
-                console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                let Questions = finalPostMessageQuestionResults;
-
-                if (finalPostIndexResult.PostSocial) {
-
-                    if (finalPostMessageQuestionResults.length > 0) {
-
-                        console.log(":::finalPostMessageQuestionResults::: " + JSON.stringify(finalPostMessageQuestionResults));
-
-                        let arrQuestions = lodash.map(Questions, function(question){
-
-                            let postSocialId = finalPostIndexResult.PostSocial.objectId;
-                            let userId = finalPostIndexResult.PostSocial.user.objectId;
-
-                            if (question.PostMessageSocial) {
-
-                                if (question.PostMessageSocial.length > 0) {
-
-                                    let arrayPostMessageSocial = question.PostMessageSocial;
-
-                                    for (var i = 0; i < arrayPostMessageSocial.length; i++) {
-
-                                        let postMessageSocialObj = arrayPostMessageSocial[i];
-
-                                        console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
-
-                                        console.log("postSocialId::socialpostSocialId " + JSON.stringify(postSocialId) + '::' + JSON.stringify(postMessageSocialObj.get("postSocial").id));
-
-                                        console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.get("user").id));
-
-                                        if (postMessageSocialObj.get("user").id === userId) {
-
-
-                                            question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
-
-                                        } else {
-
-                                            question.PostMessageSocial = null;
-                                        }
-
-                                    }
-
-                                    console.log("question: " + JSON.stringify(question));
-
-                                    return question;
-
-
-
-                                } else {
-
-                                    console.log("null issue 1");
-
-                                    let arrayPostMessageSocial = [];
-
-                                    arrayPostMessageSocial.push(question.PostMessageSocial);
-
-                                    for (var i = 0; i < arrayPostMessageSocial.length; i++) {
-
-                                        let postMessageSocialObj = arrayPostMessageSocial[i];
-
-                                        console.log("arrayPostMessageSocial: " + JSON.stringify(postMessageSocialObj));
-
-
-                                        console.log("userId::socialUserId " + JSON.stringify(userId) + '::' + JSON.stringify(postMessageSocialObj.user.objectId));
-
-                                        if (postMessageSocialObj.user.objectId === userId) {
-
-
-                                            question.PostMessageSocial = simplifyPostMessageSocialQuestion(postMessageSocialObj);
-
-                                        } else {
-
-                                            question.PostMessageSocial = null;
-                                        }
-
-                                    }
-
-                                    console.log("question: " + JSON.stringify(question));
-
-                                    return question;
-
-
-                                }
-
-
-                            }
-                            else {
-
-                                console.log("null issue 2");
-
-                                question.PostMessageSocial = null;
-
-                                //finalPostMessageQuestionResult.PostMessageSocial = null;
-
-                                return question;
-
-
-                            }
-
-                        });
-
-                        console.log("arrQuestions: " + JSON.stringify(arrQuestions));
-
-                        finalPostIndexResult.postQuestions = arrQuestions;
-                        console.log(":::finalPostIndexResult::: " + JSON.stringify(finalPostIndexResult));
-
-                        return finalPostIndexResult;
-
-                    }
-
-                    else {
-
-                        console.log("::no questions on post::");
-
-
-                        // todo find postAnswer for this postSocial
-
-                        finalPostIndexResult.postQuestions = [];
-                        //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                        //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                        //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                        return  finalPostIndexResult;
-
-
-                    }
-
-                }
-
-                else {
-
-                    finalPostIndexResult.PostSocial = null;
-
-                    if (finalPostMessageQuestionResults.length > 0) {
-
-                        let arrQuestions = lodash.map(Questions, function(question){
-
-                            question.PostMessageSocial = null;
-
-                            return question;
-
-                        });
-
-                        finalPostIndexResult.postQuestions = arrQuestions;
-                        console.log(":::finalPostIndexResult null postSocial::: " + JSON.stringify(finalPostIndexResult));
-
-                        return  finalPostIndexResult;
-
-                    }
-
-                    else {
-
-                        console.log("::no questions on post::");
-
-
-                        finalPostIndexResult.PostSocial = null;
-
-                        finalPostIndexResult.postQuestions = [];
-                        //console.log("finalPostIndexResult: " + JSON.stringify(finalPostIndexResult));
-
-                        //finalPostIndexResult.postAnswer = finalPostMessageAnswerResults;
-                        //finalPostIndexResult.chatMessages = finalPostMessageCommentResults;
-
-                        return  finalPostIndexResult;
-
-
-                    }
-
-                }
-
-            });
-
-            console.log("Posts: " + JSON.stringify(Posts));
-
-            indexPosts.saveObjects(Posts, true, function(err, content) {
-                if (err) {
-                    return response.error(err);
-                }
-
-                //console.log("content: " + JSON.stringify(content));
-
-
-            });
-
-            console.log("Parse<>Algolia dev_posts saved from splitPostAndIndex function ");
-
-            let beforeSaveElse_Time = process.hrtime(time);
-            console.log(`beforeSaveElse_Time splitPostAndIndex took ${(beforeSaveElse_Time[0] * NS_PER_SEC + beforeSaveElse_Time[1]) * MS_PER_NS} milliseconds`);
-
-            return response.success();
-
-
-
-        }
-
-        else {
-
-            return response.error("No post to index error in splitPostAndIndexFaster");
-
-
-        }
-
-    });
-
-
-
 
 }
 
@@ -26819,13 +23566,12 @@ Parse.Cloud.afterSave('WorkSpace', async (request) => {
 
     }
 
-    const results = await async.parallel([
-        async.apply(createWorkspaceRoles),
-        async.apply(getSkills),
-        async.apply(getExperts),
-        async.apply(getWorkspaceFollowers),
-        async.apply(createOwnerWorkspaceFollower)
-
+    const results = await Promise.all([
+        createWorkspaceRoles(),
+        getSkills(),
+        getExperts(),
+        getWorkspaceFollowers(),
+        createOwnerWorkspaceFollower()
     ]);
 
     //console.log("results length: " + JSON.stringify(results.length));
@@ -28079,277 +24825,6 @@ Parse.Cloud.beforeDelete('Channel', function(request, response) {
     response.success();
 
 }, {useMasterKey: true});
-
-// Delete AlgoliaSearch meetings object if it's deleted from Parse
-/*Parse.Cloud.afterDelete('Meeting', function(request, response) {
-
- // Get Algolia objectID
- //var meetingID = request.object.id;
-
- var objectsToIndex = [];
- var objectsID = [];
-
- function getMeetingObject (callback) {
-
- var meetingObject = Parse.Object.extend("Meeting");
- var query = new Parse.Query(meetingObject);
- console.log("objectId: " + JSON.stringify(request.object.id));
-
- query.get(request.object.id, {
- success: function(meetingObject) {
- // The object was retrieved successfully.
- console.log("meetingObject2: " + JSON.stringify(meetingObject));
-
- return callback(null, meetingObject);
-
- },
- error: function(object, error) {
- // The object was not retrieved successfully.
- // error is a Parse.Error with an error code and message.
- response.error("error: " + error);
-
- }
- });
-
- };
-
- function getMeetingTranscript (meetingObject, callback) {
-
- console.log("req: " + JSON.stringify(request));
-
- var meetingFile = meetingObject.get("MeetingJson");
- console.log("MeetingFile: " + JSON.stringify(meetingFile));
- console.log("MeetingURL: " + JSON.stringify(meetingFile.url()) );
-
- console.log("meetingObject: " + JSON.stringify(meetingObject));
-
- requestURL({
- url: meetingFile.url(),
- json: true
- }, function (error, resp, body) {
-
- console.log("error: " + error);
- console.log("response: " + JSON.stringify(resp));
- console.log("body: " + JSON.stringify(body));
-
- if (!error && resp.statusCode === 200) {
- console.log("body: " + body); // Print the json response
-
- objectsToIndex = body.IBMjson.results;
-
- return callback(null, objectsToIndex);
-
- }
- });
-
-
- };
-
- // function to get the utterance ID to delete multiple utterances in AlgoliaSearch Meeting Index tied to a given meeting ID
- function getUtteranceID (objectsToIndex, callback) {
-
-
- console.log("objectsToIndex: " + JSON.stringify(objectsToIndex));
-
- //console.log("objectID: " + meetingObject.objectId);
- //console.log("objectID: " + meetingObject.user.objectId);
-
- //objectsToIndex = objectsToIndex.results;
-
- async.forEach(objectsToIndex, function (meetingUtterance, callback){
-
- //meetingUtterance = meetingUtterance.alternatives;
- //meetingUtterance['objectID'] = meetingUtterance.alternatives[0].AternativeID;
-
- console.log("meetingUtteranceID: "+ JSON.stringify(meetingUtterance.objectID)); // print the key
-
- objectsID.push(meetingUtterance.objectID);
-
- callback(null, objectsID);
-
- }, function(err, objectsID) {
- console.log('iterating done: ' + JSON.stringify(objectsToIndex));
- return objectsID;
- });
-
- return callback(null, objectsID);
-
- };
-
- function deleteObjectsAlgolia (objectsID, callback) {
-
- console.log("objectToIndex2: "+ JSON.stringify(objectsID));
-
- // Remove the object from Algolia
- // todo need to filter and only query the utterances with MeetingID to optimize performance
- indexMeetings.deleteObjects(objectsID, function(err, content) {
- if (err) {
- throw err;
- }
- console.log('Parse<>Algolia object deleted: ' + JSON.stringify(content));
- });
-
- return callback(null, objectsID);
-
- };
-
- async.waterfall([
- async.apply(getMeetingObject),
- async.apply(getMeetingTranscript),
- async.apply(getUtteranceID),
- async.apply(deleteObjectsAlgolia)
-
- ], function (err, objectsID) {
- if (err) {
- throw err;
- }
-
- console.log("deleted the following meeting utterances: " + JSON.stringify(objectsID));
-
- });
-
-
- });*/
-
-/*Parse.Cloud.beforeDelete('WorkSpace', function(request, response) {
-
-    const NS_PER_SEC = 1e9;
-    const MS_PER_NS = 1e-6;
-    let time = process.hrtime();
-
-    let currentUser = request.user;
-    let sessionToken = currentUser ? currentUser.getSessionToken() : null;
-
-    if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.011.afterDelete-WorkSpace.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
-    }
-
-    let WORKSPACE = Parse.Object.extend("WorkSpace");
-    let workspace = new WORKSPACE();
-    workspace.id = request.object.id;
-
-    let workspaceObject = request.object;
-    //console.log("workspace: " + JSON.stringify(workspace));
-
-    //console.log("request afterDelete WorkSpace: " + JSON.stringify(request));
-
-    let USER = Parse.Object.extend("_User");
-    let owner = new USER();
-    owner.id = workspaceObject.get("user").id;
-
-    //console.log("owner: " + JSON.stringify(owner));
-
-
-
-    let WORKSPACEFOLLOWER = Parse.Object.extend("workspace_follower");
-    let previousQueryWorkspaceFollowerLeave = new Parse.Query(WORKSPACEFOLLOWER);
-    previousQueryWorkspaceFollowerLeave.include("workspace");
-    previousQueryWorkspaceFollowerLeave.equalTo("user", owner);
-    previousQueryWorkspaceFollowerLeave.equalTo("isSelected", false);
-    previousQueryWorkspaceFollowerLeave.equalTo("isFollower", true);
-    previousQueryWorkspaceFollowerLeave.descending("updatedAt");
-
-    function selectPreviouslySelectedWorkspace (callback) {
-
-        previousQueryWorkspaceFollowerLeave.first( {
-
-            useMasterKey: true
-            //sessionToken: sessionToken
-
-        }).then((WorkspaceToSelect) => {
-            // The object was retrieved successfully.
-
-            if (WorkspaceToSelect) {
-
-                let WORKSPACE = Parse.Object.extend("WorkSpace");
-                let WorkspaceToSelectSave = new WORKSPACE();
-                WorkspaceToSelectSave.id = WorkspaceToSelect.id;
-
-                WorkspaceToSelectSave.set("isSelected", true);
-
-                WorkspaceToSelectSave.save(null, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                }).then((result) => {
-
-                    // save was successful
-                    if(result) {
-
-                        console.log("result from afterDelete workspace save: " + JSON.stringify(result));
-
-                        // There is a previous workspace that was selected, need to return it so we can un-select that previous workspacefollower
-                        return callback (null, result);
-
-                    } else {
-
-                        return callback (null, result);
-
-                    }
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    return callback (error);
-                }, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
-            } else {
-
-                // there was no workspace that was previously selected, return empty
-
-                return callback (null, WorkspaceToSelect);
-            }
-
-
-        }, (error) => {
-            // The object was not retrieved successfully.
-            // error is a Parse.Error with an error code and message.
-            response.error(error);
-        }, {
-
-            useMasterKey: true
-            //sessionToken: sessionToken
-
-        });
-
-    }
-
-
-    async.parallel([
-
-        async.apply(selectPreviouslySelectedWorkspace)
-
-    ], function (err, results) {
-        if (err) {
-            return response.error(err);
-        }
-
-        if (results) {
-
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime took afterDelete WorkSpace ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-            return response.success();
-
-
-        }
-
-    });
-
-
-}, {useMasterKey: true});*/
 
 // Delete AlgoliaSearch workspace object if it's deleted from Parse
 Parse.Cloud.afterDelete('WorkSpace', function(request, response) {
