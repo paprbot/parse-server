@@ -40,5 +40,9 @@
   },
   "engines": {
     "node": "12.13.0"
+  },
+  "resolutions": {
+    "graphql": "^15.0.0",
+    "**/graphql": "^15.0.0"
   }
 }
