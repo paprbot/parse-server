@@ -3,6 +3,7 @@ const yn = require("yn");
 module.exports = {
     server: {
         graphQLServerURL: process.env.SERVER_URL + '/graphql',
+        publicServerURL: process.env.SERVER_URL + '/parse',
         liveQuery: {
             classNames: ["_User", "PostMessage", "PostMessageSocial"],
             redisURL: 'redis://user:YQU8q92fG6nMhU1GqWmVTE2ds1fin+th7At+ReO4myM=@parseserverwestRedis.redis.cache.windows.net:6379',

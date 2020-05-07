@@ -15704,11 +15704,12 @@ async function splitUserAndIndex (request) {
 
         if (results.length > 0) {
 
-            let ChannelFollows = results[0];
+            let ChannelFollows = results;
+            console.log("ChannelFollows results: " + JSON.stringify(results));
 
             if (ChannelFollows) {
 
-                const finalChannelFollowers = await async.forEachSeries(ChannelFollows, async function (channelFollowObject) {
+                const finalChannelFollowers = await lodash.map(ChannelFollows, async function (channelFollowObject) {
 
                     //let newObjectToSave = objectToSave;
 
@@ -15945,7 +15946,7 @@ async function splitUserAndIndex (request) {
 
 
 // auto-add type when isBookmarked, isLiked or Comment is added
-Parse.Cloud.beforeSave('PostSocial', function(request, response) {
+Parse.Cloud.beforeSave('PostSocial', async (request) => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -15957,11 +15958,7 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.beforeSave.PostSocial.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('beforeSave-PostSocial.UNAUTHENTICATED_USER');
     }
 
     // Convert Parse.Object to JSON
@@ -15974,16 +15971,16 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
         postSocial.set("isNew", true);
 
         if (!postSocial.get("channel")) {
-            return response.error("Channel is required.");
+            throw new Error ("Channel is required.");
         }
         if (!postSocial.get("user")) {
-            return response.error("User is required field.");
+            throw new Error ("User is required field.");
         }
         if (!postSocial.get("workspace")) {
-            return response.error("Workspace is required.");
+            throw new Error( "Workspace is required.");
         }
         if (!postSocial.get("post")) {
-            return response.error("Post is required.");
+            throw new Error ("Post is required.");
         }
 
 
@@ -16003,72 +16000,65 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
         //postSocialQuery.include(["user", "workspace", "channel"]);
 
         // check to make sure that the postSocial is unique
-        postSocialQuery.first({
+        const postSocialResult = await postSocialQuery.first({
 
             useMasterKey: true
             //sessionToken: sessionToken
 
-        }).then((postSocialResult) => {
-            // The object was retrieved successfully.
-
-            //console.log("beforeSave PostSocial postSocialResult: " + JSON.stringify(postSocialResult));
-
-            if (postSocialResult) {
-
-                //postSocial already exists in db, return an error because it needs to be unique
-                console.log("postSocial already exists in db, return an error because it needs to be unique");
-                return response.error(postSocialResult);
-
-            } else {
-
-                console.log("setting defaults for beforeSave postSocial");
-
-                console.log("archive: " + JSON.stringify(postSocial.get("archive")));
-
-                if (!postSocial.get("isLiked")) {
-                    postSocial.set("isLiked", false);
-                }
-                if (!postSocial.get("isBookmarked")) {
-                    postSocial.set("isBookmarked", false);
-                }
-                if (!postSocial.get("archive")) {
-                    postSocial.set("archive", false);
-                }
-                if (!postSocial.get("isDelivered")) {
-                    postSocial.set("isDelivered", false);
-                }
-                if (!postSocial.get("hasRead")) {
-                    postSocial.set("hasRead", false);
-                }
-
-                if (!postSocial.get("postIsNew")) {
-                    postSocial.set("postIsNew", false);
-                }
-
-                if (!postSocial.get("isExpanded")) {
-                    postSocial.set("isExpanded", false);
-                }
-
-                let diff = process.hrtime(time);
-                console.log(`beforeSave PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-
-                return response.success();
-
-
-            }
-
-
         }, (error) => {
             // The object was not retrieved successfully.
             // error is a Parse.Error with an error code and message.
-            //console.log("channelFollowQuery not found");
-            return response.error(error);
+            throw new Error(error);
         }, {
 
             useMasterKey: true
             //sessionToken: sessionToken
 
         });
+
+        if (postSocialResult) {
+
+            //postSocial already exists in db, return an error because it needs to be unique
+            console.error("postSocial already exists in db, return an error because it needs to be unique");
+            throw new Error (postSocialResult);
+
+        }
+        else {
+
+            //console.log("setting defaults for beforeSave postSocial");
+
+            //console.log("archive: " + JSON.stringify(postSocial.get("archive")));
+
+            if (!postSocial.get("isLiked")) {
+                postSocial.set("isLiked", false);
+            }
+            if (!postSocial.get("isBookmarked")) {
+                postSocial.set("isBookmarked", false);
+            }
+            if (!postSocial.get("archive")) {
+                postSocial.set("archive", false);
+            }
+            if (!postSocial.get("isDelivered")) {
+                postSocial.set("isDelivered", false);
+            }
+            if (!postSocial.get("hasRead")) {
+                postSocial.set("hasRead", false);
+            }
+
+            if (!postSocial.get("postIsNew")) {
+                postSocial.set("postIsNew", false);
+            }
+
+            if (!postSocial.get("isExpanded")) {
+                postSocial.set("isExpanded", false);
+            }
+
+            let diff = process.hrtime(time);
+            console.log(`beforeSave PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
+
+
+
+        }
 
 
     } else {
@@ -16094,7 +16084,7 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 
         let diff = process.hrtime(time);
         console.log(`beforeSave PostSocial took ${(diff[0] * NS_PER_SEC + diff[1])  * MS_PER_NS} milliseconds`);
-        return response.success();
+
     }
 
 
@@ -16102,7 +16092,7 @@ Parse.Cloud.beforeSave('PostSocial', function(request, response) {
 });
 
 // Create relationship from post to PostSocial after a PostSocial is saved
-Parse.Cloud.afterSave('PostSocial', function(request, response) {
+Parse.Cloud.afterSave('PostSocial', async (request) => {
 
     const NS_PER_SEC = 1e9;
     const MS_PER_NS = 1e-6;
@@ -16113,11 +16103,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     let sessionToken = currentUser ? currentUser.getSessionToken() : null;
 
     if (!request.master && (!currentUser || !sessionToken)) {
-        response.error(JSON.stringify({
-            code: 'PAPR.ERROR.afterSave.PostSocial.UNAUTHENTICATED_USER',
-            message: 'Unauthenticated user.'
-        }));
-        return;
+        throw new Error('afterSave-PostSocial.UNAUTHENTICATED_USER');
     }
 
     //console.log("request afterSave PostSocial: " + JSON.stringify(request));
@@ -16154,14 +16140,14 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     let isPostNew = postSocial.get("postIsNew")? postSocial.get("postIsNew") : false;
     let isNew = postSocial.get("isNew")? postSocial.get("isNew") : false;
 
-    function incrementPostSocialCount(cb) {
+    async function incrementPostSocialCount() {
 
 
         if (isPostNew === true && isNew === true) {
 
             // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
 
-            return cb (null, postSocial);
+            return postSocial;
 
 
         }
@@ -16179,49 +16165,29 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                 post.increment("likesCount");
             }
 
-            post.save(null, {
+            await post.save(null, {
 
                 //useMasterKey: true,
                 sessionToken: sessionToken
 
-            }).then((Post) => {
-                // The object was retrieved successfully.
-                //console.log("Result from get " + JSON.stringify(Workspace));
+            });
 
-                queryPost.first( {
+            return await queryPost.first( {
 
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                }).then((PostObject) => {
-                    // The object was retrieved successfully.
-                    //console.log("Result from get " + JSON.stringify(Workspace));
-
-                    return cb(null, PostObject);
-
-
-                }, (error) => {
-                    // The object was not retrieved successfully.
-                    // error is a Parse.Error with an error code and message.
-                    response.error(error);
-                }, {
-
-                    useMasterKey: true
-                    //sessionToken: sessionToken
-
-                });
-
+                useMasterKey: true
+                //sessionToken: sessionToken
 
             }, (error) => {
                 // The object was not retrieved successfully.
                 // error is a Parse.Error with an error code and message.
-                response.error(error);
+                throw new Error(error);
             }, {
 
-                //useMasterKey: true
-                sessionToken: sessionToken
+                useMasterKey: true
+                //sessionToken: sessionToken
 
             });
+
 
         }
         else if (isPostNew === false && isNew === false) {
@@ -16230,21 +16196,15 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
                 // do nothing, LikesCount is already incremented.
 
-                queryPost.first(  {
+                return await queryPost.first( {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
 
-                }).then((PostObject) => {
-                    // The object was retrieved successfully.
-                    //console.log("Result from get " + JSON.stringify(Workspace));
-
-                    return cb(null, PostObject);
-
                 }, (error) => {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
-                    response.error(error);
+                    throw new Error(error);
                 }, {
 
                     useMasterKey: true
@@ -16258,46 +16218,26 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                 // decrement likesCount for post
                 post.increment("likesCount", -1);
 
-                post.save(null, {
+                await post.save(null, {
 
                     //useMasterKey: true,
                     sessionToken: sessionToken
 
-                }).then((Post) => {
-                    // The object was retrieved successfully.
-                    //console.log("Result from get " + JSON.stringify(Workspace));
+                });
 
-                    queryPost.first(  {
+                return await queryPost.first( {
 
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    }).then((PostObject) => {
-                        // The object was retrieved successfully.
-                        //console.log("Result from get " + JSON.stringify(Workspace));
-
-                        return cb(null, PostObject);
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 }, (error) => {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
-                    response.error(error);
+                    throw new Error(error);
                 }, {
 
-                    //useMasterKey: true
-                    sessionToken: sessionToken
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 });
 
@@ -16306,21 +16246,15 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
                 // do nothing, user didn't like this post
 
-                queryPost.first( {
+                return await queryPost.first( {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
 
-                }).then((PostObject) => {
-                    // The object was retrieved successfully.
-                    //console.log("Result from get " + JSON.stringify(Workspace));
-
-                    return cb(null, PostObject);
-
                 }, (error) => {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
-                    response.error(error);
+                    throw new Error(error);
                 }, {
 
                     useMasterKey: true
@@ -16335,66 +16269,40 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
                 // increment likesCount for post
                 post.increment("likesCount");
 
-                post.save(null, {
+                await post.save(null, {
 
                     //useMasterKey: true,
                     sessionToken: sessionToken
 
-                }).then((Post) => {
-                    // The object was retrieved successfully.
-                    //console.log("Result from get " + JSON.stringify(Workspace));
+                });
 
-                    queryPost.first(  {
+                return await queryPost.first( {
 
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    }).then((PostObject) => {
-                        // The object was retrieved successfully.
-                        //console.log("Result from get " + JSON.stringify(Workspace));
-
-                        return cb(null, PostObject);
-
-
-                    }, (error) => {
-                        // The object was not retrieved successfully.
-                        // error is a Parse.Error with an error code and message.
-                        response.error(error);
-                    }, {
-
-                        useMasterKey: true
-                        //sessionToken: sessionToken
-
-                    });
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 }, (error) => {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
-                    response.error(error);
+                    throw new Error(error);
                 }, {
 
-                    //useMasterKey: true
-                    sessionToken: sessionToken
+                    useMasterKey: true
+                    //sessionToken: sessionToken
 
                 });
             }
             else {
 
-                queryPost.first( {
+                return await queryPost.first( {
 
                     useMasterKey: true
                     //sessionToken: sessionToken
 
-                }).then((PostObject) => {
-                    // The object was retrieved successfully.
-                    //console.log("Result from get " + JSON.stringify(Workspace));
-
-                    return cb(null, PostObject);
-
                 }, (error) => {
                     // The object was not retrieved successfully.
                     // error is a Parse.Error with an error code and message.
-                    response.error(error);
+                    throw new Error(error);
                 }, {
 
                     useMasterKey: true
@@ -16410,7 +16318,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
             // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
 
-            return cb (null, postSocial);
+            return postSocial;
 
 
         }
@@ -16419,7 +16327,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
     }
 
 
-    function updatePostsAlgolia1 (PostObject, cb) {
+    async function updatePostsAlgolia1 (PostObject) {
 
         //console.log("starting updatePostsAlgolia: " + JSON.stringify(Post));
 
@@ -16427,34 +16335,15 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
             // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
 
-            return cb (null, PostObject);
+            return PostObject;
 
 
         }
         else if (isPostNew === false && isNew === true) {
 
-            console.log("PostObject: " + JSON.stringify(PostObject));
+            // console.log("PostObject: " + JSON.stringify(PostObject));
 
-            PostObject.save(null, {
-
-                //useMasterKey: true
-                sessionToken: sessionToken
-
-            }).then((PostSaved) => {
-                // The object was retrieved successfully.
-                //console.log("Result from get " + JSON.stringify(Workspace));
-
-                //console.log("done PostSaved : " + JSON.stringify(PostSaved));
-
-
-                return cb (null, PostSaved);
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                return cb(error);
-            }, {
+            return await PostObject.save(null, {
 
                 //useMasterKey: true
                 sessionToken: sessionToken
@@ -16465,28 +16354,9 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
         }
         else if (isPostNew === false && isNew === false) {
 
-            console.log("PostObject: " + JSON.stringify(PostObject));
+            //console.log("PostObject: " + JSON.stringify(PostObject));
 
-            PostObject.save(null, {
-
-                //useMasterKey: true
-                sessionToken: sessionToken
-
-            }).then((PostSaved) => {
-                // The object was retrieved successfully.
-                //console.log("Result from get " + JSON.stringify(Workspace));
-
-                //console.log("done PostSaved : " + JSON.stringify(PostSaved));
-
-
-                return cb (null, PostSaved);
-
-
-            }, (error) => {
-                // The object was not retrieved successfully.
-                // error is a Parse.Error with an error code and message.
-                return cb(error);
-            }, {
+            return await PostObject.save(null, {
 
                 //useMasterKey: true
                 sessionToken: sessionToken
@@ -16499,7 +16369,7 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
             // We are creating a new post and already created a post Social no need to index since we already indexed previously when creating post!
 
-            return cb (null, PostObject);
+            return  PostObject;
 
 
         }
@@ -16507,31 +16377,12 @@ Parse.Cloud.afterSave('PostSocial', function(request, response) {
 
     }
 
+    let PostResult = await incrementPostSocialCount();
 
+    await updatePostsAlgolia1(PostResult);
 
-    async.waterfall([
-        async.apply(incrementPostSocialCount),
-        async.apply(updatePostsAlgolia1)
-
-
-    ], function (err, results) {
-        if (err) {
-            return response.error(err);
-        }
-
-        if (results) {
-
-
-            let finalTime = process.hrtime(time);
-            console.log(`finalTime took afterSave PostSocial ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
-
-            return response.success();
-
-
-        }
-
-    });
-
+    let finalTime = process.hrtime(time);
+    console.log(`finalTime took afterSave PostSocial ${(finalTime[0] * NS_PER_SEC + finalTime[1])  * MS_PER_NS} milliseconds`);
 
 
 });
@@ -20135,7 +19986,6 @@ Parse.Cloud.afterSave('_User', async (request) => {
 }, {useMasterKey: true});
 
 
-
 Parse.Cloud.afterSave('ChannelFollow', function(request, response) {
 
     const NS_PER_SEC = 1e9;
@@ -20904,7 +20754,7 @@ Parse.Cloud.afterSave('workspace_follower',async (request) => {
         queryWorkspaceFollower.equalTo("objectId", workspace_follower.id);
         queryWorkspaceFollower.include( ["workspace"], ["post"], ["postSocial"], ["postMessage"], ["postMessageSocial"] );
 
-        return await queryWorkspaceFollower.find({
+        return await queryWorkspaceFollower.first({
 
             useMasterKey: true
             //sessionToken: sessionToken
